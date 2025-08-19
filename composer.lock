@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b7531f73c7a0f0d5c4e7e8690992afc1",
+    "content-hash": "06b31fb8d96cc48ceb1b561831288fd4",
     "packages": [
         {
             "name": "brick/math",
@@ -2076,6 +2076,55 @@
                 }
             ],
             "time": "2024-12-08T08:18:47+00:00"
+        },
+        {
+            "name": "maxidev/tail-logger",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maxidevs/tail-logger.git",
+                "reference": "74e63eac7c5fae514b0e5e5e22b8d75535d62f49"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maxidevs/tail-logger/zipball/74e63eac7c5fae514b0e5e5e22b8d75535d62f49",
+                "reference": "74e63eac7c5fae514b0e5e5e22b8d75535d62f49",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^11.0|^12.0",
+                "monolog/monolog": "^3.0",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Maxidev\\Logger\\LoggingServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Maxidev\\Logger\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Max",
+                    "email": "max@example.com"
+                }
+            ],
+            "description": "Dynamic contextual logger for Laravel with Artisan tailing support",
+            "support": {
+                "issues": "https://github.com/maxidevs/tail-logger/issues",
+                "source": "https://github.com/maxidevs/tail-logger/tree/v1.0.0"
+            },
+            "time": "2025-05-17T20:26:34+00:00"
         },
         {
             "name": "monolog/monolog",
