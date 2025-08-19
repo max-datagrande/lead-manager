@@ -4,7 +4,7 @@ import { router } from '@inertiajs/react'
 import ConfirmDialog from '@/components/confirm-dialog'
 
 /**
- * Representa un modal individual en la pila de modales
+ * Represents an individual modal in the modal stack
  */
 type ModalItem = {
   id: number
@@ -14,7 +14,7 @@ type ModalItem = {
 }
 
 /**
- * Opciones para el diálogo de confirmación
+ * Options for the confirmation dialog
  */
 type ConfirmOptions = {
   title?: string
@@ -25,7 +25,7 @@ type ConfirmOptions = {
 }
 
 /**
- * Tipo del contexto de modales que expone toda la API
+ * Modal context type that exposes the entire API
  */
 type ModalContextType = {
   open: (node: React.ReactNode) => number
@@ -38,15 +38,15 @@ type ModalContextType = {
   topId: number | null
 }
 
-// Contextos de React
+// React contexts
 const ModalContext = createContext<ModalContextType | null>(null)
 const ModalIdContext = createContext<number | null>(null)
 
-// Contador global para IDs únicos
+// Global counter for unique IDs
 let _id = 0
 
 /**
- * Provider principal que maneja la pila de modales y expone la API
+ * Main provider that manages the modal stack and exposes the API
  */
 export function ModalProvider({
   children,
@@ -58,7 +58,7 @@ export function ModalProvider({
   const [stack, setStack] = useState<ModalItem[]>([])
 
   /**
-   * Abre un modal con contenido React arbitrario
+   * Opens a modal with arbitrary React content
    */
   const open = useCallback((node: React.ReactNode) => {
     const id = ++_id
@@ -67,7 +67,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Abre un modal y retorna una promesa tipada con el resultado
+   * Opens a modal and returns a typed promise with the result
    */
   const openAsync = useCallback(<T,>(node: React.ReactNode) => {
     const id = ++_id
@@ -77,7 +77,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Resuelve un modal específico con un valor tipado
+   * Resolves a specific modal with a typed value
    */
   const resolve = useCallback(<T,>(id: number, value: T) => {
     setStack(s => {
@@ -88,7 +88,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Rechaza un modal específico con un error
+   * Rejects a specific modal with an error
    */
   const reject = useCallback((id: number, reason?: unknown) => {
     setStack(s => {
@@ -99,7 +99,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Cierra un modal específico o el último si no se especifica ID
+   * Closes a specific modal or the last one if no ID is specified
    */
   const close = useCallback((id?: number) => {
     setStack(s => {
@@ -112,7 +112,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Cierra todos los modales abiertos
+   * Closes all open modals
    */
   const closeAll = useCallback(() => {
     setStack(s => {
@@ -122,7 +122,7 @@ export function ModalProvider({
   }, [])
 
   /**
-   * Abre un diálogo de confirmación estándar
+   * Opens a standard confirmation dialog
    */
   const confirm = useCallback((opts: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
@@ -136,7 +136,7 @@ export function ModalProvider({
     })
   }, [])
 
-  // Auto-cierre al navegar con Inertia (opcional)
+  // Auto-close when navigating with Inertia (optional)
   useEffect(() => {
     if (!autoCloseOnNavigate) return
     const unsubs = [router.on('before', () => closeAll())]
@@ -156,14 +156,14 @@ export function ModalProvider({
 }
 
 /**
- * Componente que proporciona el ID del modal actual a sus hijos
+ * Component that provides the current modal ID to its children
  */
 function ModalScope({ id, children }: { id: number; children: React.ReactNode }) {
   return <ModalIdContext.Provider value={id}>{children}</ModalIdContext.Provider>
 }
 
 /**
- * Hook principal para usar el sistema de modales
+ * Main hook for using the modal system
  */
 export function useModal() {
   const ctx = useContext(ModalContext)
@@ -172,7 +172,7 @@ export function useModal() {
 }
 
 /**
- * Hook para obtener el ID del modal actual (solo funciona dentro de un modal)
+ * Hook to get the current modal ID (only works inside a modal)
  */
 export function useCurrentModalId() {
   const id = useContext(ModalIdContext)
@@ -181,7 +181,7 @@ export function useCurrentModalId() {
 }
 
 /**
- * Componente que renderiza la pila de modales
+ * Component that renders the modal stack
  */
 function ModalRoot({ stack, onCloseId }: { stack: ModalItem[]; onCloseId: (id: number) => void }) {
   return (
