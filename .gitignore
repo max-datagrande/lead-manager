@@ -6,7 +6,9 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/backups
 /vendor
+/docs
 .env
 .env.backup
 .env.production
@@ -22,3 +24,4 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/.trae
