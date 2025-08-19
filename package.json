@@ -13,9 +13,9 @@
     "format:all": "prettier --write **/*.{php,js,jsx,ts,tsx}"
   },
   "devDependencies": {
+    "@eslint/js": "^9.33.0",
     "@prettier/plugin-php": "^0.24.0",
     "@types/node": "^22.13.5",
-    "@eslint/js": "^9.33.0",
     "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
@@ -55,6 +55,7 @@
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.0.1",
     "tailwindcss": "^4.0.0",
     "tailwindcss-animate": "^1.0.7",
