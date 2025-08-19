@@ -11,7 +11,18 @@ createServer((page) =>
     page,
     render: ReactDOMServer.renderToString,
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
+    resolve: async (name) => {
+      const pages = {
+        ...import.meta.glob('./pages/**/*.tsx'),
+        ...import.meta.glob('./pages/**/*.jsx'),
+      };
+      // Primero intenta resolver como .tsx, luego como .jsx
+      try {
+        return await resolvePageComponent(`./pages/${name}.tsx`, pages);
+      } catch {
+        return await resolvePageComponent(`./pages/${name}.jsx`, pages);
+      }
+    },
     setup: ({ App, props }) => {
       /* eslint-disable */
       // @ts-expect-error
