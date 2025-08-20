@@ -1,0 +1,165 @@
+<?php
+
+namespace App\Services\TrafficLog;
+
+use App\Models\TrafficLog;
+use App\Services\BotDetectorService;
+use App\Services\GeolocationService;
+use Illuminate\Http\Request;
+use Maxidev\Logger\TailLogger;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+/**
+ * Exception personalizada para errores en creación de traffic logs
+ */
+class TrafficLogCreationException extends \Exception {}
+
+/**
+ * Servicio principal para manejo de traffic logs
+ *
+ * Coordina todos los servicios especializados para crear registros de tráfico
+ * completos con detección de bots, geolocalización, análisis de fuentes y fingerprinting
+ */
+class TrafficLogService
+{
+  private ?TrafficLog $currentVisitor = null;
+
+  public function __construct(
+    private TrafficSourceAnalyzerService $trafficSourceAnalyzer,
+    private DeviceDetectionService $deviceDetectionService,
+    private FingerprintGeneratorService $fingerprintGenerator,
+    private BotDetectorService $botDetectorService,
+    private GeolocationService $geolocationService,
+    protected Request $request,
+  ) {}
+
+  /**
+   * Crea un nuevo traffic log con todos los datos procesados
+   *
+   * @param array $data Datos validados del request
+   * @return TrafficLog
+   * @throws TrafficLogCreationException
+   */
+  public function createTrafficLog(array $data): TrafficLog
+  {
+    try {
+      // Generar fingerprint único
+      $userAgent = $data['user_agent'];
+      $ip = $this->request->geoService()->getIpAddress();
+      $landingOrigin = $this->request->header('origin') ?? '';
+      $landingHost = parse_url($landingOrigin, PHP_URL_HOST);
+      $currentPagePath = $data['current_page'];
+      $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
+      TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
+
+      // Verificar duplicados recientes (últimos 5 minutos)
+      $existingTraffic = $this->getExistingTraffic($fingerprint);
+      if ($existingTraffic) {
+        $this->currentVisitor = $existingTraffic;
+        // Incrementar visit_count para tráfico duplicado
+        $existingTraffic->increment('visit_count');
+
+        TailLogger::saveLog("Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}", 'traffic-log/store', 'info', [
+          'fingerprint' => $fingerprint,
+          'visit_count' => $existingTraffic->visit_count,
+          'id' => $existingTraffic->id
+        ]);
+        return $existingTraffic;
+      }
+      //Creating new visitor
+      $newTraffic = new TrafficLog();
+      $newTraffic->id = (string) Str::uuid();//Id unico generado
+      $newTraffic->fingerprint = $fingerprint;
+      $newTraffic->user_agent = $userAgent;
+      $newTraffic->ip_address = $ip;
+      $newTraffic->visit_date = date('Y-m-d');
+      $newTraffic->visit_count = 1;
+      // Detectar si es bot (solo si no se especificó en el request)
+      $newTraffic->is_bot = $data['is_bot'] ?? $this->botDetectorService->detectBot($userAgent);
+
+      //Device detection
+      $deviceInfo = $this->deviceDetectionService->detectDevice($userAgent);
+      $newTraffic->device_type = $deviceInfo['deviceType'];
+      $newTraffic->browser = $deviceInfo['browser'];
+      $newTraffic->os = $deviceInfo['os'];
+
+      //Referer
+      $landingReferer = $data['referer'] ?? null;
+      $newTraffic->referrer = $landingReferer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
+      //Host origin
+      $newTraffic->host = $landingHost;
+      //Page visited
+      $newTraffic->path_visited = $currentPagePath;
+      //Query Params on page
+      $queryParams = $data['query_params'] ?? null;
+      $newTraffic->query_params = $queryParams;
+      // S1-S4
+      $newTraffic->s1 = $data['s1'] ?? $queryParams['s1'] ?? null;
+      $newTraffic->s2 = $data['s2'] ?? $queryParams['s2'] ?? null;
+      $newTraffic->s3 = $data['s3'] ?? $queryParams['s3'] ?? null;
+      $newTraffic->s4 = $data['s4'] ?? $queryParams['s4'] ?? null;
+
+      //Campaign Code
+      $newTraffic->campaign_code = $queryParams['cptype'] ?? null;
+      //Campaign ID
+      $newTraffic->campaign_id = $queryParams['campaign_id'] ?? null;
+      //Click ID
+      $newTraffic->click_id = $queryParams['click_id'] ?? null;
+
+      // Analizar fuente de tráfico
+      $trafficSource = $this->trafficSourceAnalyzer->analyze($landingReferer, $queryParams, $landingHost);
+      $newTraffic->traffic_source = $trafficSource['traffic_source'];
+      $newTraffic->traffic_medium = $trafficSource['traffic_medium'];
+      // Obtener geolocalización
+      $geolocation = $this->geolocationService->getGeolocation();
+      $newTraffic->country_code = $geolocation['country'] ?? null;
+      $newTraffic->state = $geolocation['region'] ?? null;
+      $newTraffic->city = $geolocation['city'] ?? null;
+      $newTraffic->postal_code = $geolocation['postal'] ?? null;
+
+      // Crear el registro en la base de datos
+      $newTraffic->save();
+      TailLogger::saveLog('Traffic log creado exitosamente', 'traffic-log/store', 'info', [
+        'id' => $newTraffic->id,
+        'fingerprint' => $newTraffic->fingerprint,
+        'traffic_source' => $newTraffic->traffic_source,
+        'is_bot' => $newTraffic->is_bot,
+      ]);
+      $this->currentVisitor = $newTraffic;
+      return $newTraffic;
+    } catch (\Exception $e) {
+      TailLogger::saveLog('Error inesperado en creación de traffic log: ' . $e->getMessage(), 'traffic-log/store', 'error', [
+        'data' => $data,
+        'error' => $e->getTraceAsString(),
+      ]);
+      throw new TrafficLogCreationException('Failed to create traffic log: ' . $e->getMessage(), 0, $e);
+    }
+  }
+
+  /**
+   * Obtiene el tráfico existente si existe duplicado reciente
+   *
+   * @param string $fingerprint
+   * @return TrafficLog|null
+   */
+  private function getExistingTraffic(string $fingerprint): ?TrafficLog
+  {
+    try {
+      return TrafficLog::where('fingerprint', $fingerprint)
+        ->first();
+    } catch (\Exception $e) {
+      TailLogger::saveLog("Error verificando tráfico duplicado de: $fingerprint" . $e->getMessage(), 'traffic-log/store', 'warning');
+      return null;
+    }
+  }
+
+  /**
+   * Obtiene el tráfico actual del usuario
+   *
+   * @return TrafficLog|null
+   */
+  public function getCurrentVisitor(): ?TrafficLog
+  {
+    return $this->currentVisitor;
+  }
+}
