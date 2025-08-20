@@ -4,7 +4,7 @@
     "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
     "This file is @generated automatically"
   ],
-  "content-hash": "747ec66107abd35ddcaa00fa0878e9ed",
+  "content-hash": "4b266faec7f07808e9535df179305dfe",
   "packages": [
     {
       "name": "brick/math",
@@ -1124,6 +1124,141 @@
       "time": "2025-08-12T15:57:22+00:00"
     },
     {
+      "name": "jaybizzle/crawler-detect",
+      "version": "v1.3.5",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/JayBizzle/Crawler-Detect.git",
+        "reference": "fbf1a3e81d61b088e7af723fb3c7a4ee92ac7e34"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/JayBizzle/Crawler-Detect/zipball/fbf1a3e81d61b088e7af723fb3c7a4ee92ac7e34",
+        "reference": "fbf1a3e81d61b088e7af723fb3c7a4ee92ac7e34",
+        "shasum": ""
+      },
+      "require": {
+        "php": ">=7.1.0"
+      },
+      "require-dev": {
+        "phpunit/phpunit": "^4.8|^5.5|^6.5|^9.4"
+      },
+      "type": "library",
+      "autoload": {
+        "psr-4": {
+          "Jaybizzle\\CrawlerDetect\\": "src/"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "Mark Beech",
+          "email": "m@rkbee.ch",
+          "role": "Developer"
+        }
+      ],
+      "description": "CrawlerDetect is a PHP class for detecting bots/crawlers/spiders via the user agent",
+      "homepage": "https://github.com/JayBizzle/Crawler-Detect/",
+      "keywords": [
+        "crawler",
+        "crawler detect",
+        "crawler detector",
+        "crawlerdetect",
+        "php crawler detect"
+      ],
+      "support": {
+        "issues": "https://github.com/JayBizzle/Crawler-Detect/issues",
+        "source": "https://github.com/JayBizzle/Crawler-Detect/tree/v1.3.5"
+      },
+      "time": "2025-06-11T17:58:05+00:00"
+    },
+    {
+      "name": "jenssegers/agent",
+      "version": "v2.6.4",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/jenssegers/agent.git",
+        "reference": "daa11c43729510b3700bc34d414664966b03bffe"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/jenssegers/agent/zipball/daa11c43729510b3700bc34d414664966b03bffe",
+        "reference": "daa11c43729510b3700bc34d414664966b03bffe",
+        "shasum": ""
+      },
+      "require": {
+        "jaybizzle/crawler-detect": "^1.2",
+        "mobiledetect/mobiledetectlib": "^2.7.6",
+        "php": ">=5.6"
+      },
+      "require-dev": {
+        "php-coveralls/php-coveralls": "^2.1",
+        "phpunit/phpunit": "^5.0|^6.0|^7.0"
+      },
+      "suggest": {
+        "illuminate/support": "Required for laravel service providers"
+      },
+      "type": "library",
+      "extra": {
+        "laravel": {
+          "aliases": {
+            "Agent": "Jenssegers\\Agent\\Facades\\Agent"
+          },
+          "providers": [
+            "Jenssegers\\Agent\\AgentServiceProvider"
+          ]
+        },
+        "branch-alias": {
+          "dev-master": "3.0-dev"
+        }
+      },
+      "autoload": {
+        "psr-4": {
+          "Jenssegers\\Agent\\": "src/"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "Jens Segers",
+          "homepage": "https://jenssegers.com"
+        }
+      ],
+      "description": "Desktop/mobile user agent parser with support for Laravel, based on Mobiledetect",
+      "homepage": "https://github.com/jenssegers/agent",
+      "keywords": [
+        "Agent",
+        "browser",
+        "desktop",
+        "laravel",
+        "mobile",
+        "platform",
+        "user agent",
+        "useragent"
+      ],
+      "support": {
+        "issues": "https://github.com/jenssegers/agent/issues",
+        "source": "https://github.com/jenssegers/agent/tree/v2.6.4"
+      },
+      "funding": [
+        {
+          "url": "https://github.com/jenssegers",
+          "type": "github"
+        },
+        {
+          "url": "https://tidelift.com/funding/github/packagist/jenssegers/agent",
+          "type": "tidelift"
+        }
+      ],
+      "time": "2020-06-13T08:05:20+00:00"
+    },
+    {
       "name": "laravel/framework",
       "version": "v12.25.0",
       "source": {
@@ -2143,6 +2278,76 @@
       "time": "2024-12-08T08:18:47+00:00"
     },
     {
+      "name": "matomo/device-detector",
+      "version": "6.4.6",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/matomo-org/device-detector.git",
+        "reference": "6f07f615199851548db47a900815d2ea2cdcde08"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/matomo-org/device-detector/zipball/6f07f615199851548db47a900815d2ea2cdcde08",
+        "reference": "6f07f615199851548db47a900815d2ea2cdcde08",
+        "shasum": ""
+      },
+      "require": {
+        "mustangostang/spyc": "*",
+        "php": "^7.2|^8.0"
+      },
+      "replace": {
+        "piwik/device-detector": "self.version"
+      },
+      "require-dev": {
+        "matthiasmullie/scrapbook": "^1.4.7",
+        "mayflower/mo4-coding-standard": "^v9.0.0",
+        "phpstan/phpstan": "^1.10.44",
+        "phpunit/phpunit": "^8.5.8",
+        "psr/cache": "^1.0.1",
+        "psr/simple-cache": "^1.0.1",
+        "slevomat/coding-standard": "<8.16.0",
+        "symfony/yaml": "^5.1.7"
+      },
+      "suggest": {
+        "doctrine/cache": "Can directly be used for caching purpose",
+        "ext-yaml": "Necessary for using the Pecl YAML parser"
+      },
+      "type": "library",
+      "autoload": {
+        "psr-4": {
+          "DeviceDetector\\": ""
+        },
+        "exclude-from-classmap": [
+          "Tests/"
+        ]
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "LGPL-3.0-or-later"
+      ],
+      "authors": [
+        {
+          "name": "The Matomo Team",
+          "email": "hello@matomo.org",
+          "homepage": "https://matomo.org/team/"
+        }
+      ],
+      "description": "The Universal Device Detection library, that parses User Agents and detects devices (desktop, tablet, mobile, tv, cars, console, etc.), clients (browsers, media players, mobile apps, feed readers, libraries, etc), operating systems, devices, brands and models.",
+      "homepage": "https://matomo.org",
+      "keywords": [
+        "devicedetection",
+        "parser",
+        "useragent"
+      ],
+      "support": {
+        "forum": "https://forum.matomo.org/",
+        "issues": "https://github.com/matomo-org/device-detector/issues",
+        "source": "https://github.com/matomo-org/matomo",
+        "wiki": "https://dev.matomo.org/"
+      },
+      "time": "2025-06-10T10:00:59+00:00"
+    },
+    {
       "name": "maxidev/tail-logger",
       "version": "v1.0.0",
       "source": {
@@ -2190,6 +2395,68 @@
         "source": "https://github.com/maxidevs/tail-logger/tree/v1.0.0"
       },
       "time": "2025-05-17T20:26:34+00:00"
+    },
+    {
+      "name": "mobiledetect/mobiledetectlib",
+      "version": "2.8.45",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/serbanghita/Mobile-Detect.git",
+        "reference": "96aaebcf4f50d3d2692ab81d2c5132e425bca266"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/serbanghita/Mobile-Detect/zipball/96aaebcf4f50d3d2692ab81d2c5132e425bca266",
+        "reference": "96aaebcf4f50d3d2692ab81d2c5132e425bca266",
+        "shasum": ""
+      },
+      "require": {
+        "php": ">=5.0.0"
+      },
+      "require-dev": {
+        "phpunit/phpunit": "~4.8.36"
+      },
+      "type": "library",
+      "autoload": {
+        "psr-0": {
+          "Detection": "namespaced/"
+        },
+        "classmap": [
+          "Mobile_Detect.php"
+        ]
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "Serban Ghita",
+          "email": "serbanghita@gmail.com",
+          "homepage": "http://mobiledetect.net",
+          "role": "Developer"
+        }
+      ],
+      "description": "Mobile_Detect is a lightweight PHP class for detecting mobile devices. It uses the User-Agent string combined with specific HTTP headers to detect the mobile environment.",
+      "homepage": "https://github.com/serbanghita/Mobile-Detect",
+      "keywords": [
+        "detect mobile devices",
+        "mobile",
+        "mobile detect",
+        "mobile detector",
+        "php mobile detect"
+      ],
+      "support": {
+        "issues": "https://github.com/serbanghita/Mobile-Detect/issues",
+        "source": "https://github.com/serbanghita/Mobile-Detect/tree/2.8.45"
+      },
+      "funding": [
+        {
+          "url": "https://github.com/serbanghita",
+          "type": "github"
+        }
+      ],
+      "time": "2023-11-07T21:57:25+00:00"
     },
     {
       "name": "monolog/monolog",
@@ -2293,6 +2560,60 @@
         }
       ],
       "time": "2025-03-24T10:02:05+00:00"
+    },
+    {
+      "name": "mustangostang/spyc",
+      "version": "0.6.3",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/mustangostang/spyc.git",
+        "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/mustangostang/spyc/zipball/4627c838b16550b666d15aeae1e5289dd5b77da0",
+        "reference": "4627c838b16550b666d15aeae1e5289dd5b77da0",
+        "shasum": ""
+      },
+      "require": {
+        "php": ">=5.3.1"
+      },
+      "require-dev": {
+        "phpunit/phpunit": "4.3.*@dev"
+      },
+      "type": "library",
+      "extra": {
+        "branch-alias": {
+          "dev-master": "0.5.x-dev"
+        }
+      },
+      "autoload": {
+        "files": [
+          "Spyc.php"
+        ]
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "MIT"
+      ],
+      "authors": [
+        {
+          "name": "mustangostang",
+          "email": "vlad.andersen@gmail.com"
+        }
+      ],
+      "description": "A simple YAML loader/dumper class for PHP",
+      "homepage": "https://github.com/mustangostang/spyc/",
+      "keywords": [
+        "spyc",
+        "yaml",
+        "yml"
+      ],
+      "support": {
+        "issues": "https://github.com/mustangostang/spyc/issues",
+        "source": "https://github.com/mustangostang/spyc/tree/0.6.3"
+      },
+      "time": "2019-09-10T13:16:29+00:00"
     },
     {
       "name": "nesbot/carbon",
@@ -4442,7 +4763,7 @@
     },
     {
       "name": "symfony/polyfill-ctype",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-ctype.git",
@@ -4501,7 +4822,7 @@
         "portable"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-ctype/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-ctype/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4513,6 +4834,10 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
@@ -4521,16 +4846,16 @@
     },
     {
       "name": "symfony/polyfill-intl-grapheme",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-intl-grapheme.git",
-        "reference": "b9123926e3b7bc2f98c02ad54f6a4b02b91a8abe"
+        "reference": "380872130d3a5dd3ace2f4010d95125fde5d5c70"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/symfony/polyfill-intl-grapheme/zipball/b9123926e3b7bc2f98c02ad54f6a4b02b91a8abe",
-        "reference": "b9123926e3b7bc2f98c02ad54f6a4b02b91a8abe",
+        "url": "https://api.github.com/repos/symfony/polyfill-intl-grapheme/zipball/380872130d3a5dd3ace2f4010d95125fde5d5c70",
+        "reference": "380872130d3a5dd3ace2f4010d95125fde5d5c70",
         "shasum": ""
       },
       "require": {
@@ -4579,7 +4904,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-intl-grapheme/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-intl-grapheme/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4591,15 +4916,19 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
       ],
-      "time": "2024-09-09T11:45:10+00:00"
+      "time": "2025-06-27T09:58:17+00:00"
     },
     {
       "name": "symfony/polyfill-intl-idn",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-intl-idn.git",
@@ -4662,7 +4991,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-intl-idn/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-intl-idn/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4674,6 +5003,10 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
@@ -4682,7 +5015,7 @@
     },
     {
       "name": "symfony/polyfill-intl-normalizer",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-intl-normalizer.git",
@@ -4743,7 +5076,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-intl-normalizer/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4755,6 +5088,10 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
@@ -4763,7 +5100,7 @@
     },
     {
       "name": "symfony/polyfill-mbstring",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-mbstring.git",
@@ -4824,7 +5161,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4836,6 +5173,10 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
@@ -4844,7 +5185,7 @@
     },
     {
       "name": "symfony/polyfill-php80",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-php80.git",
@@ -4904,7 +5245,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-php80/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-php80/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4916,6 +5257,10 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
@@ -4924,16 +5269,16 @@
     },
     {
       "name": "symfony/polyfill-php83",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-php83.git",
-        "reference": "2fb86d65e2d424369ad2905e83b236a8805ba491"
+        "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/2fb86d65e2d424369ad2905e83b236a8805ba491",
-        "reference": "2fb86d65e2d424369ad2905e83b236a8805ba491",
+        "url": "https://api.github.com/repos/symfony/polyfill-php83/zipball/17f6f9a6b1735c0f163024d959f700cfbc5155e5",
+        "reference": "17f6f9a6b1735c0f163024d959f700cfbc5155e5",
         "shasum": ""
       },
       "require": {
@@ -4980,7 +5325,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-php83/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-php83/tree/v1.33.0"
       },
       "funding": [
         {
@@ -4992,24 +5337,28 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
       ],
-      "time": "2024-09-09T11:45:10+00:00"
+      "time": "2025-07-08T02:45:35+00:00"
     },
     {
       "name": "symfony/polyfill-php84",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-php84.git",
-        "reference": "000df7860439609837bbe28670b0be15783b7fbf"
+        "reference": "d8ced4d875142b6a7426000426b8abc631d6b191"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/symfony/polyfill-php84/zipball/000df7860439609837bbe28670b0be15783b7fbf",
-        "reference": "000df7860439609837bbe28670b0be15783b7fbf",
+        "url": "https://api.github.com/repos/symfony/polyfill-php84/zipball/d8ced4d875142b6a7426000426b8abc631d6b191",
+        "reference": "d8ced4d875142b6a7426000426b8abc631d6b191",
         "shasum": ""
       },
       "require": {
@@ -5056,7 +5405,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-php84/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-php84/tree/v1.33.0"
       },
       "funding": [
         {
@@ -5068,24 +5417,28 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
       ],
-      "time": "2025-02-20T12:04:08+00:00"
+      "time": "2025-06-24T13:30:11+00:00"
     },
     {
       "name": "symfony/polyfill-php85",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-php85.git",
-        "reference": "6fedf31ce4e3648f4ff5ca58bfd53127d38f05fd"
+        "reference": "d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91"
       },
       "dist": {
         "type": "zip",
-        "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/6fedf31ce4e3648f4ff5ca58bfd53127d38f05fd",
-        "reference": "6fedf31ce4e3648f4ff5ca58bfd53127d38f05fd",
+        "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91",
+        "reference": "d4e5fcd4ab3d998ab16c0db48e6cbb9a01993f91",
         "shasum": ""
       },
       "require": {
@@ -5132,7 +5485,7 @@
         "shim"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-php85/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-php85/tree/v1.33.0"
       },
       "funding": [
         {
@@ -5144,15 +5497,19 @@
           "type": "github"
         },
         {
+          "url": "https://github.com/nicolas-grekas",
+          "type": "github"
+        },
+        {
           "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
           "type": "tidelift"
         }
       ],
-      "time": "2025-05-02T08:40:52+00:00"
+      "time": "2025-06-23T16:12:55+00:00"
     },
     {
       "name": "symfony/polyfill-uuid",
-      "version": "v1.32.0",
+      "version": "v1.33.0",
       "source": {
         "type": "git",
         "url": "https://github.com/symfony/polyfill-uuid.git",
@@ -5211,7 +5568,7 @@
         "uuid"
       ],
       "support": {
-        "source": "https://github.com/symfony/polyfill-uuid/tree/v1.32.0"
+        "source": "https://github.com/symfony/polyfill-uuid/tree/v1.33.0"
       },
       "funding": [
         {
@@ -5220,6 +5577,10 @@
         },
         {
           "url": "https://github.com/fabpot",
+          "type": "github"
+        },
+        {
+          "url": "https://github.com/nicolas-grekas",
           "type": "github"
         },
         {
