@@ -28,7 +28,6 @@ function formatVisitDate(d) {
 
 function getSortState(sortData) {
   const data = [{ id: sortData.split(':')[0], desc: sortData.endsWith(':desc') }];
-  console.log(data);
   return data;
 }
 
