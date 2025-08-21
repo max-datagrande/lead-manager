@@ -45,11 +45,7 @@ class TrafficController extends Controller
         $w->where('fingerprint', 'like', $like)
           ->orWhere('ip_address', 'like', $like)
           ->orWhere('host', 'like', $like)
-          ->orWhere('city', 'like', $like)
-          ->orWhere('state', 'like', $like)
-          ->orWhere('country_code', 'like', $like)
-          ->orWhere('browser', 'like', $like)
-          ->orWhere('os', 'like', $like)
+          ->orWhere('path_visited', 'like', $like)
           ->orWhere('traffic_source', 'like', $like);
       });
     }
@@ -58,10 +54,15 @@ class TrafficController extends Controller
     foreach ($filters as $f) {
       $id = $f['id'] ?? null;
       $val = $f['value'] ?? null;
-      if ($val === null || $val === '') continue;
+      if ($val === null || $val === '' || (is_array($val) && empty($val))) continue;
+      
       switch ($id) {
         case 'traffic_source':
-          $q->where('traffic_source', $val);
+          if (is_array($val)) {
+            $q->whereIn('traffic_source', $val);
+          } else {
+            $q->where('traffic_source', $val);
+          }
           break;
         case 'country_code':
           $q->where('country_code', strtoupper($val));
@@ -70,16 +71,34 @@ class TrafficController extends Controller
           $q->where('is_bot', (int) $val);
           break;
         case 'device_type':
-          $q->where('device_type', $val);
+          if (is_array($val)) {
+            $q->whereIn('device_type', $val);
+          } else {
+            $q->where('device_type', $val);
+          }
           break;
         case 'browser':
-          $q->where('browser', 'like', "%{$val}%");
+          if (is_array($val)) {
+            $q->where(function($query) use ($val) {
+              foreach ($val as $browser) {
+                $query->orWhere('browser', 'like', "%{$browser}%");
+              }
+            });
+          } else {
+            $q->where('browser', 'like', "%{$val}%");
+          }
           break;
         case 'os':
           $q->where('os', 'like', "%{$val}%");
           break;
         case 'host':
           $q->where('host', 'like', "%{$val}%");
+          break;
+        case 'state':
+          $q->where('state', 'like', "%{$val}%");
+          break;
+        case 'city':
+          $q->where('city', 'like', "%{$val}%");
           break;
         case 'visit_date_from':
           $q->whereDate('visit_date', '>=', $val);
