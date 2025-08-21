@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatDateTime, formatDateTimeUTC, getSortState, serializeSort } from '@/utils/table';
 import { Link, router, usePage } from '@inertiajs/react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactCountryFlag from 'react-country-flag';
 import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
@@ -26,7 +26,9 @@ const columns = [
   {
     accessorKey: 'fingerprint',
     header: 'Fingerprint',
-    cell: ({ row }) => <FingerprintCell fingerprint={row.original.fingerprint} />,
+    cell: ({ row }) => {
+      return <FingerprintCell fingerprint={row.original.fingerprint} />;
+    },
     enableSorting: false,
   },
   { accessorKey: 'visit_date', header: 'Visit Date' },
@@ -132,7 +134,7 @@ export const TableVisitors = () => {
       firstRender.current = false;
       return;
     }
-    console.log("Ejecutando");
+    console.log('Ejecutando');
     const url = route('visitors.index');
     const data = {
       page: pageIndex + 1,
@@ -241,9 +243,9 @@ export const TableVisitors = () => {
             )}
             {table.getRowModel().rows.map((r) => (
               <TableRow key={r.id}>
-                {r.getVisibleCells().map((c) => (
-                  <TableCell key={c.id} className="p-2">
-                    {c.getValue()}
+                {r.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id} className="p-2">
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>
