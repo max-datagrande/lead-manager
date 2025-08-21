@@ -123,9 +123,8 @@ class TrafficController extends Controller
     $page = (int) $req->input('page', 1);
     $queryParams = $req->query();
     $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
-    $items = $p->items();
     return Inertia::render('Visitors/Index', [
-      'visitors' => $items,
+      'data' => $p,
       'meta' => [
         'total' => $p->total(),
         'per_page' => $p->perPage(),
