@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\TrafficLog;
-
+use Illuminate\Http\Request;
 class TrafficController extends Controller
 {
   /**
@@ -13,12 +12,10 @@ class TrafficController extends Controller
    *
    * @description Muestra una lista paginada de visitantes con información básica
    */
-  public function index()
+  public function index(Request $req)
   {
-    $perPage = 15;
-
     // Seleccionamos solo las columnas necesarias para optimizar la consulta
-    $visitorsQuery = TrafficLog::select([
+    $q = TrafficLog::select([
       'id',
       'fingerprint',
       'visit_date',
@@ -40,17 +37,110 @@ class TrafficController extends Controller
       'updated_at'
     ]);
 
-    // Ordenamos por fecha de creación descendente para mostrar los más recientes primero
-    $visitorsQuery->orderBy('created_at', 'desc');
+    // --- BÚSQUEDA GLOBAL (opcional) ---
+    $search = trim((string) $req->input('search', ''));
+    if ($search !== '') {
+      $q->where(function ($w) use ($search) {
+        $like = "%{$search}%";
+        $w->where('fingerprint', 'like', $like)
+          ->orWhere('ip_address', 'like', $like)
+          ->orWhere('host', 'like', $like)
+          ->orWhere('city', 'like', $like)
+          ->orWhere('state', 'like', $like)
+          ->orWhere('country_code', 'like', $like)
+          ->orWhere('browser', 'like', $like)
+          ->orWhere('os', 'like', $like)
+          ->orWhere('traffic_source', 'like', $like);
+      });
+    }
+    // --- FILTROS POR COLUMNA ---
+    $filters = json_decode($req->input('filters', '[]'), true) ?? [];
+    foreach ($filters as $f) {
+      $id = $f['id'] ?? null;
+      $val = $f['value'] ?? null;
+      if ($val === null || $val === '') continue;
+      switch ($id) {
+        case 'traffic_source':
+          $q->where('traffic_source', $val);
+          break;
+        case 'country_code':
+          $q->where('country_code', strtoupper($val));
+          break;
+        case 'is_bot':
+          $q->where('is_bot', (int) $val);
+          break;
+        case 'device_type':
+          $q->where('device_type', $val);
+          break;
+        case 'browser':
+          $q->where('browser', 'like', "%{$val}%");
+          break;
+        case 'os':
+          $q->where('os', 'like', "%{$val}%");
+          break;
+        case 'host':
+          $q->where('host', 'like', "%{$val}%");
+          break;
+        case 'visit_date_from':
+          $q->whereDate('visit_date', '>=', $val);
+          break;
+        case 'visit_date_to':
+          $q->whereDate('visit_date', '<=', $val);
+          break;
+          // Agrega más filtros permitidos aquí
+      }
+    }
+    $allowedSort = [
+      'visit_date',
+      'created_at',
+      'updated_at',
+      'host',
+      'country_code',
+      'city',
+      'state',
+      'device_type',
+      'browser',
+      'os',
+      'traffic_source',
+      'visit_count',
+      'is_bot'
+    ];
 
-    // Paginamos los resultados
-    $visitors = $visitorsQuery->paginate($perPage);
+    $sort = $req->input('sort'); // ej: "created_at:desc"
 
-    // Añadimos los parámetros de consulta a los enlaces de paginación
-    $visitors->appends(request()->query());
-
+    if ($sort) {
+      [$col, $dir] = get_sort_data($sort);
+      $isAllowSorting = in_array($col, $allowedSort, true);
+      if ($isAllowSorting) {
+        $q->orderBy($col, $dir);
+      }
+    } else {
+      $q->orderByDesc('created_at'); //Sort por defecto
+    }
+    // --- PAGINACIÓN ---
+    $perPage = (int) $req->input('per_page', 10);
+    $perPage = max(1, min($perPage, 100));
+    $page = (int) $req->input('page', 1);
+    $queryParams = $req->query();
+    $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
+    $items = $p->items();
     return Inertia::render('Visitors/Index', [
-      'visitors' => $visitors,
+      'visitors' => $items,
+      'meta' => [
+        'total' => $p->total(),
+        'per_page' => $p->perPage(),
+        'current_page' => $p->currentPage(),
+        'last_page' => $p->lastPage(),
+        'from' => $p->firstItem(),
+        'to' => $p->lastItem(),
+      ],
+      'state' => [
+        'search' => $search,
+        'filters' => $filters,
+        'sort' => $sort,
+        'page' => $page,
+        'per_page' => $perPage,
+      ],
     ]);
   }
 
