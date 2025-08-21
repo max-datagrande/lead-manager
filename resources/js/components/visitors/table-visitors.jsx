@@ -1,4 +1,4 @@
-import CellEmptyData from '@/components/table-empty-data';
+import { CellEmptyData } from '@/components/table-empty-data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import ReactCountryFlag from 'react-country-flag';
 import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
@@ -96,13 +96,14 @@ const columns = [
  */
 export const TableVisitors = () => {
   const { data, meta, state } = usePage().props;
-  const { links, data: visitors } = data;
+  const { data: visitors } = data;
   // --- Estados controlados que viajan al backend ---
   const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
   const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
   const [columnFilters, setColumnFilters] = useState(state.filters ?? []);
-  const [pageIndex, setPageIndex] = useState((state.page ?? 1) - 1);
-  const [pageSize, setPageSize] = useState(state.per_page ?? 10);
+  const [pageIndex] = useState((state.page ?? 1) - 1);
+  const [pageSize] = useState(state.per_page ?? 10);
+  const firstRender = useRef(true);
   function setFilter(id, value) {
     setColumnFilters((prev) => {
       const others = prev.filter((f) => f.id !== id);
@@ -127,6 +128,11 @@ export const TableVisitors = () => {
 
   // --- Navegación (debounce) ---
   const getRows = () => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    console.log("Ejecutando");
     const url = route('visitors.index');
     const data = {
       page: pageIndex + 1,
@@ -255,7 +261,7 @@ export const TableVisitors = () => {
             {data.links.map((link, index) => {
               if (link.label.includes('Previous')) {
                 return (
-                  <Button key={index} variant="outline" size="sm" dicsabled={!link.url} asChild={!!link.url}>
+                  <Button key={index} variant="outline" size="sm" disabled={!link.url} asChild={!!link.url}>
                     {link.url ? (
                       <Link href={link.url}>
                         <ChevronLeft className="h-4 w-4" />
