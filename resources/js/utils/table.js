@@ -10,7 +10,14 @@ function serializeSort(sorting) {
   const { id, desc } = sorting[0];
   return `${id}:${desc ? 'desc' : 'asc'}`;
 }
-
+function formatOnlyDate(d) {
+  if (!d) return '—';
+  return dayjs(d).format('YYYY-MM-DD');
+}
+function formatOnlyDateUTC(d) {
+  if (!d) return '—';
+  return dayjs(d).utc().format('YYYY-MM-DD [UTC]');
+}
 function formatDateTime(d) {
   if (!d) return '—';
   return dayjs(d).format('YYYY-MM-DD HH:mm');
@@ -32,4 +39,4 @@ function getSortState(sortData) {
 }
 
 
-export { formatDateTime, formatDateTimeUTC, formatVisitDate, getSortState, serializeSort };
+export { formatDateTime, formatDateTimeUTC, formatVisitDate, getSortState, serializeSort, formatOnlyDate, formatOnlyDateUTC };

@@ -3,12 +3,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatDateTime, formatDateTimeUTC, getSortState, serializeSort } from '@/utils/table';
+import { formatDateTime, formatDateTimeUTC, formatOnlyDate, formatOnlyDateUTC, getSortState, serializeSort } from '@/utils/table';
 import { Link, router, usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import dayjs from 'dayjs';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactCountryFlag from 'react-country-flag';
@@ -16,10 +13,6 @@ import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
 import FingerprintCell from './fingerprint-cell';
 import TrafficSourceBadge from './traffic-source-badge';
-
-// Configurar plugins de dayjs
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 // --- Columnas TanStack ---
 const columns = [
@@ -31,7 +24,18 @@ const columns = [
     },
     enableSorting: false,
   },
-  { accessorKey: 'visit_date', header: 'Visit Date' },
+  {
+    accessorKey: 'visit_date',
+    header: 'Visit Date',
+    cell: ({ row }) => {
+      return (
+        <div className="text-sm">
+          <div className="font-medium">{formatOnlyDate(row.original.visit_date)}</div>
+          <div className="text-xs text-gray-500">{formatOnlyDateUTC(row.original.visit_date)}</div>
+        </div>
+      );
+    },
+  },
   { accessorKey: 'city', header: 'City' },
   { accessorKey: 'state', header: 'State' },
   {
