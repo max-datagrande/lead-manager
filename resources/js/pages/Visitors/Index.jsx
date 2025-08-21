@@ -20,14 +20,12 @@ const Index = () => {
   const page = usePage();
   const { visitors } = page.props;
 
-  const hasData = visitors.data && visitors.data.length > 0;
-
   return (
     <>
       <Head title="Visitors" />
       <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
         <PageHeader title="Visitors" description="Manage visitors from our landing pages." />
-        {hasData ? <TableVisitors visitors={visitors} /> : <NoData />}
+        <TableVisitors data={visitors} />
       </div>
     </>
   );
