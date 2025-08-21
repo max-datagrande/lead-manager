@@ -43,7 +43,8 @@
     },
     "files": [
       "app/Helpers/device_helper.php",
-      "app/Helpers/session_helper.php"
+      "app/Helpers/session_helper.php",
+      "app/Helpers/table_helper.php"
     ]
   },
   "scripts": {
