@@ -17,7 +17,7 @@ class PostbackApiRequests extends Model
         'response_time_ms',
         'request_id',
         'related_type',
-        'related_id',
+        'postback_id',
     ];
 
     protected $casts = [
@@ -25,7 +25,7 @@ class PostbackApiRequests extends Model
         'response_data' => 'array',
         'status_code' => 'integer',
         'response_time_ms' => 'integer',
-        'related_id' => 'integer',
+        'postback_id' => 'integer',
     ];
 
     // Constantes para servicios
@@ -33,8 +33,13 @@ class PostbackApiRequests extends Model
     const SERVICE_OTHER_API = 'other_api';
 
     // Constantes para tipos relacionados
-    const RELATED_TYPE_POSTBACK = 'postback';
     const RELATED_TYPE_REPORT = 'report';
+    //Relations
+
+    public function postback()
+    {
+        return $this->belongsTo(Postback::class, 'postback_id');
+    }
 
     // Scopes
     public function scopeByService($query, $service)
