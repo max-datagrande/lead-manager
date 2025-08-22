@@ -1,9 +1,9 @@
-import { cn } from '@/lib/utils';
 import Paginator from '@/components/table/paginator';
 import TableRowEmpty from '@/components/table/table-row-empty';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import {
   formatDateTime,
   formatDateTimeUTC,
@@ -25,6 +25,7 @@ import TrafficSourceBadge from './traffic-source-badge';
 import { VisitorFilters } from './visitor-filters';
 
 import SelectColumnVisibility from '@/components/table/select-column-visibility';
+import { ComboboxUnique } from '@/components/filters/combo-unique';
 import SortingIcon from '@/components/table/sorting-icon';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 
@@ -114,13 +115,16 @@ const columns = [
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = () => {
-  const { rows, meta, state } = usePage().props;
+  const { rows, meta, state, data } = usePage().props;
+  const filters = state.filters ?? [];
   const visitors = rows.data ?? [];
   const links = rows.links ?? [];
+  const { hosts } = data;
   // --- Estados controlados que viajan al backend ---
   const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
   const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
-  const [columnFilters, setColumnFilters] = useState(state.filters ?? []);
+  /* const [columnFilters, setColumnFilters] = useState(state.filters ?? []); */
+  const [columnFilters, setColumnFilters] = useState(filters);
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
@@ -131,7 +135,7 @@ export const TableVisitors = () => {
       const others = prev.filter((f) => f.id !== id);
       return value ? [...others, { id, value }] : others;
     });
-  }
+  };
 
   // Función para limpiar todos los filtros
   const handleClearFilters = () => {
@@ -143,7 +147,7 @@ export const TableVisitors = () => {
     columns,
     state: {
       sorting,
-      columnFilters,
+      columnFilters: columnFilters,
       pagination: { pageIndex, pageSize },
       globalFilter,
     },
@@ -186,21 +190,22 @@ export const TableVisitors = () => {
     <>
       {/* Filtros */}
       <div className="mb-4">
-        <div className="mb-4 flex justify-between">
+        <div className="mb-4 flex justify-between gap-2">
           {/* Global Search */}
           <Input placeholder="Search..." value={globalFilter ?? ''} onChange={(event) => setGlobalFilter(event.target.value)} className="max-w-sm" />
-          <DateRangePicker
-            onUpdate={(values) => console.log(values)}
-            align="start"
-            locale="en-US"
-            showCompare={false}
+          {/* Host */}
+          <ComboboxUnique
+            items={hosts}
+            label="Host"
+            onChange={(value) => {
+              setFilter('host', value);
+            }}
           />
+          {/* Date Range Picker */}
+          <DateRangePicker onUpdate={(values) => console.log(values)} align="start" locale="en-US" showCompare={false} />
           {/* Column Visibility */}
           <SelectColumnVisibility columns={table.getAllColumns()} />
         </div>
-
-        {/* Filtros Avanzados */}
-        <VisitorFilters columnFilters={columnFilters} onFiltersChange={setColumnFilters} onClearFilters={handleClearFilters} />
       </div>
       <div className="rounded-md border">
         <Table>
@@ -245,4 +250,3 @@ export const TableVisitors = () => {
     </>
   );
 };
-

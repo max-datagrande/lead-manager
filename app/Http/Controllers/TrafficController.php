@@ -142,6 +142,14 @@ class TrafficController extends Controller
     $page = (int) $req->input('page', 1);
     $queryParams = $req->query();
     $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
+
+    //Hosts
+    $hosts = TrafficLog::select('host')->distinct()->get()->map(function($item) {
+      return [
+        'value' => $item->host,
+        'label' => $item->host
+      ];
+    });
     return Inertia::render('Visitors/Index', [
       'rows' => $p,
       'meta' => [
@@ -159,6 +167,9 @@ class TrafficController extends Controller
         'page' => $page,
         'per_page' => $perPage,
       ],
+      'data' =>[
+        'hosts' => $hosts
+      ]
     ]);
   }
 
