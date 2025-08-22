@@ -65,6 +65,17 @@ class NaturalIntelligenceService
   }
 
   /**
+   * Obtiene reportes de conversiones de los últimos 3 días
+   */
+  public function getRecentConversionsReport(): array
+  {
+    $fromDate = now()->subDays(3)->format('Y-m-d');
+    $toDate = now()->format('Y-m-d');
+    
+    return $this->getConversionsReport($fromDate, $toDate);
+  }
+
+  /**
    * Obtiene reportes de conversiones desde NI API
    */
   public function getConversionsReport(string $fromDate, string $toDate): array
@@ -126,7 +137,72 @@ class NaturalIntelligenceService
   }
 
   /**
-   * Retorna el reporte buscado por clickid
+   * Busca un click específico en los reportes recientes y retorna el payout
+   */
+  public function getPayoutForClickId(string $clickId): ?float
+  {
+    try {
+      $reportResult = $this->getRecentConversionsReport();
+      
+      if (!$reportResult['success']) {
+        TailLogger::saveLog('NI Service: Error al obtener reporte reciente', 'api/ni', 'error', [
+          'clickId' => $clickId,
+          'error' => $reportResult['message'] ?? 'Unknown error'
+        ]);
+        return null;
+      }
+      
+      $conversions = $reportResult['data'] ?? [];
+      
+      if (empty($conversions)) {
+        TailLogger::saveLog('NI Service: No hay conversiones en el reporte', 'api/ni', 'warning', [
+          'clickId' => $clickId
+        ]);
+        return null;
+      }
+      
+      // Buscar la conversión por pub_param_1 (clickId)
+      $conversion = collect($conversions)->first(function ($item) use ($clickId) {
+        return isset($item['pub_param_1']) && $item['pub_param_1'] === $clickId;
+      });
+      
+      if (!$conversion) {
+        TailLogger::saveLog('NI Service: Click ID no encontrado en conversiones', 'api/ni', 'warning', [
+          'clickId' => $clickId,
+          'total_conversions' => count($conversions)
+        ]);
+        return null;
+      }
+      
+      $payout = $conversion['payout'] ?? null;
+      
+      if ($payout === null) {
+        TailLogger::saveLog('NI Service: Payout no disponible para click ID', 'api/ni', 'warning', [
+          'clickId' => $clickId,
+          'conversion' => $conversion
+        ]);
+        return null;
+      }
+      
+      TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
+        'clickId' => $clickId,
+        'payout' => $payout
+      ]);
+      
+      return (float) $payout;
+      
+    } catch (\Exception $e) {
+      TailLogger::saveLog('NI Service: Error al buscar payout para click ID', 'api/ni', 'error', [
+        'clickId' => $clickId,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+      return null;
+    }
+  }
+
+  /**
+   * Retorna el reporte buscado por clickid (método legacy)
    */
   public function getReportByClickId(string $clickId): array
   {
@@ -140,13 +216,13 @@ class NaturalIntelligenceService
     $clickIdReport = $report->first(function ($report) use ($clickId) {
       return $report['pub_param_1'] === $clickId;
     }, null);
-    if (!$report) {
+    if (!$clickIdReport) {
       throw new NaturalIntelligenceServiceException('Report not found with clickid: ' . $clickId);
     }
     return $clickIdReport;
   }
   /**
-   * Obtiene el payut de un reporte
+   * Obtiene el payout de un reporte (método legacy)
    */
   public function getReportPayout(string $clickId): ?string
   {
