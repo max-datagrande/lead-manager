@@ -79,10 +79,9 @@ class PostbackController extends Controller
         'offer_id' => $offerId,
         'clid' => $validated['clid']
       ]);
-
+      $clickId = $validated['clid'];
       // Despachar job para obtener payout de Natural Intelligence
-      ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
-
+      ProcessPostbackJob::dispatch($postback->id, $clickId);
       return response()->json([
         'success' => true,
         'message' => 'Postback received and queued for processing',
@@ -90,7 +89,7 @@ class PostbackController extends Controller
           'postback_id' => $postback->id,
           'vendor' => $vendor,
           'status' => $postback->status,
-          'clid' => $validated['clid']
+          'clid' => $clickId
         ]
       ], 200);
 
