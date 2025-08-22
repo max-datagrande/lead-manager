@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\TrafficLogController;
+use App\Http\Controllers\Api\PostbackController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -21,20 +22,7 @@ Route::middleware(['auth.host'])->group(function () {
   });
 });
 
-Route::get('/user', function (Request $request) {
-  return $request->user();
-})->middleware('auth:sanctum');
-
-
-/*
-// Natural Intelligence Postback Routes
-Route::prefix('v1/postback')->group(function () {
-  Route::post('/ni', [\App\Http\Controllers\Api\NaturalIntelligenceController::class, 'postback'])
-    ->name('api.ni.postback');
+Route::prefix('postback')->group(function () {
+  Route::get('/conv', [PostbackController::class, 'store'])
+    ->name('api.postback.store');
 });
-
-// Optional: Admin routes for NI reports (protected)
-Route::middleware(['auth:sanctum'])->prefix('v1/admin/ni')->group(function () {
-  Route::get('/report', [\App\Http\Controllers\Api\NaturalIntelligenceController::class, 'getReport'])
-    ->name('api.ni.report');
-}); */
