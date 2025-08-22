@@ -4,30 +4,24 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import {
-  formatDateTime,
-  formatDateTimeUTC,
-  formatOnlyDate,
-  formatOnlyDateUTC,
-  getSortState,
-  serializeSort,
-  toggleColumnSorting,
-} from '@/utils/table';
+import { formatDateTime, formatDateTimeUTC, formatOnlyDate, formatOnlyDateUTC, toggleColumnSorting } from '@/utils/table';
+import { useContext, useEffect } from 'react';
 
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'react';
+
 import ReactCountryFlag from 'react-country-flag';
 import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
 import FingerprintCell from './fingerprint-cell';
 import TrafficSourceBadge from './traffic-source-badge';
-import { VisitorFilters } from './visitor-filters';
 
-import SelectColumnVisibility from '@/components/table/select-column-visibility';
 import { ComboboxUnique } from '@/components/filters/combo-unique';
+import SelectColumnVisibility from '@/components/table/select-column-visibility';
 import SortingIcon from '@/components/table/sorting-icon';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+
+import { VisitorsContext } from '@/pages/Visitors/Index';
 
 // --- Columnas TanStack ---
 const columns = [
@@ -115,32 +109,14 @@ const columns = [
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = () => {
+  const { getVisitors, setFilter, columnFilters, sorting, setSorting, firstRender, globalFilter, setGlobalFilter } = useContext(VisitorsContext);
   const { rows, meta, state, data } = usePage().props;
-  const filters = state.filters ?? [];
   const visitors = rows.data ?? [];
   const links = rows.links ?? [];
   const { hosts } = data;
-  // --- Estados controlados que viajan al backend ---
-  const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
-  const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
-  /* const [columnFilters, setColumnFilters] = useState(state.filters ?? []); */
-  const [columnFilters, setColumnFilters] = useState(filters);
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
-  const firstRender = useRef(true);
-
-  const setFilter = (id, value) => {
-    setColumnFilters((prev) => {
-      const others = prev.filter((f) => f.id !== id);
-      return value ? [...others, { id, value }] : others;
-    });
-  };
-
-  // Función para limpiar todos los filtros
-  const handleClearFilters = () => {
-    setColumnFilters([]);
-  };
 
   const table = useReactTable({
     data: visitors,
@@ -158,28 +134,13 @@ export const TableVisitors = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // --- Navegación (debounce) ---
-  const getRows = () => {
+  useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    console.log('Ejecutando');
-    const url = route('visitors.index');
-    const data = {
-      page: pageIndex + 1,
-      per_page: pageSize,
-      search: globalFilter || undefined,
-      sort: serializeSort(sorting),
-      filters: JSON.stringify(columnFilters || []),
-    };
-    const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
-    router.get(url, data, options);
-  };
-
-  useEffect(() => {
     const handler = setTimeout(() => {
-      getRows();
+      getVisitors({ page: pageIndex + 1, per_page: pageSize });
     }, 200);
     return () => {
       clearTimeout(handler);
@@ -197,7 +158,7 @@ export const TableVisitors = () => {
           <ComboboxUnique
             items={hosts}
             label="Host"
-            currentValue={columnFilters.find(f => f.id === 'host')?.value || ''}
+            currentValue={columnFilters.find((f) => f.id === 'host')?.value || ''}
             onChange={(value) => {
               setFilter('host', value);
             }}
