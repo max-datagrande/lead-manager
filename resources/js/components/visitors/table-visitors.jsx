@@ -1,5 +1,6 @@
-import Paginator from '@/components/paginator';
-import TableRowEmpty from '@/components/table-row-empty';
+import { cn } from '@/lib/utils';
+import Paginator from '@/components/table/paginator';
+import TableRowEmpty from '@/components/table/table-row-empty';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,6 +23,10 @@ import DeviceBadge from './device-badge';
 import FingerprintCell from './fingerprint-cell';
 import TrafficSourceBadge from './traffic-source-badge';
 import { VisitorFilters } from './visitor-filters';
+
+import SelectColumnVisibility from '@/components/table/select-column-visibility';
+import SortingIcon from '@/components/table/sorting-icon';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 // --- Columnas TanStack ---
 const columns = [
@@ -116,10 +121,12 @@ export const TableVisitors = () => {
   const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
   const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
   const [columnFilters, setColumnFilters] = useState(state.filters ?? []);
-  const [pageIndex] = useState((state.page ?? 1) - 1);
-  const [pageSize] = useState(state.per_page ?? 10);
+
+  const pageIndex = (state.page ?? 1) - 1;
+  const pageSize = state.per_page ?? 10;
   const firstRender = useRef(true);
-  function setFilter(id, value) {
+
+  const setFilter = (id, value) => {
     setColumnFilters((prev) => {
       const others = prev.filter((f) => f.id !== id);
       return value ? [...others, { id, value }] : others;
@@ -130,6 +137,7 @@ export const TableVisitors = () => {
   const handleClearFilters = () => {
     setColumnFilters([]);
   };
+
   const table = useReactTable({
     data: visitors,
     columns,
@@ -164,6 +172,7 @@ export const TableVisitors = () => {
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
   };
+
   useEffect(() => {
     const handler = setTimeout(() => {
       getRows();
@@ -171,20 +180,23 @@ export const TableVisitors = () => {
     return () => {
       clearTimeout(handler);
     };
-  }, [sorting, columnFilters, pageIndex, pageSize, globalFilter]);
+  }, [sorting, columnFilters, globalFilter]);
 
   return (
     <>
       {/* Filtros */}
       <div className="mb-4">
-        {/* Global Search */}
-        <div className="mb-4">
-          <Input
-            placeholder="Buscar por email..."
-            value={globalFilter ?? ''}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className="max-w-sm"
+        <div className="mb-4 flex justify-between">
+          {/* Global Search */}
+          <Input placeholder="Search..." value={globalFilter ?? ''} onChange={(event) => setGlobalFilter(event.target.value)} className="max-w-sm" />
+          <DateRangePicker
+            onUpdate={(values) => console.log(values)}
+            align="start"
+            locale="en-US"
+            showCompare={false}
           />
+          {/* Column Visibility */}
+          <SelectColumnVisibility columns={table.getAllColumns()} />
         </div>
 
         {/* Filtros Avanzados */}
@@ -198,7 +210,7 @@ export const TableVisitors = () => {
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="whitespace-nowrap"
+                    className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
                     onClick={() => {
                       const canSorted = header.column.getCanSort?.();
                       if (!canSorted) return;
@@ -206,14 +218,17 @@ export const TableVisitors = () => {
                       setSorting((prev) => toggleColumnSorting(prev, columnId));
                     }}
                   >
-                    {header.column.columnDef.header}
+                    <div className="flex items-center">
+                      {header.column.columnDef.header}
+                      <SortingIcon column={header.column} sorting={sorting} />
+                    </div>
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-            {visitors.length === 0 && <TableRowEmpty>No visitors found.</TableRowEmpty>}
+            {visitors.length === 0 && <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>}
             {table.getRowModel().rows.map((r) => (
               <TableRow key={r.id}>
                 {r.getVisibleCells().map((cell) => (
@@ -230,3 +245,4 @@ export const TableVisitors = () => {
     </>
   );
 };
+
