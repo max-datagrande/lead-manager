@@ -20,10 +20,10 @@ class NaturalIntelligenceServiceException extends \Exception
 class NaturalIntelligenceService
 {
   private string $loginUrl;
-  private string $postbackUrl; // Placeholder por ahora
   private string $reportUrl;
   private string $username;
   private string $password;
+  private array $report;
 
   public function __construct()
   {
@@ -91,9 +91,11 @@ class NaturalIntelligenceService
           'from_date' => $fromDate,
           'to_date' => $toDate
         ]);
+        $report = $response->json();
+        $this->report = $report;
         return [
           'success' => true,
-          'data' => $response->json()
+          'data' => $report
         ];
       }
       TailLogger::saveLog('NI Service: Error al obtener reporte', 'api/ni', 'error', [
@@ -121,5 +123,26 @@ class NaturalIntelligenceService
         'error' => $e->getMessage()
       ];
     }
+  }
+
+  /**
+   * Retorna el reporte buscado por clickid
+   */
+  public function getReportByClickId(string $clickId): array
+  {
+    if (!$this->report) {
+      throw new NaturalIntelligenceServiceException('Report not found');
+    }
+    $report = collect($this->report);
+    if (count($report) === 0) {
+      throw new NaturalIntelligenceServiceException('Report empty');
+    }
+    $clickIdReport = $report->first(function ($report) use ($clickId) {
+      return $report['pub_param_1'] === $clickId;
+    }, null);
+    if (!$report) {
+      throw new NaturalIntelligenceServiceException('Report not found with clickid: ' . $clickId);
+    }
+    return $clickIdReport;
   }
 }
