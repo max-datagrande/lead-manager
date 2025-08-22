@@ -5,10 +5,10 @@ import { SearchX } from 'lucide-react';
  *
  * @returns {JSX.Element} Mensaje de estado vacío
  */
-export default function TableRowEmpty({ children }) {
+export default function TableRowEmpty({ colSpan, children }) {
   return (
     <TableRow>
-      <TableCell colSpan={columns.length}>
+      <TableCell colSpan={colSpan}>
         <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-gray-500">
           <SearchX className="h-8 w-8" />
           <span>{children}</span>
