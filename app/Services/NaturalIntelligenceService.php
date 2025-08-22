@@ -145,4 +145,26 @@ class NaturalIntelligenceService
     }
     return $clickIdReport;
   }
+  /**
+   * Obtiene el payut de un reporte
+   */
+  public function getReportPayout(string $clickId): ?string
+  {
+    try {
+      $report = $this->getReportByClickId($clickId);
+      return $report['payout'];
+    } catch (NaturalIntelligenceServiceException $e) {
+      TailLogger::saveLog('NI Service: Excepción al obtener el payout', 'api/ni', 'error', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+      return null;
+    } catch (\Exception $e) {
+      TailLogger::saveLog('NI Service: Error inesperado al obtener el payout', 'api/ni', 'error', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+      return null;
+    }
+  }
 }
