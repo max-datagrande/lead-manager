@@ -20,7 +20,7 @@ return new class extends Migration
       $table->string('currency', 3)->default('USD'); // Currency code
       $table->string('event')->nullable(); // Event type - OPTIONAL
       $table->string('offer_id'); // Offer ID - required
-      $table->string('status')->default('pending'); // pending, processed, failed
+      $table->string('status')->default('pending'); // pending, processed, completed, failed
       $table->text('response_data')->nullable(); // Para guardar la respuesta del postback
       $table->timestamp('processed_at')->nullable(); // Cuando se procesó
       $table->timestamps();

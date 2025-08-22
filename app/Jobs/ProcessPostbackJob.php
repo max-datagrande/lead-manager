@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Postback;
-use App\Models\ApiRequest;
+use App\Models\PostbackApiRequests;
 use App\Services\NaturalIntelligenceService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -59,12 +59,12 @@ class ProcessPostbackJob implements ShouldQueue
             }
 
             // Registrar inicio de petición API
-            $apiRequest = ApiRequest::logRequest(
-                ApiRequest::SERVICE_NATURAL_INTELLIGENCE,
+            $apiRequest = PostbackApiRequests::logRequest(
+        PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
                 'get-report',
                 'POST',
                 ['click_id' => $this->clickId],
-                ApiRequest::RELATED_TYPE_POSTBACK,
+        PostbackApiRequests::RELATED_TYPE_POSTBACK,
                 $this->postbackId
             );
 
