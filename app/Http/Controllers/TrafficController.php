@@ -125,7 +125,7 @@ class TrafficController extends Controller
       'is_bot'
     ];
 
-    $sort = $req->input('sort'); // ej: "created_at:desc"
+    $sort = $req->input('sort', 'created_at:desc'); // ej: "created_at:desc"
 
     if ($sort) {
       [$col, $dir] = get_sort_data($sort);
