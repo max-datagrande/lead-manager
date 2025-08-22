@@ -264,7 +264,9 @@
   scrollbar-width: none;
   /* Firefox */
 }
-
+html body[data-scroll-locked] {
+  margin-right: 0px !important;
+}
 /* Chore */
 .fade-in {
   animation: fadeIn 0.3s ease-out;
