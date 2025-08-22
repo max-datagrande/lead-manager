@@ -55,7 +55,7 @@ class TrafficController extends Controller
       $id = $f['id'] ?? null;
       $val = $f['value'] ?? null;
       if ($val === null || $val === '' || (is_array($val) && empty($val))) continue;
-      
+
       switch ($id) {
         case 'traffic_source':
           if (is_array($val)) {
@@ -143,7 +143,7 @@ class TrafficController extends Controller
     $queryParams = $req->query();
     $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
     return Inertia::render('Visitors/Index', [
-      'data' => $p,
+      'rows' => $p,
       'meta' => [
         'total' => $p->total(),
         'per_page' => $p->perPage(),
