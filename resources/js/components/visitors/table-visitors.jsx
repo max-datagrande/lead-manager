@@ -197,6 +197,7 @@ export const TableVisitors = () => {
           <ComboboxUnique
             items={hosts}
             label="Host"
+            currentValue={columnFilters.find(f => f.id === 'host')?.value || ''}
             onChange={(value) => {
               setFilter('host', value);
             }}

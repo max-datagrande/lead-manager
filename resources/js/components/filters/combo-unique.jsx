@@ -6,16 +6,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-export function ComboboxUnique({ items, label, onChange, labelNoData }) {
+export function ComboboxUnique({ items, label, onChange, labelNoData, currentValue }) {
   const [open, setOpen] = React.useState(false);
-  const [value, setValue] = React.useState('');
+  const [value, setValue] = React.useState(currentValue || '');
 
-  // Remover este useEffect problemático:
-  // React.useEffect(() => {
-  //   if (value) {
-  //     onChange(value);
-  //   }
-  // }, [value, onChange]);
+  // Sincronizar el estado interno con currentValue cuando cambie desde el exterior
+  React.useEffect(() => {
+    setValue(currentValue || '');
+  }, [currentValue]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
