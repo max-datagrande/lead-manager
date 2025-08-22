@@ -38,4 +38,10 @@ return [
     'base_url' => env('IPAPI_BASE_URL', 'https://ipapi.co'),
     'token' => env('IPAPI_TOKEN'),
   ],
+  'natural_intelligence' => [
+    'login_url' => env('NATURAL_INTELLIGENCE_LOGIN_URL', 'https://partner-login.naturalint.com/token'),
+    'report_url' => env('NATURAL_INTELLIGENCE_REPORT_URL', 'https://partner-api.naturalint.com/publisherhubservice/get-report'),
+    'username' => env('NATURAL_INTELLIGENCE_API_USER', 'carla@datagrande.io'),
+    'password' => env('NATURAL_INTELLIGENCE_API_KEY', 'qunttj8dUYmYaL9'),
+  ],
 ];
