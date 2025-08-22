@@ -134,6 +134,7 @@ export const TableVisitors = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  //Reload data on page change
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -171,40 +172,9 @@ export const TableVisitors = () => {
       </div>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
-                    onClick={() => {
-                      const canSorted = header.column.getCanSort?.();
-                      if (!canSorted) return;
-                      const columnId = header.column.id;
-                      setSorting((prev) => toggleColumnSorting(prev, columnId));
-                    }}
-                  >
-                    <div className="flex items-center">
-                      {header.column.columnDef.header}
-                      <SortingIcon column={header.column} sorting={sorting} />
-                    </div>
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
+          <Headers table={table} sorting={sorting} setSorting={setSorting} />
           <TableBody>
-            {visitors.length === 0 && <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>}
-            {table.getRowModel().rows.map((r) => (
-              <TableRow key={r.id}>
-                {r.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="p-2">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
+            <Content table={table} visitors={visitors} />
           </TableBody>
         </Table>
       </div>
@@ -212,3 +182,51 @@ export const TableVisitors = () => {
     </>
   );
 };
+
+function Headers({ table, sorting, setSorting }) {
+  return (
+    <TableHeader>
+      {table.getHeaderGroups().map((headerGroup) => (
+        <TableRow key={headerGroup.id}>
+          {headerGroup.headers.map((header) => (
+            <TableHead
+              key={header.id}
+              className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
+              onClick={() => {
+                const canSorted = header.column.getCanSort?.();
+                if (!canSorted) return;
+                const columnId = header.column.id;
+                setSorting((prev) => toggleColumnSorting(prev, columnId));
+              }}
+            >
+              <div className="flex items-center">
+                {header.column.columnDef.header}
+                <SortingIcon column={header.column} sorting={sorting} />
+              </div>
+            </TableHead>
+          ))}
+        </TableRow>
+      ))}
+    </TableHeader>
+  );
+}
+
+function Content({ table, visitors }) {
+  if (visitors.length === 0) {
+    return <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>;
+  }
+  const rowModel = table.getRowModel();
+  return (
+    <>
+      {rowModel.rows.map((r) => (
+        <TableRow key={r.id}>
+          {r.getVisibleCells().map((cell) => (
+            <TableCell key={cell.id} className="p-2">
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
