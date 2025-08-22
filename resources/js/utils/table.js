@@ -38,5 +38,36 @@ function getSortState(sortData) {
   return data;
 }
 
+/**
+ * Maneja el ciclo de ordenamiento para columnas de tabla
+ * Implementa el patrón: sin orden -> ascendente -> descendente -> sin orden
+ *
+ * @param {Array} currentSorting - Array actual de sorting (formato TanStack Table)
+ * @param {string} columnId - ID de la columna a ordenar
+ * @returns {Array} Nuevo array de sorting
+ *
+ * Ciclo de ordenamiento:
+ * 1. Si no hay ordenamiento actual para esta columna: establece ascendente
+ * 2. Si está en ascendente: cambia a descendente
+ * 3. Si está en descendente: quita el ordenamiento
+ */
+function toggleColumnSorting(currentSorting, columnId) {
+  // Buscar si ya existe un ordenamiento para esta columna
+  const currentSort = currentSorting[0]?.id === columnId ? currentSorting[0] : null;
 
-export { formatDateTime, formatDateTimeUTC, formatVisitDate, getSortState, serializeSort, formatOnlyDate, formatOnlyDateUTC };
+  // Si no hay ordenamiento actual para esta columna, establecer ascendente
+  if (!currentSort) {
+    return [{ id: columnId, desc: false }];
+  }
+
+  // Si está en ascendente, cambiar a descendente
+  if (currentSort && !currentSort.desc) {
+    return [{ id: columnId, desc: true }];
+  }
+
+  // Si está en descendente, quitar ordenamiento
+  return [];
+}
+
+
+export { formatDateTime, formatDateTimeUTC, formatVisitDate, getSortState, serializeSort, formatOnlyDate, formatOnlyDateUTC, toggleColumnSorting };
