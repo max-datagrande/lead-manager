@@ -3,12 +3,12 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { capitalize } from '@/utils/string';
 import { SlidersHorizontal } from 'lucide-react';
 
-export default function SelectColumnVisibility({ columns }) {
+export function DataTableViewOptions({ columns }) {
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="ms-auto hidden h-8 lg:flex">
+          <Button variant="outline" className="ms-auto hidden lg:flex">
             <SlidersHorizontal className="size-4" />
             View
           </Button>

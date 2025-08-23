@@ -1,7 +1,6 @@
 import Paginator from '@/components/data-table/paginator';
 import TableRowEmpty from '@/components/data-table/table-row-empty';
 
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { toggleColumnSorting } from '@/utils/table';
@@ -10,12 +9,13 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import { ComboboxUnique } from '@/components/filters/combo-unique';
-import SelectColumnVisibility from '@/components/data-table/select-column-visibility';
 import SortingIcon from '@/components/data-table/sorting-icon';
+import { ComboboxUnique } from '@/components/filters/combo-unique';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useVisitors } from '@/context/visitors-provider';
 import { visitorColumns as columns } from './list-columns';
+
+import { DataTableToolbar } from '@/components/data-table/toolbar';
 
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
@@ -69,21 +69,19 @@ export const TableVisitors = ({ visitors }) => {
       {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          {/* Global Search */}
-          <Input placeholder="Search..." value={globalFilter ?? ''} onChange={(event) => setGlobalFilter(event.target.value)} className="max-w-sm" />
-          {/* Host */}
-          <ComboboxUnique
-            items={hosts}
-            label="Host"
-            currentValue={columnFilters.find((f) => f.id === 'host')?.value || ''}
-            onChange={(value) => {
-              setFilter('host', value);
-            }}
-          />
-          {/* Date Range Picker */}
-          <DateRangePicker onUpdate={(values) => console.log(values)} align="start" locale="en-US" showCompare={false} />
-          {/* Column Visibility */}
-          <SelectColumnVisibility columns={table.getAllColumns()} />
+          <DataTableToolbar table={table} searchPlaceholder="Search..." filters={[]} globalQuery={globalFilter} setGlobalQuery={setGlobalFilter}>
+            {/* Host */}
+            <ComboboxUnique
+              items={hosts}
+              label="Host"
+              currentValue={columnFilters.find((f) => f.id === 'host')?.value || ''}
+              onChange={(value) => {
+                setFilter('host', value);
+              }}
+            />
+            {/* Date Range Picker */}
+            <DateRangePicker onUpdate={(values) => console.log(values)} align="start" locale="en-US" showCompare={false} />
+          </DataTableToolbar>
         </div>
       </div>
       <div className="rounded-md border">
