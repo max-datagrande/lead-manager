@@ -4,6 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
   {{-- Inline script to detect system dark mode preference and apply it immediately --}}
   <script>
@@ -29,6 +32,11 @@
     html.dark {
       background-color: oklch(0.145 0 0);
     }
+    .font-inter {
+      font-family: "Inter", sans-serif;
+      font-optical-sizing: auto;
+      font-style: normal;
+    }
   </style>
 
   <title inertia>{{ config('app.name', 'Laravel') }}</title>
@@ -46,7 +54,7 @@
   @inertiaHead
 </head>
 
-<body class="font-sans antialiased">
+<body class="font-inter antialiased">
   @inertia
 </body>
 
