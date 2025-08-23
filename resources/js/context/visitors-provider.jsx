@@ -1,7 +1,8 @@
+import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { useModal } from '@/hooks/use-modal';
 import { getSortState, serializeSort } from '@/utils/table';
 import { router, usePage } from '@inertiajs/react';
-import { createContext, useRef, useState, useContext } from 'react';
+import { createContext, useContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 const VisitorsContext = createContext(null);
@@ -14,7 +15,7 @@ export function VisitorsProvider({ children }) {
   const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
   const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters);
-  const firstRender = useRef(true);
+  const isFirstRender = useRef(true);
 
   const setFilter = (id, value) => {
     setColumnFilters((prev) => {
@@ -26,10 +27,11 @@ export function VisitorsProvider({ children }) {
   const handleClearFilters = () => {
     setColumnFilters([]);
   };
-  const getVisitors = (newData) => {
+
+  const getVisitors = useDebouncedFunction((newData) => {
     console.log('Ejecutando');
-    if (firstRender.current) {
-      firstRender.current = false;
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
       return;
     }
     const data = {
@@ -41,7 +43,8 @@ export function VisitorsProvider({ children }) {
     const url = route('visitors.index');
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
-  };
+  }, 200);
+
   const contextValue = {
     getVisitors,
     setFilter,
@@ -50,7 +53,7 @@ export function VisitorsProvider({ children }) {
     setColumnFilters,
     sorting,
     setSorting,
-    firstRender,
+    isFirstRender,
     globalFilter,
     setGlobalFilter,
     open,

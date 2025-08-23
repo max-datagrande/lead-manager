@@ -16,7 +16,6 @@ import { useVisitors } from '@/context/visitors-provider';
 import { visitorColumns as columns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
-
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
  *
@@ -25,11 +24,11 @@ import { DataTableToolbar } from '@/components/data-table/toolbar';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, setFilter, columnFilters, sorting, setSorting, firstRender, globalFilter, setGlobalFilter } = useVisitors();
+  const { getVisitors, setFilter, columnFilters, sorting, setSorting, isFirstRender, globalFilter, setGlobalFilter } = useVisitors();
   /* const [rowSelection, setRowSelection] = useState({}); */
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
-  const { hosts } = data;
+  const hosts = data.hosts ?? [];
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
@@ -49,20 +48,11 @@ export const TableVisitors = ({ visitors }) => {
     pageCount: meta.last_page,
     getCoreRowModel: getCoreRowModel(),
   });
-
+  const listeners = [sorting, columnFilters, globalFilter];
   //Reload data on page change
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
-    const handler = setTimeout(() => {
-      getVisitors({ page: pageIndex + 1, per_page: pageSize });
-    }, 200);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [sorting, columnFilters, globalFilter]);
+    getVisitors({ page: pageIndex + 1, per_page: pageSize });
+  }, listeners);
 
   return (
     <>

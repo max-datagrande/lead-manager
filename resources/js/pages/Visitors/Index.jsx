@@ -17,7 +17,6 @@ const breadcrumbs = [
  * @description Página principal para mostrar visitantes con tabla paginada
  */
 const Index = ({ rows }) => {
-  console.log(rows);
   return (
     <VisitorsProvider>
       <Head title="Visitors" />
