@@ -70,7 +70,6 @@ export function AppSidebar() {
   const { props, url: currentUrl } = page;
   const { auth } = props;
   const isAdmin = auth.user?.role === 'admin';
-  console.log(currentUrl);
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
