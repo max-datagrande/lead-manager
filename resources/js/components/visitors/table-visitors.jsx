@@ -24,10 +24,10 @@ import { visitorColumns as columns } from './list-columns';
  * @param {Object} props.visitors - Datos de visitantes con información de paginación
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
-export const TableVisitors = () => {
+export const TableVisitors = ({ visitors }) => {
   const { getVisitors, setFilter, columnFilters, sorting, setSorting, firstRender, globalFilter, setGlobalFilter } = useVisitors();
+  /* const [rowSelection, setRowSelection] = useState({}); */
   const { rows, meta, state, data } = usePage().props;
-  const visitors = rows.data ?? [];
   const links = rows.links ?? [];
   const { hosts } = data;
 
