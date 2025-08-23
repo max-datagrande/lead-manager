@@ -20,8 +20,7 @@ import { ComboboxUnique } from '@/components/filters/combo-unique';
 import SelectColumnVisibility from '@/components/table/select-column-visibility';
 import SortingIcon from '@/components/table/sorting-icon';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-
-import { VisitorsContext } from '@/pages/Visitors/Index';
+import { useVisitors } from '@/context/visitors-provider';
 
 // --- Columnas TanStack ---
 const columns = [
@@ -109,7 +108,7 @@ const columns = [
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = () => {
-  const { getVisitors, setFilter, columnFilters, sorting, setSorting, firstRender, globalFilter, setGlobalFilter } = useContext(VisitorsContext);
+  const { getVisitors, setFilter, columnFilters, sorting, setSorting, firstRender, globalFilter, setGlobalFilter } = useVisitors();
   const { rows, meta, state, data } = usePage().props;
   const visitors = rows.data ?? [];
   const links = rows.links ?? [];
