@@ -14,12 +14,17 @@ export interface NavGroup {
   title: string;
   items: NavItem[];
 }
-
-export interface NavItem {
+export interface NavSubItem {
   title: string;
   href: string;
+  icon?: LucideIcon;
+}
+export interface NavItem {
+  title: string;
+  href?: string;
   icon?: LucideIcon | null;
   isActive?: boolean;
+  subItems?: NavSubItem[];
 }
 
 export interface SharedData {
