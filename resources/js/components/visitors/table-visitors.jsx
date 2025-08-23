@@ -1,5 +1,5 @@
-import Paginator from '@/components/table/paginator';
-import TableRowEmpty from '@/components/table/table-row-empty';
+import Paginator from '@/components/data-table/paginator';
+import TableRowEmpty from '@/components/data-table/table-row-empty';
 
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,8 +11,8 @@ import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 import { ComboboxUnique } from '@/components/filters/combo-unique';
-import SelectColumnVisibility from '@/components/table/select-column-visibility';
-import SortingIcon from '@/components/table/sorting-icon';
+import SelectColumnVisibility from '@/components/data-table/select-column-visibility';
+import SortingIcon from '@/components/data-table/sorting-icon';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useVisitors } from '@/context/visitors-provider';
 import { visitorColumns as columns } from './list-columns';
