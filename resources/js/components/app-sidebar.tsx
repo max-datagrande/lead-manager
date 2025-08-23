@@ -4,11 +4,17 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Barcode, LayoutGrid, Users } from 'lucide-react';
+import {
+  LayoutGrid,
+  Users,
+  Webhook,
+  List,
+  Plus,
+  FileText
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
-
 
 const GeneralGroup: NavGroupType = {
   title: 'General',
@@ -16,31 +22,31 @@ const GeneralGroup: NavGroupType = {
     {
       title: 'Dashboard',
       href: '/dashboard',
-      icon: LayoutGrid,
+      icon: LayoutGrid, // ✅ Perfecto para dashboard
     },
     {
       title: 'Visitors',
       href: '/visitors',
-      icon: Barcode,
+      icon: Users, // 👥 Representa visitantes/usuarios
     },
     {
       title: 'Postbacks',
-      icon: Barcode,
+      icon: Webhook, // 🔗 Representa webhooks/postbacks
       subItems: [
         {
           title: 'List',
           href: '/postbacks',
-          icon: Barcode,
+          icon: List, // 📋 Lista de elementos
         },
         {
           title: 'Create',
           href: '/postbacks/create',
-          icon: Barcode,
+          icon: Plus, // ➕ Crear nuevo elemento
         },
         {
           title: 'Logs',
           href: '/postbacks/logs',
-          icon: Barcode,
+          icon: FileText, // 📄 Logs/registros
         },
       ],
     },
@@ -61,9 +67,10 @@ const AdminGroup: NavGroupType = {
 
 export function AppSidebar() {
   const page = usePage<SharedData>();
-  const { props, url } = page;
+  const { props, url: currentUrl } = page;
   const { auth } = props;
   const isAdmin = auth.user?.role === 'admin';
+  console.log(currentUrl);
   return (
     <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
@@ -79,7 +86,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navGroups.map((group) => (
-          <NavGroup key={group.title} title={group.title} items={group.items} currentHref={url} />
+          <NavGroup key={group.title} title={group.title} items={group.items} currentHref={currentUrl} />
         ))}
       </SidebarContent>
       <SidebarFooter>

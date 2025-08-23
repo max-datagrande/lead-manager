@@ -118,11 +118,11 @@ const SidebarMenuCollapsedDropdown = ({ item, currentHref }) => {
   );
 };
 
-function checkIsActive(href, item, mainNav = false) {
+function checkIsActive(currentHref, item, mainNav = false) {
   return (
-    href === item.url || // /endpint?search=param
-    href.split('?')[0] === item.url || // endpoint
-    !!item?.items?.filter((i) => i.url === href).length || // if child nav is active
-    (mainNav && href.split('/')[1] !== '' && href.split('/')[1] === item?.url?.split('/')[1])
+    currentHref === item.href || // /endpint?search=param
+    currentHref.split('?')[0] === item.href || // endpoint
+    !!item?.items?.filter((i) => i.href === currentHref).length || // if child nav is active
+    (mainNav && currentHref.split('/')[1] !== '' && currentHref.split('/')[1] === item?.href?.split('/')[1])
   );
 }
