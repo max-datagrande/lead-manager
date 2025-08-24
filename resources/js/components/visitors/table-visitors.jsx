@@ -12,7 +12,7 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 import SortingIcon from '@/components/data-table/sorting-icon';
 import { ComboboxUnique } from '@/components/filters/combo-unique';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { useVisitors } from '@/context/visitors-provider';
+import { useVisitors } from '@/hooks/use-visitors';
 import { visitorColumns as columns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';

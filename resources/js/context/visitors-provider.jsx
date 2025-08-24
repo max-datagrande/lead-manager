@@ -2,12 +2,12 @@ import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { useModal } from '@/hooks/use-modal';
 import { getSortState, serializeSort } from '@/utils/table';
 import { router, usePage } from '@inertiajs/react';
-import { createContext, useContext, useRef, useState } from 'react';
+import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 const VisitorsContext = createContext(null);
 
-export function VisitorsProvider({ children }) {
+function VisitorsProvider({ children }) {
   const { open } = useModal();
   const [currentRow, setCurrentRow] = useState(null);
   const { state } = usePage().props;
@@ -23,7 +23,7 @@ export function VisitorsProvider({ children }) {
       return value ? [...others, { id, value }] : others;
     });
   };
-  // Función para limpiar todos los filtros
+
   const handleClearFilters = () => {
     setColumnFilters([]);
   };
@@ -60,14 +60,9 @@ export function VisitorsProvider({ children }) {
     currentRow,
     setCurrentRow,
   };
-  return <VisitorsContext value={contextValue}>{children}</VisitorsContext>;
+
+  return <VisitorsContext.Provider value={contextValue}>{children}</VisitorsContext.Provider>;
 }
 
-export const useVisitors = () => {
-  const visitorsContext = useContext(VisitorsContext);
-
-  if (!visitorsContext) {
-    throw new Error('useVisitors has to be used within <VisitorsContext>');
-  }
-  return visitorsContext;
-};
+// Solo exportar el componente y el contexto
+export { VisitorsProvider, VisitorsContext };
