@@ -29,7 +29,6 @@ export function VisitorsProvider({ children }) {
   };
 
   const getVisitors = useDebouncedFunction((newData) => {
-    console.log('Ejecutando');
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
@@ -40,10 +39,11 @@ export function VisitorsProvider({ children }) {
       filters: JSON.stringify(columnFilters || []),
       ...newData,
     };
+    console.log('Updating visitors');
     const url = route('visitors.index');
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
-  }, 200);
+  }, 300);
 
   const contextValue = {
     getVisitors,
