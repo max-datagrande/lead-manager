@@ -3,13 +3,12 @@ import TableRowEmpty from '@/components/data-table/table-row-empty';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { toggleColumnSorting } from '@/utils/table';
 import { useEffect } from 'react';
 
 import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import SortingIcon from '@/components/data-table/sorting-icon';
+import {SortingIcon} from '@/components/data-table/sorting-icon';
 import { ComboboxUnique } from '@/components/filters/combo-unique';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useVisitors } from '@/hooks/use-visitors';
@@ -96,16 +95,11 @@ function Headers({ table, sorting, setSorting }) {
             <TableHead
               key={header.id}
               className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
-              onClick={() => {
-                const canSorted = header.column.getCanSort?.();
-                if (!canSorted) return;
-                const columnId = header.column.id;
-                setSorting((prev) => toggleColumnSorting(prev, columnId));
-              }}
+              onClick={header.column.getToggleSortingHandler?.()}
             >
               <div className="flex items-center">
-                {header.column.columnDef.header}
-                <SortingIcon column={header.column} sorting={sorting} />
+                {flexRender(header.column.columnDef.header, header.getContext())}
+                <SortingIcon column={header.column} />
               </div>
             </TableHead>
           ))}

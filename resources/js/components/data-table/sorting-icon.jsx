@@ -1,17 +1,17 @@
 import { ChevronDown, ChevronsUpDown, ChevronUp } from 'lucide-react';
 
-export default function SortingIcon({ column, sorting }) {
-  const sortState = sorting.find((s) => s.id === column.id);
+export function SortingIcon({ column }) {
   if (!column.getCanSort?.()) {
     return null;
   }
-
+  const sortState = column.getIsSorted?.() || '';
   if (!sortState) {
     return <ChevronsUpDown className="ml-2 h-4 w-4 text-muted-foreground" />;
   }
-  return sortState.desc ? (
-    <ChevronDown className="ml-2 h-4 w-4 text-black dark:text-white" strokeWidth="3" />
-  ) : (
-    <ChevronUp className="ml-2 h-4 w-4 text-black dark:text-white" strokeWidth="3" />
-  );
+  if (sortState === 'asc') {
+    return <ChevronUp className="ml-2 h-4 w-4 text-black dark:text-white" strokeWidth="3" />;
+  }
+  if (sortState === 'desc') {
+    return <ChevronDown className="ml-2 h-4 w-4 text-black dark:text-white" strokeWidth="3" />;
+  }
 }
