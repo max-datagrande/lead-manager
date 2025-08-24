@@ -41,6 +41,7 @@ export const TableVisitors = ({ visitors }) => {
       pagination: { pageIndex, pageSize },
       globalFilter,
     },
+    onSortingChange: (updater) => setSorting(typeof updater === 'function' ? updater(sorting) : updater),
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
