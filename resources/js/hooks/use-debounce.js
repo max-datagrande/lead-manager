@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 
 /**
  * Hook personalizado para debounce
@@ -6,7 +6,7 @@ import { useEffect, useState, useMemo } from 'react';
  * @param {number} delay - El delay en milisegundos (default: 500ms)
  * @returns {any} - El valor debounced
  */
-export function useDebounce(value, delay = 500) {
+export function setStateDebounced(value, delay = 500) {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
@@ -24,6 +24,12 @@ export function useDebounce(value, delay = 500) {
 
   return debouncedValue;
 }
+/**
+ * Hook personalizado para debounce
+ * @param {function} callback - Functio
+ * @param {number} delay - El delay en milisegundos (default: 500ms)
+ * @returns {any} - El valor debounced
+ */
 export function useDebouncedCallback(callback, delay = 500) {
   const [debouncedCallback, setDebouncedCallback] = useState(callback);
 
@@ -70,19 +76,35 @@ export function createDebouncedFunction(func, delay = 500) {
  * @returns {Function} - La función con debounce aplicado
  */
 export function useDebouncedFunction(callback, delay = 500) {
-  const debouncedFn = useMemo(() => {
-    return createDebouncedFunction(callback, delay);
-  }, [callback, delay]);
+  const timeoutRef = useRef(null);
+
+  // Actualizar la referencia del callback sin recrear la función
+  const callbackRef = useRef(callback);
+  callbackRef.current = callback;
+
+  // Función final que usa la referencia actualizada
+  const finalDebouncedFn = useMemo(() => {
+    return function debouncedFunction(...args) {
+      // Limpiar el timeout anterior si existe
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Crear un nuevo timeout
+      timeoutRef.current = setTimeout(() => {
+        callbackRef.current.apply(this, args);
+      }, delay);
+    };
+  }, [delay]);
 
   // Limpiar el timeout cuando el componente se desmonte
   useEffect(() => {
     return () => {
-      // Si la función debounced tiene un timeout pendiente, lo limpiamos
-      if (debouncedFn.timeoutId) {
-        clearTimeout(debouncedFn.timeoutId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-  }, [debouncedFn]);
+  }, []);
 
-  return debouncedFn;
+  return finalDebouncedFn;
 }
