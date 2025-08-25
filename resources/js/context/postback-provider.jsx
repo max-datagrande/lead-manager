@@ -1,5 +1,5 @@
 import { PostbackApiRequestsViewer } from '@/components/postback';
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { useModal } from '@/hooks/use-modal';
 import { getSortState, serializeSort } from '@/utils/table';
@@ -24,6 +24,9 @@ export function PostbackProvider({ children }) {
       <>
         <DialogHeader>
           <DialogTitle>API Requests - Postback #{postback.id}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Displays all API requests made for this postback, including request and response data.
+          </DialogDescription>
         </DialogHeader>
         <PostbackApiRequestsViewer postbackId={postback.id} />
       </>,
