@@ -10,30 +10,29 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 
 import {SortingIcon} from '@/components/data-table/sorting-icon';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { useVisitors } from '@/hooks/use-visitors';
-import { visitorColumns as columns } from './list-columns';
+import { usePostbacks } from '@/hooks/use-posbacks';
+import { postbackColumns as columns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
  *
  * @param {Object} props - Propiedades del componente
- * @param {Object} props.visitors - Datos de visitantes con información de paginación
+ * @param {Object} props.postbacks - Datos de visitantes con información de paginación
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
-export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = useVisitors();
+export const TablePostbacks = ({ postbacks }) => {
+  const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = usePostbacks();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
-  const hosts = data.hosts ?? [];
+  const vendors = data.vendors ?? [];
   const states = data.states ?? [];
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
-  console.log(columnFilters);
 
   const table = useReactTable({
-    data: visitors,
+    data: postbacks,
     columns,
     state: {
       sorting,
@@ -58,12 +57,11 @@ export const TableVisitors = ({ visitors }) => {
   });
 
   useEffect(() => {
-    getVisitors({ page: pageIndex + 1, per_page: pageSize });
+    getPostbacks({ page: pageIndex + 1, per_page: pageSize });
   }, [sorting, columnFilters, globalFilter]);
 
   return (
     <>
-
       {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
@@ -74,13 +72,13 @@ export const TableVisitors = ({ visitors }) => {
             setGlobalQuery={setGlobalFilter}
             filters={[
               {
-                columnId: 'host',
-                title: 'Host',
-                options: hosts,
+                columnId: 'vendor',
+                title: 'Vendor',
+                options: vendors,
               },
               {
-                columnId: 'state',
-                title: 'State',
+                columnId: 'status',
+                title: 'Status',
                 options: states,
               },
             ]}
@@ -94,7 +92,7 @@ export const TableVisitors = ({ visitors }) => {
         <Table>
           <Headers table={table} sorting={sorting} setSorting={setSorting} />
           <TableBody>
-            <Content table={table} visitors={visitors} />
+            <Content table={table} postbacks={postbacks} />
           </TableBody>
         </Table>
       </div>
@@ -126,9 +124,9 @@ function Headers({ table }) {
   );
 }
 
-function Content({ table, visitors }) {
-  if (visitors.length === 0) {
-    return <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>;
+function Content({ table, postbacks }) {
+  if (postbacks.length === 0) {
+    return <TableRowEmpty colSpan={columns.length}>No postbacks found.</TableRowEmpty>;
   }
   const rowModel = table.getRowModel();
   return (

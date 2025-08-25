@@ -4,14 +4,14 @@ import { router, usePage } from '@inertiajs/react';
 import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
-export const VisitorsContext = createContext(null);
+export const PostbackContext = createContext(null);
 
-export function VisitorsProvider({ children }) {
+export function PostbackProvider({ children }) {
   const { state } = usePage().props;
-  const filters = state.filters ?? [];
+  const filters = state?.filters ?? [];
   const [currentRow, setCurrentRow] = useState(null);
-  const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
-  const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
+  const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
+  const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters);
   const isFirstRender = useRef(true);
 
@@ -26,7 +26,7 @@ export function VisitorsProvider({ children }) {
     setColumnFilters([]);
   };
 
-  const getVisitors = useDebouncedFunction((newData) => {
+  const getPostbacks = useDebouncedFunction((newData) => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
@@ -37,13 +37,13 @@ export function VisitorsProvider({ children }) {
       filters: JSON.stringify(columnFilters || []),
       ...newData,
     };
-    const url = route('visitors.index');
+    const url = route('postbacks.index');
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
   }, 300);
 
   const contextValue = {
-    getVisitors,
+    getPostbacks,
     setFilter,
     handleClearFilters,
     columnFilters,
@@ -57,5 +57,5 @@ export function VisitorsProvider({ children }) {
     setCurrentRow,
   };
 
-  return <VisitorsContext.Provider value={contextValue}>{children}</VisitorsContext.Provider>;
+  return <PostbackContext.Provider value={contextValue}>{children}</PostbackContext.Provider>;
 }

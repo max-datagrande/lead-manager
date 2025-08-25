@@ -1,8 +1,8 @@
-import CopyToClipboard from './copy-to-clipboard';
+import CopyToClipboard from '@/components/copy-to-clipboard';
 
 /**
  * Componente para mostrar fingerprint truncado con tooltip y funcionalidad de copia
- * 
+ *
  * @param {Object} props - Propiedades del componente
  * @param {string} props.fingerprint - Fingerprint completo del visitante
  * @returns {JSX.Element} Fingerprint truncado con tooltip y botón de copia

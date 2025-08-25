@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\TrafficController;
+use App\Http\Controllers\PostbackController;
 
 Route::get('/', function () {
   return Inertia::render('welcome');
@@ -13,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     return Inertia::render('dashboard');
   })->name('dashboard');
   Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
+  Route::get('postbacks', [PostbackController::class, 'index'])->name('postbacks.index');
 });
 
 require __DIR__ . '/settings.php';
