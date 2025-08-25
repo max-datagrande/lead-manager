@@ -23,14 +23,16 @@ import { DataTableToolbar } from '@/components/data-table/toolbar';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, setFilter, columnFilters, sorting, setSorting, isFirstRender, globalFilter, setGlobalFilter } = useVisitors();
+  const { getVisitors, setFilter, columnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = useVisitors();
   /* const [rowSelection, setRowSelection] = useState({}); */
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const hosts = data.hosts ?? [];
+  const states = data.states ?? [];
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
+  console.log(columnFilters);
 
   const table = useReactTable({
     data: visitors,
@@ -47,14 +49,18 @@ export const TableVisitors = ({ visitors }) => {
         : sortingUpdate;
       setSorting(newSorting);
     },
+    globalFilterFn: (row) => {
+      console.log(row);
+    },
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
     pageCount: meta.last_page,
     getCoreRowModel: getCoreRowModel(),
   });
+
+
   const listeners = [sorting, columnFilters, globalFilter];
-  //Reload data on page change
   useEffect(() => {
     getVisitors({ page: pageIndex + 1, per_page: pageSize });
   }, listeners);
@@ -64,7 +70,24 @@ export const TableVisitors = ({ visitors }) => {
       {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar table={table} searchPlaceholder="Search..." filters={[]} globalQuery={globalFilter} setGlobalQuery={setGlobalFilter}>
+          <DataTableToolbar
+            table={table}
+            searchPlaceholder="Search..."
+            globalQuery={globalFilter}
+            setGlobalQuery={setGlobalFilter}
+            filters={[
+              {
+                columnId: 'host',
+                title: 'Host',
+                options: hosts,
+              },
+              {
+                columnId: 'state',
+                title: 'State',
+                options: states,
+              },
+            ]}
+          >
             {/* Host */}
             <ComboboxUnique
               items={hosts}

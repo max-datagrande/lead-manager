@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Models\TrafficLog;
 use Illuminate\Http\Request;
+
 class TrafficController extends Controller
 {
   /**
@@ -79,7 +80,7 @@ class TrafficController extends Controller
           break;
         case 'browser':
           if (is_array($val)) {
-            $q->where(function($query) use ($val) {
+            $q->where(function ($query) use ($val) {
               foreach ($val as $browser) {
                 $query->orWhere('browser', 'like', "%{$browser}%");
               }
@@ -144,12 +145,25 @@ class TrafficController extends Controller
     $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
 
     //Hosts
-    $hosts = TrafficLog::select('host')->distinct()->get()->map(function($item) {
+    $hosts = TrafficLog::select('host')->distinct()->get()->map(function ($item) {
       return [
         'value' => $item->host,
         'label' => $item->host
       ];
     });
+    //States
+    $states = TrafficLog::select('state')
+      ->whereNotNull('state')
+      ->where('state', '<>', '')
+      ->distinct()
+      ->get()
+      ->map(function ($item) {
+        return [
+          'value' => $item->state,
+          'label' => ucfirst($item->state),
+        ];
+      })
+      ->values();
     return Inertia::render('Visitors/Index', [
       'rows' => $p,
       'meta' => [
@@ -167,8 +181,9 @@ class TrafficController extends Controller
         'page' => $page,
         'per_page' => $perPage,
       ],
-      'data' =>[
-        'hosts' => $hosts
+      'data' => [
+        'hosts' => $hosts,
+        'states' => $states
       ]
     ]);
   }
