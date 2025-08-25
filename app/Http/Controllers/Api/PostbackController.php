@@ -109,30 +109,6 @@ class PostbackController extends Controller
   }
 
   /**
-   * Endpoint para obtener reportes de NI (opcional, para admin)
-   */
-  public function getReport(Request $request): JsonResponse
-  {
-    $fromDate = $request->input('from_date', now()->subDays(7)->format('Y-m-d'));
-    $toDate = $request->input('to_date', now()->format('Y-m-d'));
-
-    $result = $this->niService->getConversionsReport($fromDate, $toDate);
-
-    if ($result['success']) {
-      return response()->json([
-        'success' => true,
-        'data' => $result['data']
-      ]);
-    }
-
-    return response()->json([
-      'success' => false,
-      'message' => $result['message'],
-      'error' => $result['error'] ?? null
-    ], 422);
-  }
-
-  /**
    * Endpoint para obtener el estado de un postback
    */
   public function status(Request $request, int $postbackId): JsonResponse
