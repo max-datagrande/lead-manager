@@ -34,11 +34,11 @@ const GeneralGroup: NavGroupType = {
       icon: Webhook, // 🔗 Representa webhooks/postbacks
       subItems: [
         {
-          title: 'List',
+          title: 'Queue',
           href: '/postbacks',
           icon: List, // 📋 Lista de elementos
         },
-        {
+        /* {
           title: 'Create',
           href: '/postbacks/create',
           icon: Plus, // ➕ Crear nuevo elemento
@@ -47,7 +47,7 @@ const GeneralGroup: NavGroupType = {
           title: 'Logs',
           href: '/postbacks/logs',
           icon: FileText, // 📄 Logs/registros
-        },
+        }, */
       ],
     },
   ],
