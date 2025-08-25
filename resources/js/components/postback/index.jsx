@@ -1,7 +1,3 @@
-// Exportaciones consolidadas de componentes de visitantes
-export { default as BotBadge } from './bot-badge';
-export { default as DeviceBadge } from './device-badge';
-export { default as FingerprintCell } from './fingerprint-cell';
-export { default as LocationInfo } from './location-info';
-export { TableVisitors } from './table-visitors';
-export { default as TrafficSourceBadge } from './traffic-source-badge';
+export { postbackColumns } from './list-columns';
+export { TablePostbacks } from './table-postbacks';
+export { default as PostbackApiRequestsViewer } from './postback-api-requests-viewer';
