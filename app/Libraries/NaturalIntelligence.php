@@ -32,8 +32,6 @@ final class NaturalIntelligence
 
   private array $relevantFields = [
     'data_type',
-    'date',
-    'source_join',
     'device',
     'pub_param_1',
     'pub_param_2',
@@ -44,8 +42,6 @@ final class NaturalIntelligence
     'payout',
     'sales',
     'visits',
-    'bridge_visits',
-    'clicking_users',
     'date_time',
   ];
 
@@ -59,13 +55,15 @@ final class NaturalIntelligence
   }
   private function requestAuthToken(): Response
   {
+    $payload = [
+      'username' => $this->username,
+      'password' => $this->password,
+    ];
+    $this->log('Requesting authentication token', 'info', ['payload' => $payload]);
     return Http::timeout(30)
-      ->retry(2, 400, throw: true) // Mantener throw en retry para errores de conexión
+      ->retry(2, 400, throw: false) // Mantener throw en retry para errores de conexión
       ->asJson()
-      ->post($this->loginUrl, [
-        'username' => $this->username,
-        'password' => $this->password,
-      ]);
+      ->post($this->loginUrl, $payload);
   }
 
   /**
@@ -120,13 +118,14 @@ final class NaturalIntelligence
 
       // Procesar respuesta exitosa
       $this->log('Login response status : ' . $status);
-      // Extraer token del cuerpo de la respuesta
-      $token = trim((string) $resp->body());
+      // Extraer token del cuerpo de la respuesta usando json_decode
+      $tokenResponse = trim((string) $resp->body());
+      $token = trim($tokenResponse, '"'); // Remover comillas del inicio y final
+
       if ($token === '') {
         throw new NaturalIntelligenceException('Empty token from login');
       }
       // Guardar token en cache compartido con TTL de 23 horas
-      // Todos los jobs podrán usar este token hasta que expire
       Cache::put(self::CACHE_TOKEN_KEY, $token, self::CACHE_TTL);
     } catch (Throwable $e) {
       throw new NaturalIntelligenceException('Failed to obtain auth token - ' . $e->getMessage(), 0, $e);
@@ -148,7 +147,6 @@ final class NaturalIntelligence
   {
     return $this->lastResponse;
   }
-
   /**
    * Obtiene el último payload enviado
    */
@@ -163,7 +161,6 @@ final class NaturalIntelligence
       'ToDate'       => $toDate   ?? now()->format('Y-m-d'),
       'ReportFormat' => self::REPORT_FORMAT,
       'ReportType'   => self::REPORT_TYPE,
-      'DataType'     => self::DATA_TYPE,
     ];
   }
 
@@ -172,50 +169,60 @@ final class NaturalIntelligence
     if (!$payload) {
       $payload = $this->buildPayload();
     }
+
     // Almacenar el payload para acceso posterior
     $this->lastPayload = $payload;
-    $this->log('Solicitando reporte de conversiones', 'info', ['request_data' => $payload]);
-
+    $this->log('Solicitando reporte', 'info', ['request_data' => $payload]);
     try {
+      $headers = $this->authHeader();
+      $this->log('Requesting report', 'info', ['headers' => $headers]);
       $response = Http::timeout(60)
-        ->retry(3, 250, throw: true)
-        ->withHeaders($this->authHeader())
-        ->post($this->reportUrl, $payload);
-
+        ->retry(times: 3, sleepMilliseconds: 250, throw: false)
+        ->withHeaders($headers)
+        ->acceptJson()
+        ->post($this->reportUrl, $payload)
+        ->throwIf(function ($response) {
+          $data = rescue(fn() => $response->json(), [], report: false);
+          $message = $data['message'] ?? 'No message provided';
+          return $response->status() === self::UNAUTHORIZED_RESPONSE['STATUS'] || $message === self::UNAUTHORIZED_RESPONSE['MESSAGE'];
+        });
       // Almacenar la respuesta para acceso posterior
       $statusCode = $response->status();
-      if (!$response->successful()) {
-        $this->log('HTTP error obtaining report', 'error', [
-          'status' => $statusCode,
-          'body' => $response->body(),
-          'request_data' => $payload,
-        ]);
-        throw new NaturalIntelligenceException('HTTP error obtaining report', $statusCode);
+      //Success case
+      if ($response->successful()) {
+        return $this->handleReportResponse($response);
       }
-      return $this->handleReportResponse($response);
+      //Error case
+      $this->log('HTTP error obtaining report', 'error', [
+        'status' => $statusCode,
+        'body' => $response->body(),
+        'request_data' => $payload,
+        'url' => $this->reportUrl,
+      ]);
+      $data = $response->json() ?? [];
+      $message = $data['message'] ?? 'No message provided';
+      throw new NaturalIntelligenceException($message, $statusCode);
     } catch (RequestException $e) {
       // Almacenar la respuesta de error si existe
       if ($e->response) {
         $this->lastResponse = $e->response;
       }
-      $this->log('HTTP error obtaining report', 'error', [
+      $this->log('Retrying report after authentication-related error', 'warning', [
         'status' => optional($e->response)->status(),
         'url' => $this->reportUrl,
         'message' => $e->getMessage(),
       ]);
 
-      // Si es 401, intentar refrescar token y reintentar una vez
-      if (optional($e->response)->status() === 401) {
-        $this->refreshToken();
-        return $this->retryReportOnce($payload);
-      }
-      throw new NaturalIntelligenceException('HTTP error obtaining report: ' . $e->getMessage(), optional($e->response)->status() ?? 0, $e);
+      $this->refreshToken();
+      return $this->retryReportOnce($payload);
     } catch (Throwable $e) {
+      if ($e instanceof NaturalIntelligenceException) {
+        throw $e;
+      }
       $this->log('Unexpected error obtaining report', 'error', [
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
       ]);
-
       throw new NaturalIntelligenceException('Unexpected error obtaining report: ' . $e->getMessage(), 0, $e);
     }
   }
@@ -223,8 +230,9 @@ final class NaturalIntelligence
   private function retryReportOnce(array $payload): array
   {
     $response = Http::timeout(60)
-      ->retry(2, 250, throw: true)
+      ->retry(2, 250, throw: false)
       ->withHeaders($this->authHeader())
+      ->acceptJson()
       ->post($this->reportUrl, $payload);
 
     // Almacenar la respuesta del reintento
@@ -260,7 +268,6 @@ final class NaturalIntelligence
       ]);
       throw new NaturalIntelligenceException('Invalid JSON in report response');
     }
-
     $filtered = $this->filterResponse($json);
     $this->log('Report obtained successfully', 'info', [
       'itemsOriginal' => count($json) ?? 0,
@@ -276,9 +283,17 @@ final class NaturalIntelligence
    */
   public function filterResponse(?array $data): ?array
   {
-    $allow = array_flip($this->relevantFields);
-    // Mantienes el mismo caso “objeto asociativo”
-    return array_intersect_key($data, $allow);
+    // Si es un array de arrays (como las conversiones), filtrar cada elemento
+    return collect($data)->map(function ($item) {
+      // Si el item es un array asociativo, filtrar sus campos
+      if (is_array($item)) {
+        return collect($item)->filter(function ($value, $key) {
+          return in_array($key, $this->relevantFields);
+        })->toArray();
+      }
+      // Si no es un array, devolver tal como está
+      return $item;
+    })->toArray();
   }
 
   private function log(string $message, string $level = 'info', array $context = []): void

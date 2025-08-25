@@ -62,7 +62,6 @@ class NaturalIntelligenceService
       $payload = $this->ni->buildPayload($fromDate, $toDate);
       // Obtener reporte usando la librería
       $report = $this->ni->getReport($payload);
-
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       // Obtener la respuesta HTTP de la librería para logging
@@ -79,36 +78,7 @@ class NaturalIntelligenceService
         'success' => true,
         'data' => $report
       ];
-    } catch (\App\Libraries\NaturalIntelligenceException $e) {
-      // Manejar excepciones de la librería NaturalIntelligence
-      if (!isset($responseTime)) {
-        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-      }
 
-      // Obtener respuesta y payload de la librería
-      $response = $this->ni->getLastResponse();
-      $payload = $this->ni->getLastPayload();
-
-      PostbackApiRequests::create([
-        'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
-        'endpoint' => $this->getReportUrl(),
-        'method' => 'POST',
-        'request_data' => $payload,
-        'status_code' => $response ? $response->status() : null,
-        'error_message' => $e->getMessage(),
-        'response_time_ms' => $responseTime,
-        'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
-        'request_id' => uniqid('req_')
-      ]);
-
-      TailLogger::saveLog('NI Service: Error de librería al obtener reporte', 'api/ni', 'error', [
-        'error' => $e->getMessage(),
-        'status_code' => $response ? $response->status() : null,
-        'response_time_ms' => $responseTime,
-        'trace' => $e->getTraceAsString(),
-      ]);
-
-      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
     } catch (\Exception $e) {
       // Manejar excepciones generales
       if (!isset($responseTime)) {
@@ -131,13 +101,13 @@ class NaturalIntelligenceService
         'request_id' => uniqid('req_')
       ]);
 
-      TailLogger::saveLog('NI Service: Excepción general al obtener reporte', 'api/ni', 'error', [
+      TailLogger::saveLog('NI Service: Error general al obtener reporte', 'api/ni', 'error', [
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
         'response_time_ms' => $responseTime
       ]);
 
-      throw new NaturalIntelligenceServiceException('Unexpected error getting report: ' . $e->getMessage(), 0, $e);
+      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
     }
   }
 
