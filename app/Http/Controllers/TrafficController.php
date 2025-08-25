@@ -59,8 +59,8 @@ class TrafficController extends Controller
       'host' => ['type' => 'like'],
       'state' => ['type' => 'like'],
       'city' => ['type' => 'like'],
-      'visit_date_from' => ['type' => 'date_from', 'column' => 'visit_date'],
-      'visit_date_to' => ['type' => 'date_to', 'column' => 'visit_date'],
+      'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
+      'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
     ];
 
     // Configuración de ordenamiento

@@ -97,7 +97,30 @@ export const TablePostbacks = ({ postbacks }) => {
             ]}
           >
             {/* Date Range Picker */}
-            <DateRangePicker onUpdate={(values) => console.log(values)} align="start" locale="en-US" showCompare={false} />
+            <DateRangePicker
+              onUpdate={({ range: { from, to } }) => {
+                // Obtener filtros actuales
+                const currentFilters = table.getState().columnFilters;
+                
+                // Remover filtros de fecha existentes
+                const otherFilters = currentFilters.filter(
+                  filter => filter.id !== 'from_date' && filter.id !== 'to_date'
+                );
+                
+                // Agregar nuevos filtros de fecha
+                const newFilters = [
+                  ...otherFilters,
+                  { id: 'from_date', value: from.toISOString() },
+                  { id: 'to_date', value: to.toISOString() }
+                ];
+                
+                // Establecer todos los filtros
+                table.setColumnFilters(newFilters);
+              }}
+              align="start"
+              locale="en-US"
+              showCompare={false}
+            />
           </DataTableToolbar>
         </div>
       </div>

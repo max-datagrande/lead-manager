@@ -31,6 +31,8 @@ class PostbackController extends Controller
     $filterConfig = [
       'vendor' => ['type' => 'lower'],
       'status' => ['type' => 'lower'],
+      'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
+      'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
     ];
 
     // Configuración de ordenamiento
