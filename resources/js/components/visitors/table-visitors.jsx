@@ -23,8 +23,7 @@ import { DataTableToolbar } from '@/components/data-table/toolbar';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, setFilter, columnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = useVisitors();
-  /* const [rowSelection, setRowSelection] = useState({}); */
+  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = useVisitors();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const hosts = data.hosts ?? [];
@@ -49,22 +48,7 @@ export const TableVisitors = ({ visitors }) => {
     },
     onColumnFiltersChange: (filtersUpdate) => {
       const newFilters = typeof filtersUpdate === 'function' ? filtersUpdate(columnFilters) : filtersUpdate;
-
-      // Get all filter IDs that were previously set
-      const previousFilterIds = columnFilters.map(f => f.id);
-      const newFilterIds = newFilters.map(f => f.id);
-
-      // Update filters that have values
-      newFilters.forEach(filter => {
-        setFilter(filter.id, filter.value);
-      });
-
-      // Clear filters that were removed (set to undefined)
-      previousFilterIds.forEach(filterId => {
-        if (!newFilterIds.includes(filterId)) {
-          setFilter(filterId, undefined);
-        }
-      });
+      setColumnFilters(newFilters);
     },
     onGlobalFilterChange: setGlobalFilter,
     manualSorting: true,
