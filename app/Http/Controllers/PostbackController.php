@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DatatableTrait;
 use App\Models\Postback;
 use App\Services\PostbackService;
 use Illuminate\Http\Request;
@@ -9,46 +10,30 @@ use Inertia\Inertia;
 
 class PostbackController extends Controller
 {
+  use DatatableTrait;
+
   /**
    * Display a listing of the resource.
    */
   public function index(Request $req)
   {
-    $q = Postback::select('*');
-    // --- BÚSQUEDA GLOBAL (opcional) ---
-    $search = trim((string) $req->input('search', ''));
-    if ($search !== '') {
-      $q->where(function ($w) use ($search) {
-        $like = "%{$search}%";
-        $w->where('clid', 'like', $like)
-          ->orWhere('txid', 'like', $like)
-          ->orWhere('event', 'like', $like)
-          ->orWhere('failure_reason', 'like', $like);
-      });
-    }
-    // --- FILTROS POR COLUMNA ---
-    $filters = json_decode($req->input('filters', '[]'), true) ?? [];
-    foreach ($filters as $f) {
-      $id = $f['id'] ?? null;
-      $val = $f['value'] ?? null;
-      if ($val === null || $val === '' || (is_array($val) && empty($val))) continue;
-      switch ($id) {
-        case 'vendor':
-          if (is_array($val)) {
-            $q->whereIn('vendor', $val);
-          } else {
-            $q->where('vendor', strtolower($val));
-          }
-          break;
-        case 'status':
-          if (is_array($val)) {
-            $q->whereIn('status', $val);
-          } else {
-            $q->where('status', strtolower($val));
-          }
-          break;
-      }
-    }
+    $query = Postback::select('*');
+
+    // Configuración de búsqueda global
+    $searchableColumns = [
+      'clid',
+      'txid',
+      'event',
+      'failure_reason'
+    ];
+
+    // Configuración de filtros
+    $filterConfig = [
+      'vendor' => ['type' => 'lower'],
+      'status' => ['type' => 'lower'],
+    ];
+
+    // Configuración de ordenamiento
     $allowedSort = [
       'vendor',
       'status',
@@ -61,25 +46,19 @@ class PostbackController extends Controller
       'id'
     ];
 
-    $sort = $req->input('sort', 'created_at:desc'); // ej: "created_at:desc"
+    // Procesar consulta usando el trait
+    $result = $this->processDatatableQuery(
+      $query,
+      $req,
+      $searchableColumns,
+      $filterConfig,
+      $allowedSort,
+      'created_at:desc',
+      10,
+      100
+    );
 
-    if ($sort) {
-      [$col, $dir] = get_sort_data($sort);
-      $isAllowSorting = in_array($col, $allowedSort, true);
-      if ($isAllowSorting) {
-        $q->orderBy($col, $dir);
-      }
-    } else {
-      $q->orderByDesc('created_at'); //Sort por defecto
-    }
-    // --- PAGINACIÓN ---
-    $perPage = (int) $req->input('per_page', 10);
-    $perPage = max(1, min($perPage, 100));
-    $page = (int) $req->input('page', 1);
-    $queryParams = $req->query();
-    $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
-
-    //Vendors
+    // Datos adicionales para filtros
     $vendorNames = [
       'ni' => 'Natural Intelligence',
       'maxconv' => 'MaxConv'
@@ -90,7 +69,7 @@ class PostbackController extends Controller
         'label' => $vendorNames[$item->vendor] ?? $item->vendor
       ];
     });
-    //status
+
     $states = [
       [
         'label' => "Pending",
@@ -108,23 +87,11 @@ class PostbackController extends Controller
         'iconName' => 'BadgeAlert'
       ]
     ];
+
     return Inertia::render('postback/index', [
-      'rows' => $p,
-      'meta' => [
-        'total' => $p->total(),
-        'per_page' => $p->perPage(),
-        'current_page' => $p->currentPage(),
-        'last_page' => $p->lastPage(),
-        'from' => $p->firstItem(),
-        'to' => $p->lastItem(),
-      ],
-      'state' => [
-        'search' => $search,
-        'filters' => $filters,
-        'sort' => $sort,
-        'page' => $page,
-        'per_page' => $perPage,
-      ],
+      'rows' => $result['rows'],
+      'meta' => $result['meta'],
+      'state' => $result['state'],
       'data' => [
         'vendors' => $vendors,
         'states' => $states

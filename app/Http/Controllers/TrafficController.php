@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\DatatableTrait;
 use Inertia\Inertia;
 use App\Models\TrafficLog;
 use Illuminate\Http\Request;
 
 class TrafficController extends Controller
 {
+  use DatatableTrait;
+
   /**
    * Display a listing of the resource.
-   *
-   * @description Muestra una lista paginada de visitantes con información básica
    */
   public function index(Request $req)
   {
     // Seleccionamos solo las columnas necesarias para optimizar la consulta
-    $q = TrafficLog::select([
+    $query = TrafficLog::select([
       'id',
       'fingerprint',
       'visit_date',
@@ -38,102 +39,31 @@ class TrafficController extends Controller
       'updated_at'
     ]);
 
-    // --- BÚSQUEDA GLOBAL (opcional) ---
-    $search = trim((string) $req->input('search', ''));
-    if ($search !== '') {
-      $q->where(function ($w) use ($search) {
-        $like = "%{$search}%";
-        $w->where('fingerprint', 'like', $like)
-          ->orWhere('ip_address', 'like', $like)
-          ->orWhere('host', 'like', $like)
-          ->orWhere('path_visited', 'like', $like)
-          ->orWhere('traffic_source', 'like', $like);
-      });
-    }
-    // --- FILTROS POR COLUMNA ---
-    $filters = json_decode($req->input('filters', '[]'), true) ?? [];
-    foreach ($filters as $f) {
-      $id = $f['id'] ?? null;
-      $val = $f['value'] ?? null;
-      if ($val === null || $val === '' || (is_array($val) && empty($val))) continue;
+    // Configuración de búsqueda global
+    $searchableColumns = [
+      'fingerprint',
+      'ip_address',
+      'host',
+      'path_visited',
+      'traffic_source'
+    ];
 
-      switch ($id) {
-        case 'traffic_source':
-          if (is_array($val)) {
-            $q->whereIn('traffic_source', $val);
-          } else {
-            $q->where('traffic_source', $val);
-          }
-          break;
-        case 'country_code':
-          $q->where('country_code', strtoupper($val));
-          break;
-        case 'is_bot':
-          $q->where('is_bot', (int) $val);
-          break;
-        case 'device_type':
-          if (is_array($val)) {
-            $q->whereIn('device_type', $val);
-          } else {
-            $q->where('device_type', $val);
-          }
-          break;
-        case 'browser':
-          if (is_array($val)) {
-            $q->where(function ($query) use ($val) {
-              foreach ($val as $browser) {
-                $query->orWhere('browser', 'like', "%{$browser}%");
-              }
-            });
-          } else {
-            $q->where('browser', 'like', "%{$val}%");
-          }
-          break;
-        case 'os':
-          $q->where('os', 'like', "%{$val}%");
-          break;
-        case 'host': //Array
-          if (is_array($val)) {
-            $q->where(function ($query) use ($val) {
-              foreach ($val as $host) {
-                $query->orWhere('host', 'like', "%{$host}%");
-              }
-            });
-          } else {
-            $q->where('host', 'like', "%{$val}%");
-          }
-          break;
-        case 'state':
-          if (is_array($val)) {
-            $q->where(function ($query) use ($val) {
-              foreach ($val as $state) {
-                $query->orWhere('state', 'like', "%{$state}%");
-              }
-            });
-          } else {
-            $q->where('state', 'like', "%{$val}%");
-          }
-          break;
-        case 'city':
-          if (is_array($val)) {
-            $q->where(function ($query) use ($val) {
-              foreach ($val as $city) {
-                $query->orWhere('city', 'like', "%{$city}%");
-              }
-            });
-          } else {
-            $q->where('city', 'like', "%{$val}%");
-          }
-          break;
-        case 'visit_date_from':
-          $q->whereDate('visit_date', '>=', $val);
-          break;
-        case 'visit_date_to':
-          $q->whereDate('visit_date', '<=', $val);
-          break;
-          // Agrega más filtros permitidos aquí
-      }
-    }
+    // Configuración de filtros
+    $filterConfig = [
+      'traffic_source' => ['type' => 'exact'],
+      'country_code' => ['type' => 'upper'],
+      'is_bot' => ['type' => 'exact'],
+      'device_type' => ['type' => 'exact'],
+      'browser' => ['type' => 'like'],
+      'os' => ['type' => 'like'],
+      'host' => ['type' => 'like'],
+      'state' => ['type' => 'like'],
+      'city' => ['type' => 'like'],
+      'visit_date_from' => ['type' => 'date_from', 'column' => 'visit_date'],
+      'visit_date_to' => ['type' => 'date_to', 'column' => 'visit_date'],
+    ];
+
+    // Configuración de ordenamiento
     $allowedSort = [
       'visit_date',
       'created_at',
@@ -150,32 +80,26 @@ class TrafficController extends Controller
       'is_bot'
     ];
 
-    $sort = $req->input('sort', 'created_at:desc'); // ej: "created_at:desc"
+    // Procesar consulta usando el trait
+    $result = $this->processDatatableQuery(
+      $query,
+      $req,
+      $searchableColumns,
+      $filterConfig,
+      $allowedSort,
+      'created_at:desc',
+      10,
+      100
+    );
 
-    if ($sort) {
-      [$col, $dir] = get_sort_data($sort);
-      $isAllowSorting = in_array($col, $allowedSort, true);
-      if ($isAllowSorting) {
-        $q->orderBy($col, $dir);
-      }
-    } else {
-      $q->orderByDesc('created_at'); //Sort por defecto
-    }
-    // --- PAGINACIÓN ---
-    $perPage = (int) $req->input('per_page', 10);
-    $perPage = max(1, min($perPage, 100));
-    $page = (int) $req->input('page', 1);
-    $queryParams = $req->query();
-    $p = $q->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
-
-    //Hosts
+    // Datos adicionales para filtros
     $hosts = TrafficLog::select('host')->distinct()->get()->map(function ($item) {
       return [
         'value' => $item->host,
         'label' => $item->host
       ];
     });
-    //States
+
     $states = TrafficLog::select('state')
       ->whereNotNull('state')
       ->where('state', '<>', '')
@@ -188,23 +112,11 @@ class TrafficController extends Controller
         ];
       })
       ->values();
+
     return Inertia::render('Visitors/Index', [
-      'rows' => $p,
-      'meta' => [
-        'total' => $p->total(),
-        'per_page' => $p->perPage(),
-        'current_page' => $p->currentPage(),
-        'last_page' => $p->lastPage(),
-        'from' => $p->firstItem(),
-        'to' => $p->lastItem(),
-      ],
-      'state' => [
-        'search' => $search,
-        'filters' => $filters,
-        'sort' => $sort,
-        'page' => $page,
-        'per_page' => $perPage,
-      ],
+      'rows' => $result['rows'],
+      'meta' => $result['meta'],
+      'state' => $result['state'],
       'data' => [
         'hosts' => $hosts,
         'states' => $states
