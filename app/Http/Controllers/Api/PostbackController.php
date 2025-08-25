@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FirePostbackRequest;
-use App\Models\ConversionLog;
+use App\Http\Requests\SearchPayoutRequest;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Jobs\ProcessPostbackJob;
@@ -135,5 +135,167 @@ class PostbackController extends Controller
         'updated_at' => $postback->updated_at
       ]
     ]);
+  }
+
+  /**
+   * Endpoint para buscar payout de un cliente específico en Natural Intelligence
+   *
+   * @param SearchPayoutRequest $request
+   * @return JsonResponse
+   */
+  public function searchPayout(SearchPayoutRequest $request): JsonResponse
+  {
+    $startTime = microtime(true);
+
+    try {
+      $validated = $request->validated();
+      $clid = $validated['clid'];
+      $fromDate = $validated['fromDate'];
+      $toDate = $validated['toDate'];
+
+      TailLogger::saveLog('Postback: Iniciando búsqueda manual de payout', 'api/postback', 'info', [
+        'clid' => $clid,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+      ]);
+
+      // Crear un postback temporal para usar con el servicio
+      $tempPostback = new Postback([
+        'clid' => $clid,
+        'vendor' => 'ni',
+        'id' => 0 // ID temporal para logging
+      ]);
+
+      // Obtener reporte usando el servicio de Natural Intelligence
+      $this->niService->setPostbackId($tempPostback->id);
+      $reportResult = $this->niService->getConversionsReport($fromDate, $toDate);
+
+      if (!$reportResult['success']) {
+        TailLogger::saveLog('Postback: Error al obtener reporte de NI', 'api/postback', 'error', [
+          'clid' => $clid,
+          'from_date' => $fromDate,
+          'to_date' => $toDate
+        ]);
+
+        return response()->json([
+          'success' => false,
+          'message' => 'Error al obtener reporte de Natural Intelligence'
+        ], 500);
+      }
+
+      $conversions = $reportResult['data'] ?? [];
+
+      if (empty($conversions)) {
+        TailLogger::saveLog('Postback: No se encontraron conversiones en el período', 'api/postback', 'warning', [
+          'clid' => $clid,
+          'from_date' => $fromDate,
+          'to_date' => $toDate
+        ]);
+
+        return response()->json([
+          'success' => true,
+          'message' => 'No se encontraron conversiones en el período especificado',
+          'data' => [
+            'clid' => $clid,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'conversions' => [],
+            'total_conversions' => 0
+          ]
+        ]);
+      }
+
+      // Buscar conversiones específicas para el clid
+      $clientConversions = collect($conversions)->filter(function ($item) use ($clid) {
+        return isset($item['pub_param_1']) && $item['pub_param_1'] === $clid;
+      })->values();
+
+      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+      if ($clientConversions->isEmpty()) {
+        TailLogger::saveLog('Postback: CLID no encontrado en conversiones', 'api/postback', 'warning', [
+          'clid' => $clid,
+          'from_date' => $fromDate,
+          'to_date' => $toDate,
+          'total_conversions' => count($conversions),
+          'response_time_ms' => $responseTime
+        ]);
+
+        return response()->json([
+          'success' => true,
+          'message' => 'CLID no encontrado en las conversiones del período',
+          'data' => [
+            'clid' => $clid,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'conversions' => [],
+            'total_conversions' => 0,
+            'total_conversions_in_period' => count($conversions)
+          ]
+        ]);
+      }
+
+      // Calcular totales
+      $totalPayout = $clientConversions->sum('payout');
+      $totalLeads = $clientConversions->sum('leads');
+      $totalSales = $clientConversions->sum('sales');
+
+      TailLogger::saveLog('Postback: Búsqueda de payout completada exitosamente', 'api/postback', 'success', [
+        'clid' => $clid,
+        'from_date' => $fromDate,
+        'to_date' => $toDate,
+        'conversions_found' => $clientConversions->count(),
+        'total_payout' => $totalPayout,
+        'response_time_ms' => $responseTime
+      ]);
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Búsqueda completada exitosamente',
+        'data' => [
+          'clid' => $clid,
+          'from_date' => $fromDate,
+          'to_date' => $toDate,
+          'conversions' => $clientConversions->toArray(),
+          'summary' => [
+            'total_conversions' => $clientConversions->count(),
+            'total_payout' => $totalPayout,
+            'total_leads' => $totalLeads,
+            'total_sales' => $totalSales
+          ],
+          'response_time_ms' => $responseTime
+        ]
+      ]);
+
+    } catch (\App\Services\NaturalIntelligenceServiceException $e) {
+      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+      TailLogger::saveLog('Postback: Error del servicio NI en búsqueda manual', 'api/postback', 'error', [
+        'clid' => $validated['clid'] ?? 'N/A',
+        'error' => $e->getMessage(),
+        'response_time_ms' => $responseTime,
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Error del servicio Natural Intelligence: ' . $e->getMessage()
+      ], 500);
+
+    } catch (\Exception $e) {
+      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+      TailLogger::saveLog('Postback: Error inesperado en búsqueda manual', 'api/postback', 'error', [
+        'clid' => $validated['clid'] ?? 'N/A',
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'response_time_ms' => $responseTime,
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Error inesperado al procesar la búsqueda',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 }

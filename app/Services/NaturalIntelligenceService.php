@@ -20,6 +20,10 @@ class NaturalIntelligenceService
 
   public function __construct(protected NaturalIntelligence $ni) {}
 
+  public function setPostbackId(int $postbackId): void
+  {
+    $this->postbackId = $postbackId;
+  }
   public function getReportUrl(): string
   {
     return $this->ni->reportUrl;
@@ -49,7 +53,7 @@ class NaturalIntelligenceService
   /**
    * Obtiene reportes de conversiones desde NI API
    */
-  private function getConversionsReport(string $fromDate, string $toDate): array
+  public function getConversionsReport(string $fromDate, string $toDate): array
   {
     $startTime = microtime(true);
     try {

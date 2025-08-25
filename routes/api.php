@@ -32,6 +32,10 @@ Route::prefix('postback')->group(function () {
     ->name('api.postback.status')
     ->where('postbackId', '[0-9]+');
 
+  // Ruta para buscar payout de un cliente específico
+  Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
+    ->name('api.postback.search-payout');
+
   // Ruta para obtener reportes de NI (admin)
   Route::get('/report', [PostbackController::class, 'getReport'])
     ->name('api.postback.report');
