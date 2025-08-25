@@ -9,7 +9,6 @@ import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 import {SortingIcon} from '@/components/data-table/sorting-icon';
-import { ComboboxUnique } from '@/components/filters/combo-unique';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useVisitors } from '@/hooks/use-visitors';
 import { visitorColumns as columns } from './list-columns';
@@ -58,11 +57,9 @@ export const TableVisitors = ({ visitors }) => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-
-  const listeners = [sorting, columnFilters, globalFilter];
   useEffect(() => {
     getVisitors({ page: pageIndex + 1, per_page: pageSize });
-  }, listeners);
+  }, [sorting, columnFilters, globalFilter]);
 
   return (
     <>
