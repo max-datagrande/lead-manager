@@ -10,6 +10,7 @@ export function VisitorsProvider({ children }) {
   const { state } = usePage().props;
   const filters = state.filters ?? [];
   const [currentRow, setCurrentRow] = useState(null);
+  const [resetTrigger, setResetTrigger] = useState(false);
   const [globalFilter, setGlobalFilter] = useState(state.search ?? '');
   const [sorting, setSorting] = useState(state.sort ? getSortState(state.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters);
@@ -55,6 +56,8 @@ export function VisitorsProvider({ children }) {
     setGlobalFilter,
     currentRow,
     setCurrentRow,
+    resetTrigger,
+    setResetTrigger,
   };
 
   return <VisitorsContext.Provider value={contextValue}>{children}</VisitorsContext.Provider>;

@@ -33,6 +33,8 @@ export interface DateRangePickerProps {
   locale?: string
   /** Option for showing compare feature */
   showCompare?: boolean
+  /** Option for resetting the picker */
+  isReset?: boolean
 }
 
 const formatDate = (date: Date, locale: string = 'en-us'): string => {
@@ -89,7 +91,8 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   onUpdate,
   align = 'end',
   locale = 'en-US',
-  showCompare = true
+  showCompare = true,
+  isReset = false
 })=> {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -133,6 +136,13 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
       window.removeEventListener('resize', handleResize)
     }
   }, [])
+
+  useEffect(() => {
+    if (isReset) {
+      console.log("Reseting")
+      resetValues()
+    }
+  }, [isReset])
 
   const getPresetRange = (presetName: string): DateRange => {
     const preset = PRESETS.find(({ name }) => name === presetName)

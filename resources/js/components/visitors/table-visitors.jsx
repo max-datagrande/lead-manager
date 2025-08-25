@@ -9,7 +9,6 @@ import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 import {SortingIcon} from '@/components/data-table/sorting-icon';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { useVisitors } from '@/hooks/use-visitors';
 import { visitorColumns as columns } from './list-columns';
 
@@ -22,7 +21,7 @@ import { DataTableToolbar } from '@/components/data-table/toolbar';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = useVisitors();
+  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, setResetTrigger, resetTrigger } = useVisitors();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const hosts = data.hosts ?? [];
@@ -71,6 +70,8 @@ export const TableVisitors = ({ visitors }) => {
             searchPlaceholder="Search..."
             globalQuery={globalFilter}
             setGlobalQuery={setGlobalFilter}
+            resetTrigger = {resetTrigger}
+            setResetTrigger={setResetTrigger}
             filters={[
               {
                 columnId: 'host',
@@ -83,33 +84,7 @@ export const TableVisitors = ({ visitors }) => {
                 options: states,
               },
             ]}
-          >
-            {/* Date Range Picker */}
-            <DateRangePicker
-              onUpdate={({ range: { from, to } }) => {
-                // Obtener filtros actuales
-                const currentFilters = table.getState().columnFilters;
-                
-                // Remover filtros de fecha existentes
-                const otherFilters = currentFilters.filter(
-                  filter => filter.id !== 'from_date' && filter.id !== 'to_date'
-                );
-                
-                // Agregar nuevos filtros de fecha
-                const newFilters = [
-                  ...otherFilters,
-                  { id: 'from_date', value: from.toISOString() },
-                  { id: 'to_date', value: to.toISOString() }
-                ];
-                
-                // Establecer todos los filtros
-                table.setColumnFilters(newFilters);
-              }}
-              align="start"
-              locale="en-US"
-              showCompare={false}
-            />
-          </DataTableToolbar>
+          />
         </div>
       </div>
       <div className="rounded-md border">

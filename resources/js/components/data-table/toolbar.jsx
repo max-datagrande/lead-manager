@@ -1,10 +1,11 @@
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
-import { Input } from '@/components/ui/input';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
-export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', children, filters = [] }) {
+export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', children, filters = [], resetTrigger, setResetTrigger }) {
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   return (
     <div className="flex w-full items-center justify-between gap-2">
@@ -25,12 +26,25 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', child
             })}
           </div>
         )}
+        <DateRangePicker
+          onUpdate={({ range: { from, to } }) => {
+            const currentFilters = table.getState().columnFilters;
+            const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
+            const newFilters = [...otherFilters, { id: 'from_date', value: from.toISOString() }, { id: 'to_date', value: to.toISOString() }];
+            table.setColumnFilters(newFilters);
+          }}
+          isReset={resetTrigger}
+          align="start"
+          locale="en-US"
+          showCompare={false}
+        />
         {isFiltered && (
           <Button
-            variant="ghost"
+            variant="destructive"
             onClick={() => {
               table.resetColumnFilters();
               table.setGlobalFilter('');
+              setResetTrigger(true);
             }}
             className="h-8 px-2 lg:px-3"
           >

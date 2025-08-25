@@ -13,6 +13,7 @@ export function PostbackProvider({ children }) {
   const { state } = usePage().props;
   const filters = state?.filters ?? [];
   const [currentRow, setCurrentRow] = useState(null);
+  const [resetTrigger, setResetTrigger] = useState(false);
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
   const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters);
@@ -73,6 +74,8 @@ export function PostbackProvider({ children }) {
     currentRow,
     setCurrentRow,
     showRequestViewer,
+    resetTrigger,
+    setResetTrigger,
   };
 
   return <PostbackContext.Provider value={contextValue}>{children}</PostbackContext.Provider>;

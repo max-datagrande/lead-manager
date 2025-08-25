@@ -8,8 +8,8 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import {SortingIcon} from '@/components/data-table/sorting-icon';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { SortingIcon } from '@/components/data-table/sorting-icon';
+
 import { usePostbacks } from '@/hooks/use-posbacks';
 import { postbackColumns as columns } from './list-columns';
 
@@ -24,7 +24,18 @@ import { LucideIcon } from '@/components/lucide-icon';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TablePostbacks = ({ postbacks }) => {
-  const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, showRequestViewer } = usePostbacks();
+  const {
+    getPostbacks,
+    columnFilters,
+    setColumnFilters,
+    sorting,
+    setSorting,
+    globalFilter,
+    setGlobalFilter,
+    showRequestViewer,
+    setResetTrigger,
+    resetTrigger,
+  } = usePostbacks();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const vendors = data.vendors ?? [];
@@ -34,7 +45,7 @@ export const TablePostbacks = ({ postbacks }) => {
   states = states.map((item) => {
     return {
       ...item,
-      icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />
+      icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />,
     };
   });
 
@@ -81,6 +92,8 @@ export const TablePostbacks = ({ postbacks }) => {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
+            resetTrigger={resetTrigger}
+            setResetTrigger={setResetTrigger}
             globalQuery={globalFilter}
             setGlobalQuery={setGlobalFilter}
             filters={[
@@ -95,33 +108,7 @@ export const TablePostbacks = ({ postbacks }) => {
                 options: states,
               },
             ]}
-          >
-            {/* Date Range Picker */}
-            <DateRangePicker
-              onUpdate={({ range: { from, to } }) => {
-                // Obtener filtros actuales
-                const currentFilters = table.getState().columnFilters;
-                
-                // Remover filtros de fecha existentes
-                const otherFilters = currentFilters.filter(
-                  filter => filter.id !== 'from_date' && filter.id !== 'to_date'
-                );
-                
-                // Agregar nuevos filtros de fecha
-                const newFilters = [
-                  ...otherFilters,
-                  { id: 'from_date', value: from.toISOString() },
-                  { id: 'to_date', value: to.toISOString() }
-                ];
-                
-                // Establecer todos los filtros
-                table.setColumnFilters(newFilters);
-              }}
-              align="start"
-              locale="en-US"
-              showCompare={false}
-            />
-          </DataTableToolbar>
+          />
         </div>
       </div>
       <div className="rounded-md border">
