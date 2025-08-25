@@ -106,14 +106,9 @@ export const postbackColumns = [
     cell: ({ row, table }) => {
       const postback = row.original;
       const { showRequestViewer } = table.options.meta || {};
-      
+
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => showRequestViewer?.(postback)}
-        >
+        <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer?.(postback)}>
           <Eye className="mr-1 h-3 w-3" />
           API Requests
         </Button>
