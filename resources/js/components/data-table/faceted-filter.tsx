@@ -24,8 +24,8 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-dashed">
+      <PopoverTrigger asChild className="gap-1">
+        <Button variant="outline">
           <CirclePlus className="size-4" />
           {title}
           {selectedValues?.size > 0 && (
@@ -76,7 +76,7 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
                   >
                     <div
                       className={cn(
-                        'flex size-4 items-center justify-center rounded-sm border border-primary mr-1',
+                        'mr-1 flex size-4 items-center justify-center rounded-sm border border-primary',
                         isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible',
                       )}
                     >
@@ -95,7 +95,7 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
               <>
                 <CommandSeparator />
                 <CommandGroup>
-                  <CommandItem onSelect={() => column?.setFilterValue(undefined)} className="justify-center text-center">
+                  <CommandItem onSelect={() => column?.setFilterValue(undefined)} className="justify-center text-center gap-1">
                     Clear filters
                   </CommandItem>
                 </CommandGroup>

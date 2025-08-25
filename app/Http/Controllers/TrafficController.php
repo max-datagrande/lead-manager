@@ -92,14 +92,38 @@ class TrafficController extends Controller
         case 'os':
           $q->where('os', 'like', "%{$val}%");
           break;
-        case 'host':
-          $q->where('host', 'like', "%{$val}%");
+        case 'host': //Array
+          if (is_array($val)) {
+            $q->where(function ($query) use ($val) {
+              foreach ($val as $host) {
+                $query->orWhere('host', 'like', "%{$host}%");
+              }
+            });
+          } else {
+            $q->where('host', 'like', "%{$val}%");
+          }
           break;
         case 'state':
-          $q->where('state', 'like', "%{$val}%");
+          if (is_array($val)) {
+            $q->where(function ($query) use ($val) {
+              foreach ($val as $state) {
+                $query->orWhere('state', 'like', "%{$state}%");
+              }
+            });
+          } else {
+            $q->where('state', 'like', "%{$val}%");
+          }
           break;
         case 'city':
-          $q->where('city', 'like', "%{$val}%");
+          if (is_array($val)) {
+            $q->where(function ($query) use ($val) {
+              foreach ($val as $city) {
+                $query->orWhere('city', 'like', "%{$city}%");
+              }
+            });
+          } else {
+            $q->where('city', 'like', "%{$val}%");
+          }
           break;
         case 'visit_date_from':
           $q->whereDate('visit_date', '>=', $val);

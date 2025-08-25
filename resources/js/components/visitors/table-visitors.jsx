@@ -47,6 +47,25 @@ export const TableVisitors = ({ visitors }) => {
       const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;
       setSorting(newSorting);
     },
+    onColumnFiltersChange: (filtersUpdate) => {
+      const newFilters = typeof filtersUpdate === 'function' ? filtersUpdate(columnFilters) : filtersUpdate;
+
+      // Get all filter IDs that were previously set
+      const previousFilterIds = columnFilters.map(f => f.id);
+      const newFilterIds = newFilters.map(f => f.id);
+
+      // Update filters that have values
+      newFilters.forEach(filter => {
+        setFilter(filter.id, filter.value);
+      });
+
+      // Clear filters that were removed (set to undefined)
+      previousFilterIds.forEach(filterId => {
+        if (!newFilterIds.includes(filterId)) {
+          setFilter(filterId, undefined);
+        }
+      });
+    },
     onGlobalFilterChange: setGlobalFilter,
     manualSorting: true,
     manualFiltering: true,
@@ -85,15 +104,6 @@ export const TableVisitors = ({ visitors }) => {
               },
             ]}
           >
-            {/* Host */}
-            <ComboboxUnique
-              items={hosts}
-              label="Host"
-              currentValue={columnFilters.find((f) => f.id === 'host')?.value || ''}
-              onChange={(value) => {
-                setFilter('host', value);
-              }}
-            />
             {/* Date Range Picker */}
             <DateRangePicker onUpdate={(values) => console.log(values)} align="start" locale="en-US" showCompare={false} />
           </DataTableToolbar>

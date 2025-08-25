@@ -8,7 +8,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', child
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   return (
     <div className="flex w-full items-center justify-between gap-2">
-      <div className="flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2">
+      <div className="flex flex-1 flex-col-reverse items-start gap-2 sm:flex-row sm:items-center">
         {/* Global Search */}
         <Input
           placeholder={searchPlaceholder}
@@ -16,7 +16,6 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', child
           onChange={(event) => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
-        {children}
         {filters && (
           <div className="flex gap-x-2">
             {filters.map((filter) => {
@@ -40,6 +39,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', child
           </Button>
         )}
       </div>
+      {children}
       <DataTableViewOptions columns={table.getAllColumns()} />
     </div>
   );

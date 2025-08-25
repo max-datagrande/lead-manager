@@ -18,6 +18,7 @@ function VisitorsProvider({ children }) {
   const isFirstRender = useRef(true);
 
   const setFilter = (id, value) => {
+    console.log(id, value);
     setColumnFilters((prev) => {
       const others = prev.filter((f) => f.id !== id);
       return value ? [...others, { id, value }] : others;
@@ -39,7 +40,6 @@ function VisitorsProvider({ children }) {
       filters: JSON.stringify(columnFilters || []),
       ...newData,
     };
-    console.log('Updating visitors');
     const url = route('visitors.index');
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
