@@ -45,14 +45,37 @@ class NaturalIntelligenceService
    */
   public function getConversionsReport(string $fromDate, string $toDate): array
   {
+    // Preparar datos de la petición usando la librería
     $startTime = microtime(true);
+    $payload = $this->ni->buildPayload($fromDate, $toDate);
+
+    // Registrar petición de reporte
+    $apiRequest = PostbackApiRequests::create([
+      'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+      'endpoint' => $this->ni->reportUrl,
+      'method' => 'POST',
+      'request_data' => $payload,
+      'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
+      'postback_id' => $this->postbackId ?? null,
+      'request_id' => uniqid('req_'),
+    ]);
+
     try {
       $this->ni->login();
-      // Preparar datos de la petición usando la librería
-      $payload = $this->ni->buildPayload($fromDate, $toDate);
       // Obtener reporte usando la librería
       $this->report  = $this->ni->getReport($payload);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+      // Obtener información de la última petición
+      $lastResponse = $this->ni->getLastResponse();
+
+      // Actualizar el registro con la respuesta exitosa
+      $apiRequest->updateWithResponse(
+        $lastResponse ? $lastResponse->json() : $this->report,
+        $lastResponse ? $lastResponse->status() : 200,
+        null,
+        $responseTime
+      );
 
       TailLogger::saveLog('NI Service: Reporte obtenido exitosamente', 'api/ni', 'info', [
         'from_date' => $fromDate,
@@ -70,21 +93,16 @@ class NaturalIntelligenceService
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       }
 
-      // Intentar obtener respuesta y payload de la librería si están disponibles
-      $response = $this->ni->getLastResponse();
-      $payload = $this->ni->getLastPayload();
+      // Obtener información de la última petición fallida
+      $lastResponse = $this->ni->getLastResponse();
 
-      PostbackApiRequests::create([
-        'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
-        'endpoint' => $this->getReportUrl(),
-        'method' => 'POST',
-        'request_data' => $payload,
-        'status_code' => $response ? $response->status() : null,
-        'error_message' => $e->getMessage(),
-        'response_time_ms' => $responseTime,
-        'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
-        'request_id' => uniqid('req_')
-      ]);
+      // Actualizar el registro con el error
+      $apiRequest->updateWithResponse(
+        $lastResponse ? $lastResponse->json() : null,
+        $lastResponse ? $lastResponse->status() : ($e->getCode() ?: 500),
+        $e->getMessage(),
+        $responseTime
+      );
 
       TailLogger::saveLog('NI Service: Error general al obtener reporte', 'api/ni', 'error', [
         'error' => $e->getMessage(),

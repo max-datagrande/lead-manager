@@ -79,7 +79,8 @@ class ProcessPostbackJob implements ShouldQueue
       ]);
 
       $niService = app(NaturalIntelligenceService::class);
-      $payout = $niService->getPayoutForClickId($this->clickId, $postback);
+      $niService->setPostbackId($this->postbackId);
+      $payout = $niService->getPayoutForClickId($this->clickId);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       // Actualizar postback con el payout obtenido
