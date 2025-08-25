@@ -163,9 +163,8 @@ class PostbackController extends Controller
       $tempPostback = new Postback([
         'clid' => $clid,
         'vendor' => 'ni',
-        'id' => 0 // ID temporal para logging
+        'id' => 0
       ]);
-
       // Obtener reporte usando el servicio de Natural Intelligence
       $this->niService->setPostbackId($tempPostback->id);
       $reportResult = $this->niService->getConversionsReport($fromDate, $toDate);
@@ -182,9 +181,7 @@ class PostbackController extends Controller
           'message' => 'Error al obtener reporte de Natural Intelligence'
         ], 500);
       }
-
       $conversions = $reportResult['data'] ?? [];
-
       if (empty($conversions)) {
         TailLogger::saveLog('Postback: No se encontraron conversiones en el período', 'api/postback', 'warning', [
           'clid' => $clid,
@@ -269,21 +266,25 @@ class PostbackController extends Controller
 
     } catch (\App\Services\NaturalIntelligenceServiceException $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
       TailLogger::saveLog('Postback: Error del servicio NI en búsqueda manual', 'api/postback', 'error', [
         'clid' => $validated['clid'] ?? 'N/A',
         'error' => $e->getMessage(),
         'response_time_ms' => $responseTime,
       ]);
 
-      return response()->json([
+      $badResponse = [
         'success' => false,
-        'message' => 'Error del servicio Natural Intelligence: ' . $e->getMessage()
-      ], 500);
+        'message' => $e->getMessage()
+      ];
+      if (app()->environment('local')) {
+        $badResponse['trace'] = $e->getTraceAsString();
+        $badResponse['error'] = $e->getMessage();
+        $badResponse['response_time_ms'] = $responseTime;
+      }
+      return response()->json($badResponse, 500);
 
     } catch (\Exception $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
       TailLogger::saveLog('Postback: Error inesperado en búsqueda manual', 'api/postback', 'error', [
         'clid' => $validated['clid'] ?? 'N/A',
         'error' => $e->getMessage(),
@@ -293,7 +294,7 @@ class PostbackController extends Controller
 
       return response()->json([
         'success' => false,
-        'message' => 'Error inesperado al procesar la búsqueda',
+        'message' => 'Unexpected error while processing the search',
         'error' => $e->getMessage()
       ], 500);
     }
