@@ -3,6 +3,8 @@ import { getSortState, serializeSort } from '@/utils/table';
 import { router, usePage } from '@inertiajs/react';
 import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
+import { useModal } from '@/hooks/use-modal';
+import { PostbackApiRequestsViewer } from '@/components/postback';
 
 export const PostbackContext = createContext(null);
 
@@ -14,7 +16,30 @@ export function PostbackProvider({ children }) {
   const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters);
   const isFirstRender = useRef(true);
+  const modal = useModal();
 
+  const showRequestViewer = (postback) => {
+    modal.open(
+      <div className="flex items-center gap-2">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 px-2">
+              <Eye className="h-3 w-3 mr-1" />
+              API Requests
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                API Requests - Postback #{postback.id}
+              </DialogTitle>
+            </DialogHeader>
+            <PostbackApiRequestsViewer postbackId={postback.id} />
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
   const setFilter = (id, value) => {
     setColumnFilters((prev) => {
       const others = prev.filter((f) => f.id !== id);
@@ -55,6 +80,7 @@ export function PostbackProvider({ children }) {
     setGlobalFilter,
     currentRow,
     setCurrentRow,
+    showRequestViewer,
   };
 
   return <PostbackContext.Provider value={contextValue}>{children}</PostbackContext.Provider>;

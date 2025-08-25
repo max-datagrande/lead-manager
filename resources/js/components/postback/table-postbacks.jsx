@@ -37,7 +37,6 @@ export const TablePostbacks = ({ postbacks }) => {
       icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />
     };
   });
-  console.log(states);
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
