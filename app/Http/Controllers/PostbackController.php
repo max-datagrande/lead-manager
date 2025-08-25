@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Postback;
-use App\Http\Requests\StorePostbackRequest;
-use App\Http\Requests\UpdatePostbackRequest;
+use App\Services\PostbackService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -147,5 +146,27 @@ class PostbackController extends Controller
   public function show(Postback $postback)
   {
     //
+  }
+
+  /**
+   * Get API requests for a specific postback
+   */
+  public function getApiRequests(Request $request, $postbackId)
+  {
+    $postbackServices = app(PostbackService::class);
+    try {
+      $requests = $postbackServices->getApiRequests($postbackId);
+      return response()->json([
+        'success' => true,
+        'data' => $requests
+      ]);
+    } catch (\Throwable $e) {
+      session()->flash('error', $e->getMessage());
+      return response()->json([
+        'success' => false,
+        'message' => 'Error getting API requests',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 }

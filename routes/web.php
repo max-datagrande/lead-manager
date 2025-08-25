@@ -15,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   })->name('dashboard');
   Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
   Route::get('postbacks', [PostbackController::class, 'index'])->name('postbacks.index');
+  Route::get('postbacks/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('postbacks.api-requests');
 });
 
 require __DIR__ . '/settings.php';
