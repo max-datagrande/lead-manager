@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Maxidev\Logger\TailLogger;
+use App\Models\PostbackApiRequests;
+use App\Models\Postback;
+use App\Libraries\NaturalIntelligence;
 
 class NaturalIntelligenceServiceException extends \Exception
 {
@@ -19,153 +22,166 @@ class NaturalIntelligenceServiceException extends \Exception
  */
 class NaturalIntelligenceService
 {
-  private string $loginUrl;
-  private string $reportUrl;
-  private string $username;
-  private string $password;
+
+  private int $postbackId;
   private array $report;
+  private array $relevantFields = ['data_type', 'date', 'source_join', 'device', 'pub_param_1', 'pub_param_2', 'external_campaign_id', 'external_traffic_source', 'clickouts', 'leads', 'payout', 'sales', 'visits', 'bridge_visits', 'clicking_users', 'date_time'];
 
-  public function __construct()
+  public function __construct(protected NaturalIntelligence $ni){}
+
+  public function getReportUrl(): string
   {
-    $this->loginUrl = 'https://partner-login.naturalint.com/token';
-    $this->reportUrl = 'https://partner-api.naturalint.com/publisherhubservice/get-report';
-    $this->username = config('services.natural_intelligence.username');
-    $this->password = config('services.natural_intelligence.password');
+    return $this->ni->reportUrl;
   }
 
-  /**
-   * Obtiene token de autenticación de NI (con cache de 23 horas)
-   */
-  private function getAuthToken(): ?string
-  {
-    return Cache::remember('ni_auth_token', 23 * 60 * 60, function () {
-      TailLogger::saveLog('NI Service: Solicitando nuevo token de autenticación', 'api/ni', 'info', [
-        'username' => $this->username
-      ]);
-      $response = Http::timeout(30)
-        ->post($this->loginUrl, [
-          'username' => $this->username,
-          'password' => $this->password,
-        ]);
 
-      if ($response->successful()) {
-        $token = $response->body();
-        TailLogger::saveLog('NI Service: Token obtenido exitosamente', 'api/ni', 'info', [
-          'username' => $this->username
-        ]);
-        return $token;
-      }
-
-      TailLogger::saveLog('NI Service: Error al obtener token', 'api/ni', 'error', [
-        'status' => $response->status(),
-        'response' => $response->body()
-      ]);
-      throw new NaturalIntelligenceServiceException('Error obtaining token');
-    });
-  }
 
   /**
    * Obtiene reportes de conversiones de los últimos 3 días
    */
-  public function getRecentConversionsReport(): array
+  public function getRecentConversionsReport(Postback $postback): array
   {
+    if (empty($postback)) { // Check if postback is empty
+      throw new NaturalIntelligenceServiceException('Invalid postback found in postback - Required postback object, found: null');
+    }
+    if ($postback->vendor !== 'ni') { // Check if postback vendor is ni
+      throw new NaturalIntelligenceServiceException('Invalid vendor found in postback - Required vendor "ni", found: ' . $postback->vendor);
+    }
+    if ($postback->id === null) { // Check if postback ID is null
+      throw new NaturalIntelligenceServiceException('Invalid postback ID found in postback - Required ID, found: ' . $postback->id);
+    }
+    //Set postback ID as a variable
+    $this->postbackId = $postback->id;
     $fromDate = now()->subDays(3)->format('Y-m-d');
     $toDate = now()->format('Y-m-d');
-    
     return $this->getConversionsReport($fromDate, $toDate);
   }
 
   /**
    * Obtiene reportes de conversiones desde NI API
    */
-  public function getConversionsReport(string $fromDate, string $toDate): array
+  private function getConversionsReport(string $fromDate, string $toDate): array
   {
+    $startTime = microtime(true);
     try {
-      $token = $this->getAuthToken();
-      TailLogger::saveLog('NI Service: Solicitando reporte de conversiones', 'api/ni', 'info', [
+      $this->ni->login();
+      
+      // Preparar datos de la petición usando la librería
+      $payload = $this->ni->buildPayload($fromDate, $toDate);
+      
+      // Obtener reporte usando la librería
+      $report = $this->ni->getReport($payload);
+      
+      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+      
+      // Obtener la respuesta HTTP de la librería para logging
+      $response = $this->ni->getLastResponse();
+      
+      TailLogger::saveLog('NI Service: Reporte obtenido exitosamente', 'api/ni', 'info', [
         'from_date' => $fromDate,
         'to_date' => $toDate,
+        'response_time_ms' => $responseTime
       ]);
 
-      $response = Http::timeout(60)
-        ->withHeaders(['Authorization' => $token])
-        ->post($this->reportUrl, [
-          'FromDate' => $fromDate,
-          'ToDate' => $toDate,
-          'ReportFormat' => "json",
-          'ReportType' => 'Summary',
-          'DataType' => 'conversions'
-        ]);
-
-      if ($response->successful()) {
-        TailLogger::saveLog('NI Service: Reporte obtenido exitosamente', 'api/ni', 'info', [
-          'from_date' => $fromDate,
-          'to_date' => $toDate
-        ]);
-        $report = $response->json();
-        $this->report = $report;
-        return [
-          'success' => true,
-          'data' => $report
-        ];
+      $this->report = $report;
+      return [
+        'success' => true,
+        'data' => $report
+      ];
+    } catch (\App\Libraries\NaturalIntelligenceException $e) {
+      // Manejar excepciones de la librería NaturalIntelligence
+      if (!isset($responseTime)) {
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       }
-      TailLogger::saveLog('NI Service: Error al obtener reporte', 'api/ni', 'error', [
-        'status' => $response->status(),
-        'response' => $response->body()
+      
+      // Obtener respuesta y payload de la librería
+      $response = $this->ni->getLastResponse();
+      $payload = $this->ni->getLastPayload();
+      
+      PostbackApiRequests::create([
+        'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+        'endpoint' => $this->getReportUrl(),
+        'method' => 'POST',
+        'request_data' => $payload,
+        'status_code' => $response ? $response->status() : null,
+        'error_message' => $e->getMessage(),
+        'response_time_ms' => $responseTime,
+        'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
+        'request_id' => uniqid('req_')
       ]);
-      throw new NaturalIntelligenceServiceException('Error getting report');
-    } catch (NaturalIntelligenceServiceException $e) {
-      TailLogger::saveLog('NI Service: Excepción al obtener reporte', 'api/ni', 'error', [
+
+      TailLogger::saveLog('NI Service: Error de librería al obtener reporte', 'api/ni', 'error', [
         'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
+        'status_code' => $response ? $response->status() : null,
+        'response_time_ms' => $responseTime,
+        'trace' => $e->getTraceAsString(),
       ]);
-      return [
-        'success' => false,
-        'message' => 'Failed to get report',
-        'error' => $e->getMessage(),
-      ];
+      
+      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
     } catch (\Exception $e) {
-      Log::error('NI Service: Excepción al obtener reporte', [
-        'error' => $e->getMessage()
+      // Manejar excepciones generales
+      if (!isset($responseTime)) {
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+      }
+      
+      // Intentar obtener respuesta y payload de la librería si están disponibles
+      $response = $this->ni->getLastResponse();
+      $payload = $this->ni->getLastPayload();
+      
+      PostbackApiRequests::create([
+        'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+        'endpoint' => $this->getReportUrl(),
+        'method' => 'POST',
+        'request_data' => $payload,
+        'status_code' => $response ? $response->status() : null,
+        'error_message' => $e->getMessage(),
+        'response_time_ms' => $responseTime,
+        'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
+        'request_id' => uniqid('req_')
       ]);
-      return [
-        'success' => false,
-        'message' => 'Unexpected error while getting report',
-        'error' => $e->getMessage()
-      ];
+
+      TailLogger::saveLog('NI Service: Excepción general al obtener reporte', 'api/ni', 'error', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'response_time_ms' => $responseTime
+      ]);
+      
+      throw new NaturalIntelligenceServiceException('Unexpected error getting report: ' . $e->getMessage(), 0, $e);
     }
+  }
+
+  public function filterRelevantResponseData(?array $responseData): ?array
+  {
+    if (!$responseData || !is_array($responseData)) {
+      return $responseData;
+    }
+    $data = collect($responseData)->filter(function ($item, $key) {
+      return in_array($key, $this->relevantFields);
+    });
+    return $data->toArray();
   }
 
   /**
    * Busca un click específico en los reportes recientes y retorna el payout
    */
-  public function getPayoutForClickId(string $clickId): ?float
+  public function getPayoutForClickId(string $clickId, Postback $postback): ?float
   {
     try {
-      $reportResult = $this->getRecentConversionsReport();
-      
-      if (!$reportResult['success']) {
-        TailLogger::saveLog('NI Service: Error al obtener reporte reciente', 'api/ni', 'error', [
-          'clickId' => $clickId,
-          'error' => $reportResult['message'] ?? 'Unknown error'
-        ]);
-        return null;
-      }
-      
+      $reportResult = $this->getRecentConversionsReport($postback);
       $conversions = $reportResult['data'] ?? [];
-      
+
       if (empty($conversions)) {
         TailLogger::saveLog('NI Service: No hay conversiones en el reporte', 'api/ni', 'warning', [
           'clickId' => $clickId
         ]);
         return null;
       }
-      
+
       // Buscar la conversión por pub_param_1 (clickId)
       $conversion = collect($conversions)->first(function ($item) use ($clickId) {
         return isset($item['pub_param_1']) && $item['pub_param_1'] === $clickId;
       });
-      
+
       if (!$conversion) {
         TailLogger::saveLog('NI Service: Click ID no encontrado en conversiones', 'api/ni', 'warning', [
           'clickId' => $clickId,
@@ -173,9 +189,9 @@ class NaturalIntelligenceService
         ]);
         return null;
       }
-      
+
       $payout = $conversion['payout'] ?? null;
-      
+
       if ($payout === null) {
         TailLogger::saveLog('NI Service: Payout no disponible para click ID', 'api/ni', 'warning', [
           'clickId' => $clickId,
@@ -183,16 +199,21 @@ class NaturalIntelligenceService
         ]);
         return null;
       }
-      
+
       TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
         'clickId' => $clickId,
         'payout' => $payout
       ]);
-      
+
       return (float) $payout;
-      
+    } catch (NaturalIntelligenceServiceException $e) {
+      TailLogger::saveLog('NI Service: Error de servicio al buscar payout para click ID', 'api/ni', 'error', [
+        'clickId' => $clickId,
+        'error' => $e->getMessage()
+      ]);
+      return null;
     } catch (\Exception $e) {
-      TailLogger::saveLog('NI Service: Error al buscar payout para click ID', 'api/ni', 'error', [
+      TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
@@ -221,6 +242,21 @@ class NaturalIntelligenceService
     }
     return $clickIdReport;
   }
+
+  /**
+   * Obtiene el header de autenticación desde la librería NaturalIntelligence
+   */
+  private function getAuthHeader(): array
+  {
+    $token = Cache::get('ni_auth_token');
+    if (!$token) {
+      // Si no hay token, forzar renovación a través de la librería
+      $this->ni->login();
+      $token = Cache::get('ni_auth_token');
+    }
+    return ['Authorization' => (string) $token];
+  }
+
   /**
    * Obtiene el payout de un reporte (método legacy)
    */
@@ -243,4 +279,6 @@ class NaturalIntelligenceService
       return null;
     }
   }
+
+
 }
