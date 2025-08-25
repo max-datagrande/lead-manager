@@ -24,7 +24,7 @@ Route::middleware(['auth.host'])->group(function () {
 
 Route::prefix('postback')->group(function () {
   // Ejemplo: /v1/postback/conv?clid=123&payout=10.50&offer_id=ABC&currency=USD&vendor=ni
-  Route::any('/conv', [PostbackController::class, 'store'])
+  Route::get('/conv', [PostbackController::class, 'store'])
     ->name('api.postback.store');
 
   // Ruta para consultar el estado de un postback
