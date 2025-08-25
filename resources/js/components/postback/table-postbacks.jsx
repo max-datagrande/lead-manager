@@ -14,6 +14,8 @@ import { usePostbacks } from '@/hooks/use-posbacks';
 import { postbackColumns as columns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
+
+import { LucideIcon } from '@/components/lucide-icon';
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
  *
@@ -26,7 +28,16 @@ export const TablePostbacks = ({ postbacks }) => {
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const vendors = data.vendors ?? [];
-  const states = data.states ?? [];
+  let states = data.states ?? [];
+  console.log(states);
+
+  states = states.map((item) => {
+    return {
+      ...item,
+      icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />
+    };
+  });
+  console.log(states);
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;

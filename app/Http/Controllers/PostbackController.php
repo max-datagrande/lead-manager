@@ -42,7 +42,11 @@ class PostbackController extends Controller
           }
           break;
         case 'status':
-          $q->where('status', strtolower($val));
+          if (is_array($val)) {
+            $q->whereIn('status', $val);
+          } else {
+            $q->where('status', strtolower($val));
+          }
           break;
       }
     }
@@ -92,17 +96,17 @@ class PostbackController extends Controller
       [
         'label' => "Pending",
         'value' => Postback::STATUS_PENDING,
-        'icon' => 'Badge'
+        'iconName' => 'Badge'
       ],
       [
         'label' => "Processed",
         'value' => Postback::STATUS_PROCESSED,
-        'icon' => 'BadgeCheck'
+        'iconName' => 'BadgeCheck'
       ],
       [
         'label' => "Failed",
         'value' => Postback::STATUS_FAILED,
-        'icon' => 'BadgeAlert'
+        'iconName' => 'BadgeAlert'
       ]
     ];
     return Inertia::render('postback/index', [
