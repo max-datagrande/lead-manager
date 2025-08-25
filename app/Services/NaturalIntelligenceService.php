@@ -10,16 +10,7 @@ use App\Models\PostbackApiRequests;
 use App\Models\Postback;
 use App\Libraries\NaturalIntelligence;
 
-class NaturalIntelligenceServiceException extends \Exception
-{
-  public function __construct(string $message, int $code = 0, ?\Throwable $previous = null)
-  {
-    parent::__construct($message, $code, $previous);
-  }
-}
-/**
- * Servicio para manejar postbacks y reportes con Natural Intelligence
- */
+
 class NaturalIntelligenceService
 {
 
@@ -27,14 +18,12 @@ class NaturalIntelligenceService
   private array $report;
   private array $relevantFields = ['data_type', 'date', 'source_join', 'device', 'pub_param_1', 'pub_param_2', 'external_campaign_id', 'external_traffic_source', 'clickouts', 'leads', 'payout', 'sales', 'visits', 'bridge_visits', 'clicking_users', 'date_time'];
 
-  public function __construct(protected NaturalIntelligence $ni){}
+  public function __construct(protected NaturalIntelligence $ni) {}
 
   public function getReportUrl(): string
   {
     return $this->ni->reportUrl;
   }
-
-
 
   /**
    * Obtiene reportes de conversiones de los últimos 3 días
@@ -65,18 +54,16 @@ class NaturalIntelligenceService
     $startTime = microtime(true);
     try {
       $this->ni->login();
-      
       // Preparar datos de la petición usando la librería
       $payload = $this->ni->buildPayload($fromDate, $toDate);
-      
       // Obtener reporte usando la librería
       $report = $this->ni->getReport($payload);
-      
+
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-      
+
       // Obtener la respuesta HTTP de la librería para logging
       $response = $this->ni->getLastResponse();
-      
+
       TailLogger::saveLog('NI Service: Reporte obtenido exitosamente', 'api/ni', 'info', [
         'from_date' => $fromDate,
         'to_date' => $toDate,
@@ -93,11 +80,11 @@ class NaturalIntelligenceService
       if (!isset($responseTime)) {
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       }
-      
+
       // Obtener respuesta y payload de la librería
       $response = $this->ni->getLastResponse();
       $payload = $this->ni->getLastPayload();
-      
+
       PostbackApiRequests::create([
         'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
         'endpoint' => $this->getReportUrl(),
@@ -116,18 +103,18 @@ class NaturalIntelligenceService
         'response_time_ms' => $responseTime,
         'trace' => $e->getTraceAsString(),
       ]);
-      
+
       throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
     } catch (\Exception $e) {
       // Manejar excepciones generales
       if (!isset($responseTime)) {
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       }
-      
+
       // Intentar obtener respuesta y payload de la librería si están disponibles
       $response = $this->ni->getLastResponse();
       $payload = $this->ni->getLastPayload();
-      
+
       PostbackApiRequests::create([
         'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
         'endpoint' => $this->getReportUrl(),
@@ -145,7 +132,7 @@ class NaturalIntelligenceService
         'trace' => $e->getTraceAsString(),
         'response_time_ms' => $responseTime
       ]);
-      
+
       throw new NaturalIntelligenceServiceException('Unexpected error getting report: ' . $e->getMessage(), 0, $e);
     }
   }
@@ -168,6 +155,13 @@ class NaturalIntelligenceService
   {
     try {
       $reportResult = $this->getRecentConversionsReport($postback);
+      if (!$reportResult['success']) {
+        //Set the status to failed
+        $postback->markAsFailed();
+      }
+      $conversions = $reportResult['data'] ?? [];
+      if (empty($conversions)) {
+      }
       $conversions = $reportResult['data'] ?? [];
 
       if (empty($conversions)) {
@@ -279,6 +273,20 @@ class NaturalIntelligenceService
       return null;
     }
   }
+}
 
+class NaturalIntelligenceServiceException extends \Exception
+{
+  public function __construct(string $message, int $code = 0, ?\Throwable $previous = null)
+  {
+    parent::__construct($message, $code, $previous);
+  }
+}
 
+class PayoutNotFoundException extends \Exception
+{
+  public function __construct(string $clid)
+  {
+    parent::__construct("Payout not found for CLID: {$clid}");
+  }
 }
