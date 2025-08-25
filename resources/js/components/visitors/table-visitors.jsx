@@ -44,14 +44,10 @@ export const TableVisitors = ({ visitors }) => {
       globalFilter,
     },
     onSortingChange: (sortingUpdate) => {
-      const newSorting = typeof sortingUpdate === 'function'
-        ? sortingUpdate(sorting)
-        : sortingUpdate;
+      const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;
       setSorting(newSorting);
     },
-    globalFilterFn: (row) => {
-      console.log(row);
-    },
+    onGlobalFilterChange: setGlobalFilter,
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
@@ -67,6 +63,7 @@ export const TableVisitors = ({ visitors }) => {
 
   return (
     <>
+
       {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
