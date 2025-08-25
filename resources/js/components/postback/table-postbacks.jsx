@@ -24,7 +24,7 @@ import { LucideIcon } from '@/components/lucide-icon';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TablePostbacks = ({ postbacks }) => {
-  const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter } = usePostbacks();
+  const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, showRequestViewer } = usePostbacks();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const vendors = data.vendors ?? [];
@@ -49,6 +49,9 @@ export const TablePostbacks = ({ postbacks }) => {
       columnFilters: columnFilters,
       pagination: { pageIndex, pageSize },
       globalFilter,
+    },
+    meta: {
+      showRequestViewer,
     },
     onSortingChange: (sortingUpdate) => {
       const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;

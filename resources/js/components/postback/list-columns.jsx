@@ -1,6 +1,9 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
+import { Eye } from 'lucide-react';
+
 
 // --- Columnas TanStack ---
 const vendors = {
@@ -96,4 +99,47 @@ export const postbackColumns = [
       </div>
     ),
   },
+  {
+    id: 'actions',
+    header: 'Shares',
+    enableSorting: false,
+    cell: ({ row, table }) => {
+      const postback = row.original;
+      const { showRequestViewer } = table.options.meta || {};
+      
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => showRequestViewer?.(postback)}
+        >
+          <Eye className="mr-1 h-3 w-3" />
+          API Requests
+        </Button>
+      );
+    },
+  },
 ];
+/*
+return (
+        <div className="flex items-center gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 px-2">
+                <Eye className="h-3 w-3 mr-1" />
+                API Requests
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  API Requests - Postback #{postback.id}
+                </DialogTitle>
+              </DialogHeader>
+
+            </DialogContent>
+          </Dialog>
+        </div>
+      );
+*/
