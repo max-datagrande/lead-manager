@@ -7,7 +7,11 @@ use Carbon\Carbon;
 
 class Postback extends Model
 {
+  protected $table = 'postbacks';
+  protected $primaryKey = 'id';
+  public $timestamps = true;
   protected $fillable = [
+    'id',
     'vendor',
     'clid',
     'payout',
