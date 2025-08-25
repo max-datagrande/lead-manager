@@ -5,14 +5,13 @@ namespace App\Jobs;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Services\PayoutNotFoundException;
-use App\Services\PostbackService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Maxidev\Logger\TailLogger;
 use Carbon\Carbon;
-use Exception;
+use Throwable;
 
 class ProcessPostbackJob implements ShouldQueue
 {
@@ -121,25 +120,42 @@ class ProcessPostbackJob implements ShouldQueue
       return;
     } catch (\Throwable $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
-      TailLogger::saveLog('Error inesperado al procesar postback, marcando como fallido', 'jobs/postback', 'error', [
+      $responseData = [
         'postback_id' => $this->postbackId,
         'click_id' => $this->clickId,
         'attempt' => $this->attempts(),
         'response_time_ms' => $responseTime,
         'exception' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
-      ]);
+      ];
+      TailLogger::saveLog('Error inesperado al procesar postback, marcando como fallido', 'jobs/postback', 'error', $responseData);
 
       if (isset($postback)) {
-        $postback->markAsFailed();
         TailLogger::saveLog("Postback marcado como fallido en base de datos", 'jobs/postback', 'info', [
           'postback_id' => $this->postbackId,
           'final_status' => Postback::STATUS_FAILED
         ]);
+        $postback->markAsFailed($e->getMessage(), $responseData);
       }
 
       $this->fail($e); // Esto marca el job como fallido permanentemente
+    }
+  }
+  public function failed(Throwable $exception): void
+  {
+    $postback = Postback::find($this->postbackId);
+    if ($postback && $postback->isPending()) {
+      $reason = 'Job failed after all retries: ' . $exception->getMessage();
+
+      // Si el error original fue PayoutNotFound, el mensaje es más claro
+      if ($exception instanceof PayoutNotFoundException) {
+        $reason = 'Unable to find payout after 3 days.';
+      }
+      $postback->markAsFailed($reason);
+      TailLogger::saveLog('Job failed permanently and postback marked as failed', 'jobs/postback', 'error', [
+        'postback_id' => $this->postbackId,
+        'reason' => $reason,
+      ]);
     }
   }
 }

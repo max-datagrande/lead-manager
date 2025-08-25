@@ -20,6 +20,7 @@ class Postback extends Model
     'event',
     'offer_id',
     'status',
+    'failure_reason',
     'response_data',
     'processed_at'
   ];
@@ -66,10 +67,11 @@ class Postback extends Model
     ]);
   }
 
-  public function markAsFailed($responseData = null)
+  public function markAsFailed(?string $reason = null, $responseData = null)
   {
     $this->update([
       'status' => self::STATUS_FAILED,
+      'failure_reason' => $reason,
       'processed_at' => now(),
       'response_data' => $responseData
     ]);

@@ -9,9 +9,10 @@ use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Jobs\ProcessPostbackJob;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Maxidev\Logger\TailLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 
 /**
  * Controller para manejar postbacks a Natural Intelligence desde landing pages
@@ -60,28 +61,31 @@ class PostbackController extends Controller
           'message' => 'Offer not found',
         ], 422);
       }
+      $postback = DB::transaction(function () use ($validated) {
+        // Crear postback con estado pending
+        $postback = Postback::create([
+          'offer_id' => $validated['offer_id'],
+          'clid' => $validated['clid'],
+          'payout' => $validated['payout'] ?? null,
+          'txid' => $validated['txid'],
+          'currency' => $validated['currency'],
+          'event' => $validated['event'],
+          'vendor' => $validated['vendor'],
+          'status' => Postback::STATUS_PENDING
+        ]);
 
-      // Crear postback con estado pending
-      $postback = Postback::create([
-        'offer_id' => $offerId,
-        'clid' => $validated['clid'],
-        'payout' => $validated['payout'] ?? null, // Será actualizado por el job
-        'txid' => $validated['txid'],
-        'currency' => $validated['currency'],
-        'event' => $validated['event'],
-        'vendor' => $vendor,
-        'status' => Postback::STATUS_PENDING
-      ]);
+        // Despachar job para obtener payout
+        ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
 
-      TailLogger::saveLog('Postback: Postback creado, despachando job', 'api/postback', 'info', [
+        return $postback;
+      });
+      TailLogger::saveLog('Postback recibido y job despachado', 'api/postback', 'info', [
         'postback_id' => $postback->id,
         'vendor' => $vendor,
         'offer_id' => $offerId,
         'clid' => $validated['clid']
       ]);
-      $clickId = $validated['clid'];
-      // Despachar job para obtener payout de Natural Intelligence
-      ProcessPostbackJob::dispatch($postback->id, $clickId);
+
       return response()->json([
         'success' => true,
         'message' => 'Postback received and queued for processing',
@@ -89,10 +93,17 @@ class PostbackController extends Controller
           'postback_id' => $postback->id,
           'vendor' => $vendor,
           'status' => $postback->status,
-          'clid' => $clickId
+          'clid' => $validated['clid']
         ]
       ], 200);
-
+    } catch (QueryException $e) {
+      if (str_contains($e->getMessage(), 'duplicate key value violates unique constraint')) {
+        return response()->json([
+          'success' => false,
+          'message' => 'Duplicate transaction ID (txid) for this vendor.',
+        ], 409);
+      }
+      throw $e;
     } catch (\Exception $e) {
       TailLogger::saveLog('Postback: Error al procesar postback', 'api/postback', 'error', [
         'vendor' => $vendor,
@@ -263,7 +274,6 @@ class PostbackController extends Controller
           'response_time_ms' => $responseTime
         ]
       ]);
-
     } catch (\App\Services\NaturalIntelligenceServiceException $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       TailLogger::saveLog('Postback: Error del servicio NI en búsqueda manual', 'api/postback', 'error', [
@@ -282,7 +292,6 @@ class PostbackController extends Controller
         $badResponse['response_time_ms'] = $responseTime;
       }
       return response()->json($badResponse, 500);
-
     } catch (\Exception $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       TailLogger::saveLog('Postback: Error inesperado en búsqueda manual', 'api/postback', 'error', [
