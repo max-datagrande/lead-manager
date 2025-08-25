@@ -115,7 +115,10 @@ class ProcessPostbackJob implements ShouldQueue
         'response_time_ms' => $responseTime,
         'exception' => $e->getMessage()
       ]);
-      throw $e; // Reintento en 4 horas
+
+      // Programar reintento en 4 horas sin lanzar excepción
+      $this->release($this->backoff); // 14400 segundos = 4 horas
+      return;
     } catch (\Throwable $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
