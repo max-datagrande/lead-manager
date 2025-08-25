@@ -20,14 +20,14 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
         setLoading(true);
         const response = await fetch(`/postbacks/${postbackId}/api-requests`);
         const data = await response.json();
-        
+
         if (data.success) {
           setApiRequests(data.data);
         } else {
-          setError('Error al cargar las API requests');
+          setError('Error loading API requests');
         }
       } catch (err) {
-        setError('Error de conexión');
+        setError('Connection error');
         console.error('Error fetching API requests:', err);
       } finally {
         setLoading(false);
@@ -42,28 +42,28 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
       return (
         <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
           <CheckCircle className="w-3 h-3 mr-1" />
-          Éxito ({statusCode})
+          Success ({statusCode})
         </Badge>
       );
     } else if (statusCode >= 400 && statusCode < 500) {
       return (
-        <Badge variant="destructive" className="bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200">
-          <AlertCircle className="w-3 h-3 mr-1" />
-          Error Cliente ({statusCode})
+        <Badge variant="destructive" className="border-orange-200 bg-orange-100 text-orange-800 hover:bg-orange-200">
+          <AlertCircle className="mr-1 h-3 w-3" />
+          Client Error ({statusCode})
         </Badge>
       );
     } else if (statusCode >= 500) {
       return (
-        <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">
-          <AlertCircle className="w-3 h-3 mr-1" />
-          Error Servidor ({statusCode})
+        <Badge variant="destructive" className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200">
+          <AlertCircle className="mr-1 h-3 w-3" />
+          Server Error ({statusCode})
         </Badge>
       );
     } else if (errorMessage) {
       return (
-        <Badge variant="destructive" className="bg-red-100 text-red-800 border-red-200">
-          <AlertCircle className="w-3 h-3 mr-1" />
-          Error de Red
+        <Badge variant="destructive" className="border-red-200 bg-red-100 text-red-800">
+          <AlertCircle className="mr-1 h-3 w-3" />
+          Network Error
         </Badge>
       );
     } else {
@@ -76,14 +76,12 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
     }
   };
 
-
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 animate-spin" />
-          <span>Cargando API requests...</span>
+          <span>Loading API requests...</span>
         </div>
       </div>
     );
@@ -104,8 +102,8 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <Globe className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-gray-500">No se encontraron API requests para este postback</p>
+          <Globe className="mx-auto mb-2 h-8 w-8 text-gray-400" />
+          <p className="text-gray-500">No API requests were found for this postback</p>
         </div>
       </div>
     );
@@ -118,10 +116,10 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
           {apiRequests.slice(0, 4).map((request, index) => (
             <TabsTrigger key={request.id} value={request.id.toString()} className="flex items-center gap-2 relative">
               <span className={`w-2 h-2 rounded-full ${
-                request.status_code >= 200 && request.status_code < 300 
-                  ? 'bg-green-500' 
-                  : request.status_code >= 400 
-                  ? 'bg-red-500' 
+                request.status_code >= 200 && request.status_code < 300
+                  ? 'bg-green-500'
+                  : request.status_code >= 400
+                  ? 'bg-red-500'
                   : 'bg-yellow-500'
               }`} />
               <span>Intento {index + 1}</span>
@@ -135,7 +133,7 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
           ))}
           {apiRequests.length > 4 && (
             <TabsTrigger value="more" className="text-xs">
-              +{apiRequests.length - 4} más
+              +{apiRequests.length - 4} more
             </TabsTrigger>
           )}
         </TabsList>
@@ -147,10 +145,10 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      request.status_code >= 200 && request.status_code < 300 
-                        ? 'bg-green-500' 
-                        : request.status_code >= 400 
-                        ? 'bg-red-500' 
+                      request.status_code >= 200 && request.status_code < 300
+                        ? 'bg-green-500'
+                        : request.status_code >= 400
+                        ? 'bg-red-500'
                         : 'bg-yellow-500'
                     }`} />
                     <div>
@@ -159,15 +157,15 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
                         <span>{request.endpoint}</span>
                       </div>
                       <div className="text-sm text-gray-500 flex items-center gap-2">
-                        <span>Servicio: {request.service}</span>
+                        <span>Service: {request.service}</span>
                         <span>•</span>
                         <span>{formatDateTime(request.created_at)}</span>
                         <span>•</span>
                         <span className={`font-mono ${
-                          request.response_time_ms > 5000 
-                            ? 'text-red-600' 
-                            : request.response_time_ms > 2000 
-                            ? 'text-orange-600' 
+                          request.response_time_ms > 5000
+                            ? 'text-red-600'
+                            : request.response_time_ms > 2000
+                            ? 'text-orange-600'
                             : 'text-green-600'
                         }`}>
                           {request.response_time_ms || 0}ms
@@ -198,29 +196,29 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <JsonViewer 
-                    data={request.request_data} 
+                  <JsonViewer
+                    data={request.request_data}
                     title={(
                       <div className="flex items-center gap-2">
                         <span>Request Data</span>
-                        <Badge variant="outline" className="text-xs">Enviado</Badge>
+                        <Badge variant="outline" className="text-xs">Sent</Badge>
                       </div>
                     )}
                   />
 
-                  <JsonViewer 
-                    data={request.response_data} 
+                  <JsonViewer
+                    data={request.response_data}
                     title={(
                       <div className="flex items-center gap-2">
                         <span>Response Data</span>
-                        <Badge variant="outline" className="text-xs">Recibido</Badge>
+                        <Badge variant="outline" className="text-xs">Received</Badge>
                       </div>
                     )}
                   />
                 </div>
 
                 <Separator />
-                
+
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <span>Request ID: {request.request_id}</span>
                   <span>•</span>
@@ -235,9 +233,9 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
           <TabsContent value="more">
             <Card>
               <CardHeader>
-                <CardTitle>Más intentos</CardTitle>
+                <CardTitle>More requests</CardTitle>
                 <CardDescription>
-                  Mostrando {apiRequests.length - 4} intentos adicionales
+                  Showing {apiRequests.length - 4} additional requests
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -245,7 +243,7 @@ const PostbackApiRequestsViewer = ({ postbackId }) => {
                   {apiRequests.slice(4).map((request, index) => (
                     <div key={request.id} className="flex items-center justify-between p-2 border rounded">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">Intento {index + 5}</span>
+                        <span className="font-medium">Request {index + 5}</span>
                         <span className="text-sm text-gray-500">{request.method} {request.endpoint}</span>
                       </div>
                       <div className="flex items-center gap-2">

@@ -139,7 +139,6 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
 
   useEffect(() => {
     if (isReset) {
-      console.log("Reseting")
       resetValues()
     }
   }, [isReset])
