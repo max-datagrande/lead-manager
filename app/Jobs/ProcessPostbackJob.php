@@ -81,16 +81,7 @@ class ProcessPostbackJob implements ShouldQueue
 
       $niService = app(NaturalIntelligenceService::class);
       $payout = $niService->getPayoutForClickId($this->clickId, $postback);
-
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
-      if ($payout === null) {
-        TailLogger::saveLog("Payout no encontrado para el click ID", 'jobs/postback', 'warning', [
-          'click_id' => $this->clickId,
-          'response_time_ms' => $responseTime
-        ]);
-        throw new Exception('Payout not found for click ID: ' . $this->clickId);
-      }
 
       // Actualizar postback con el payout obtenido
       TailLogger::saveLog("Actualizando postback con payout obtenido", 'jobs/postback', 'info', [
@@ -124,10 +115,8 @@ class ProcessPostbackJob implements ShouldQueue
         'response_time_ms' => $responseTime,
         'exception' => $e->getMessage()
       ]);
-
       throw $e; // Reintento en 4 horas
-
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       TailLogger::saveLog('Error inesperado al procesar postback, marcando como fallido', 'jobs/postback', 'error', [
@@ -148,38 +137,6 @@ class ProcessPostbackJob implements ShouldQueue
       }
 
       $this->fail($e); // Esto marca el job como fallido permanentemente
-    }
-  }
-
-  /**
-   * Calculate the number of seconds to wait before retrying the job.
-   */
-  public function backoff(): array
-  {
-    // Intervalos configurables: 5 minutos, 15 minutos, 1 hora
-    return [
-      config('queue.postback_retry_intervals.first', 300), // 5 minutos
-      config('queue.postback_retry_intervals.second', 900), // 15 minutos
-      config('queue.postback_retry_intervals.third', 3600), // 1 hora
-    ];
-  }
-
-  /**
-   * Handle a job failure.
-   */
-  public function failed(Exception $exception): void
-  {
-    TailLogger::saveLog('ProcessPostbackJob: Job falló definitivamente', 'jobs/postback', 'error', [
-      'postback_id' => $this->postbackId,
-      'click_id' => $this->clickId,
-      'exception' => $exception->getMessage(),
-      'trace' => $exception->getTraceAsString(),
-    ]);
-
-    // Marcar postback como fallido
-    $postback = Postback::find($this->postbackId);
-    if ($postback) {
-      $postback->markAsFailed();
     }
   }
 }

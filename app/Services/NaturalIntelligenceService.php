@@ -9,7 +9,7 @@ use Maxidev\Logger\TailLogger;
 use App\Models\PostbackApiRequests;
 use App\Models\Postback;
 use App\Libraries\NaturalIntelligence;
-
+use App\Libraries\NaturalIntelligenceException;
 
 class NaturalIntelligenceService
 {
@@ -18,6 +18,7 @@ class NaturalIntelligenceService
   private array $report;
   private array $relevantFields = ['data_type', 'date', 'source_join', 'device', 'pub_param_1', 'pub_param_2', 'external_campaign_id', 'external_traffic_source', 'clickouts', 'leads', 'payout', 'sales', 'visits', 'bridge_visits', 'clicking_users', 'date_time'];
 
+  const NO_PAYOUT_RETURN_VALUE = 0;
   public function __construct(protected NaturalIntelligence $ni) {}
 
   public function setPostbackId(int $postbackId): void
@@ -32,19 +33,8 @@ class NaturalIntelligenceService
   /**
    * Obtiene reportes de conversiones de los últimos 3 días
    */
-  public function getRecentConversionsReport(Postback $postback): array
+  public function getRecentConversionsReport(): array
   {
-    if (empty($postback)) { // Check if postback is empty
-      throw new NaturalIntelligenceServiceException('Invalid postback found in postback - Required postback object, found: null');
-    }
-    if ($postback->vendor !== 'ni') { // Check if postback vendor is ni
-      throw new NaturalIntelligenceServiceException('Invalid vendor found in postback - Required vendor "ni", found: ' . $postback->vendor);
-    }
-    if ($postback->id === null) { // Check if postback ID is null
-      throw new NaturalIntelligenceServiceException('Invalid postback ID found in postback - Required ID, found: ' . $postback->id);
-    }
-    //Set postback ID as a variable
-    $this->postbackId = $postback->id;
     $fromDate = now()->subDays(3)->format('Y-m-d');
     $toDate = now()->format('Y-m-d');
     return $this->getConversionsReport($fromDate, $toDate);
@@ -61,11 +51,8 @@ class NaturalIntelligenceService
       // Preparar datos de la petición usando la librería
       $payload = $this->ni->buildPayload($fromDate, $toDate);
       // Obtener reporte usando la librería
-      $report = $this->ni->getReport($payload);
+      $this->report  = $this->ni->getReport($payload);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
-      // Obtener la respuesta HTTP de la librería para logging
-      $response = $this->ni->getLastResponse();
 
       TailLogger::saveLog('NI Service: Reporte obtenido exitosamente', 'api/ni', 'info', [
         'from_date' => $fromDate,
@@ -73,12 +60,10 @@ class NaturalIntelligenceService
         'response_time_ms' => $responseTime
       ]);
 
-      $this->report = $report;
       return [
         'success' => true,
-        'data' => $report
+        'data' => $this->report
       ];
-
     } catch (\Exception $e) {
       // Manejar excepciones generales
       if (!isset($responseTime)) {
@@ -125,24 +110,20 @@ class NaturalIntelligenceService
   /**
    * Busca un click específico en los reportes recientes y retorna el payout
    */
-  public function getPayoutForClickId(string $clickId, Postback $postback): ?float
+  public function getPayoutForClickId(string $clickId): ?float
   {
     try {
-      $reportResult = $this->getRecentConversionsReport($postback);
-      if (!$reportResult['success']) {
-        //Set the status to failed
-        $postback->markAsFailed();
+      $report = $this->getRecentConversionsReport();
+      if (!$report['success']) {
+        TailLogger::saveLog('NI Service: Reporte no exitoso', 'api/ni', 'error', $report);
+        throw new PayoutNotFoundException('Report no success');
       }
-      $conversions = $reportResult['data'] ?? [];
-      if (empty($conversions)) {
-      }
-      $conversions = $reportResult['data'] ?? [];
-
+      $conversions = $report['data'] ?? [];
       if (empty($conversions)) {
         TailLogger::saveLog('NI Service: No hay conversiones en el reporte', 'api/ni', 'warning', [
           'clickId' => $clickId
         ]);
-        return null;
+        throw new PayoutNotFoundException('No conversions found');
       }
 
       // Buscar la conversión por pub_param_1 (clickId)
@@ -155,17 +136,16 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'total_conversions' => count($conversions)
         ]);
-        return null;
+        throw new PayoutNotFoundException('Click ID: ' . $clickId . ' not found in conversions');
       }
 
       $payout = $conversion['payout'] ?? null;
-
       if ($payout === null) {
         TailLogger::saveLog('NI Service: Payout no disponible para click ID', 'api/ni', 'warning', [
           'clickId' => $clickId,
           'conversion' => $conversion
         ]);
-        return null;
+        throw new PayoutNotFoundException('Payout not found for click ID: ' . $clickId);
       }
 
       TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
@@ -179,72 +159,21 @@ class NaturalIntelligenceService
         'clickId' => $clickId,
         'error' => $e->getMessage()
       ]);
-      return null;
+      throw $e;
     } catch (\Exception $e) {
+      if ($e instanceof NaturalIntelligenceServiceException) {
+        throw $e;
+      }
+      if ($e instanceof NaturalIntelligenceException) {
+        throw new NaturalIntelligenceServiceException('Error getting payout: ' . $e->getMessage(), 0, $e);
+      }
+
       TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
-      return null;
-    }
-  }
-
-  /**
-   * Retorna el reporte buscado por clickid (método legacy)
-   */
-  public function getReportByClickId(string $clickId): array
-  {
-    if (!$this->report) {
-      throw new NaturalIntelligenceServiceException('Report not found');
-    }
-    $report = collect($this->report);
-    if (count($report) === 0) {
-      throw new NaturalIntelligenceServiceException('Report empty');
-    }
-    $clickIdReport = $report->first(function ($report) use ($clickId) {
-      return $report['pub_param_1'] === $clickId;
-    }, null);
-    if (!$clickIdReport) {
-      throw new NaturalIntelligenceServiceException('Report not found with clickid: ' . $clickId);
-    }
-    return $clickIdReport;
-  }
-
-  /**
-   * Obtiene el header de autenticación desde la librería NaturalIntelligence
-   */
-  private function getAuthHeader(): array
-  {
-    $token = Cache::get('ni_auth_token');
-    if (!$token) {
-      // Si no hay token, forzar renovación a través de la librería
-      $this->ni->login();
-      $token = Cache::get('ni_auth_token');
-    }
-    return ['Authorization' => (string) $token];
-  }
-
-  /**
-   * Obtiene el payout de un reporte (método legacy)
-   */
-  public function getReportPayout(string $clickId): ?string
-  {
-    try {
-      $report = $this->getReportByClickId($clickId);
-      return $report['payout'];
-    } catch (NaturalIntelligenceServiceException $e) {
-      TailLogger::saveLog('NI Service: Excepción al obtener el payout', 'api/ni', 'error', [
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
-      ]);
-      return null;
-    } catch (\Exception $e) {
-      TailLogger::saveLog('NI Service: Error inesperado al obtener el payout', 'api/ni', 'error', [
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
-      ]);
-      return null;
+      throw new NaturalIntelligenceServiceException('Unexpected error getting payout: ' . $e->getMessage(), 0, $e);
     }
   }
 }

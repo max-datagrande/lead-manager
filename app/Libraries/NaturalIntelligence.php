@@ -15,7 +15,7 @@ final class NaturalIntelligence
   private const CACHE_TTL = 23 * 60 * 60; // 23h
   private const REPORT_FORMAT = 'json';
   private const REPORT_TYPE = 'Summary';
-  private const DATA_TYPE = 'conversions';
+  private const DATA_TYPE = 'payout';
   private const UNAUTHORIZED_RESPONSE = [
     'STATUS' => 403,
     'MESSAGE' => 'Unauthorized'
@@ -161,6 +161,7 @@ final class NaturalIntelligence
       'ToDate'       => $toDate   ?? now()->format('Y-m-d'),
       'ReportFormat' => self::REPORT_FORMAT,
       'ReportType'   => self::REPORT_TYPE,
+      'DataType'     => self::DATA_TYPE,
     ];
   }
 
