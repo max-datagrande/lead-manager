@@ -39,44 +39,56 @@ export function PostbackProvider({ children }) {
     setColumnFilters([]);
   };
 
-  const getPostbacks = useDebouncedFunction(useCallback((newData) => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setIsLoading(true);
-    const data = {
-      search: globalFilter || undefined,
-      sort: serializeSort(sorting),
-      filters: JSON.stringify(columnFilters || []),
-      ...newData,
-    };
-    const url = route('postbacks.index');
-    const options = {
-      only: ['rows', 'meta', 'state'],
-      replace: true,
-      preserveState: true,
-      preserveScroll: true,
-      onFinish: () => setIsLoading(false)
-    };
-    router.get(url, data, options);
-  }, []), 200);
+  const getPostbacks = useDebouncedFunction(
+    useCallback(
+      (newData) => {
+        if (isFirstRender.current) {
+          isFirstRender.current = false;
+          return;
+        }
+        setIsLoading(true);
+        const data = {
+          search: globalFilter || undefined,
+          sort: serializeSort(sorting),
+          filters: JSON.stringify(columnFilters || []),
+          ...newData,
+        };
+        const url = route('postbacks.index');
+        const options = {
+          only: ['rows', 'meta', 'state'],
+          replace: true,
+          preserveState: true,
+          preserveScroll: true,
+          onFinish: () => setIsLoading(false),
+        };
+        router.get(url, data, options);
+      },
+      [sorting, columnFilters, globalFilter],
+    ),
+    200,
+  );
 
-  return <PostbackContext.Provider value={{
-    getPostbacks,
-    handleClearFilters,
-    columnFilters,
-    setColumnFilters,
-    sorting,
-    setSorting,
-    isFirstRender,
-    globalFilter,
-    setGlobalFilter,
-    currentRow,
-    setCurrentRow,
-    showRequestViewer,
-    resetTrigger,
-    setResetTrigger,
-    isLoading,
-  }}>{children}</PostbackContext.Provider>;
+  return (
+    <PostbackContext.Provider
+      value={{
+        getPostbacks,
+        handleClearFilters,
+        columnFilters,
+        setColumnFilters,
+        sorting,
+        setSorting,
+        isFirstRender,
+        globalFilter,
+        setGlobalFilter,
+        currentRow,
+        setCurrentRow,
+        showRequestViewer,
+        resetTrigger,
+        setResetTrigger,
+        isLoading,
+      }}
+    >
+      {children}
+    </PostbackContext.Provider>
+  );
 }

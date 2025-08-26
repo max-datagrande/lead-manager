@@ -50,7 +50,7 @@ export function VisitorsProvider({ children }) {
         onFinish: () => setIsLoading(false),
       };
       router.get(url, data, options);
-    }, []),
+    }, [sorting, columnFilters, globalFilter]),
     200,
   );
 
