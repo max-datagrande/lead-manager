@@ -10,6 +10,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\BlockWebOnApiSubdomain;
 use App\Http\Middleware\AuthHost;
 use App\Http\Middleware\ForceApiHeaders;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
   ->withRouting(
@@ -25,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->web(
       prepend: [BlockWebOnApiSubdomain::class],
       append: [HandleAppearance::class, HandleInertiaRequests::class, AddLinkHeadersForPreloadedAssets::class],
+    );
+    $middleware->api(
+      prepend: [HandleCors::class],
     );
     $middleware->alias([
       'admin' => AdminMiddleware::class,

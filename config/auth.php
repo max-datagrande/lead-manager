@@ -110,4 +110,9 @@ return [
     */
 
   'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+  'postman' => [
+    'enabled' => env('POSTMAN_ENABLED', false),
+    'secret' => env('POSTMAN_AUTH_TOKEN'),
+  ],
 ];
