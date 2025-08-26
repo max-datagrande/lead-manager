@@ -16,9 +16,9 @@ Route::middleware(['auth.host'])->group(function () {
   });
 
   Route::prefix('leads')->group(function () {
-    Route::post('/register', [LeadController::class, 'store'])->name('leads.register');
-    Route::post('/update', [LeadController::class, 'update'])->name('leads.update');
-    Route::post('/submit', [LeadController::class, 'store'])->name('leads.submit');
+    Route::post('/register', [LeadController::class, 'store'])->name('api.leads.register');
+    Route::post('/update', [LeadController::class, 'update'])->name('api.leads.update');
+    Route::post('/submit', [LeadController::class, 'submit'])->name('api.leads.submit');
   });
 });
 

@@ -164,4 +164,58 @@ class LeadController extends Controller
       return $this->errorResponse($message, $e->getTrace(), 500);
     }
   }
+  public function submit(Request $request)
+  {
+    // Validar que el fingerprint y fields estén presentes
+    $validatedData = $request->validate([
+      'fingerprint' => 'required|string|max:255',
+    ]);
+
+    $fingerprint = $validatedData['fingerprint'];
+    $fields = $request->except(['fingerprint']);
+
+    // Logging de la request
+    TailLogger::saveLog('Received request to update lead fields', 'leads/update', 'info', compact('fingerprint', 'fields'));
+
+    try {
+      // Validar que el traffic log exista y no sea bot
+      $visitorLog = $this->leadService->validateTrafficLog($fingerprint);
+
+      // Verificar que el lead exista (NO crear si no existe)
+      $lead = $this->leadService->findLead($visitorLog);
+      // Procesar campos
+      $fieldResults = $this->leadService->processLeadFields($lead, $fields);
+
+      // Log de éxito
+      $this->leadService->logLeadUpdateSuccess($lead);
+
+      // Preparar respuesta
+      $responseData = [
+        'fingerprint' => $fingerprint,
+      ];
+      if ($fieldResults['created_count'] > 0 || $fieldResults['updated_count'] > 0) {
+        $responseData['fields_summary'] = [
+          'created_fields' => $fieldResults['created_fields'],
+          'updated_fields' => $fieldResults['updated_fields'],
+        ];
+      }
+      return $this->successResponse(data: $responseData, message: 'Lead fields updated successfully.', status: 200);
+    } catch (ValidationException $e) {
+      // Manejar errores de validación específicos
+      $errors = $e->errors();
+      $serviceErrors = $errors['services'] ?? null;
+      $message = $e->getMessage() ?? 'Validation failed';
+      $statusCode = $message === 'Fingerprint not found' ? 404 : 400;
+      return $this->errorResponse($message, $serviceErrors ?? $errors, $statusCode);
+    } catch (\Exception $e) {
+      $message = 'An unexpected error occurred while updating lead fields';
+      TailLogger::saveLog($message . ': ' . $e->getMessage(), 'leads/update', 'error', [
+        'fingerprint' => $fingerprint,
+        'fields' => $fields,
+        'exception' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
+      return $this->errorResponse($message, $e->getTrace(), 500);
+    }
+  }
 }
