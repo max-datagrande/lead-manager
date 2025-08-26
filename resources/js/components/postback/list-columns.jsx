@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Eye } from 'lucide-react';
@@ -12,18 +13,21 @@ const vendors = {
 export const postbackColumns = [
   {
     accessorKey: 'id',
-    header: 'ID',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
+    cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
     enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'offer_id',
-    header: 'Offer ID',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Offer ID" />,
+    cell: ({ row }) => <div className="w-[80px]">{row.getValue('offer_id')}</div>,
+    enableHiding: true,
     enableSorting: true,
   },
   {
     accessorKey: 'status',
-    header: 'Status',
-    enableSorting: true,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row, cell }) => {
       const colors = {
         pending: 'secondary',
@@ -33,75 +37,89 @@ export const postbackColumns = [
       const value = cell.getValue();
       return <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>;
     },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'clid',
-    header: 'Click ID',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Click ID" />,
+    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('clid')}</div>,
     enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'txid',
-    header: 'Transaction ID',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Transaction ID" />,
+    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('txid')}</div>,
     enableSorting: false,
+    enableHiding: true,
   },
   {
     accessorKey: 'vendor',
-    header: 'Vendor',
-    enableSorting: true,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Vendor" />,
     cell: ({ row, cell }) => {
       const value = cell.getValue();
       return vendors[value] ?? `Unknown (${value})`;
     },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'payout',
-    header: 'Payout',
-    enableSorting: true,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
       const currency = row.original.currency;
       const value = cell.getValue();
       return value ? `${value.toFixed(2)} ${currency}` : value;
     },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'event',
-    header: 'Event Name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Event Name" />,
     enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'failure_reason',
-    header: 'Is Failed',
-    enableSorting: true,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Is Failed" />,
     cell: ({ row, cell }) => {
       const hasError = row.original.failure_reason !== null && row.original.failure_reason !== '';
       if (hasError) {
         return <Badge variant="destructive">{cell.getValue()}</Badge>;
       }
     },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'created_at',
-    header: 'Created At',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
     cell: ({ row }) => (
       <div className="text-sm whitespace-nowrap">
         <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
         <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
       </div>
     ),
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'updated_at',
-    header: 'Updated At',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
     cell: ({ row }) => (
       <div className="text-sm whitespace-nowrap">
         <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
         <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
       </div>
     ),
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     id: 'actions',
-    header: 'Shares',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
     enableSorting: false,
     cell: ({ row, table }) => {
       const postback = row.original;
@@ -116,25 +134,4 @@ export const postbackColumns = [
     },
   },
 ];
-/*
-return (
-        <div className="flex items-center gap-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 px-2">
-                <Eye className="h-3 w-3 mr-1" />
-                API Requests
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  API Requests - Postback #{postback.id}
-                </DialogTitle>
-              </DialogHeader>
 
-            </DialogContent>
-          </Dialog>
-        </div>
-      );
-*/
