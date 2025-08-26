@@ -12,3 +12,13 @@ export function LucideIcon({ name, className = '', size, ...rest }) {
     <IconComponent className={className} size={size} {...rest} />
   );
 }
+
+export function mapIcon(data) {
+  const mappedData = data.map((item) => {
+    return {
+      ...item,
+      icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />,
+    };
+  });
+  return mappedData;
+}
