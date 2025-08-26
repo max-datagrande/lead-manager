@@ -1,7 +1,7 @@
 import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { getSortState, serializeSort } from '@/utils/table';
 import { router, usePage } from '@inertiajs/react';
-import { createContext, useRef, useState } from 'react';
+import { createContext, useRef, useState, useCallback } from 'react';
 import { route } from 'ziggy-js';
 
 export const VisitorsContext = createContext(null);
@@ -27,7 +27,7 @@ export function VisitorsProvider({ children }) {
     setColumnFilters([]);
   };
 
-  const getVisitors = useDebouncedFunction((newData) => {
+  const getVisitors = useDebouncedFunction(useCallback((newData) => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
@@ -41,9 +41,9 @@ export function VisitorsProvider({ children }) {
     const url = route('visitors.index');
     const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
     router.get(url, data, options);
-  }, 300);
+  }, []), 300);
 
-  const contextValue = {
+  return <VisitorsContext.Provider value={{
     getVisitors,
     setFilter,
     handleClearFilters,
@@ -58,7 +58,5 @@ export function VisitorsProvider({ children }) {
     setCurrentRow,
     resetTrigger,
     setResetTrigger,
-  };
-
-  return <VisitorsContext.Provider value={contextValue}>{children}</VisitorsContext.Provider>;
+  }}>{children}</VisitorsContext.Provider>;
 }
