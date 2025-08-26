@@ -10,7 +10,6 @@ export function DataTableViewOptions({ columns }) {
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="ms-auto hidden lg:flex">
             <SlidersHorizontal className="size-4" />
-            View
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[150px]">
