@@ -33,6 +33,7 @@ export const TablePostbacks = ({ postbacks }) => {
     showRequestViewer,
     setResetTrigger,
     resetTrigger,
+    isLoading,
   } = usePostbacks();
 
   const { rows, meta, state, data } = usePage().props;
@@ -106,7 +107,7 @@ export const TablePostbacks = ({ postbacks }) => {
         <Table>
           <Headers table={table} sorting={sorting} setSorting={setSorting} />
           <TableBody>
-            <Content table={table} postbacks={postbacks} />
+            <Content table={table} postbacks={postbacks} isLoading={isLoading} />
           </TableBody>
         </Table>
       </div>
@@ -131,10 +132,24 @@ function Headers({ table }) {
   );
 }
 
-function Content({ table, postbacks }) {
-  if (postbacks.length === 0) {
-    return <TableRowEmpty colSpan={columns.length}>No postbacks found.</TableRowEmpty>;
+function Content({ table, postbacks, isLoading }) {
+  if (isLoading) {
+    return (
+      <TableRow>
+        <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+            <span>Loading...</span>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
   }
+
+  if (postbacks.length === 0) {
+    return <TableRowEmpty colSpan={table.getAllColumns().length}>No postbacks found.</TableRowEmpty>;
+  }
+  
   const rowModel = table.getRowModel();
   return (
     <>

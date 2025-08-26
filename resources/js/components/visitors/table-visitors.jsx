@@ -21,7 +21,18 @@ import { DataTableToolbar } from '@/components/data-table/toolbar';
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
 export const TableVisitors = ({ visitors }) => {
-  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, setResetTrigger, resetTrigger } = useVisitors();
+  const {
+    getVisitors,
+    columnFilters,
+    setColumnFilters,
+    sorting,
+    setSorting,
+    globalFilter,
+    setGlobalFilter,
+    setResetTrigger,
+    resetTrigger,
+    isLoading,
+  } = useVisitors();
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const hosts = data.hosts ?? [];
@@ -29,7 +40,6 @@ export const TableVisitors = ({ visitors }) => {
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
-  console.log(columnFilters);
 
   const table = useReactTable({
     data: visitors,
@@ -70,7 +80,7 @@ export const TableVisitors = ({ visitors }) => {
             searchPlaceholder="Search..."
             globalQuery={globalFilter}
             setGlobalQuery={setGlobalFilter}
-            resetTrigger = {resetTrigger}
+            resetTrigger={resetTrigger}
             setResetTrigger={setResetTrigger}
             filters={[
               {
@@ -91,7 +101,7 @@ export const TableVisitors = ({ visitors }) => {
         <Table>
           <Headers table={table} sorting={sorting} setSorting={setSorting} />
           <TableBody>
-            <Content table={table} visitors={visitors} />
+            <Content table={table} visitors={visitors} isLoading={isLoading} />
           </TableBody>
         </Table>
       </div>
@@ -123,7 +133,19 @@ function Headers({ table }) {
   );
 }
 
-function Content({ table, visitors }) {
+function Content({ table, visitors, isLoading }) {
+  if (isLoading) {
+    return (
+      <TableRow>
+        <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-900"></div>
+            <span>Loading...</span>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  }
   if (visitors.length === 0) {
     return <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>;
   }

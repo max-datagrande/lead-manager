@@ -17,6 +17,7 @@ export function PostbackProvider({ children }) {
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
   const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters.current);
+  const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
   const modal = useModal();
 
@@ -39,11 +40,11 @@ export function PostbackProvider({ children }) {
   };
 
   const getPostbacks = useDebouncedFunction(useCallback((newData) => {
-    console.log('me estoy renderizando');
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+    setIsLoading(true);
     const data = {
       search: globalFilter || undefined,
       sort: serializeSort(sorting),
@@ -51,9 +52,15 @@ export function PostbackProvider({ children }) {
       ...newData,
     };
     const url = route('postbacks.index');
-    const options = { only: ['rows', 'meta', 'state'], replace: true, preserveState: true, preserveScroll: true };
+    const options = {
+      only: ['rows', 'meta', 'state'],
+      replace: true,
+      preserveState: true,
+      preserveScroll: true,
+      onFinish: () => setIsLoading(false)
+    };
     router.get(url, data, options);
-  }, []), 300);
+  }, []), 200);
 
   return <PostbackContext.Provider value={{
     getPostbacks,
@@ -70,5 +77,6 @@ export function PostbackProvider({ children }) {
     showRequestViewer,
     resetTrigger,
     setResetTrigger,
+    isLoading,
   }}>{children}</PostbackContext.Provider>;
 }
