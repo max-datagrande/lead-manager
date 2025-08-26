@@ -116,15 +116,8 @@ function Headers({ table }) {
       {table.getHeaderGroups().map((headerGroup) => (
         <TableRow key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
-            <TableHead
-              key={header.id}
-              className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
-              onClick={header.column.getToggleSortingHandler?.()}
-            >
-              <div className="flex items-center">
-                {flexRender(header.column.columnDef.header, header.getContext())}
-                <SortingIcon column={header.column} />
-              </div>
+            <TableHead key={header.id} colSpan={header.colSpan} className="p-2 whitespace-nowrap">
+              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
             </TableHead>
           ))}
         </TableRow>
@@ -139,7 +132,7 @@ function Content({ table, visitors, isLoading }) {
       <TableRow>
         <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
           <div className="flex items-center justify-center space-x-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-900"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
             <span>Loading...</span>
           </div>
         </TableCell>
@@ -149,6 +142,7 @@ function Content({ table, visitors, isLoading }) {
   if (visitors.length === 0) {
     return <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>;
   }
+
   const rowModel = table.getRowModel();
   return (
     <>
