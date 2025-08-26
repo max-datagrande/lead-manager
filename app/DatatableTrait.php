@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait DatatableTrait
 {
+  const DEFAULT_SORT = 'created_at:desc';
   /**
    * Aplica búsqueda global a la consulta
    */
@@ -102,19 +103,17 @@ trait DatatableTrait
   /**
    * Aplica ordenamiento a la consulta
    */
-  protected function applySorting(Builder $query, ?string $sort, array $allowedSort, string $defaultSort = 'created_at:desc'): Builder
+  protected function applySorting(Builder $query, ?string $sort, array $allowedSort): Builder
   {
-    $sort = $sort ?: $defaultSort;
-
+    $sort = $sort;
     if ($sort) {
       [$col, $dir] = get_sort_data($sort);
       $isAllowSorting = in_array($col, $allowedSort, true);
-
       if ($isAllowSorting) {
         $query->orderBy($col, $dir);
       } else {
         // Aplicar ordenamiento por defecto si no es válido
-        [$defaultCol, $defaultDir] = get_sort_data($defaultSort);
+        [$defaultCol, $defaultDir] = get_sort_data(self::DEFAULT_SORT);
         $query->orderBy($defaultCol, $defaultDir);
       }
     }
@@ -163,7 +162,7 @@ trait DatatableTrait
     // Ordenamiento
     $sort = $request->input('sort', $defaultSort);
     if (!empty($allowedSort)) {
-      $query = $this->applySorting($query, $sort, $allowedSort, $defaultSort);
+      $query = $this->applySorting($query, $sort, $allowedSort);
     }
 
     // Paginación
