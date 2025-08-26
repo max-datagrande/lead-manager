@@ -37,15 +37,15 @@ class PostbackController extends Controller
 
     // Configuración de ordenamiento
     $allowedSort = [
-      'vendor',
-      'status',
+      'id',
       'offer_id',
+      'status',
+      'vendor',
       'payout',
-      'created_at',
-      'updated_at',
       'event',
       'failure_reason',
-      'id'
+      'created_at',
+      'updated_at'
     ];
 
     // Procesar consulta usando el trait
