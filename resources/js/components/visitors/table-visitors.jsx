@@ -10,7 +10,7 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 
 import {SortingIcon} from '@/components/data-table/sorting-icon';
 import { useVisitors } from '@/hooks/use-visitors';
-import { visitorColumns as columns } from './list-columns';
+import { visitorColumns } from '@/components/visitors/index';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 /**
@@ -33,7 +33,7 @@ export const TableVisitors = ({ visitors }) => {
 
   const table = useReactTable({
     data: visitors,
-    columns,
+    columns: visitorColumns,
     state: {
       sorting,
       columnFilters: columnFilters,

@@ -2,20 +2,18 @@ import Paginator from '@/components/data-table/paginator';
 import TableRowEmpty from '@/components/data-table/table-row-empty';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
+
+import {postbackColumns} from '@/components/postback/index';
 
 import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import { SortingIcon } from '@/components/data-table/sorting-icon';
-
 import { usePostbacks } from '@/hooks/use-posbacks';
-import { postbackColumns as columns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 
-import { LucideIcon } from '@/components/lucide-icon';
+import { mapIcon } from '@/components/lucide-icon';
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
  *
@@ -36,25 +34,18 @@ export const TablePostbacks = ({ postbacks }) => {
     setResetTrigger,
     resetTrigger,
   } = usePostbacks();
+
   const { rows, meta, state, data } = usePage().props;
   const links = rows.links ?? [];
   const vendors = data.vendors ?? [];
-  let states = data.states ?? [];
-  console.log(states);
-
-  states = states.map((item) => {
-    return {
-      ...item,
-      icon: ({ className }) => <LucideIcon name={item.iconName} className={className} size={16} />,
-    };
-  });
+  const states = mapIcon(data.states ?? []);
 
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
 
   const table = useReactTable({
     data: postbacks,
-    columns,
+    columns: postbackColumns,
     state: {
       sorting,
       columnFilters: columnFilters,
@@ -130,15 +121,8 @@ function Headers({ table }) {
       {table.getHeaderGroups().map((headerGroup) => (
         <TableRow key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
-            <TableHead
-              key={header.id}
-              className={cn('whitespace-nowrap select-none', header.column.getCanSort?.() && 'cursor-pointer hover:bg-muted/50')}
-              onClick={header.column.getToggleSortingHandler?.()}
-            >
-              <div className="flex items-center">
-                {flexRender(header.column.columnDef.header, header.getContext())}
-                <SortingIcon column={header.column} />
-              </div>
+            <TableHead key={header.id} colSpan={header.colSpan} className='whitespace-nowrap'>
+              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
             </TableHead>
           ))}
         </TableRow>

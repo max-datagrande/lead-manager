@@ -7,7 +7,7 @@ import FingerprintCell from './fingerprint-cell';
 import TrafficSourceBadge from './traffic-source-badge';
 
 // --- Columnas TanStack ---
-const visitorColumns = [
+export const visitorColumns = [
   {
     accessorKey: 'fingerprint',
     header: 'Fingerprint',
@@ -83,5 +83,3 @@ const visitorColumns = [
     ),
   },
 ];
-
-export { visitorColumns };
