@@ -140,7 +140,7 @@ function Content({ table, visitors, isLoading }) {
     );
   }
   if (visitors.length === 0) {
-    return <TableRowEmpty colSpan={columns.length}>No visitors found.</TableRowEmpty>;
+    return <TableRowEmpty colSpan={table.getAllColumns().length}>No visitors found.</TableRowEmpty>;
   }
 
   const rowModel = table.getRowModel();
