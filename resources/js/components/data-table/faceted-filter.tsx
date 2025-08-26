@@ -53,7 +53,7 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent className="w-fit p-0" align="start">
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
@@ -83,7 +83,7 @@ export function DataTableFacetedFilter<TData, TValue>({ column, title, options }
                       <Check className={cn('h-4 w-4 text-background')} />
                     </div>
                     {option.icon && <option.icon className="size-4 text-muted-foreground" />}
-                    <span>{option.label}</span>
+                    <span className="whitespace-nowrap">{option.label}</span>
                     {facets?.get(option.value) && (
                       <span className="ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs">{facets.get(option.value)}</span>
                     )}
