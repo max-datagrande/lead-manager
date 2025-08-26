@@ -66,6 +66,11 @@ final class NaturalIntelligence
       ->post($this->loginUrl, $payload);
   }
 
+  private function deleteToken(): void
+  {
+    Cache::forget(self::CACHE_TOKEN_KEY);
+  }
+
   /**
    * Renueva el token de autenticación de forma thread-safe para múltiples jobs concurrentes.
    *
@@ -213,7 +218,8 @@ final class NaturalIntelligence
         'url' => $this->reportUrl,
         'message' => $e->getMessage(),
       ]);
-
+      //Token invalid
+      $this->deleteToken();
       $this->refreshToken();
       return $this->retryReportOnce($payload);
     } catch (Throwable $e) {
