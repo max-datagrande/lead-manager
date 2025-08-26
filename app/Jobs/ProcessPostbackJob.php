@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\PostbackProcessed;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Services\PayoutNotFoundException;
@@ -95,6 +96,9 @@ class ProcessPostbackJob implements ShouldQueue
         'status' => Postback::STATUS_PROCESSED,
         'processed_at' => Carbon::now(),
       ]);
+
+      // Disparar evento de postback procesado
+      event(new PostbackProcessed($postback));
 
       TailLogger::saveLog("Postback procesado exitosamente", 'jobs/postback', 'success', [
         'postback_id' => $this->postbackId,
