@@ -6,14 +6,10 @@ use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\Form\FieldController;
 
-Route::get('/', function () {
-  return Inertia::render('welcome');
-})->name('home');
-
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
     return Inertia::render('dashboard');
-  })->name('dashboard');
+  })->name('home');
   //Visitors
   Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
   //Postbacks
