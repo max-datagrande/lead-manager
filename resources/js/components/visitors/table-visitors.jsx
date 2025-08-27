@@ -1,16 +1,15 @@
 import Paginator from '@/components/data-table/paginator';
-import TableRowEmpty from '@/components/data-table/table-row-empty';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
+import { Table, TableBody} from '@/components/ui/table';
 import { useEffect } from 'react';
 
 import { usePage } from '@inertiajs/react';
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import {SortingIcon} from '@/components/data-table/sorting-icon';
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTableHeader } from '@/components/data-table/table-header';
 import { useVisitors } from '@/hooks/use-visitors';
-import { visitorColumns } from '@/components/visitors/index';
+import { visitorColumns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 /**
@@ -99,9 +98,9 @@ export const TableVisitors = ({ visitors }) => {
       </div>
       <div className="rounded-md border">
         <Table>
-          <Headers table={table} sorting={sorting} setSorting={setSorting} />
+          <DataTableHeader table={table} sorting={sorting} setSorting={setSorting} />
           <TableBody>
-            <Content table={table} visitors={visitors} isLoading={isLoading} />
+            <DataTableContent table={table} data={visitors} isLoading={isLoading} />
           </TableBody>
         </Table>
       </div>
@@ -109,52 +108,3 @@ export const TableVisitors = ({ visitors }) => {
     </>
   );
 };
-
-function Headers({ table }) {
-  return (
-    <TableHeader>
-      {table.getHeaderGroups().map((headerGroup) => (
-        <TableRow key={headerGroup.id}>
-          {headerGroup.headers.map((header) => (
-            <TableHead key={header.id} colSpan={header.colSpan} className="p-2 whitespace-nowrap">
-              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-            </TableHead>
-          ))}
-        </TableRow>
-      ))}
-    </TableHeader>
-  );
-}
-
-function Content({ table, visitors, isLoading }) {
-  if (isLoading) {
-    return (
-      <TableRow>
-        <TableCell colSpan={table.getAllColumns().length} className="h-24 text-center">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
-            <span>Loading...</span>
-          </div>
-        </TableCell>
-      </TableRow>
-    );
-  }
-  if (visitors.length === 0) {
-    return <TableRowEmpty colSpan={table.getAllColumns().length}>No visitors found.</TableRowEmpty>;
-  }
-
-  const rowModel = table.getRowModel();
-  return (
-    <>
-      {rowModel.rows.map((r) => (
-        <TableRow key={r.id}>
-          {r.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id} className="p-2">
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </>
-  );
-}
