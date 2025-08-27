@@ -231,7 +231,7 @@ class PostbackController extends Controller
 
         return response()->json([
           'success' => true,
-          'message' => 'CLID no encontrado en las conversiones del período',
+          'message' => 'CLID not found in period conversions',
           'data' => [
             'clid' => $clid,
             'from_date' => $fromDate,
