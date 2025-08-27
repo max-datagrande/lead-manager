@@ -2,8 +2,9 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig } from 'vite';
+
 export default defineConfig({
   plugins: [
     laravel({
@@ -14,10 +15,19 @@ export default defineConfig({
     react(),
     tailwindcss(),
     visualizer({
-      filename: 'dist/stats.html',
+      filename: 'public/build/stats.html',
       open: true,
     }),
   ],
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
   esbuild: {
     jsx: 'automatic',
   },
