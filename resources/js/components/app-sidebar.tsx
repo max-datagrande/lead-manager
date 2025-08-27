@@ -14,7 +14,7 @@ const GeneralGroup: NavGroupType = {
   items: [
     {
       title: 'Dashboard',
-      href: '/dashboard',
+      href: '/',
       icon: LayoutGrid, // ✅ Perfecto para dashboard
     },
     {
