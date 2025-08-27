@@ -34,7 +34,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filte
         </div>
       </div>
       <div className="flex w-full gap-2 my-3">
-        {filters && (
+        {filters.length > 0 && (
           <>
             <span className="flex items-center">Filters:</span>
             <div className="flex gap-x-2">
