@@ -17,9 +17,11 @@ createInertiaApp({
     // Primero intenta resolver como .tsx, luego como .jsx
     try {
       return await resolvePageComponent(`./pages/${name}.tsx`, pages);
-    } catch {
+    } catch (error) {
+      console.log(error);
       return await resolvePageComponent(`./pages/${name}.jsx`, pages);
     }
+
   },
   setup({ el, App, props }) {
     const root = createRoot(el);
