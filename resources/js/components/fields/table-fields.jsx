@@ -7,13 +7,14 @@ import { Table, TableBody } from '@/components/ui/table';
 import { formatDateTime, formatDateTimeUTC, getSortState } from '@/utils/table';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
 
 const columns = [
   {
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
+    cell: ({ row, cell }) => {
+      return <div className="px-2">{cell.getValue()}</div>;
+    },
     enableSorting: true,
     enableHiding: true,
   },
