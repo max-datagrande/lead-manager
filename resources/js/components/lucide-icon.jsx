@@ -1,10 +1,10 @@
-import * as Icons from 'lucide-react';
+import { AVAILABLE_ICONS } from '@/config/icons';
 
 export function LucideIcon({ name, className = '', size, ...rest }) {
-  const IconComponent = Icons[name];
+  const IconComponent = AVAILABLE_ICONS[name];
 
   if (!IconComponent) {
-    console.warn(`Icon "${name}" not found in Icons`);
+    console.warn(`Icon "${name}" not available. Available icons:`, Object.keys(AVAILABLE_ICONS));
     return null;
   }
 
