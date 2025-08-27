@@ -14,33 +14,21 @@ class FieldController extends Controller
    */
   public function index(Request $request)
   {
-    $search = $request->input('search');
-    $sort = $request->input('sort');
-    $direction = $request->input('direction');
-    $perPage = 10;
+    $search = trim((string) $request->input('search', ''));
     $query = Field::query();
-
     if ($search) {
       $query->where('name', 'like', "%{$search}%")
-        ->orWhere('label', 'like', "%{$search}%")
-        ->orWhere('validation_rules', 'like', "%{$search}%");
+        ->orWhere('label', 'like', "%{$search}%");
     }
-    if ($sort && $direction) {
-      $query->orderBy($sort, $direction);
-    }
-    $fields = $query->paginate($perPage)->withQueryString();
-    $data = [
-      'fields' => $fields,
-      'filters' => []
-    ];
-    if ($search) {
-      $data['filters']['search'] = $search;
-    }
-    if ($sort && $direction) {
-      $data['filters']['sort'] = $sort;
-      $data['filters']['direction'] = $direction;
-    }
-    return Inertia::render('fields/index', $data);
+    $query->orderBy('created_at', 'desc');
+    $fields = $query->get();
+    return Inertia::render('fields/index', [
+      'rows' => $fields,
+      'state' => [
+        'search' => $search,
+        'sort' => 'created_at:desc',
+      ]
+    ]);
   }
 
   /**

@@ -4,14 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import {
-  LayoutGrid,
-  Users,
-  Webhook,
-  List,
-  Plus,
-  FileText
-} from 'lucide-react';
+import { LayoutGrid, Users, Webhook, TextCursorInput, List, FileText } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -27,27 +20,33 @@ const GeneralGroup: NavGroupType = {
     {
       title: 'Visitors',
       href: '/visitors',
-      icon: Users, // 👥 Representa visitantes/usuarios
+      icon: Users,
     },
     {
       title: 'Postbacks',
-      icon: Webhook, // 🔗 Representa webhooks/postbacks
+      icon: Webhook,
       subItems: [
         {
           title: 'Queue',
           href: '/postbacks',
-          icon: List, // 📋 Lista de elementos
+          icon: List,
         },
+      ],
+    },
+    {
+      title: 'Forms',
+      icon: FileText,
+      subItems: [
         /* {
-          title: 'Create',
-          href: '/postbacks/create',
-          icon: Plus, // ➕ Crear nuevo elemento
-        },
-        {
-          title: 'Logs',
-          href: '/postbacks/logs',
-          icon: FileText, // 📄 Logs/registros
+          title: 'List',
+          href: '/forms',
+          icon: List,
         }, */
+        {
+          title: 'Fields',
+          href: '/forms/fields',
+          icon: TextCursorInput,
+        },
       ],
     },
   ],
