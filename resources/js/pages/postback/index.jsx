@@ -1,14 +1,12 @@
 import PageHeader from '@/components/page-header';
-import { TablePostbacks } from '@/components/postback/table-postbacks';
+import { TablePostbacks } from '@/components/postback/index';
 import { PostbackProvider } from '@/context/postback-provider';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-
 const breadcrumbs = [
   {
     title: 'Postbacks',
-    href: route('postbacks.index'),
+    href: '/postbacks',
   },
 ];
 /**

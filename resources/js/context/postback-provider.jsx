@@ -1,16 +1,15 @@
-import { PostbackApiRequestsViewer } from '@/components/postback';
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useDebouncedFunction } from '@/hooks/use-debounce';
-import { useModal } from '@/hooks/use-modal';
 import { getSortState, serializeSort } from '@/utils/table';
 import { router, usePage } from '@inertiajs/react';
 import { createContext, useCallback, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
+import { useModal } from '@/hooks/use-modal';
 
 export const PostbackContext = createContext(null);
 
 export function PostbackProvider({ children }) {
   const { state } = usePage().props;
+  const modal = useModal();
   const filters = useRef(state?.filters ?? []);
   const [currentRow, setCurrentRow] = useState(null);
   const [resetTrigger, setResetTrigger] = useState(false);
@@ -19,20 +18,10 @@ export function PostbackProvider({ children }) {
   const [columnFilters, setColumnFilters] = useState(filters.current);
   const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
-  const modal = useModal();
 
-  const showRequestViewer = (postback) => {
-    modal.open(
-      <>
-        <DialogHeader>
-          <DialogTitle>API Requests - Postback #{postback.id}</DialogTitle>
-          <DialogDescription className="sr-only">
-            Displays all API requests made for this postback, including request and response data.
-          </DialogDescription>
-        </DialogHeader>
-        <PostbackApiRequestsViewer postbackId={postback.id} />
-      </>,
-    );
+  const showRequestViewer = async (postback) => {
+    const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
+    modal.open(<PostbackApiRequestsViewer postbackId={postback.id} />);
   };
 
   const handleClearFilters = () => {

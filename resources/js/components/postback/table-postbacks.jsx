@@ -4,7 +4,7 @@ import TableRowEmpty from '@/components/data-table/table-row-empty';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect } from 'react';
 
-import {postbackColumns} from '@/components/postback/index';
+import {postbackColumns} from './list-columns';
 
 import { usePage } from '@inertiajs/react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -21,7 +21,7 @@ import { mapIcon } from '@/components/lucide-icon';
  * @param {Object} props.postbacks - Datos de visitantes con información de paginación
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
-export const TablePostbacks = ({ postbacks }) => {
+export default function TablePostbacks ({ postbacks }) {
   const {
     getPostbacks,
     columnFilters,
