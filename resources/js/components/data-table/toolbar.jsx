@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
 
-export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', children, filters = [], resetTrigger, setResetTrigger }) {
+export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filters = [], resetTrigger, setResetTrigger }) {
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   return (
     <div className="flex w-full flex-col gap-2">

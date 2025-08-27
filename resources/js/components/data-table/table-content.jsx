@@ -2,7 +2,7 @@ import TableRowEmpty from '@/components/data-table/table-row-empty';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { flexRender } from '@tanstack/react-table';
 
-export function DataTableContent({ table, data, isLoading }) {
+export function DataTableContent({ table, data, isLoading = false }) {
   if (isLoading) {
     return (
       <TableRow>
