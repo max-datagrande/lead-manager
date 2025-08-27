@@ -17,9 +17,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
   //Visitors
   Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
   //Postbacks
-  Route::prefix('posbacks')->name('postbacks.')->group(function () {
-    Route::get('', [PostbackController::class, 'index'])->name('postbacks.index');
-    Route::get('{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('postbacks.api-requests');
+  Route::prefix('postbacks')->name('postbacks.')->group(function () {
+    Route::get('/', [PostbackController::class, 'index'])->name('index');
+    Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
   });
   //Forms
   Route::prefix('forms')->group(function () {
