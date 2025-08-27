@@ -20,12 +20,10 @@ class FieldController extends Controller
       $query->where('name', 'like', "%{$search}%")
         ->orWhere('label', 'like', "%{$search}%");
     }
-    $query->orderBy('created_at', 'desc');
     $fields = $query->get();
     return Inertia::render('fields/index', [
       'rows' => $fields,
       'state' => [
-        'search' => $search,
         'sort' => 'created_at:desc',
       ]
     ]);
