@@ -113,7 +113,7 @@ class TrafficController extends Controller
       })
       ->values();
 
-    return Inertia::render('Visitors/Index', [
+    return Inertia::render('visitors/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],
       'state' => $result['state'],
