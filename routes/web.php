@@ -4,18 +4,27 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\PostbackController;
+use App\Http\Controllers\Form\FieldController;
 
 Route::get('/', function () {
   return Inertia::render('welcome');
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-  Route::get('dashboard', function () {
+  Route::get('/', function () {
     return Inertia::render('dashboard');
   })->name('dashboard');
+  //Visitors
   Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
-  Route::get('postbacks', [PostbackController::class, 'index'])->name('postbacks.index');
-  Route::get('postbacks/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('postbacks.api-requests');
+  //Postbacks
+  Route::prefix('posbacks')->name('postbacks.')->group(function () {
+    Route::get('', [PostbackController::class, 'index'])->name('postbacks.index');
+    Route::get('{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('postbacks.api-requests');
+  });
+  //Forms
+  Route::prefix('forms')->group(function () {
+    Route::get('fields', [FieldController::class, 'index'])->name('fields.index');
+  });
 });
 
 require __DIR__ . '/settings.php';

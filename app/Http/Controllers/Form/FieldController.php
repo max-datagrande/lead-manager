@@ -40,7 +40,7 @@ class FieldController extends Controller
       $data['filters']['sort'] = $sort;
       $data['filters']['direction'] = $direction;
     }
-    return Inertia::render('Fields', $data);
+    return Inertia::render('fields/index', $data);
   }
 
   /**
@@ -54,7 +54,7 @@ class FieldController extends Controller
     ]);
 
     Field::create($validated);
-    addFlashMessage('success', 'Field created successfully.');
+    add_flash_message('success', 'Field created successfully.');
     return  back();
   }
   /**
@@ -68,11 +68,11 @@ class FieldController extends Controller
         'label' => 'required|string|max:255',
       ]);
       $field->update($validated);
-      addFlashMessage('success', 'Field updated successfully.');
+      add_flash_message('success', 'Field updated successfully.');
       return  back();
     } catch (\Throwable $th) {
       $message = $th->getMessage();
-      addFlashMessage('error', 'Something went wrong: ' . $message);
+      add_flash_message('error', 'Something went wrong: ' . $message);
       return back()->withErrors(['message' => 'Something went wrong.']);
     }
   }
@@ -82,7 +82,7 @@ class FieldController extends Controller
   public function destroy(Field $field)
   {
     $field->delete();
-    addFlashMessage('success', 'Field deleted successfully.');
+    add_flash_message('success', 'Field deleted successfully.');
     return  back();
   }
 }
