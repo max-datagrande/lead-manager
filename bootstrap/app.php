@@ -10,6 +10,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\BlockWebOnApiSubdomain;
 use App\Http\Middleware\AuthHost;
 use App\Http\Middleware\ForceApiHeaders;
+use App\Http\Middleware\DomainWhitelistMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
   ->withRouting(
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->alias([
       'admin' => AdminMiddleware::class,
       'auth.host' => AuthHost::class,
+      'domain.whitelist' => DomainWhitelistMiddleware::class,
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

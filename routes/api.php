@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\Api\PostbackController;
+use App\Http\Controllers\GeolocationController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -39,4 +40,15 @@ Route::prefix('postback')->group(function () {
   // Ruta para obtener reportes de NI (admin)
   Route::get('/report', [PostbackController::class, 'getReport'])
     ->name('api.postback.report');
+});
+
+// Rutas de Geolocalización - Protegidas por whitelist de dominios
+Route::middleware(['domain.whitelist'])->prefix('geolocation')->group(function () {
+  // Endpoint principal para obtener geolocalización por IP
+  Route::post('/lookup', [GeolocationController::class, 'getLocationByIp'])
+    ->name('api.geolocation.lookup');
+
+  // Endpoint para verificar el estado de la API
+  Route::get('/status', [GeolocationController::class, 'status'])
+    ->name('api.geolocation.status');
 });
