@@ -1,12 +1,11 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\Api\PostbackController;
-use App\Http\Controllers\GeolocationController;
+use App\Http\Controllers\Api\GeolocationController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
