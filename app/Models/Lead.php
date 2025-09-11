@@ -60,11 +60,6 @@ class Lead extends Model
       ->withPivot('value')
       ->withTimestamps();
   }
-  public function sales()
-  {
-    return $this->hasMany(Sale::class, 'fingerprint', 'fingerprint');
-  }
-
   /**
    * Relation to the lead's traffic logs by fingerprint.
    */
@@ -80,13 +75,5 @@ class Lead extends Model
   {
     return $this->trafficLogs()->latest('visit_date')->value('host');
   }
-
-    /**
-     * Relación con logs de conversiones
-     */
-    public function conversionLogs()
-    {
-        return $this->hasMany(ConversionLog::class, 'fingerprint', 'fingerprint');
-    }
 }
 
