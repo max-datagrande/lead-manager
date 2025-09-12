@@ -16,12 +16,12 @@ class HostValidationService
    * @param string $host El host a validar
    * @return bool
    */
-  public function validateFromDatabase(string $host): bool
+  /* public function validateFromDatabase(string $host): bool
   {
     return Host::where('domain', $host)
       ->where('is_active', true)
       ->exists();
-  }
+  } */
 
   /**
    * Valida un host contra el archivo JSON de hosts permitidos
