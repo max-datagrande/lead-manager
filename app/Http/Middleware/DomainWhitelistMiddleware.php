@@ -6,11 +6,12 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Maxidev\Logger\TailLogger;
 
 class DomainWhitelistMiddleware
 {
-  const WHITELIST_FILE = 'data/whitelist_domains.json';
+  const WHITELIST_FILE = 'app/data/whitelist_domains.json';
   /**
    * Handle an incoming request.
    *
@@ -22,11 +23,8 @@ class DomainWhitelistMiddleware
   {
     // Obtener el dominio de origen
     $origin = $request->header('Origin') ?? $request->header('Referer');
-    $host = $request->getHost();
-
     TailLogger::saveLog('Request to API', 'middleware/geolocation', 'info', [
       'origin' => $origin,
-      'host' => $host,
       'ip' => $request->ip(),
       'user_agent' => $request->userAgent()
     ]);
@@ -42,7 +40,6 @@ class DomainWhitelistMiddleware
     if (!$this->isDomainAllowed($domain)) {
       TailLogger::saveLog('Access denied', 'middleware/geolocation', 'warning', [
         'domain' => $domain,
-        'host' => $host,
         'origin' => $origin,
         'ip' => $request->ip(),
         'user_agent' => $request->userAgent()
@@ -66,15 +63,16 @@ class DomainWhitelistMiddleware
   private function isDomainAllowed(string $domain): bool
   {
     try {
+      $jsonPath = storage_path(self::WHITELIST_FILE);
       // Cargar la whitelist desde el archivo JSON
-      if (!Storage::disk('local')->exists(self::WHITELIST_FILE)) {
+      if (!File::exists($jsonPath)) {
         TailLogger::saveLog('Whitelist file not found', 'middleware/geolocation', 'error', [
-          'path' => self::WHITELIST_FILE,
+          'path' => $jsonPath,
         ]);
         return false;
       }
 
-      $whitelistContent = Storage::disk('local')->get(self::WHITELIST_FILE);
+      $whitelistContent = File::get($jsonPath);
       $whitelist = json_decode($whitelistContent, true);
 
       if (!$whitelist || !isset($whitelist['allowed_domains'])) {
