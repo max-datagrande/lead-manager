@@ -7,14 +7,14 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
-use App\Libraries\IpApi;
+use App\Services\GeolocationService;
 use Maxidev\Logger\TailLogger;
 
 
 class GeolocationController extends Controller
 {
 
-  public function __construct(private IpApi $ipApi, protected Request $request) {}
+  public function __construct(private GeolocationService $geolocationService, protected Request $request) {}
 
   /**
    * Obtener información de geolocalización por dirección IP
@@ -37,8 +37,7 @@ class GeolocationController extends Controller
       ]);
 
       // Obtener datos de geolocalización usando IpApi
-      $locationData = $this->ipApi->getLocationByIp($ipRequested);
-
+      $locationData = $this->geolocationService->getGeolocation($ipRequested);
       // Estructurar la respuesta
       $response = [
         'success' => true,
