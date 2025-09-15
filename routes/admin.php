@@ -9,5 +9,4 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Rutas del módulo Whitelist
     Route::resource('whitelist', WhitelistEntryController::class)->except(['show', 'create', 'edit']);
-    Route::post('whitelist/validate', [WhitelistEntryController::class, 'validate'])->name('whitelist.validate');
 });
