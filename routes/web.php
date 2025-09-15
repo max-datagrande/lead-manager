@@ -20,7 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   });
   //Forms
   Route::prefix('forms')->group(function () {
-    Route::get('fields', [FieldController::class, 'index'])->name('fields.index');
+    Route::resource('fields', FieldController::class);
   });
   //Whitelist
   Route::get('whitelist', [WhitelistEntryController::class, 'index'])->name('whitelist.index');
