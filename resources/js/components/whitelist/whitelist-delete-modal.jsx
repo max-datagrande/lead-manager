@@ -1,9 +1,9 @@
-import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useModal, useCurrentModalId } from '@/hooks/use-modal';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 /**
  * Modal component for confirming whitelist entry deletion
@@ -11,20 +11,24 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function WhitelistDeleteModal({ id, entry }) {
   const modal = useModal();
   const modalId = useCurrentModalId();
-
   const { delete: destroy, processing } = useForm();
 
   /**
    * Handles deletion confirmation
    */
   const handleConfirm = () => {
-    destroy(route('admin.whitelist.destroy', entry.id), {
+    console.log('Deleting entry:', entry);
+    const url = route('admin.whitelist.destroy', entry.id);
+    console.log('URL:', url);
+    destroy(url, {
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         modal.resolve(modalId, true);
       },
-      onError: () => {
-        // Handle error if needed
-        modal.resolve(modalId, false);
+      onError: (errors) => {
+        console.log('Delete errors:', errors);
+        modal.reject(modalId, errors);
       },
     });
   };
@@ -60,9 +64,7 @@ export default function WhitelistDeleteModal({ id, entry }) {
           <AlertTriangle className="h-5 w-5 text-destructive" />
           Delete Whitelist Entry
         </DialogTitle>
-        <DialogDescription>
-          This action cannot be undone. The {getTypeLabel()} will be permanently removed from the whitelist.
-        </DialogDescription>
+        <DialogDescription>This action cannot be undone. The {getTypeLabel()} will be permanently removed from the whitelist.</DialogDescription>
       </DialogHeader>
 
       <div className="mt-4 space-y-4">
@@ -70,10 +72,20 @@ export default function WhitelistDeleteModal({ id, entry }) {
         <Alert>
           <AlertDescription>
             <div className="space-y-1">
-              <div><strong>Type:</strong> {entry.type === 'domain' ? 'Domain' : 'IP Address'}</div>
-              {entry.name && <div><strong>Name:</strong> {entry.name}</div>}
-              <div><strong>Value:</strong> <code className="bg-muted px-1 py-0.5 rounded text-sm">{entry.value}</code></div>
-              <div><strong>Status:</strong> {entry.is_active ? 'Active' : 'Inactive'}</div>
+              <div>
+                <strong>Type:</strong> {entry.type === 'domain' ? 'Domain' : 'IP Address'}
+              </div>
+              {entry.name && (
+                <div>
+                  <strong>Name:</strong> {entry.name}
+                </div>
+              )}
+              <div>
+                <strong>Value:</strong> <code className="rounded bg-muted px-1 py-0.5 text-sm">{entry.value}</code>
+              </div>
+              <div>
+                <strong>Status:</strong> {entry.is_active ? 'Active' : 'Inactive'}
+              </div>
             </div>
           </AlertDescription>
         </Alert>
@@ -81,25 +93,17 @@ export default function WhitelistDeleteModal({ id, entry }) {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Are you sure you want to delete <strong>{getDisplayName()}</strong>?
+            <p>Are you sure you want to delete <strong>{getDisplayName()}</strong>?</p>
           </AlertDescription>
         </Alert>
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-2 mt-6">
-        <Button
-          variant="outline"
-          onClick={handleCancel}
-          disabled={processing}
-        >
+      <div className="mt-6 flex justify-end gap-2">
+        <Button variant="outline" onClick={handleCancel} disabled={processing}>
           Cancel
         </Button>
-        <Button
-          variant="destructive"
-          onClick={handleConfirm}
-          disabled={processing}
-        >
+        <Button variant="destructive" onClick={handleConfirm} disabled={processing}>
           {processing ? 'Deleting...' : 'Delete Entry'}
         </Button>
       </div>
