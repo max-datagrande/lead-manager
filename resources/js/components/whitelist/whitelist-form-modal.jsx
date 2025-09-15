@@ -1,14 +1,15 @@
-import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useModal, useCurrentModalId } from '@/hooks/use-modal';
+import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { isIPv4 } from 'is-ip';
 import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useEffect } from 'react';
 
 /**
  * Modal component for creating and editing whitelist entries
@@ -40,20 +41,13 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
    */
   const isValidUrl = (string) => {
     try {
-      new URL(string.startsWith('http') ? string : `https://${string}`);
+      const url = new URL(string);
+      console.log(url);
       return true;
-    } catch (_) {
+    } catch (e) {
+      console.log(e);
       return false;
     }
-  };
-
-  /**
-   * Validates IP address format
-   */
-  const isValidIP = (ip) => {
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-    const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^::$/;
-    return ipv4Regex.test(ip) || ipv6Regex.test(ip);
   };
 
   /**
@@ -63,12 +57,11 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
     if (!data.value.trim()) {
       return 'Value is required';
     }
-
     if (data.type === 'domain' && !isValidUrl(data.value)) {
       return 'Please enter a valid domain or URL';
     }
 
-    if (data.type === 'ip' && !isValidIP(data.value)) {
+    if (data.type === 'ip' && !isIPv4(data.value)) {
       return 'Please enter a valid IP address';
     }
 
@@ -83,40 +76,38 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
 
     const validationError = validateForm();
     if (validationError) {
-      // You could set a local error state here if needed
       return;
     }
 
-    const submitData = {
+    /* const submitData = {
       ...data,
       is_active: data.is_active ? 1 : 0,
+    }; */
+    const url = isEdit ? route('admin.whitelist.update', entry.id) : route('admin.whitelist.store');
+    const options = {
+      preserveState: true,
+      preserveScroll: true,
+      headers: {
+        Accept: 'application/json',
+      },
+      onSuccess: (response) => {
+        console.log('Success:', response);
+        modal.resolve(modalId, true);
+        reset();
+      },
+      onError: (errors) => {
+        console.log('Validation errors:', errors);
+        /* modal.reject(modalId, errors); */
+      },
     };
 
-    if (isEdit && entry?.id) {
-      put(route('admin.whitelist.update', entry.id), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-          modal.resolve(modalId, true);
-          reset();
-        },
-        onError: (e) => {
-          console.log(e);
-        },
-      });
-    } else {
-      post(route('admin.whitelist.store'), {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-          modal.resolve(modalId, true);
-          reset();
-        },
-        onError: () => {
-          console.log(e);
-        },
-      });
-    }
+    // Debug: Verificar las opciones antes de enviar la petición
+    console.log('🔍 Debug - URL:', url);
+    console.log('🔍 Debug - Options:', options);
+    console.log('🔍 Debug - Headers:', options.headers);
+    console.log('🔍 Debug - Method:', isEdit && entry?.id ? 'PUT' : 'POST');
+
+    isEdit && entry?.id ? put(url, options) : post(url, options);
   };
 
   /**
@@ -131,9 +122,7 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
    * Gets placeholder text based on type
    */
   const getValuePlaceholder = () => {
-    return data.type === 'domain'
-      ? 'example.com or https://example.com'
-      : '192.168.1.1 or 2001:db8::1';
+    return data.type === 'domain' ? 'https://example.com' : '192.168.1.1';
   };
 
   const validationError = validateForm();
@@ -187,10 +176,13 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
           />
           {errors.value && <p className="text-sm text-destructive">{errors.value}</p>}
           {validationError && data.value && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{validationError}</AlertDescription>
-            </Alert>
+            <>
+              <Alert variant="destructive">
+                <AlertCircle />
+                <AlertTitle>Form validation failed</AlertTitle>
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
+            </>
           )}
         </div>
 
