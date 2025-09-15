@@ -1,16 +1,16 @@
-import Paginator from '@/components/data-table/paginator';
-import { Table, TableBody } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { useWhitelist } from '@/hooks/use-whitelist';
-import { whitelistColumns } from './list-columns';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody } from '@/components/ui/table';
+import { useWhitelist } from '@/hooks/use-whitelist';
+import { usePage } from '@inertiajs/react';
+import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
-
+import { useState } from 'react';
+import { whitelistColumns } from './list-columns';
+import { getSortState } from '@/utils/table';
 /**
  * Componente principal para mostrar la tabla de whitelist con paginación
  *
@@ -19,62 +19,47 @@ import { Plus } from 'lucide-react';
  * @returns {JSX.Element} Tabla completa con datos de whitelist y controles de paginación
  */
 export const TableWhitelist = ({ entries }) => {
-  const {
-    getWhitelistEntries,
-    columnFilters,
-    setColumnFilters,
-    sorting,
-    setSorting,
-    globalFilter,
-    setGlobalFilter,
-    setResetTrigger,
-    resetTrigger,
-    isLoading,
-    showCreateModal,
-  } = useWhitelist();
-  
-  const { rows, meta, state, data } = usePage().props;
-  const links = rows?.links ?? [];
-  const types = data?.types ?? [
+  const { isLoading, showCreateModal } = useWhitelist();
+  const { rows, filters } = usePage().props;
+  const { sort } = filters;
+  console.log(filters);
+  const types = [
     { label: 'Domain', value: 'domain' },
-    { label: 'IP Address', value: 'ip' }
+    { label: 'IP Address', value: 'ip' },
   ];
-  const statuses = data?.statuses ?? [
+  const statuses = [
     { label: 'Active', value: '1' },
-    { label: 'Inactive', value: '0' }
+    { label: 'Inactive', value: '0' },
   ];
 
-  const pageIndex = (state?.page ?? 1) - 1;
-  const pageSize = state?.per_page ?? 10;
+  const [resetTrigger, setResetTrigger] = useState(false);
+  // Estados para sorting y filtering
+  const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [pagination, setPagination] = useState({
+    pageIndex: 0, //initial page index
+    pageSize: 10, //default page size
+  });
 
   const table = useReactTable({
     data: entries,
     columns: whitelistColumns,
     state: {
       sorting,
-      columnFilters: columnFilters,
-      pagination: { pageIndex, pageSize },
       globalFilter,
+      pagination,
     },
-    onSortingChange: (sortingUpdate) => {
-      const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;
-      setSorting(newSorting);
-    },
-    onColumnFiltersChange: (filtersUpdate) => {
-      const newFilters = typeof filtersUpdate === 'function' ? filtersUpdate(columnFilters) : filtersUpdate;
-      setColumnFilters(newFilters);
-    },
+    onPaginationChange: setPagination,
+    onPageSizeChange: setPagination,
+    onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    manualSorting: true,
-    manualFiltering: true,
-    manualPagination: true,
-    pageCount: meta?.last_page,
+    getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    rowCount: entries.length,
+    globalFilterFn: 'includesString', // Removido el espacio extra
   });
-
-  useEffect(() => {
-    getWhitelistEntries({ page: pageIndex + 1, per_page: pageSize });
-  }, [sorting, columnFilters, globalFilter]);
 
   return (
     <>
@@ -107,7 +92,7 @@ export const TableWhitelist = ({ entries }) => {
           </Button>
         </div>
       </div>
-      
+
       {/* Tabla */}
       <div className="rounded-md border">
         <Table>
@@ -117,9 +102,7 @@ export const TableWhitelist = ({ entries }) => {
           </TableBody>
         </Table>
       </div>
-      
-      {/* Paginación */}
-      <Paginator pages={links} rows={rows} />
+      <DataTablePagination table={table} />
     </>
   );
 };

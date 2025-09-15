@@ -16,22 +16,15 @@ class WhitelistEntryController extends Controller
    */
   public function index(Request $request)
   {
+    $sort = $request->get('sort', 'created_at:desc');
+    [$col, $dir] = get_sort_data($sort);
+    $type = $request->get('type');
     $entries = WhitelistEntry::query()
-      ->when($request->search, function ($query, $search) {
-        $query->where(function ($q) use ($search) {
-          $q->where('name', 'like', "%{$search}%")
-            ->orWhere('value', 'like', "%{$search}%");
-        });
-      })
-      ->when($request->type, function ($query, $type) {
-        $query->where('type', $type);
-      })
-      ->orderBy($request->get('sort', 'created_at'), $request->get('direction', 'desc'))
+      ->orderBy($col, $dir)
       ->paginate(10);
-
     return Inertia::render('whitelist/index', [
       'rows' => $entries,
-      'filters' => $request->only(['search', 'sort', 'direction', 'type'])
+      'filters' => compact('sort')
     ]);
   }
 
