@@ -67,9 +67,7 @@ export function WhitelistProvider({ children }) {
   const showCreateModal = async () => {
     try {
       const result = await modal.openAsync(<WhitelistFormModal id={0} />);
-      if (result) {
-        getWhitelistEntries();
-      }
+      console.log(result);
     } catch (error) {
       setNotify('Error creating whitelist entry', 'error');
       console.log('Modal cancelled or error:', error);
@@ -80,9 +78,6 @@ export function WhitelistProvider({ children }) {
     try {
       const result = await modal.openAsync(<WhitelistFormModal id={0} entry={entry} isEdit={true} />);
       console.log(result);
-      if (result) {
-        getWhitelistEntries();
-      }
     } catch (error) {
       setNotify('Error updating whitelist entry', 'error');
       console.log('Modal cancelled or error:', error);
