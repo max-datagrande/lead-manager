@@ -42,10 +42,8 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
   const isValidUrl = (string) => {
     try {
       const url = new URL(string);
-      console.log(url);
       return true;
     } catch (e) {
-      console.log(e);
       return false;
     }
   };
@@ -87,11 +85,7 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
     const options = {
       preserveState: true,
       preserveScroll: true,
-      headers: {
-        Accept: 'application/json',
-      },
       onSuccess: (response) => {
-        console.log('Success:', response);
         modal.resolve(modalId, true);
         reset();
       },
@@ -100,12 +94,6 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
         /* modal.reject(modalId, errors); */
       },
     };
-
-    // Debug: Verificar las opciones antes de enviar la petición
-    console.log('🔍 Debug - URL:', url);
-    console.log('🔍 Debug - Options:', options);
-    console.log('🔍 Debug - Headers:', options.headers);
-    console.log('🔍 Debug - Method:', isEdit && entry?.id ? 'PUT' : 'POST');
 
     isEdit && entry?.id ? put(url, options) : post(url, options);
   };
