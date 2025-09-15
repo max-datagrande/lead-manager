@@ -17,7 +17,7 @@ export default function FormModal({ entry, isEdit = false }) {
     name: entry?.name ?? '',
     contact_email: entry?.contact_email ?? '',
     contact_phone: entry?.contact_phone ?? '',
-    company_name: entry?.contact_name ?? '',
+    contact_name: entry?.contact_name ?? '',
     active: entry?.active ?? true,
   });
 
