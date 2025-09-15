@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Globe, Server } from 'lucide-react';
-import { useWhitelist } from '@/hooks/use-whitelist';
+import { useFields } from '@/hooks/use-fields';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 
@@ -34,7 +34,7 @@ const StatusBadge = ({ isActive }) => {
 
 // Componente para las acciones de la fila
 const ActionsCell = ({ row }) => {
-  const { showEditModal, showDeleteModal } = useWhitelist();
+  const { showEditModal, showDeleteModal } = useFields();
   const entry = row.original;
 
   return (
@@ -105,5 +105,12 @@ export const columns = [
     ),
     enableSorting: true,
     enableHiding: true,
+  },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ActionsCell,
+    enableSorting: false,
+    enableHiding: false,
   },
 ];
