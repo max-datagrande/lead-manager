@@ -45,7 +45,7 @@ export function WhitelistProvider({ children }) {
         filters: JSON.stringify(columnFilters || []),
         ...newData,
       };
-      const url = route('admin.whitelist.index');
+      const url = route('whitelist.index');
       const options = {
         only: ['rows', 'meta', 'state'],
         replace: true,

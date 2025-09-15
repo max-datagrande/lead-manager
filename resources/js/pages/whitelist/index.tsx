@@ -9,7 +9,7 @@ import { route } from 'ziggy-js';
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Whitelist',
-    href: route('admin.whitelist.index'),
+    href: route('whitelist.index'),
   },
 ];
 
@@ -35,13 +35,14 @@ interface IndexProps {
 }
 
 const Index = ({ rows }: IndexProps) => {
+  console.log(rows);
   return (
     <WhitelistProvider>
       <Head title="Whitelist Management" />
       <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
-        <PageHeader 
-          title="Whitelist Management" 
-          description="Manage allowed domains and IP addresses for API access control." 
+        <PageHeader
+          title="Whitelist Management"
+          description="Manage allowed domains and IP addresses for API access control."
         />
         <TableWhitelist entries={rows.data} />
       </div>

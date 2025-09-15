@@ -63,7 +63,7 @@ const AdminGroup: NavGroupType = {
     },
     {
       title: 'Whitelist',
-      href: '/whitelist',
+      href: route('whitelist.index'),
       icon: Shield,
     },
   ],

@@ -29,7 +29,7 @@ class WhitelistEntryController extends Controller
       ->paginate(10);
 
     return Inertia::render('whitelist/index', [
-      'entries' => $entries,
+      'rows' => $entries,
       'filters' => $request->only(['search', 'sort', 'direction', 'type'])
     ]);
   }
