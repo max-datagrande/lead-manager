@@ -1,6 +1,12 @@
 import { AVAILABLE_ICONS } from '@/config/icons';
 
-export function LucideIcon({ name, className = '', size, ...rest }) {
+interface Props {
+  name: keyof typeof AVAILABLE_ICONS;
+  className?: string;
+  size?: number;
+}
+
+export function LucideIcon({ name, className = '', size = 16, ...rest }: Props) {
   const IconComponent = AVAILABLE_ICONS[name];
 
   if (!IconComponent) {
@@ -8,9 +14,7 @@ export function LucideIcon({ name, className = '', size, ...rest }) {
     return null;
   }
 
-  return (
-    <IconComponent className={className} size={size} {...rest} />
-  );
+  return <IconComponent className={className} size={size} {...rest} />;
 }
 
 export function mapIcon(data) {
