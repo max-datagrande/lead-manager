@@ -14,27 +14,16 @@ import { useEffect } from 'react';
 /**
  * Modal component for creating and editing whitelist entries
  */
-export default function WhitelistFormModal({ id, entry, isEdit = false }) {
+export default function WhitelistFormModal({ entry, isEdit = false }) {
+  console.log(entry);
   const modal = useModal();
   const modalId = useCurrentModalId();
-
   const { data, setData, post, put, processing, errors, reset } = useForm({
     type: entry?.type || 'domain',
     name: entry?.name || '',
     value: entry?.value || '',
     is_active: entry?.is_active ?? true,
   });
-
-  useEffect(() => {
-    if (entry) {
-      setData({
-        type: entry.type,
-        name: entry.name,
-        value: entry.value,
-        is_active: entry.is_active,
-      });
-    }
-  }, [entry]);
 
   /**
    * Validates URL format
