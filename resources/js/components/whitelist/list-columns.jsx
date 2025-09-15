@@ -11,10 +11,10 @@ const TypeBadge = ({ type }) => {
     domain: { variant: 'default', icon: Globe, label: 'Domain' },
     ip: { variant: 'secondary', icon: Server, label: 'IP Address' }
   };
-  
+
   const config = variants[type] || variants.domain;
   const Icon = config.icon;
-  
+
   return (
     <Badge variant={config.variant} className="flex items-center gap-1">
       <Icon className="h-3 w-3" />
@@ -36,7 +36,7 @@ const StatusBadge = ({ isActive }) => {
 const ActionsCell = ({ row }) => {
   const { showEditModal, showDeleteModal } = useWhitelist();
   const entry = row.original;
-  
+
   return (
     <div className="flex items-center gap-2">
       <Button
@@ -96,6 +96,7 @@ export const whitelistColumns = [
     cell: ({ row }) => <StatusBadge isActive={row.original.is_active} />,
     enableSorting: true,
     enableHiding: true,
+    filterFn: 'booleanFilter',
   },
   {
     accessorKey: 'created_at',

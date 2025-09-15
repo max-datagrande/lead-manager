@@ -17,7 +17,7 @@ class WhitelistEntry extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'string',
+        'is_active' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

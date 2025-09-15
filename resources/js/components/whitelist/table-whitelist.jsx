@@ -28,8 +28,8 @@ export const TableWhitelist = ({ entries }) => {
   ];
 
   const statuses = [
-    { label: 'Active', value: 'true' },
-    { label: 'Inactive', value: 'false' },
+    { label: 'Active', value: 1 },
+    { label: 'Inactive', value: 0 },
   ];
 
   const [resetTrigger, setResetTrigger] = useState(false);
@@ -59,6 +59,12 @@ export const TableWhitelist = ({ entries }) => {
     getSortedRowModel: getSortedRowModel(),
     rowCount: entries.length,
     globalFilterFn: 'includesString',
+    filterFns: {
+      booleanFilter: (row, columnId, filterValue) => {
+        const cellValue = row.getValue(columnId);
+        return filterValue.includes(cellValue);
+      },
+    },
   });
 
   return (
