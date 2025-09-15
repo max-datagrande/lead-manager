@@ -2,6 +2,7 @@ import PageHeader from '@/components/page-header';
 import { TablePostbacks } from '@/components/postback/index';
 import { PostbackProvider } from '@/context/postback-provider';
 import AppLayout from '@/layouts/app-layout';
+import { type ReactNode } from 'react';
 import { Head } from '@inertiajs/react';
 const breadcrumbs = [
   {
@@ -26,5 +27,5 @@ const Index = ({ rows }) => {
   );
 };
 
-Index.layout = (page) => <AppLayout children={page} breadcrumbs={breadcrumbs} />;
+Index.layout = (page: ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />;
 export default Index;
