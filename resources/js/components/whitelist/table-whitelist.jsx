@@ -2,15 +2,10 @@ import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody } from '@/components/ui/table';
 import { useWhitelist } from '@/hooks/use-whitelist';
-import { usePage } from '@inertiajs/react';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
-import { useState } from 'react';
 import { whitelistColumns } from './list-columns';
-import { getSortState } from '@/utils/table';
 /**
  * Componente principal para mostrar la tabla de whitelist con paginación
  *
@@ -19,9 +14,7 @@ import { getSortState } from '@/utils/table';
  * @returns {JSX.Element} Tabla completa con datos de whitelist y controles de paginación
  */
 export const TableWhitelist = ({ entries }) => {
-  const { isLoading, showCreateModal } = useWhitelist();
-  const { filters } = usePage().props;
-  const { sort } = filters;
+  const { resetTrigger, setResetTrigger, sorting, setSorting, globalFilter, setGlobalFilter, pagination, setPagination } = useWhitelist();
   const types = [
     { label: 'Domain', value: 'domain' },
     { label: 'IP Address', value: 'ip' },
@@ -31,15 +24,6 @@ export const TableWhitelist = ({ entries }) => {
     { label: 'Active', value: 1 },
     { label: 'Inactive', value: 0 },
   ];
-
-  const [resetTrigger, setResetTrigger] = useState(false);
-  // Estados para sorting y filtering
-  const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [pagination, setPagination] = useState({
-    pageIndex: 0, //initial page index
-    pageSize: 10, //default page size
-  });
 
   const table = useReactTable({
     data: entries,
@@ -100,7 +84,7 @@ export const TableWhitelist = ({ entries }) => {
         <Table>
           <DataTableHeader table={table} />
           <TableBody>
-            <DataTableContent table={table} data={entries} isLoading={isLoading} />
+            <DataTableContent table={table} data={entries} />
           </TableBody>
         </Table>
       </div>
