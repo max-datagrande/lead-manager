@@ -18,10 +18,9 @@ class WhitelistEntryController extends Controller
   {
     $sort = $request->get('sort', 'created_at:desc');
     [$col, $dir] = get_sort_data($sort);
-    $type = $request->get('type');
     $entries = WhitelistEntry::query()
       ->orderBy($col, $dir)
-      ->paginate(10);
+      ->get();
     return Inertia::render('whitelist/index', [
       'rows' => $entries,
       'filters' => compact('sort')
