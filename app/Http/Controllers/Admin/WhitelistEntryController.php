@@ -129,47 +129,4 @@ class WhitelistEntryController extends Controller
       'message' => $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed'
     ]);
   }
-
-  /**
-   * Validar formato de dominio o IP en tiempo real
-   */
-  public function validate(Request $request)
-  {
-    $type = $request->input('type');
-    $value = $request->input('value');
-
-    $errors = [];
-    $isValid = false;
-
-    if ($type === 'domain') {
-      // Validación estricta para dominios usando filter_var
-      $isValid = filter_var($value, FILTER_VALIDATE_URL);
-
-      // Validación adicional para asegurar que tenga protocolo HTTP/HTTPS
-      $isHttps = preg_match('/^https?:\/\//i', $value);
-
-      if (!$isValid) {
-        $errors[] = 'Domain format is invalid';
-      }
-      if (!$isHttps) {
-        $errors[] = 'The domain must include HTTP or HTTPS protocol.';
-      }
-
-      $isValid = $isValid && $isHttps;
-    } elseif ($type === 'ip') {
-      // Validación para direcciones IP
-      $isValid = filter_var($value, FILTER_VALIDATE_IP);
-
-      if (!$isValid) {
-        $errors[] = 'IP address format is invalid';
-      }
-    } else {
-      $errors[] = 'Invalid type. Must be "domain" or "ip".';
-    }
-
-    return response()->json([
-      'valid' => $isValid,
-      'errors' => $errors
-    ]);
-  }
 }
