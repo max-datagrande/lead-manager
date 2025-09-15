@@ -11,16 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: route('fields.index'),
   },
 ];
-/* {
-  "id": 27,
-  "name": "vehicle_model",
-  "label": "Vehicle Model",
-  "validation_rules": null,
-  "user_id": 2,
-  "updated_user_id": 2,
-  "created_at": "2025-07-27T22:08:00.000000Z",
-  "updated_at": "2025-07-27T22:08:00.000000Z"
-} */
+
 type Field = {
   id: number;
   name: string;

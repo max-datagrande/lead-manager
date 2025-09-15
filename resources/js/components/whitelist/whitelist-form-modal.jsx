@@ -1,4 +1,4 @@
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,22 +94,26 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
 
     if (isEdit && entry?.id) {
       put(route('admin.whitelist.update', entry.id), {
+        preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
           modal.resolve(modalId, true);
           reset();
         },
-        onError: () => {
-          // Errors will be handled by the errors object
+        onError: (e) => {
+          console.log(e);
         },
       });
     } else {
       post(route('admin.whitelist.store'), {
+        preserveState: true,
+        preserveScroll: true,
         onSuccess: () => {
           modal.resolve(modalId, true);
           reset();
         },
         onError: () => {
-          // Errors will be handled by the errors object
+          console.log(e);
         },
       });
     }
@@ -137,19 +141,15 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
-          {isEdit ? 'Edit Whitelist Entry' : 'Create Whitelist Entry'}
-        </DialogTitle>
+        <DialogTitle>{isEdit ? 'Edit Whitelist Entry' : 'Create Whitelist Entry'}</DialogTitle>
+        <DialogDescription>{isEdit ? 'Edit the whitelist entry details' : 'Add a new whitelist entry'}</DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Type Selection */}
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
-          <Select
-            value={data.type}
-            onValueChange={(value) => setData('type', value)}
-          >
+          <Select value={data.type} onValueChange={(value) => setData('type', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
@@ -158,9 +158,7 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
               <SelectItem value="ip">IP Address</SelectItem>
             </SelectContent>
           </Select>
-          {errors.type && (
-            <p className="text-sm text-destructive">{errors.type}</p>
-          )}
+          {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
         </div>
 
         {/* Name Field */}
@@ -173,16 +171,12 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
             onChange={(e) => setData('name', e.target.value)}
             placeholder="Friendly name for this entry"
           />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name}</p>
-          )}
+          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
         </div>
 
         {/* Value Field */}
         <div className="space-y-2">
-          <Label htmlFor="value">
-            {data.type === 'domain' ? 'Domain/URL' : 'IP Address'}
-          </Label>
+          <Label htmlFor="value">{data.type === 'domain' ? 'Domain/URL' : 'IP Address'}</Label>
           <Input
             id="value"
             type="text"
@@ -191,9 +185,7 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
             placeholder={getValuePlaceholder()}
             className={validationError && data.value ? 'border-destructive' : ''}
           />
-          {errors.value && (
-            <p className="text-sm text-destructive">{errors.value}</p>
-          )}
+          {errors.value && <p className="text-sm text-destructive">{errors.value}</p>}
           {validationError && data.value && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -204,32 +196,18 @@ export default function WhitelistFormModal({ id, entry, isEdit = false }) {
 
         {/* Active Status */}
         <div className="flex items-center space-x-2">
-          <Switch
-            id="is_active"
-            checked={data.is_active}
-            onCheckedChange={(checked) => setData('is_active', checked)}
-          />
+          <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
           <Label htmlFor="is_active">Active</Label>
         </div>
-        {errors.is_active && (
-          <p className="text-sm text-destructive">{errors.is_active}</p>
-        )}
+        {errors.is_active && <p className="text-sm text-destructive">{errors.is_active}</p>}
 
         {/* Form Actions */}
         <div className="flex justify-end gap-2 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={processing}
-          >
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={processing}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={processing || !!validationError}
-          >
-            {processing ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+          <Button type="submit" disabled={processing || !!validationError}>
+            {processing ? 'Saving...' : isEdit ? 'Update' : 'Create'}
           </Button>
         </div>
       </form>
