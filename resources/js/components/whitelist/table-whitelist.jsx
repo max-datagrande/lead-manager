@@ -20,16 +20,16 @@ import { getSortState } from '@/utils/table';
  */
 export const TableWhitelist = ({ entries }) => {
   const { isLoading, showCreateModal } = useWhitelist();
-  const { rows, filters } = usePage().props;
+  const { filters } = usePage().props;
   const { sort } = filters;
-  console.log(filters);
   const types = [
     { label: 'Domain', value: 'domain' },
     { label: 'IP Address', value: 'ip' },
   ];
+
   const statuses = [
-    { label: 'Active', value: '1' },
-    { label: 'Inactive', value: '0' },
+    { label: 'Active', value: 'true' },
+    { label: 'Inactive', value: 'false' },
   ];
 
   const [resetTrigger, setResetTrigger] = useState(false);
@@ -58,7 +58,7 @@ export const TableWhitelist = ({ entries }) => {
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     rowCount: entries.length,
-    globalFilterFn: 'includesString', // Removido el espacio extra
+    globalFilterFn: 'includesString',
   });
 
   return (
