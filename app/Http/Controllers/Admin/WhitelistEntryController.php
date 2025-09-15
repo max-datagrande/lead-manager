@@ -98,6 +98,6 @@ class WhitelistEntryController extends Controller
     $whitelist->delete();
     $message = $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed';
     add_flash_message('success', $message);
-    return redirect()->route('whitelist.index');
+    return back();
   }
 }

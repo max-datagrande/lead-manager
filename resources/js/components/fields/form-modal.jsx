@@ -48,7 +48,6 @@ export default function FormModal({ entry, isEdit = false }) {
       },
       onError: (errors) => {
         console.log('Validation errors:', errors);
-        /* modal.reject(modalId, errors); */
       },
     };
     isEdit && entry?.id ? put(url, options) : post(url, options);

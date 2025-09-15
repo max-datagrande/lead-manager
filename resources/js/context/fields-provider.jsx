@@ -59,6 +59,7 @@ export function FieldsProvider({ children }) {
       destructive: true,
     });
     if (confirmed) {
+      setNotify('Deleting field', 'info');
       deleteEntry(entry);
     }
   };
