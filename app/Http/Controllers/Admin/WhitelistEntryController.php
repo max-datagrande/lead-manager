@@ -65,13 +65,13 @@ class WhitelistEntryController extends Controller
     }
 
     $request->validate($rules);
-
-    $entry = WhitelistEntry::create($request->all());
+    $data = $request->all();
+    $entry = WhitelistEntry::create($data);
 
     return response()->json([
       'success' => true,
       'data' => $entry,
-      'message' => $request->type === 'domain' ? 'Dominio agregado exitosamente' : 'IP agregada exitosamente'
+      'message' => $request->type === 'domain' ? 'Domain successfully added' : 'IP successfully added'
     ]);
   }
 
@@ -112,7 +112,7 @@ class WhitelistEntryController extends Controller
     return response()->json([
       'success' => true,
       'data' => $entry,
-      'message' => $request->type === 'domain' ? 'Dominio actualizado exitosamente' : 'IP actualizada exitosamente'
+      'message' => $request->type === 'domain' ? 'Domain successfully updated' : 'IP successfully updated'
     ]);
   }
 
@@ -126,7 +126,7 @@ class WhitelistEntryController extends Controller
 
     return response()->json([
       'success' => true,
-      'message' => $type === 'domain' ? 'Dominio eliminado exitosamente' : 'IP eliminada exitosamente'
+      'message' => $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed'
     ]);
   }
 
@@ -149,10 +149,10 @@ class WhitelistEntryController extends Controller
       $isHttps = preg_match('/^https?:\/\//i', $value);
 
       if (!$isValid) {
-        $errors[] = 'El formato del dominio no es válido';
+        $errors[] = 'Domain format is invalid';
       }
       if (!$isHttps) {
-        $errors[] = 'El dominio debe incluir protocolo HTTP o HTTPS';
+        $errors[] = 'The domain must include HTTP or HTTPS protocol.';
       }
 
       $isValid = $isValid && $isHttps;
@@ -161,10 +161,10 @@ class WhitelistEntryController extends Controller
       $isValid = filter_var($value, FILTER_VALIDATE_IP);
 
       if (!$isValid) {
-        $errors[] = 'El formato de la dirección IP no es válido';
+        $errors[] = 'IP address format is invalid';
       }
     } else {
-      $errors[] = 'Tipo no válido. Debe ser "domain" o "ip"';
+      $errors[] = 'Invalid type. Must be "domain" or "ip".';
     }
 
     return response()->json([
