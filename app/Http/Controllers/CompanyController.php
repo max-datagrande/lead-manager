@@ -52,7 +52,7 @@ class CompanyController extends Controller
         'name' => 'required|string|max:100',
         'contact_email' => 'nullable|email|max:100',
         'contact_phone' => 'nullable|string|max:50',
-        'company_name' => 'nullable|string|max:255|unique:companies,company_name,' . $company->id,
+        'contact_name' => 'nullable|string|max:255|unique:companies,contact_name,' . $company->id,
         'active' => 'boolean',
       ]);
       $company->update($validated);
