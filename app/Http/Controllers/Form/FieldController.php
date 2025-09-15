@@ -14,18 +14,14 @@ class FieldController extends Controller
    */
   public function index(Request $request)
   {
-    $search = trim((string) $request->input('search', ''));
-    $query = Field::query();
-    if ($search) {
-      $query->where('name', 'like', "%{$search}%")
-        ->orWhere('label', 'like', "%{$search}%");
-    }
-    $fields = $query->get();
+    $sort = $request->get('sort', 'created_at:desc');
+    [$col, $dir] = get_sort_data($sort);
+    $entries = Field::query()
+      ->orderBy($col, $dir)
+      ->get();
     return Inertia::render('fields/index', [
-      'rows' => $fields,
-      'state' => [
-        'sort' => 'created_at:desc',
-      ]
+      'rows' => $entries,
+      'filters' => compact('sort')
     ]);
   }
 
