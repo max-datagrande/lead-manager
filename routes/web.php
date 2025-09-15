@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\Form\FieldController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Admin\WhitelistEntryController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -18,6 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [PostbackController::class, 'index'])->name('index');
     Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
   });
+  Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   //Forms
   Route::prefix('forms')->group(function () {
     Route::resource('fields', FieldController::class);
