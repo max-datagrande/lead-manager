@@ -7,6 +7,7 @@ use App\Models\WhitelistEntry;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
+use Maxidev\Logger\TailLogger;
 
 class WhitelistEntryController extends Controller
 {
@@ -67,12 +68,9 @@ class WhitelistEntryController extends Controller
     $request->validate($rules);
     $data = $request->all();
     $entry = WhitelistEntry::create($data);
-
-    return response()->json([
-      'success' => true,
-      'data' => $entry,
-      'message' => $request->type === 'domain' ? 'Domain successfully added' : 'IP successfully added'
-    ]);
+    $message = $request->type === 'domain' ? 'Domain successfully added' : 'IP successfully added';
+    add_flash_message('success', $message);
+    return redirect()->route('whitelist.index');
   }
 
   /**
@@ -119,14 +117,13 @@ class WhitelistEntryController extends Controller
   /**
    * Eliminar entrada de whitelist
    */
-  public function destroy(WhitelistEntry $entry)
+  public function destroy(WhitelistEntry $whitelist)
   {
-    $type = $entry->type;
-    $entry->delete();
-
-    return response()->json([
-      'success' => true,
-      'message' => $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed'
-    ]);
+    TailLogger::saveLog('Destroying whitelist entry', 'testing/whitelist', 'info', ['entry_id' => $whitelist->id]);
+    $type = $whitelist->type;
+    $whitelist->delete();
+    $message = $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed';
+    add_flash_message('success', $message);
+    return redirect()->route('whitelist.index');
   }
 }
