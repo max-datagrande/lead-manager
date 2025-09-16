@@ -86,8 +86,6 @@ export default function TablePostbacks({ postbacks }) {
             searchPlaceholder="Search..."
             resetTrigger={resetTrigger}
             setResetTrigger={setResetTrigger}
-            globalQuery={globalFilter}
-            setGlobalQuery={setGlobalFilter}
             filters={[
               {
                 columnId: 'vendor',

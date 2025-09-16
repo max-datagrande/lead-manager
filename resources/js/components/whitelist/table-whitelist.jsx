@@ -59,8 +59,6 @@ export const TableWhitelist = ({ entries }) => {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search entries..."
-            globalQuery={globalFilter}
-            setGlobalQuery={setGlobalFilter}
             resetTrigger={resetTrigger}
             setResetTrigger={setResetTrigger}
             filters={[
