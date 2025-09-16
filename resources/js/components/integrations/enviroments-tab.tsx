@@ -13,30 +13,33 @@ export function EnvironmentTab({ env }: Props) {
   const { data, handleEnvironmentChange } = useIntegrations();
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor={`${env}-url`}>URL</Label>
-        <Input
-          id={`${env}-url`}
-          value={data.environments[env]?.url ?? ''}
-          onChange={(e) => handleEnvironmentChange(env, 'url', e.target.value)}
-          placeholder="https://api.example.com/endpoint"
-        />
+      <div className="flex w-full gap-4">
+        <div className="flex-none space-y-2 min-w-36">
+          <Label htmlFor={`${env}-method`}>Method</Label>
+          <Select value={data.environments[env]?.method ?? 'POST'} onValueChange={(value) => handleEnvironmentChange(env, 'method', value)}>
+            <SelectTrigger id={`${env}-method`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="GET">GET</SelectItem>
+              <SelectItem value="POST">POST</SelectItem>
+              <SelectItem value="PUT">PUT</SelectItem>
+              <SelectItem value="PATCH">PATCH</SelectItem>
+              <SelectItem value="DELETE">DELETE</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex-auto space-y-2">
+          <Label htmlFor={`${env}-url`}>URL</Label>
+          <Input
+            id={`${env}-url`}
+            value={data.environments[env]?.url ?? ''}
+            onChange={(e) => handleEnvironmentChange(env, 'url', e.target.value)}
+            placeholder="https://api.example.com/endpoint"
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${env}-method`}>Method</Label>
-        <Select value={data.environments[env]?.method ?? 'POST'} onValueChange={(value) => handleEnvironmentChange(env, 'method', value)}>
-          <SelectTrigger id={`${env}-method`}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="GET">GET</SelectItem>
-            <SelectItem value="POST">POST</SelectItem>
-            <SelectItem value="PUT">PUT</SelectItem>
-            <SelectItem value="PATCH">PATCH</SelectItem>
-            <SelectItem value="DELETE">DELETE</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+
       <div className="space-y-2">
         <Label>Request Headers</Label>
         <KeyValueList
