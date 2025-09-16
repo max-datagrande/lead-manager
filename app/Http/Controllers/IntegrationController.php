@@ -33,7 +33,7 @@ class IntegrationController extends Controller
     return Inertia::render('integrations/index', [
       'rows' => $entries,
       'filters' => [
-        'sort' => $data['sort'] ?? "created_at:desc",
+        'sort' => $sort,
       ],
     ]);
   }
