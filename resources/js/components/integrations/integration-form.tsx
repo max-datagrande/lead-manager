@@ -13,46 +13,47 @@ export function IntegrationForm() {
   const { data, errors, processing, handleSubmit, setData } = useIntegrations();
   return (
     <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>General Details</CardTitle>
-          <CardDescription>Basic information about the integration.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
-            {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="type">Integration Type</Label>
-            <Select value={data.type} onValueChange={(value) => setData('type', value)}>
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="post-only">Post Only</SelectItem>
-                <SelectItem value="ping-post">Ping-Post</SelectItem>
-                <SelectItem value="offerwall">Offerwall</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
-            <Label htmlFor="is_active">Active</Label>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex w-full gap-4">
+        {/* Name */}
+        <div className="flex-auto space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
+          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+        </div>
+        {/* Type */}
+        <div className="flex-auto space-y-2">
+          <Label htmlFor="type">Integration Type</Label>
+          <Select value={data.type} onValueChange={(value) => setData('type', value)}>
+            <SelectTrigger id="type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="post-only">Post Only</SelectItem>
+              <SelectItem value="ping-post">Ping-Post</SelectItem>
+              <SelectItem value="offerwall">Offerwall</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2 pt-2">
+        <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
+        <Label htmlFor="is_active">Active</Label>
+      </div>
 
       <Tabs defaultValue="development" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="development">Development</TabsTrigger>
-          <TabsTrigger value="production">Production</TabsTrigger>
+        <TabsList className="flex w-full gap-2">
+          <TabsTrigger className="flex-auto" value="development">
+            Development
+          </TabsTrigger>
+          <TabsTrigger className="flex-auto" value="production">
+            Production
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="development">
           <Card>
-            <CardHeader>
-              <CardTitle>Development Environment</CardTitle>
+            <CardHeader className="gap-0">
+              <CardTitle className="text-lg">Development Environment</CardTitle>
               <CardDescription>Configuration for testing and development.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -62,8 +63,8 @@ export function IntegrationForm() {
         </TabsContent>
         <TabsContent value="production">
           <Card>
-            <CardHeader>
-              <CardTitle>Production Environment</CardTitle>
+            <CardHeader className="gap-0">
+              <CardTitle className="text-lg">Production Environment</CardTitle>
               <CardDescription>Live, production-ready configuration.</CardDescription>
             </CardHeader>
             <CardContent>
