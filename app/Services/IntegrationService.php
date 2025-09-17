@@ -139,21 +139,19 @@ class IntegrationService
   public function testIntegrationEnvironment(IntegrationEnvironment $environment)
   {
     $startTime = microtime(true);
-
     try {
       $headers = json_decode($environment->request_headers, true) ?? [];
       $body = json_decode($environment->request_body, true) ?? [];
-
       $response = Http::withHeaders($headers)
         ->{$environment->method}($environment->url, $body);
-
       $duration = round((microtime(true) - $startTime) * 1000);
-
+      $body = $response->body();
+      $result = json_decode($body, true) ?? $body;
       return [
         'status' => $response->status(),
         'duration' => $duration,
         'headers' => $response->headers(),
-        'body' => $response->body(),
+        'body' => $result,
       ];
     } catch (ConnectionException $e) {
       throw new IntegrationServiceException(
@@ -203,6 +201,7 @@ class IntegrationService
  */
 class IntegrationServiceException extends Exception
 {
+  protected $context = [];
   public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
@@ -212,5 +211,9 @@ class IntegrationServiceException extends Exception
       'errors',
       array_merge(['error' => $message], $context)
     );
+  }
+  public function getContext(): array
+  {
+    return $this->context;
   }
 }
