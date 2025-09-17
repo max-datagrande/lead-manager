@@ -54,7 +54,7 @@ export function EnvironmentDetails({ integrationId, env }) {
 
   return (
     <Sheet>
-      <Card className="gap-2">
+      <Card className="gap-6">
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex flex-col gap-2">
             <CardTitle className="capitalize">{env.environment}</CardTitle>
