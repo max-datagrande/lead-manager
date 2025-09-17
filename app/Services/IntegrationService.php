@@ -8,6 +8,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
+use Maxidev\Logger\TailLogger;
 use Exception;
 
 class IntegrationService
@@ -38,7 +39,10 @@ class IntegrationService
     ]);
 
     if ($validator->fails()) {
-      throw new IntegrationServiceException($validator->errors()->first());
+      throw new IntegrationServiceException(
+        $validator->errors()->first(),
+        ['validation_errors' => $validator->errors()->toArray()]
+      );
     }
 
     DB::transaction(function () use ($data) {
@@ -90,7 +94,10 @@ class IntegrationService
     ]);
 
     if ($validator->fails()) {
-      throw new IntegrationServiceException($validator->errors()->first());
+      throw new IntegrationServiceException(
+        $validator->errors()->first(),
+        ['validation_errors' => $validator->errors()->toArray(), 'integration_id' => $integration->id]
+      );
     }
 
     DB::transaction(function () use ($integration, $data) {
@@ -149,9 +156,27 @@ class IntegrationService
         'body' => $response->body(),
       ];
     } catch (ConnectionException $e) {
-      throw new IntegrationServiceException('Connection failed: ' . $e->getMessage());
+      throw new IntegrationServiceException(
+        'Connection failed: ' . $e->getMessage(),
+        [
+          'environment_id' => $environment->id,
+          'integration_id' => $environment->integration_id,
+          'url' => $environment->url,
+          'method' => $environment->method
+        ]
+      );
     } catch (\Throwable $th) {
-      throw new IntegrationServiceException('An unexpected error occurred: ' . $th->getMessage());
+      throw new IntegrationServiceException(
+        'An unexpected error occurred: ' . $th->getMessage(),
+        [
+          'environment_id' => $environment->id,
+          'integration_id' => $environment->integration_id,
+          'url' => $environment->url,
+          'method' => $environment->method,
+          'file' => $th->getFile(),
+          'line' => $th->getLine()
+        ]
+      );
     }
   }
 
@@ -174,6 +199,18 @@ class IntegrationService
 }
 
 /**
- * Custom Exception for IntegrationService.
+ * Custom Exception for IntegrationService with automatic logging.
  */
-class IntegrationServiceException extends Exception {}
+class IntegrationServiceException extends Exception
+{
+  public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
+  {
+    parent::__construct($message, $code, $previous);
+    TailLogger::saveLog(
+      'Integration Service Error',
+      'integrations/services',
+      'errors',
+      array_merge(['error' => $message], $context)
+    );
+  }
+}
