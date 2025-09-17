@@ -120,7 +120,7 @@ class IntegrationController extends Controller
       $result = $this->integrationService->testIntegrationEnvironment($environment);
       return response()->json($result);
     } catch (IntegrationServiceException $e) {
-      return response()->json(['error' => $e->getMessage()], 500);
+      return response()->json(['error' => $e->getMessage(), 'details' => $e->getContext()], 500);
     } catch (\Throwable $e) {
       return $this->handleUnexpectedException($e, $integration, $environment);
     }
