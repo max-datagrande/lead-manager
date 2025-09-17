@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import JsonViewer from '@/components/ui/json-viewer';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { getCookie } from '@/utils/navigator';
@@ -7,8 +8,7 @@ import { PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
 import { DescriptionList, DescriptionListItem } from './description-list-item';
-import JsonViewer from '@/components/ui/json-viewer';
-import { Badge } from '@/components/ui/badge';
+import { Clock } from 'lucide-react';
 
 export function EnvironmentDetails({ integrationId, env }) {
   const [testResult, setTestResult] = useState(null);
@@ -21,23 +21,32 @@ export function EnvironmentDetails({ integrationId, env }) {
     setTestResult(null);
     try {
       const endpoint = route('integrations.test', { integration: integrationId, environment: environmentId });
-      console.log('Endpoint:', endpoint);
       const csrfToken = getCookie('XSRF-TOKEN');
-      console.log('csrfToken:', csrfToken);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'X-CSRF-TOKEN': csrfToken,
+          accept: 'application/json',
         },
       });
-      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error(result.error || 'Test failed');
+        const statusCode = response.status;
+        const statusText = (response.statusText || '').toLowerCase().length > 0 ? response.statusText : null;
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType.includes('application/json');
+        const result = isJson ? await response.json() : { error: 'Bad Response: ' + statusCode, body: await response.text() };
+        const shortMessage = result.error ?? result.message ?? statusText ?? 'Bad Response: ' + statusCode;
+        throw new Error(shortMessage, { cause: result });
       }
+      const result = await response.json().catch((error) => {
+        return { error: error.message };
+      });
       setTestResult(result);
     } catch (error) {
-      setTestResult({ error: error.message });
+      const cause = error.cause ?? { error: error.message };
       addMessage(error.message, 'error');
+      setTestResult(cause);
     } finally {
       setIsTesting(false);
     }
@@ -67,22 +76,30 @@ export function EnvironmentDetails({ integrationId, env }) {
           </DescriptionList>
         </CardContent>
       </Card>
-      <SheetContent className="w-[400px] sm:w-[540px]">
+      <SheetContent className="w-[400px] sm:w-[540px] gap-0">
         <SheetHeader>
           <SheetTitle>Test Result</SheetTitle>
           <SheetDescription>Result of the API request test.</SheetDescription>
         </SheetHeader>
-        <div className="grid flex-1 auto-rows-min gap-6 px-4">
-          {isTesting && <p>Loading...</p>}
+        <div className="flex-1 gap-6 px-4 flex flex-col overflow-auto">
+          {isTesting && (
+            <div className="flex items-center justify-center p-8">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 animate-spin" />
+                <span>Loading test result...</span>
+              </div>
+            </div>
+          )}
           {testResult && (
             <JsonViewer
-            data={JSON.stringify(testResult, null, 2)}
-            title={
-              <div className="flex items-center gap-2">
-                <span>Response Data</span>
-              </div>
-            }
-          />
+              data={JSON.stringify(testResult, null, 2)}
+              className='flex-1'
+              title={
+                <div className="flex items-center gap-2">
+                  <span>Response Data</span>
+                </div>
+              }
+            />
           )}
         </div>
         <SheetFooter>

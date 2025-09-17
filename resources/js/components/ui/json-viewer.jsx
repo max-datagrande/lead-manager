@@ -136,7 +136,7 @@ const JsonViewer = ({ data, title, className = "" }) => {
   }
 
   return (
-    <div className={cn('bg-gray-50 border rounded-md', className)}>
+    <div className={cn('bg-gray-50 border rounded-md overflow-auto', className)}>
       {title && (
         <div className="flex items-center justify-between p-3 border-b bg-gray-100">
           <h4 className="font-medium text-sm">{title}</h4>
@@ -154,7 +154,7 @@ const JsonViewer = ({ data, title, className = "" }) => {
           </Button>
         </div>
       )}
-      <div className="p-3 font-mono text-xs overflow-auto max-h-64">
+      <div className="p-3 font-mono text-xs">
         {renderValue(parsedData, 'root')}
       </div>
     </div>
