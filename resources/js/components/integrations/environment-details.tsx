@@ -13,7 +13,6 @@ import { Clock } from 'lucide-react';
 export function EnvironmentDetails({ integrationId, env }) {
   const [testResult, setTestResult] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
-  const [error, setError] = useState(null);
   const { addMessage } = useToast();
 
   const handleTest = async (environmentId: string) => {
@@ -25,7 +24,8 @@ export function EnvironmentDetails({ integrationId, env }) {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': csrfToken,
+          'x-xsrf-token': csrfToken,
+          'x-requested-with': 'XMLHttpRequest',
           accept: 'application/json',
         },
       });
