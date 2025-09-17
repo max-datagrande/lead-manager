@@ -35,7 +35,7 @@ const Index = ({ rows }: IndexProps) => {
     <FieldsProvider>
       <Head title="Fields" />
       <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
-        <PageHeader title="Fields" description="Manage fields to our forms." className="flex flex-row items-center justify-between gap-4">
+        <PageHeader title="Fields" description="Manage fields to our forms.">
           <FieldsActions />
         </PageHeader>
         <TableFields entries={rows} />

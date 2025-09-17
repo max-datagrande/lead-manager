@@ -20,7 +20,6 @@ const Index = ({ rows, filters }: IndexProps) => {
         <PageHeader
           title="Integrations"
           description="Manage integrations and their environments."
-          className="flex flex-row items-center justify-between gap-4"
         >
           <Link href={route('integrations.create')}>
             <Button className="flex items-center gap-2">
