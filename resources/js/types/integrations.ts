@@ -25,6 +25,7 @@ interface IntegrationBase {
   company_id: number;
 }
 interface IntegrationDB extends IntegrationBase {
+  id: number;
   environments: EnvironmentDB[];
 }
 

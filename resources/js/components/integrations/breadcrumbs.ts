@@ -1,4 +1,5 @@
 import { type BreadcrumbItem } from '@/types';
+import { IntegrationDB } from '@/types/integrations';
 import { route } from 'ziggy-js';
 
 export const createBreadcrumbs: BreadcrumbItem[] = [
@@ -11,6 +12,18 @@ export const createBreadcrumbs: BreadcrumbItem[] = [
     href: route('integrations.create'),
   },
 ];
+export const editBreadcrumbs = (integration: IntegrationDB) => {
+  return [
+    {
+      title: 'Integrations',
+      href: route('integrations.index'),
+    },
+    {
+      title: 'Edit',
+      href: route('integrations.edit', integration.id),
+    },
+  ];
+};
 
 export const indexBreadcrumbs: BreadcrumbItem[] = [
   {
@@ -18,4 +31,3 @@ export const indexBreadcrumbs: BreadcrumbItem[] = [
     href: route('integrations.index'),
   },
 ];
-
