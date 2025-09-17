@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import JsonEditor from '@/components/forms/json-editor';
 import { useIntegrations } from '@/hooks/use-integrations';
 import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
 
@@ -19,7 +20,7 @@ export function EnvironmentTab({ env }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex w-full gap-4">
-        <div className="flex-none space-y-2 min-w-36">
+        <div className="min-w-36 flex-none space-y-2">
           <Label htmlFor={`${env}-method`}>Method</Label>
           <Select value={data.environments[env]?.method ?? 'POST'} onValueChange={(value) => handleEnvironmentChange(env, 'method', value)}>
             <SelectTrigger id={`${env}-method`}>
@@ -59,13 +60,12 @@ export function EnvironmentTab({ env }: Props) {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={`${env}-body`}>Request Body (JSON)</Label>
-        <Textarea
+        <JsonEditor
+          label="Request Body (JSON)"
           id={`${env}-body`}
           value={data.environments[env]?.request_body ?? ''}
-          onChange={(e) => handleEnvironmentChange(env, 'request_body', e.target.value)}
+          onChange={(value) => handleEnvironmentChange(env, 'request_body', value)}
           placeholder='{ "lead_id": "{lead_id}" }'
-          rows={6}
         />
       </div>
     </div>
