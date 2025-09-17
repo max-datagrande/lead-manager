@@ -9,6 +9,10 @@ interface Props {
   env: 'development' | 'production';
 }
 
+interface KeyValue {
+  key: string;
+  value: string;
+}
 export function EnvironmentTab({ env }: Props) {
   const { data, handleEnvironmentChange } = useIntegrations();
   return (
@@ -41,12 +45,14 @@ export function EnvironmentTab({ env }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label>Request Headers</Label>
         <KeyValueList
+          label="Request Headers"
           initialValues={data.environments[env]?.request_headers ?? []}
-          onChange={(values) => handleEnvironmentChange(env, 'request_headers', values)}
+          onChange={(values: KeyValue[]) => handleEnvironmentChange(env, 'request_headers', values)}
           keyPlaceholder="Header Name"
           valuePlaceholder="Header Value"
+          addButtonText="Add Header"
+          textOnTooltip={true}
         />
       </div>
       <div className="space-y-2">
