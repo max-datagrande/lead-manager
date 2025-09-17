@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { IntegrationDB } from '@/types/integrations';
 import { Head, Link } from '@inertiajs/react';
-
-const ShowIntegration = ({ integration }) => {
+interface Props {
+  integration: IntegrationDB;
+}
+const ShowIntegration = ({ integration }: Props) => {
   return (
     <>
-      <Head title={integration.name} />
+      <Head title={`Integration | ${integration.id}`} />
       <div className="relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
         <PageHeader title={integration.name} description={`Details for the "${integration.name}" integration.`}>
           <Link href={route('integrations.edit', integration.id)}>
@@ -26,10 +28,6 @@ const ShowIntegration = ({ integration }) => {
     </>
   );
 };
-
-interface Props {
-  integration: IntegrationDB;
-}
 
 ShowIntegration.layout = (page: React.ReactNode & { props: Props }) => {
   const { integration } = page.props;

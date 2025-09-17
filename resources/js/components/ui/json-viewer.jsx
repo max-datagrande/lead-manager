@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const JsonViewer = ({ data, title, className }) => {
+const JsonViewer = ({ data, title, className = "" }) => {
   const [expanded, setExpanded] = useState({});
   const [copied, setCopied] = useState(false);
 
@@ -58,8 +58,8 @@ const JsonViewer = ({ data, title, className }) => {
             disabled={isEmpty}
           >
             {!isEmpty && (
-              isExpanded ? 
-                <ChevronDown className="h-3 w-3" /> : 
+              isExpanded ?
+                <ChevronDown className="h-3 w-3" /> :
                 <ChevronRight className="h-3 w-3" />
             )}
             <span className="text-gray-600">[{isEmpty ? '' : value.length}]</span>
@@ -91,8 +91,8 @@ const JsonViewer = ({ data, title, className }) => {
             disabled={isEmpty}
           >
             {!isEmpty && (
-              isExpanded ? 
-                <ChevronDown className="h-3 w-3" /> : 
+              isExpanded ?
+                <ChevronDown className="h-3 w-3" /> :
                 <ChevronRight className="h-3 w-3" />
             )}
             <span className="text-gray-600">{isEmpty ? '{}' : `{${keys.length}}`}</span>
@@ -117,7 +117,7 @@ const JsonViewer = ({ data, title, className }) => {
 
   const parseData = () => {
     if (!data) return null;
-    
+
     try {
       return typeof data === 'string' ? JSON.parse(data) : data;
     } catch (e) {

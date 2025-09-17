@@ -7,9 +7,12 @@ interface Props {
 
 export function DescriptionListItem({ term, children }: Props) {
   return (
-    <div className="grid grid-cols-3 gap-4 py-2">
-      <dt className="text-sm font-medium text-gray-500">{term}</dt>
-      <dd className="col-span-2 text-sm text-gray-900">{children}</dd>
-    </div>
+    <>
+      <p className="text-sm font-medium text-gray-500">{term}</p>
+      <p className="text-sm text-gray-900">{children}</p>
+    </>
   );
+}
+export function DescriptionList({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-2">{children}</div>;
 }

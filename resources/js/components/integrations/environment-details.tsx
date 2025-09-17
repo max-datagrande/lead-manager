@@ -1,23 +1,33 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
+import { getCookie } from '@/utils/navigator';
 import { PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
-import { DescriptionListItem } from './description-list-item';
+import { DescriptionList, DescriptionListItem } from './description-list-item';
+import JsonViewer from '@/components/ui/json-viewer';
+import { Badge } from '@/components/ui/badge';
 
 export function EnvironmentDetails({ integrationId, env }) {
   const [testResult, setTestResult] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [error, setError] = useState(null);
+  const { addMessage } = useToast();
 
-  const handleTest = async (environmentId) => {
+  const handleTest = async (environmentId: string) => {
     setIsTesting(true);
     setTestResult(null);
     try {
-      const response = await fetch(route('integrations.test', { integration: integrationId, environment: environmentId }), {
+      const endpoint = route('integrations.test', { integration: integrationId, environment: environmentId });
+      console.log('Endpoint:', endpoint);
+      const csrfToken = getCookie('XSRF-TOKEN');
+      console.log('csrfToken:', csrfToken);
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+          'X-CSRF-TOKEN': csrfToken,
         },
       });
       const result = await response.json();
@@ -27,47 +37,60 @@ export function EnvironmentDetails({ integrationId, env }) {
       setTestResult(result);
     } catch (error) {
       setTestResult({ error: error.message });
+      addMessage(error.message, 'error');
+    } finally {
+      setIsTesting(false);
     }
-    setIsTesting(false);
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="capitalize">{env.environment}</CardTitle>
-          <CardDescription>Configuration for {env.environment} environment.</CardDescription>
+    <Sheet>
+      <Card className="gap-2">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <CardTitle className="capitalize">{env.environment}</CardTitle>
+            <CardDescription>Configuration for {env.environment} environment.</CardDescription>
+          </div>
+          <CardAction className="self-center">
+            <SheetTrigger asChild>
+              <Button variant="black" size="sm" onClick={() => handleTest(env.id)} disabled={isTesting}>
+                <PlayCircle className="h-4 w-4" />
+                {isTesting ? 'Running...' : 'Test'}
+              </Button>
+            </SheetTrigger>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <DescriptionList>
+            <DescriptionListItem term="URL">{env.url}</DescriptionListItem>
+            <DescriptionListItem term="Method">{env.method}</DescriptionListItem>
+          </DescriptionList>
+        </CardContent>
+      </Card>
+      <SheetContent className="w-[400px] sm:w-[540px]">
+        <SheetHeader>
+          <SheetTitle>Test Result</SheetTitle>
+          <SheetDescription>Result of the API request test.</SheetDescription>
+        </SheetHeader>
+        <div className="grid flex-1 auto-rows-min gap-6 px-4">
+          {isTesting && <p>Loading...</p>}
+          {testResult && (
+            <JsonViewer
+            data={JSON.stringify(testResult, null, 2)}
+            title={
+              <div className="flex items-center gap-2">
+                <span>Response Data</span>
+              </div>
+            }
+          />
+          )}
         </div>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => handleTest(env.id)} disabled={isTesting}>
-              <PlayCircle className="mr-2 h-4 w-4" />
-              {isTesting ? 'Running...' : 'Run Test'}
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-[400px] sm:w-[540px]">
-            <SheetHeader>
-              <SheetTitle>Test Result</SheetTitle>
-              <SheetDescription>Result of the API request test.</SheetDescription>
-            </SheetHeader>
-            <div className="py-4">
-              {isTesting && <p>Loading...</p>}
-              {testResult && (
-                <pre className="mt-2 w-full overflow-auto rounded-md bg-slate-950 p-4 text-white">
-                  <code className="text-sm">{JSON.stringify(testResult, null, 2)}</code>
-                </pre>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
-      </CardHeader>
-      <CardContent>
-        <dl>
-          <DescriptionListItem term="URL">{env.url}</DescriptionListItem>
-          <DescriptionListItem term="Method">{env.method}</DescriptionListItem>
-          {/* Add more details if necessary */}
-        </dl>
-      </CardContent>
-    </Card>
+        <SheetFooter>
+          <SheetClose asChild>
+            <Button variant="outline">Close</Button>
+          </SheetClose>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
