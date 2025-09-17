@@ -19,8 +19,25 @@ export const editBreadcrumbs = (integration: IntegrationDB) => {
       href: route('integrations.index'),
     },
     {
+      title: integration.name,
+      href: route('integrations.show', integration.id),
+    },
+    {
       title: 'Edit',
       href: route('integrations.edit', integration.id),
+    },
+  ];
+};
+
+export const showBreadcrumbs = (integration: IntegrationDB) => {
+  return [
+    {
+      title: 'Integrations',
+      href: route('integrations.index'),
+    },
+    {
+      title: integration.name,
+      href: route('integrations.show', integration.id),
     },
   ];
 };
