@@ -1,5 +1,5 @@
 import { FormModal } from '@/components/fields/index';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { useModal } from '@/hooks/use-modal';
 import { getSortState } from '@/utils/table';
 import { useForm, usePage } from '@inertiajs/react';

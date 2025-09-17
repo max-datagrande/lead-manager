@@ -4,7 +4,7 @@ import { useModal } from '@/hooks/use-modal';
 import { getSortState } from '@/utils/table';
 import { usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 
 export const WhitelistContext = createContext(null);
 

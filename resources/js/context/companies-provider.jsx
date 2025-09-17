@@ -1,9 +1,9 @@
-import { useToast } from '@/components/ui/toaster';
+import { FormModal } from '@/components/companies/index';
 import { useModal } from '@/hooks/use-modal';
+import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
 import { useForm, usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
-import { FormModal } from '@/components/companies/index';
 
 export const CompaniesContext = createContext(null);
 
