@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
 
 interface Props {
   env: 'development' | 'production';
@@ -53,6 +54,8 @@ export function EnvironmentTab({ env }: Props) {
           valuePlaceholder="Header Value"
           addButtonText="Add Header"
           textOnTooltip={true}
+          keyDatalist={HEADER_KEYS}
+          valueDatalist={HEADER_VALUES}
         />
       </div>
       <div className="space-y-2">
