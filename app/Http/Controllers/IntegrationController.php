@@ -56,7 +56,6 @@ class IntegrationController extends Controller
       add_flash_message('success', 'Integration created successfully.');
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      TailLogger::saveLog('Failed to create integration', 'integrations/services', 'errors', ['error' => $e->getMessage()]);
       add_flash_message('error', $e->getMessage());
       return back();
     }
@@ -92,7 +91,6 @@ class IntegrationController extends Controller
       add_flash_message('success', 'Integration updated successfully.');
       return back();
     } catch (IntegrationServiceException $e) {
-      TailLogger::saveLog('Failed to update integration', 'integrations/services', 'errors', ['integration_id' => $integration->id, 'error' => $e->getMessage()]);
       add_flash_message('error', $e->getMessage());
       return back();
     }
@@ -108,7 +106,6 @@ class IntegrationController extends Controller
       add_flash_message('success', 'Integration deleted successfully.');
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      TailLogger::saveLog('Failed to delete integration', 'integrations/services', 'errors', ['integration_id' => $integration->id, 'error' => $e->getMessage()]);
       add_flash_message('error', $e->getMessage());
       return back();
     }
@@ -123,8 +120,40 @@ class IntegrationController extends Controller
       $result = $this->integrationService->testIntegrationEnvironment($environment);
       return response()->json($result);
     } catch (IntegrationServiceException $e) {
-      TailLogger::saveLog('Failed to test integration', 'integrations/services', 'errors', ['integration_id' => $integration->id, 'environment_id' => $environment->id, 'error' => $e->getMessage()]);
       return response()->json(['error' => $e->getMessage()], 500);
+    } catch (\Throwable $e) {
+      return $this->handleUnexpectedException($e, $integration, $environment);
     }
+  }
+
+
+
+  /**
+   * Handle unexpected exceptions with detailed logging and response
+   */
+  private function handleUnexpectedException(
+    \Throwable $e,
+    Integration $integration,
+    IntegrationEnvironment $environment
+  ) {
+    TailLogger::saveLog(
+      'Unexpected error testing integration',
+      'integrations/services',
+      'errors',
+      [
+        'integration_id' => $integration->id,
+        'environment_id' => $environment->id,
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+      ]
+    );
+
+    return response()->json([
+      'error' => 'Unexpected error when testing integration: ' . $e->getMessage(),
+      'file' => $e->getFile(),
+      'line' => $e->getLine(),
+    ], 500);
   }
 }
