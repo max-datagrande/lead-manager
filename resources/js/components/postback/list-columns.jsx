@@ -1,10 +1,9 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Eye } from 'lucide-react';
-
 
 // --- Columnas TanStack ---
 const vendors = {
@@ -13,6 +12,7 @@ const vendors = {
 export const postbackColumns = [
   {
     accessorKey: 'id',
+    cessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
     cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
     enableSorting: true,
@@ -69,8 +69,8 @@ export const postbackColumns = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
       const currency = row.original.currency;
-      const value = cell.getValue();
-      return value ? `${value.toFixed(2)} ${currency}` : value;
+      const cellValue = cell.getValue();
+      return `${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue;
     },
     enableSorting: true,
     enableHiding: true,
@@ -134,4 +134,3 @@ export const postbackColumns = [
     },
   },
 ];
-
