@@ -36,6 +36,10 @@ Route::prefix('postback')->group(function () {
   Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
     ->name('api.postback.search-payout');
 
+  // Ruta para reconciliar payouts de un día
+  Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
+    ->name('api.postback.reconcile');
+
   // Ruta para obtener reportes de NI (admin)
   Route::get('/report', [PostbackController::class, 'getReport'])
     ->name('api.postback.report');

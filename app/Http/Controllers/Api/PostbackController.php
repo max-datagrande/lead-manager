@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FirePostbackRequest;
 use App\Http\Requests\SearchPayoutRequest;
+use App\Http\Requests\ReconcilePayoutsRequest;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
+use App\Services\PostbackService;
 use App\Jobs\ProcessPostbackJob;
 use Illuminate\Http\JsonResponse;
 use Maxidev\Logger\TailLogger;
@@ -14,17 +16,39 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 
+
 /**
  * Controller para manejar postbacks a Natural Intelligence desde landing pages
  */
 class PostbackController extends Controller
 {
   public array $vendorServices = [];
-  public function __construct(protected NaturalIntelligenceService $niService)
+  public function __construct(protected NaturalIntelligenceService $niService, protected PostbackService $postbackService)
   {
     $this->vendorServices = [
       'ni' =>  $niService
     ];
+  }
+  public function reconcilePayouts(ReconcilePayoutsRequest $request): JsonResponse
+  {
+    $validated = $request->validated();
+    $result = $this->postbackService->reconcileDailyPayouts($validated['date']);
+    if (!($result['success'] ?? false)) {
+      return response()->json([
+        'success' => false,
+        'message' => $result['message'] ?? 'An unknown error occurred during reconciliation.',
+      ], 500);
+    }
+
+    return response()->json([
+      'success' => true,
+      'message' => 'Daily payouts reconciliation finished successfully.',
+      'data' => [
+        'date' => $validated['date'],
+        'created' => $result['created'],
+        'ignored' => $result['ignored'],
+      ],
+    ]);
   }
 
   public function getCurrentVendorServices(string $vendor)
