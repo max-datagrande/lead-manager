@@ -154,7 +154,7 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'total_conversions' => count($conversions)
         ]);
-        throw new PayoutNotFoundException('Click ID: ' . $clickId . ' not found in conversions');
+        throw new PayoutNotFoundException('Click ID not found in payouts: ' . $clickId);
       }
 
       $payout = $conversion['payout'] ?? null;
@@ -163,7 +163,7 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'conversion' => $conversion
         ]);
-        throw new PayoutNotFoundException('Payout not found for click ID: ' . $clickId);
+        throw new PayoutNotFoundException('Click ID found but with no payout value: ' . $clickId);
       }
 
       TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
@@ -179,7 +179,7 @@ class NaturalIntelligenceService
       ]);
       throw $e;
     } catch (\Exception $e) {
-      if ($e instanceof NaturalIntelligenceServiceException) {
+      if ($e instanceof PayoutNotFoundException) { // Si no se encuentra, lanzamos el mismo error
         throw $e;
       }
       if ($e instanceof NaturalIntelligenceException) {
@@ -188,6 +188,8 @@ class NaturalIntelligenceService
 
       TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
@@ -208,6 +210,6 @@ class PayoutNotFoundException extends \Exception
 {
   public function __construct(string $clid)
   {
-    parent::__construct("Payout not found for CLID: {$clid}");
+    parent::__construct("Payout not found: {$clid}");
   }
 }
