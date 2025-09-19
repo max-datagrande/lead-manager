@@ -12,7 +12,6 @@ export function PostbackProvider({ children }) {
   const { state } = usePage().props;
   const modal = useModal();
   const filters = useRef(state?.filters ?? []);
-  const [currentRow, setCurrentRow] = useState(null);
   const [resetTrigger, setResetTrigger] = useState(false);
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
   const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
@@ -21,34 +20,17 @@ export function PostbackProvider({ children }) {
   const isFirstRender = useRef(true);
   const { addMessage: setNotify } = useToast();
   const { delete: destroy, processing } = useForm();
-  const { data: statusData, setData: setStatusData, patch: updateStatus, processing: isUpdating, errors: statusErrors } = useForm({
-    status: '',
-    message: '',
-  });
 
   const showStatusModal = async (postback) => {
-    setStatusData({ status: postback.status, message: '' });
-    setCurrentRow(postback);
-    const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
-    modal.open(<UpdateStatusModal />);
+    try {
+      const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
+      const result = await modal.openAsync(<UpdateStatusModal postback={postback} />);
+      console.log(result);
+    } catch (error) {
+      setNotify('Error updating postback entry', 'error');
+      console.log('Modal cancelled or error:', error);
+    }
   };
-
-  const handleUpdateStatus = () => {
-    if (!currentRow) return;
-    const url = route('postbacks.updateStatus', currentRow.id);
-    updateStatus(url, {
-        preserveScroll: true,
-        onSuccess: () => {
-            modal.close();
-            setNotify('Postback status updated successfully.', 'success');
-
-        },
-        onError: () => {
-            setNotify('Error updating status.', 'error');
-        }
-    });
-  };
-
 
   const showRequestViewer = async (postback) => {
     const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
@@ -122,21 +104,12 @@ export function PostbackProvider({ children }) {
         isFirstRender,
         globalFilter,
         setGlobalFilter,
-        currentRow,
-        setCurrentRow,
         showRequestViewer,
         resetTrigger,
         setResetTrigger,
         isLoading,
         showDeleteModal,
-        // Status Update Modal
         showStatusModal,
-        handleUpdateStatus,
-        statusData,
-        setStatusData,
-        isUpdating,
-        statusErrors,
-        modal,
       }}
     >
       {children}
