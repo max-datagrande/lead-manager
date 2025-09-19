@@ -47,7 +47,7 @@ class PostbackController extends Controller
       'data' => [
         'date' => $validated['date'],
         'created' => $result['created'],
-        'ignored' => $result['ignored'],
+        'processed' => $result['processed'],
       ],
     ]);
   }
