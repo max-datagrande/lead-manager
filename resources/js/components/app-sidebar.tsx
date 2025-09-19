@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Webhook, TextCursorInput, List, FileText } from 'lucide-react';
+import { LayoutGrid, Users, Webhook, TextCursorInput, List, FileText, Shield } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -60,6 +60,11 @@ const AdminGroup: NavGroupType = {
       title: 'Users',
       href: '/users',
       icon: Users,
+    },
+    {
+      title: 'Whitelist',
+      href: route('whitelist.index'),
+      icon: Shield,
     },
   ],
 };

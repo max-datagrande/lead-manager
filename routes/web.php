@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\Form\FieldController;
+use App\Http\Controllers\Admin\WhitelistEntryController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -19,11 +20,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
   });
   //Forms
   Route::prefix('forms')->group(function () {
-    Route::get('fields', [FieldController::class, 'index'])->name('fields.index');
+    Route::resource('fields', FieldController::class);
   });
+  //Whitelist
+  Route::get('whitelist', [WhitelistEntryController::class, 'index'])->name('whitelist.index');
 });
 
 require __DIR__ . '/settings.php';
+require __DIR__ . '/admin.php';
 require __DIR__ . '/auth.php';
 
 

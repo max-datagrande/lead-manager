@@ -1,6 +1,7 @@
 import { Icon } from '@/components/icon';
-import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroupLabel } from '@/components/ui/sidebar';
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
+import { Link } from '@inertiajs/react';
 import { type ComponentPropsWithoutRef } from 'react';
 
 export function NavFooter({
@@ -19,10 +20,10 @@ export function NavFooter({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100">
-                <a href={item.href} target="_blank" rel="noopener noreferrer">
+                <Link href={item.href} prefetch>
                   {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

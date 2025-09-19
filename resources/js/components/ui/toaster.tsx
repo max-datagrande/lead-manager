@@ -1,27 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, useState, createContext, useContext, type ReactNode } from 'react';
 import { usePage } from '@inertiajs/react';
 import { Toaster as Sonner } from 'sonner';
-import { toast } from 'sonner';
 import { type SharedData } from '@/types';
+import { toast } from 'sonner';
 
 /**
  * Toast notification component that displays flash messages from Laravel backend
- * 
+ *
  * This component automatically shows success and error messages that are passed
  * from the Laravel backend through Inertia.js flash data. It handles both single
  * messages and arrays of messages.
- * 
+ *
  * @returns JSX element containing the Sonner toast container
  */
 export function Toaster() {
   // Extract flash messages from Inertia.js shared props
   const { flash } = usePage<SharedData>().props;
-  
+
   useEffect(() => {
     /**
      * Helper function to display toast messages
      * Handles both single strings and arrays of strings uniformly
-     * 
+     *
      * @param messages - Single message string or array of message strings
      * @param toastFn - Toast function to call (toast.success or toast.error)
      */
@@ -55,3 +55,40 @@ export function Toaster() {
     />
   );
 }
+type ToastContextType = {
+  addMessage: (message: string, type?: 'success' | 'error' | 'info') => void;
+}
+
+const ToastContext = createContext<ToastContextType | null>(null);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const addMessage = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    // Mostrar el toast inmediatamente sin usar estado
+    switch (type) {
+      case 'success':
+        toast.success(message);
+        break;
+      case 'error':
+        toast.error(message);
+        break;
+      case 'info':
+        toast.info(message);
+        break;
+    }
+  };
+
+  return (
+    <ToastContext.Provider value={{ addMessage }}>
+      {children}
+    </ToastContext.Provider>
+  );
+}
+
+// Hook para usar el contexto
+export const useToast = () => {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error('useToast must be used within a ToastProvider');
+  }
+  return context;
+};

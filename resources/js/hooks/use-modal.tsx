@@ -131,13 +131,13 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
   }, []);
 
   // Auto-close when navigating with Inertia (optional)
-  useEffect(() => {
+  /* useEffect(() => {
     if (!autoCloseOnNavigate) return;
     const unsubs = [router.on('before', () => closeAll())];
     return () => {
       unsubs.forEach((u) => u && u());
     };
-  }, [autoCloseOnNavigate, closeAll]);
+  }, [autoCloseOnNavigate, closeAll]); */
 
   const value = useMemo<ModalContextType>(
     () => ({
