@@ -7,6 +7,8 @@ use App\Models\Postback;
 use App\Services\PostbackService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Http\Requests\UpdatePostbackStatusRequest;
+use Illuminate\Http\RedirectResponse;
 
 class PostbackController extends Controller
 {
@@ -23,7 +25,6 @@ class PostbackController extends Controller
       'click_id',
       'transaction_id',
       'event',
-      'failure_reason'
     ];
 
     // Configuración de filtros
@@ -42,7 +43,6 @@ class PostbackController extends Controller
       'vendor',
       'payout',
       'event',
-      'failure_reason',
       'created_at',
       'updated_at'
     ];
@@ -145,5 +145,25 @@ class PostbackController extends Controller
         'error' => $e->getMessage()
       ], 500);
     }
+  }
+
+  /**
+   * Update the status of a specific postback.
+   */
+  public function updateStatus(UpdatePostbackStatusRequest $request, Postback $postback): RedirectResponse
+  {
+    $validated = $request->validated();
+
+    $postback->status = $validated['status'];
+    // Only update the message if it's provided in the request.
+    // Otherwise, keep the existing message (e.g., the original failure reason).
+    if (isset($validated['message'])) {
+        $postback->message = $validated['message'];
+    }
+
+    $postback->save();
+
+    // Redirect back to the index page. Inertia will handle the success flash message.
+    return redirect()->route('postbacks.index');
   }
 }

@@ -21,6 +21,33 @@ export function PostbackProvider({ children }) {
   const isFirstRender = useRef(true);
   const { addMessage: setNotify } = useToast();
   const { delete: destroy, processing } = useForm();
+  const { data: statusData, setData: setStatusData, patch: updateStatus, processing: isUpdating, errors: statusErrors } = useForm({
+    status: '',
+    message: '',
+  });
+
+  const showStatusModal = async (postback) => {
+    setStatusData({ status: postback.status, message: '' });
+    setCurrentRow(postback);
+    const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
+    modal.open(<UpdateStatusModal />);
+  };
+
+  const handleUpdateStatus = () => {
+    if (!currentRow) return;
+    const url = route('postbacks.updateStatus', currentRow.id);
+    updateStatus(url, {
+        preserveScroll: true,
+        onSuccess: () => {
+            modal.close();
+            setNotify('Postback status updated successfully.', 'success');
+
+        },
+        onError: () => {
+            setNotify('Error updating status.', 'error');
+        }
+    });
+  };
 
 
   const showRequestViewer = async (postback) => {
@@ -102,6 +129,14 @@ export function PostbackProvider({ children }) {
         setResetTrigger,
         isLoading,
         showDeleteModal,
+        // Status Update Modal
+        showStatusModal,
+        handleUpdateStatus,
+        statusData,
+        setStatusData,
+        isUpdating,
+        statusErrors,
+        modal,
       }}
     >
       {children}
