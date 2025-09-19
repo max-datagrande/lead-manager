@@ -109,9 +109,9 @@ class PostbackService
 
     // Preparar los datos para el postback
     $postbackData = [
-      'clid' => $clickId,
+      'click_id' => $clickId,
       'payout' => $payout,
-      'txid' => $postback->txid,
+      'transaction_id' => $postback->transaction_id,
       'currency' => $postback->currency,
       'event' => $postback->event,
     ];
@@ -132,7 +132,7 @@ class PostbackService
         'response_data' => $response->body(),
         'status_code' => $response->status(),
         'response_time_ms' => $responseTime,
-        'related_type' => 'postback',
+        'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
       ]);
 
       if ($response->successful()) {
@@ -184,13 +184,15 @@ class PostbackService
    */
   public function reconcileDailyPayouts(string $date): array
   {
+    $startTime = microtime(true);
     TailLogger::saveLog('PostbackService: Iniciando reconciliación de payouts', 'postback-reconciliation', 'info', [
       'date' => $date,
     ]);
 
     try {
       $reportResult = $this->niService->getReportForReconciliation($date, $date);
-      if (!($reportResult['success'] ?? false)) {
+      $wasSuccessful = $reportResult['success'] ?? false;
+      if (!$wasSuccessful) {
         TailLogger::saveLog('PostbackService: No se pudo obtener el reporte de NI', 'postback-reconciliation', 'error', [
           'date' => $date,
           'result' => $reportResult
@@ -207,22 +209,32 @@ class PostbackService
       }
 
       $createdCount = 0;
-      $ignoredCount = 0;
+      $existingAndProcessedCount = 0;
+      $processedCount = 0;
       $reconciliationDate = Carbon::parse($date)->startOfDay();
       foreach ($conversions as $conversion) {
         $clickId = $conversion['pub_param_1'] ?? null;
         if (!$clickId) {
           continue; // Ignorar si no hay click_id
         }
-        $existingPostback = Postback::where('clid', $clickId)->first();
+        $existingPostback = Postback::where('click_id', $clickId)->first();
         if ($existingPostback) {
-          $postbackID = $existingPostback->id;
-
-          $ignoredCount++;
+          $responseData = [
+            'postback_id' => $existingPostback->id,
+            'click_id' => $clickId,
+            'payout' => $conversion['payout'] ?? 0.0,
+            'total_time_ms' => (int) ((microtime(true) - $startTime) * 1000),
+            'response_time_ms' => (int) ((microtime(true) - $startTime) * 1000)
+          ];
+          $existingPostback->markAsProcessed($responseData);
+          TailLogger::saveLog('PostbackService: Postback ya existe, marcando como procesado', 'postback-reconciliation', 'info', $responseData);
+          $this->redirectPostback($existingPostback);
+          $existingAndProcessedCount++;
+          $processedCount++;
           continue; // Ignorar si ya existe
         }
-        Postback::create([
-          'clid' => $clickId,
+        $postback = Postback::create([
+          'click_id' => $clickId,
           'offer_name' => $conversion['pub_param_2'] ?? 'N/A',
           'payout' => $conversion['payout'] ?? 0.0,
           'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
@@ -231,17 +243,19 @@ class PostbackService
           'updated_at' => $reconciliationDate,
         ]);
         $createdCount++;
+        $this->redirectPostback($postback);
+        $processedCount++;
       }
       TailLogger::saveLog('PostbackService: Reconciliación completada', 'postback-reconciliation', 'success', [
         'date' => $date,
         'created' => $createdCount,
-        'ignored' => $ignoredCount,
+        'processed' => $processedCount,
       ]);
 
       return [
         'success' => true,
         'created' => $createdCount,
-        'ignored' => $ignoredCount,
+        'processed' => $processedCount,
       ];
     } catch (\Exception $e) {
       TailLogger::saveLog('PostbackService: Error durante la reconciliación', 'postback-reconciliation', 'error', [
@@ -260,6 +274,7 @@ class PostbackServiceException extends \Exception
   public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
+    $this->context = $context;
   }
   public function getContext(): array
   {

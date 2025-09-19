@@ -35,6 +35,7 @@ class PostbackApiRequests extends Model
     // Constantes para tipos relacionados
     const RELATED_TYPE_REPORT = 'report';
     const RELATED_TYPE_RECONCILIATION = 'reconciliation';
+    const RELATED_TYPE_POSTBACK_REDIRECT = 'postback_redirect';
     //Relations
 
     public function postback()
