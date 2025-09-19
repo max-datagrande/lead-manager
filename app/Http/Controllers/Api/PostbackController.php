@@ -100,7 +100,6 @@ class PostbackController extends Controller
 
         // Despachar job para obtener payout
         ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
-
         return $postback;
       });
       TailLogger::saveLog('Postback recibido y job despachado', 'api/postback', 'info', [

@@ -76,13 +76,15 @@ class ProcessPostbackJob implements ShouldQueue
         'payout' => $payout,
         'new_status' => Postback::STATUS_PROCESSED
       ]);
-
-      $postback->update([
+      $responseData = [
+        'postback_id' => $this->postbackId,
+        'click_id' => $this->clickId,
         'payout' => $payout,
-        'status' => Postback::STATUS_PROCESSED,
-        'processed_at' => Carbon::now(),
-      ]);
-
+        'total_time_ms' => (int) ((microtime(true) - $this->startTime) * 1000),
+        'attempt' => $this->attempts(),
+        'response_time_ms' => $this->getResponseTime(),
+      ];
+      $postback->markAsProcessed($responseData);
       // Disparar evento de postback procesado
       event(new PostbackProcessed($postback));
       TailLogger::saveLog("Postback procesado exitosamente", 'jobs/postback', 'success', [
@@ -128,7 +130,6 @@ class ProcessPostbackJob implements ShouldQueue
       'trace' => $exception->getTraceAsString(),
     ];
     TailLogger::saveLog('Error inesperado al procesar postback, marcando como fallido', 'jobs/postback', 'error', $responseData);
-
     $postback = Postback::find($this->postbackId);
     $stillPending = $postback && $postback->isPending();
     $reason = "Unexpected error when processing postback, marking as failed - {$exception->getMessage()}";
