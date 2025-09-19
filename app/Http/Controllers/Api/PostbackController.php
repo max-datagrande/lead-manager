@@ -43,11 +43,13 @@ class PostbackController extends Controller
 
     return response()->json([
       'success' => true,
-      'message' => 'Daily payouts reconciliation finished successfully.',
+      'message' => "Daily payouts reconciliation finished successfully. Total conversions: {$result['total_conversions']}, created: {$result['created']}, updated: {$result['updated']}, processed: {$result['processed']}.",
       'data' => [
         'date' => $validated['date'],
         'created' => $result['created'],
         'processed' => $result['processed'],
+        'total_conversions' => $result['total_conversions'],
+        'updated' => $result['updated'],
       ],
     ]);
   }

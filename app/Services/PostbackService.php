@@ -253,12 +253,16 @@ class PostbackService
         'date' => $date,
         'created' => $createdCount,
         'processed' => $processedCount,
+        'total_conversions' => count($conversions),
+        'updated' => $existingAndProcessedCount,
       ]);
 
       return [
         'success' => true,
         'created' => $createdCount,
         'processed' => $processedCount,
+        'total_conversions' => count($conversions),
+        'updated' => $existingAndProcessedCount,
       ];
     } catch (\Exception $e) {
       TailLogger::saveLog('PostbackService: Error during reconciliation', 'postback-reconciliation', 'error', [
