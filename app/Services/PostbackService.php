@@ -225,6 +225,8 @@ class PostbackService
           'currency' => 'USD',
           'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
           'status' => Postback::STATUS_PENDING, // Marcar como completado ya que tiene payout
+          'created_at' => $reconciliationDate,
+          'updated_at' => $reconciliationDate,
         ]);
         $createdCount++;
         $this->redirectPostback($postback);

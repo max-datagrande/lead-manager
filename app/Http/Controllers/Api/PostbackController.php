@@ -33,7 +33,8 @@ class PostbackController extends Controller
   {
     $validated = $request->validated();
     $result = $this->postbackService->reconcileDailyPayouts($validated['date']);
-    if (!($result['success'] ?? false)) {
+    $wasSuccessful = $result['success'] ?? false;
+    if (!$wasSuccessful) {
       return response()->json([
         'success' => false,
         'message' => $result['message'] ?? 'An unknown error occurred during reconciliation.',
