@@ -89,9 +89,9 @@ class PostbackController extends Controller
         // Crear postback con estado pending
         $postback = Postback::create([
           'offer_id' => $validated['offer_id'],
-          'clid' => $validated['clid'],
+          'click_id' => $validated['clid'],
           'payout' => $validated['payout'] ?? null,
-          'txid' => $validated['txid'],
+          'transaction_id' => $validated['txid'],
           'currency' => $validated['currency'],
           'event' => $validated['event'],
           'vendor' => $validated['vendor'],
@@ -106,7 +106,7 @@ class PostbackController extends Controller
         'postback_id' => $postback->id,
         'vendor' => $vendor,
         'offer_id' => $offerId,
-        'clid' => $validated['clid']
+        'click_id' => $validated['clid']
       ]);
 
       return response()->json([
@@ -116,14 +116,14 @@ class PostbackController extends Controller
           'postback_id' => $postback->id,
           'vendor' => $vendor,
           'status' => $postback->status,
-          'clid' => $validated['clid']
+          'click_id' => $validated['clid']
         ]
       ], 200);
     } catch (QueryException $e) {
       if (str_contains($e->getMessage(), 'duplicate key value violates unique constraint')) {
         return response()->json([
           'success' => false,
-          'message' => 'Duplicate transaction ID (txid) for this vendor.',
+          'message' => 'Duplicate transaction ID (transaction_id) for this vendor.',
         ], 409);
       }
       throw $e;
@@ -162,7 +162,7 @@ class PostbackController extends Controller
         'id' => $postback->id,
         'status' => $postback->status,
         'vendor' => $postback->vendor,
-        'clid' => $postback->clid,
+        'click_id' => $postback->click_id,
         'payout' => $postback->payout,
         'processed_at' => $postback->processed_at,
         'created_at' => $postback->created_at,
@@ -183,19 +183,19 @@ class PostbackController extends Controller
 
     try {
       $validated = $request->validated();
-      $clid = $validated['clid'];
+      $click_id = $validated['clid'];
       $fromDate = $validated['fromDate'];
       $toDate = $validated['toDate'];
 
       TailLogger::saveLog('Postback: Iniciando búsqueda manual de payout', 'api/postback', 'info', [
-        'clid' => $clid,
+        'click_id' => $click_id,
         'from_date' => $fromDate,
         'to_date' => $toDate,
       ]);
 
       // Crear un postback temporal para usar con el servicio
       $tempPostback = new Postback([
-        'clid' => $clid,
+        'click_id' => $click_id,
         'vendor' => 'ni',
         'id' => 0
       ]);
@@ -205,7 +205,7 @@ class PostbackController extends Controller
 
       if (!$reportResult['success']) {
         TailLogger::saveLog('Postback: Error al obtener reporte de NI', 'api/postback', 'error', [
-          'clid' => $clid,
+          'click_id' => $click_id,
           'from_date' => $fromDate,
           'to_date' => $toDate
         ]);
@@ -218,7 +218,7 @@ class PostbackController extends Controller
       $conversions = $reportResult['data'] ?? [];
       if (empty($conversions)) {
         TailLogger::saveLog('Postback: No se encontraron conversiones en el período', 'api/postback', 'warning', [
-          'clid' => $clid,
+          'click_id' => $click_id,
           'from_date' => $fromDate,
           'to_date' => $toDate
         ]);
@@ -227,7 +227,7 @@ class PostbackController extends Controller
           'success' => true,
           'message' => 'No se encontraron conversiones en el período especificado',
           'data' => [
-            'clid' => $clid,
+            'click_id' => $click_id,
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'conversions' => [],
@@ -236,16 +236,16 @@ class PostbackController extends Controller
         ]);
       }
 
-      // Buscar conversiones específicas para el clid
-      $clientConversions = collect($conversions)->filter(function ($item) use ($clid) {
-        return isset($item['pub_param_1']) && $item['pub_param_1'] === $clid;
+      // Buscar conversiones específicas para el click_id
+      $clientConversions = collect($conversions)->filter(function ($item) use ($click_id) {
+        return isset($item['pub_param_1']) && $item['pub_param_1'] === $click_id;
       })->values();
 
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       if ($clientConversions->isEmpty()) {
-        TailLogger::saveLog('Postback: CLID no encontrado en conversiones', 'api/postback', 'warning', [
-          'clid' => $clid,
+        TailLogger::saveLog('Postback: CLICK ID no encontrado en conversiones', 'api/postback', 'warning', [
+          'click_id' => $click_id,
           'from_date' => $fromDate,
           'to_date' => $toDate,
           'total_conversions' => count($conversions),
@@ -254,9 +254,9 @@ class PostbackController extends Controller
 
         return response()->json([
           'success' => true,
-          'message' => 'CLID not found in period conversions',
+          'message' => 'CLICK ID not found in period conversions',
           'data' => [
-            'clid' => $clid,
+            'click_id' => $click_id,
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'conversions' => [],
@@ -272,7 +272,7 @@ class PostbackController extends Controller
       $totalSales = $clientConversions->sum('sales');
 
       TailLogger::saveLog('Postback: Búsqueda de payout completada exitosamente', 'api/postback', 'success', [
-        'clid' => $clid,
+        'click_id' => $click_id,
         'from_date' => $fromDate,
         'to_date' => $toDate,
         'conversions_found' => $clientConversions->count(),
@@ -284,7 +284,7 @@ class PostbackController extends Controller
         'success' => true,
         'message' => 'Búsqueda completada exitosamente',
         'data' => [
-          'clid' => $clid,
+          'click_id' => $click_id,
           'from_date' => $fromDate,
           'to_date' => $toDate,
           'conversions' => $clientConversions->toArray(),
@@ -300,7 +300,7 @@ class PostbackController extends Controller
     } catch (\App\Services\NaturalIntelligenceServiceException $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       TailLogger::saveLog('Postback: Error del servicio NI en búsqueda manual', 'api/postback', 'error', [
-        'clid' => $validated['clid'] ?? 'N/A',
+        'click_id' => $validated['clid'] ?? 'N/A',
         'error' => $e->getMessage(),
         'response_time_ms' => $responseTime,
       ]);
@@ -318,7 +318,7 @@ class PostbackController extends Controller
     } catch (\Exception $e) {
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
       TailLogger::saveLog('Postback: Error inesperado en búsqueda manual', 'api/postback', 'error', [
-        'clid' => $validated['clid'] ?? 'N/A',
+        'click_id' => $validated['clid'] ?? 'N/A',
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
         'response_time_ms' => $responseTime,

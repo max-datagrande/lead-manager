@@ -244,8 +244,8 @@ class NaturalIntelligenceServiceException extends \Exception
 
 class PayoutNotFoundException extends \Exception
 {
-  public function __construct(string $clid)
+  public function __construct(string $clickId)
   {
-    parent::__construct("Payout not found: {$clid}");
+    parent::__construct("Payout not found: {$clickId}");
   }
 }

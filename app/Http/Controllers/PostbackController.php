@@ -18,11 +18,10 @@ class PostbackController extends Controller
   public function index(Request $req)
   {
     $query = Postback::select('*');
-
     // Configuración de búsqueda global
     $searchableColumns = [
-      'clid',
-      'txid',
+      'click_id',
+      'transaction_id',
       'event',
       'failure_reason'
     ];
@@ -89,7 +88,6 @@ class PostbackController extends Controller
         'iconName' => 'BadgeAlert'
       ]
     ];
-
     return Inertia::render('postback/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],

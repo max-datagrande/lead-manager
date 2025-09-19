@@ -41,9 +41,11 @@ export const postbackColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'clid',
+    accessorKey: 'click_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Click ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('clid')}</div>,
+    cell: ({ row }) => {
+      return <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('click_id')}</div>;
+    },
     enableSorting: false,
     enableHiding: true,
   },
