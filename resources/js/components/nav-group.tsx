@@ -1,5 +1,13 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
@@ -10,18 +18,16 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { NavItem, NavSubItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
-export function NavGroup({ title, items, currentHref }) {
+interface Props {
+  title: string;
+  items: NavItem[];
+  currentHref: string;
+}
+export function NavGroup({ title, items, currentHref }: Props) {
   const { state } = useSidebar();
   return (
     <SidebarGroup>
@@ -42,7 +48,7 @@ const SidebarMenuLink = ({ item, currentHref }) => {
   const { setOpenMobile } = useSidebar();
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={checkIsActive(currentHref, item)} tooltip={item.title}>
+      <SidebarMenuButton asChild isActive={checkIsActive({ currentHref, item })} tooltip={item.title}>
         <Link href={item.href} prefetch onClick={() => setOpenMobile(false)}>
           {item.icon && <item.icon />}
           <span>{item.title}</span>
@@ -55,7 +61,7 @@ const SidebarMenuLink = ({ item, currentHref }) => {
 const SidebarMenuCollapsible = ({ item, currentHref }) => {
   const { setOpenMobile } = useSidebar();
   return (
-    <Collapsible asChild defaultOpen={checkIsActive(currentHref, item, true)} className="group/collapsible">
+    <Collapsible asChild defaultOpen={checkIsActive({ currentHref, item, mainNav: true })} className="group/collapsible">
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={item.title}>
@@ -66,9 +72,9 @@ const SidebarMenuCollapsible = ({ item, currentHref }) => {
         </CollapsibleTrigger>
         <CollapsibleContent className="CollapsibleContent">
           <SidebarMenuSub>
-            {item.subItems.map((subItem) => (
+            {item.subItems.map((subItem: NavSubItem) => (
               <SidebarMenuSubItem key={subItem.title}>
-                <SidebarMenuSubButton asChild isActive={checkIsActive(currentHref, subItem)}>
+                <SidebarMenuSubButton asChild isActive={checkIsActive({ currentHref, item: subItem })}>
                   <Link
                     href={subItem.href}
                     prefetch
@@ -94,7 +100,7 @@ const SidebarMenuCollapsedDropdown = ({ item, currentHref }) => {
     <SidebarMenuItem>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuButton tooltip={item.title} isActive={checkIsActive(currentHref, item)}>
+          <SidebarMenuButton tooltip={item.title} isActive={checkIsActive({ currentHref, item })}>
             {item.icon && <item.icon />}
             <span>{item.title}</span>
             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -103,9 +109,9 @@ const SidebarMenuCollapsedDropdown = ({ item, currentHref }) => {
         <DropdownMenuContent side="right" align="start" sideOffset={4}>
           <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {item.subItems.map((sub) => (
+          {item.subItems.map((sub: NavSubItem) => (
             <DropdownMenuItem key={`${item.title}-${sub.title}`} asChild>
-              <Link href={sub.href} prefetch className={`${checkIsActive(currentHref, sub) ? 'bg-secondary' : ''}`}>
+              <Link href={sub.href} prefetch className={`${checkIsActive({ currentHref, item: sub }) ? 'bg-secondary' : ''}`}>
                 {sub.icon && <sub.icon />}
                 <span className="max-w-52 text-wrap">{sub.title}</span>
               </Link>
@@ -116,12 +122,15 @@ const SidebarMenuCollapsedDropdown = ({ item, currentHref }) => {
     </SidebarMenuItem>
   );
 };
-
-function checkIsActive(currentHref, item, mainNav = false) {
+interface CheckIsActiveProps {
+  currentHref: string;
+  item: NavItem | NavSubItem;
+  mainNav?: boolean;
+}
+function checkIsActive({ currentHref, item, mainNav = false }: CheckIsActiveProps): boolean {
   return (
     currentHref === item.href || // /endpint?search=param
-    currentHref.split('?')[0] === item.href || // endpoint
-    !!item?.items?.filter((i) => i.href === currentHref).length || // if child nav is active
+    currentHref.split('?')[0] === item.href ||
     (mainNav && currentHref.split('/')[1] !== '' && currentHref.split('/')[1] === item?.href?.split('/')[1])
   );
 }

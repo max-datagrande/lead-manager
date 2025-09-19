@@ -11,7 +11,13 @@ import React, { useState } from 'react';
  * @param {string} [props.className] - Clases CSS adicionales para el contenedor
  * @returns {JSX.Element} Contenido envuelto con botón de copia
  */
-const CopyToClipboard = ({ children, textToCopy, className = '' }) => {
+interface Props {
+  children: React.ReactNode;
+  textToCopy: string;
+  className?: string;
+}
+
+const CopyToClipboard = ({ children, textToCopy, className = '' }: Props) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = async () => {
