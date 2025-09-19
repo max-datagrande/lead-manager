@@ -97,13 +97,13 @@ class PostbackService
       ]);
       return;
     }
-
+    $postbackUrl = $this->maxconvService->buildPostbackUrl($postback);
     // Inicializar el registro de la petición API
     $newPostbackApiRequest = new PostbackApiRequests();
     $newPostbackApiRequest->postback_id = $postback->id;
     $newPostbackApiRequest->request_id = uniqid('req_');
     $newPostbackApiRequest->service = 'max_conv';
-    $newPostbackApiRequest->endpoint = null; // Se actualizará después
+    $newPostbackApiRequest->endpoint = $postbackUrl;
     $newPostbackApiRequest->method = 'GET';
     $newPostbackApiRequest->request_data = null;
     $newPostbackApiRequest->response_data = null;
@@ -114,7 +114,6 @@ class PostbackService
 
     try {
       $startTime = microtime(true);
-
       // Delegar toda la lógica de Maxconv al servicio especializado
       $result = $this->maxconvService->processPostback($postback);
 
@@ -125,6 +124,13 @@ class PostbackService
       $newPostbackApiRequest->status_code = $result['response']->status();
       $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
       $newPostbackApiRequest->update();
+
+      //Update postback
+      $postback->update([
+        'status' => Postback::STATUS_PROCESSED,
+        'processed_at' => now(),
+        'response_data' => $result['response']->body(),
+      ]);
     } catch (\Throwable $e) {
       $errorContext = [
         'error' => $e->getMessage(),
@@ -141,6 +147,13 @@ class PostbackService
       $newPostbackApiRequest->status_code = 0;
       $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
       $newPostbackApiRequest->update();
+
+      //Actualizar postback
+      $postback->update([
+        'status' => Postback::STATUS_FAILED,
+        'failure_reason' => $e->getMessage(),
+        'response_data' => $errorContext,
+      ]);
     }
   }
 
@@ -211,8 +224,7 @@ class PostbackService
           'payout' => $conversion['payout'] ?? 0.0,
           'currency' => 'USD',
           'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
-          'status' => Postback::STATUS_PROCESSED, // Marcar como completado ya que tiene payout
-          'processed_at' => $reconciliationDate,
+          'status' => Postback::STATUS_PENDING, // Marcar como completado ya que tiene payout
         ]);
         $createdCount++;
         $this->redirectPostback($postback);
@@ -233,6 +245,8 @@ class PostbackService
       TailLogger::saveLog('PostbackService: Error during reconciliation', 'postback-reconciliation', 'error', [
         'date' => $date,
         'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
         'trace' => $e->getTraceAsString(),
       ]);
       return ['success' => false, 'message' => $e->getMessage()];
