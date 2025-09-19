@@ -13,10 +13,9 @@ const vendors = {
 };
 
 // Componente para las acciones de la fila
-const ActionsCell = ({ row, table }) => {
+const ActionsCell = ({ row }) => {
   const postback = row.original;
-  const { showDeleteModal } = usePostbacks();
-  const { showRequestViewer } = table.options.meta || {};
+  const { showDeleteModal, showRequestViewer } = usePostbacks();
   return (
     <div className="flex items-center gap-2">
       <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>

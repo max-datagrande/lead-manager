@@ -30,7 +30,6 @@ export default function TablePostbacks({ postbacks }) {
     setSorting,
     globalFilter,
     setGlobalFilter,
-    showRequestViewer,
     setResetTrigger,
     resetTrigger,
     isLoading,
@@ -52,9 +51,6 @@ export default function TablePostbacks({ postbacks }) {
       columnFilters: columnFilters,
       pagination: { pageIndex, pageSize },
       globalFilter,
-    },
-    meta: {
-      showRequestViewer,
     },
     onSortingChange: (sortingUpdate) => {
       const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;
