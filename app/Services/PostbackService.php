@@ -106,8 +106,36 @@ class PostbackService
       ]);
       return;
     }
-
     // Preparar los datos para el postback
+    $postbackData = [
+      'click_id' => $postback->click_id,
+      'payout' => $postback->payout,
+      'transaction_id' => $postback->transaction_id,
+      'currency' => $postback->currency,
+      'event' => $postback->event,
+    ];
+
+    //Metas
+    $startTime = microtime(true);
+    $response = Http::timeout(30)->get($postbackUrl, $postbackData);
+    $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+    //Init postback api request
+    PostbackApiRequests::create([
+      'postback_id' => $postback->id,
+      'request_id' => uniqid('req_'),
+      'service' => 'max_conv',
+      'endpoint' => $postbackUrl,
+      'method' => 'GET',
+      'request_data' => $postbackData,
+      'response_data' => $response->body(),
+      'status_code' => $response->status(),
+      'response_time_ms' => $responseTime,
+      'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
+    ]);
+
+    $response = $this->runPostback($postbackUrl, $postback);
+    /* // Preparar los datos para el postback
     $postbackData = [
       'click_id' => $clickId,
       'payout' => $payout,
@@ -121,7 +149,7 @@ class PostbackService
         'postback_data' => $postbackData
       ]);
       return;
-    }
+    } */
     try {
       $startTime = microtime(true);
       $response = Http::timeout(30)->get($postbackUrl, $postbackData);
@@ -180,6 +208,82 @@ class PostbackService
         'related_id' => $postback->id
       ]);
     }
+  }
+  public function runPostback(string $postbackUrl, Postback $postback): array
+  {
+    $response = [
+      'success' => false,
+      'message' => '',
+      'data' => []
+    ];
+    // Si es local, devolver datos de ejemplo
+    if (app()->environment('local')) {
+      /* TailLogger::saveLog("Postback data for local environment", 'services/postback-redirect', 'info', [
+        'postback_id' => $postback->id,
+        'postback_data' => $postbackData
+      ]); */
+      $response['success'] = true;
+      $response['message'] = 'Postback data for local environment';
+      return $response;
+    }
+    try {
+      $startTime = microtime(true);
+      $response = Http::timeout(30)->get($postbackUrl, $postbackData);
+      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+      // Registrar la petición en PostbackApiRequests
+      PostbackApiRequests::create([
+        'postback_id' => $postback->id,
+        'request_id' => uniqid('req_'),
+        'service' => 'max_conv',
+        'endpoint' => $postbackUrl,
+        'method' => 'GET',
+        'request_data' => $postbackData,
+        'response_data' => $response->body(),
+        'status_code' => $response->status(),
+        'response_time_ms' => $responseTime,
+        'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
+      ]);
+
+      if ($response->successful()) {
+        TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
+          'postback_id' => $postback->id,
+          'redirect_url' => $postbackUrl,
+          'status_code' => $response->status(),
+          'response_time_ms' => $responseTime
+        ]);
+      } else {
+        TailLogger::saveLog("Error en la redirección del postback", 'services/postback-redirect', 'error', [
+          'postback_id' => $postback->id,
+          'redirect_url' => $postbackUrl,
+          'status_code' => $response->status(),
+          'response_body' => $response->body(),
+          'response_time_ms' => $responseTime
+        ]);
+      }
+    } catch (\Throwable $e) {
+      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [
+        'postback_id' => $postback->id,
+        'exception' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+
+      // Registrar el error en PostbackApiRequests
+      PostbackApiRequests::create([
+        'postback_id' => $postback->id,
+        'service' => 'postback_redirect',
+        'endpoint' => $postbackUrl ?? 'unknown',
+        'request_data' => $postbackData ?? [],
+        'response_data' => [
+          'error' => $e->getMessage(),
+          'trace' => $e->getTraceAsString()
+        ],
+        'status_code' => 0,
+        'response_time_ms' => 0,
+        'related_type' => 'postback_redirect_error',
+        'related_id' => $postback->id
+      ]);
+    }
+
   }
 
   /**
