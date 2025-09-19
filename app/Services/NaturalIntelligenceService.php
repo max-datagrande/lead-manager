@@ -60,10 +60,46 @@ class NaturalIntelligenceService
       'request_id' => uniqid('req_'),
     ]);
 
+    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+  }
+
+  /**
+   * Obtiene reportes de conversiones para reconciliación diaria (sin postback_id)
+   */
+  public function getReportForReconciliation(string $fromDate, string $toDate): array
+  {
+    // Preparar datos de la petición usando la librería
+    $startTime = microtime(true);
+    $payload = $this->ni->buildPayload($fromDate, $toDate);
+
+    // Registrar petición de reconciliación (sin postback_id)
+    $apiRequest = PostbackApiRequests::create([
+      'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+      'endpoint' => $this->ni->reportUrl,
+      'method' => 'POST',
+      'request_data' => $payload,
+      'related_type' => PostbackApiRequests::RELATED_TYPE_RECONCILIATION,
+      'postback_id' => null, // Explícitamente null para reconciliación
+      'request_id' => uniqid('reconcile_'),
+    ]);
+    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+  }
+
+  /**
+   * Ejecuta la petición de reporte y maneja la respuesta
+   */
+  private function executeReportRequest(
+    PostbackApiRequests $apiRequest,
+    array $payload,
+    float $startTime,
+    string $fromDate,
+    string $toDate
+  ): array {
+
     try {
       $this->ni->login();
       // Obtener reporte usando la librería
-      $this->report  = $this->ni->getReport($payload);
+      $this->report = $this->ni->getReport($payload);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       // Obtener información de la última petición
