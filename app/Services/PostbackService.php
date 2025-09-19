@@ -195,6 +195,11 @@ class PostbackService
       $existingAndProcessedCount = 0;
       $processedCount = 0;
       $reconciliationDate = Carbon::parse($date)->startOfDay();
+      TailLogger::saveLog('PostbackService: Reconciling conversions for date', 'postback-reconciliation', 'info', [
+        'date' => $date,
+        'total_conversions' => count($conversions),
+        'details' => $conversions
+      ]);
       foreach ($conversions as $conversion) {
         $clickId = $conversion['pub_param_1'] ?? null;
         if (!$clickId) {
@@ -248,12 +253,16 @@ class PostbackService
         'date' => $date,
         'created' => $createdCount,
         'processed' => $processedCount,
+        'total_conversions' => count($conversions),
+        'updated' => $existingAndProcessedCount,
       ]);
 
       return [
         'success' => true,
         'created' => $createdCount,
         'processed' => $processedCount,
+        'total_conversions' => count($conversions),
+        'updated' => $existingAndProcessedCount,
       ];
     } catch (\Exception $e) {
       TailLogger::saveLog('PostbackService: Error during reconciliation', 'postback-reconciliation', 'error', [
