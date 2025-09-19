@@ -96,7 +96,8 @@ class PostbackController extends Controller
           'currency' => $validated['currency'],
           'event' => $validated['event'],
           'vendor' => $validated['vendor'],
-          'status' => Postback::STATUS_PENDING
+          'status' => Postback::STATUS_PENDING,
+          'message' => 'Pending verification',
         ]);
 
         // Despachar job para obtener payout

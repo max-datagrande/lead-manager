@@ -1,11 +1,11 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { usePostbacks } from '@/hooks/use-posbacks';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { Eye, Trash2 } from 'lucide-react';
-
+import { MoreHorizontal } from 'lucide-react';
 
 // --- Columnas TanStack ---
 const vendors = {
@@ -14,18 +14,28 @@ const vendors = {
 
 // Componente para las acciones de la fila
 const ActionsCell = ({ row }) => {
+  const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
   const postback = row.original;
-  const { showDeleteModal, showRequestViewer } = usePostbacks();
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
-        <Eye className="mr-1 h-3 w-3" />
-        API Requests
-      </Button>
-      <Button variant="destructive" size="sm" onClick={() => showDeleteModal(postback)} className="h-8 w-8 p-0">
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => showStatusModal(postback)}>
+          Change Status
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => showRequestViewer(postback)}>
+          View API Requests
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => showDeleteModal(postback)} className="text-red-600">
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
@@ -104,13 +114,21 @@ export const postbackColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'failure_reason',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Is Failed" />,
-    cell: ({ row, cell }) => {
-      const hasError = row.original.failure_reason !== null && row.original.failure_reason !== '';
-      if (hasError) {
-        return <Badge variant="destructive">{cell.getValue()}</Badge>;
-      }
+    accessorKey: 'message',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Message" />,
+    cell: ({ row }) => {
+        const { status, message } = row.original;
+        if (status === 'failed') {
+            return <Badge variant="destructive">{message}</Badge>;
+        }
+        if (message) {
+            return <span className="text-muted-foreground text-sm">{message}</span>;
+        }
+        const defaultMessages = {
+            processed: 'Processed successfully',
+            pending: 'Pending verification',
+        };
+        return <span className="text-muted-foreground/50 text-sm italic">{defaultMessages[status] ?? ''}</span>;
     },
     enableSorting: true,
     enableHiding: true,

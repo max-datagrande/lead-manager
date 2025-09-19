@@ -20,7 +20,7 @@ class Postback extends Model
     'event',
     'offer_id',
     'status',
-    'failure_reason',
+    'message',
     'response_data',
     'processed_at'
   ];
@@ -71,7 +71,7 @@ class Postback extends Model
   {
     $this->update([
       'status' => self::STATUS_FAILED,
-      'failure_reason' => $reason,
+      'message' => $reason,
       'processed_at' => now(),
       'response_data' => $responseData
     ]);

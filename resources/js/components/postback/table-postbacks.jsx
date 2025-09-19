@@ -9,7 +9,7 @@ import { postbackColumns } from './list-columns';
 import { usePage } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import { usePostbacks } from '@/hooks/use-posbacks';
+import { usePostbacks } from '@/hooks/use-postbacks';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 

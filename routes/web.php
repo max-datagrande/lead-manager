@@ -20,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [PostbackController::class, 'index'])->name('index');
     Route::delete('/{postback}', [PostbackController::class, 'destroy'])->name('destroy');
     Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
+    Route::patch('/{postback}/status', [PostbackController::class, 'updateStatus'])->name('updateStatus');
   });
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   Route::resource('integrations', IntegrationController::class);

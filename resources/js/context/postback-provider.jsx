@@ -12,7 +12,6 @@ export function PostbackProvider({ children }) {
   const { state } = usePage().props;
   const modal = useModal();
   const filters = useRef(state?.filters ?? []);
-  const [currentRow, setCurrentRow] = useState(null);
   const [resetTrigger, setResetTrigger] = useState(false);
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
   const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
@@ -22,6 +21,16 @@ export function PostbackProvider({ children }) {
   const { addMessage: setNotify } = useToast();
   const { delete: destroy, processing } = useForm();
 
+  const showStatusModal = async (postback) => {
+    try {
+      const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
+      const result = await modal.openAsync(<UpdateStatusModal postback={postback} />);
+      console.log(result);
+    } catch (error) {
+      setNotify('Error updating postback entry', 'error');
+      console.log('Modal cancelled or error:', error);
+    }
+  };
 
   const showRequestViewer = async (postback) => {
     const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
@@ -95,13 +104,12 @@ export function PostbackProvider({ children }) {
         isFirstRender,
         globalFilter,
         setGlobalFilter,
-        currentRow,
-        setCurrentRow,
         showRequestViewer,
         resetTrigger,
         setResetTrigger,
         isLoading,
         showDeleteModal,
+        showStatusModal,
       }}
     >
       {children}
