@@ -114,7 +114,6 @@ class PostbackController extends Controller
     $postback->delete();
     session()->flash('success', 'Postback deleted successfully');
     return redirect()->back();
-
   }
 
   /**
@@ -158,11 +157,11 @@ class PostbackController extends Controller
     // Only update the message if it's provided in the request.
     // Otherwise, keep the existing message (e.g., the original failure reason).
     if (isset($validated['message'])) {
-        $postback->message = $validated['message'];
+      $postback->message = $validated['message'];
     }
 
     $postback->save();
-
+    add_flash_message('success', 'Postback status updated successfully.');
     // Redirect back to the index page. Inertia will handle the success flash message.
     return redirect()->route('postbacks.index');
   }

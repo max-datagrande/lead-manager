@@ -14,8 +14,8 @@ const vendors = {
 
 // Componente para las acciones de la fila
 const ActionsCell = ({ row }) => {
-  const postback = row.original;
   const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
+  const postback = row.original;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
