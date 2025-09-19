@@ -70,9 +70,9 @@ export const postbackColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'txid',
+    accessorKey: 'transaction_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Transaction ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('txid')}</div>,
+    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('transaction_id')}</div>,
     enableSorting: false,
     enableHiding: true,
   },
