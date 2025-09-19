@@ -7,12 +7,18 @@ use Illuminate\Database\Eloquent\Collection;
 use App\Models\Postback;
 use Maxidev\Logger\TailLogger;
 use App\Services\NaturalIntelligenceService;
+use App\Services\MaxconvService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 
 class PostbackService
 {
-  public function __construct(protected NaturalIntelligenceService $niService) {}
+  protected ?PostbackApiRequests $lastPostbackApiRequest = null;
+
+  public function __construct(
+    protected NaturalIntelligenceService $niService,
+    protected MaxconvService $maxconvService
+  ) {}
 
   public function getApiRequests(int $postbackId): Collection
   {
@@ -74,216 +80,68 @@ class PostbackService
    */
   public function redirectPostback(Postback $postback): void
   {
-    $clickId = $postback->click_id;
-    $payout = $postback->payout;
-    $offer_id = $postback->offer_id;
-
     TailLogger::saveLog("Initiating processed postback redirection", 'services/postback-redirect', 'info', [
       'postback_id' => $postback->id,
-      'click_id' => $clickId,
-      'payout' => $payout,
+      'click_id' => $postback->click_id,
+      'payout' => $postback->payout,
       'vendor' => $postback->vendor,
-      'offer_id' => $offer_id
+      'offer_id' => $postback->offer_id
     ]);
 
-    $offers = collect(config('offers.maxconv'));
-    $offer = $offers->where('offer_id', $offer_id)->first() ?? null;
-
-    if (!$offer) {
+    // Validar que la oferta existe antes de proceder
+    if (!$this->maxconvService->offerExists($postback->offer_id)) {
       TailLogger::saveLog("Offer not found", 'services/postback-redirect', 'warning', [
         'postback_id' => $postback->id,
         'vendor' => $postback->vendor,
-        'offer_id' => $offer_id
+        'offer_id' => $postback->offer_id
       ]);
       return;
     }
 
-    $postbackUrl = $offer['postback_url'];
-    if (!$postbackUrl) {
-      TailLogger::saveLog("No se encontró URL de redirección para el vendor", 'services/postback-redirect', 'warning', [
-        'postback_id' => $postback->id,
-        'vendor' => $postback->vendor
-      ]);
-      return;
-    }
-    // Preparar los datos para el postback
-    $postbackData = [
-      'click_id' => $postback->click_id,
-      'payout' => $postback->payout,
-      'transaction_id' => $postback->transaction_id,
-      'currency' => $postback->currency,
-      'event' => $postback->event,
-    ];
+    // Inicializar el registro de la petición API
+    $newPostbackApiRequest = new PostbackApiRequests();
+    $newPostbackApiRequest->postback_id = $postback->id;
+    $newPostbackApiRequest->request_id = uniqid('req_');
+    $newPostbackApiRequest->service = 'max_conv';
+    $newPostbackApiRequest->endpoint = null; // Se actualizará después
+    $newPostbackApiRequest->method = 'GET';
+    $newPostbackApiRequest->request_data = null;
+    $newPostbackApiRequest->response_data = null;
+    $newPostbackApiRequest->status_code = null;
+    $newPostbackApiRequest->response_time_ms = null;
+    $newPostbackApiRequest->related_type = PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT;
+    $newPostbackApiRequest->save();
 
-    //Metas
-    $startTime = microtime(true);
-    $response = Http::timeout(30)->get($postbackUrl, $postbackData);
-    $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-
-    //Init postback api request
-    PostbackApiRequests::create([
-      'postback_id' => $postback->id,
-      'request_id' => uniqid('req_'),
-      'service' => 'max_conv',
-      'endpoint' => $postbackUrl,
-      'method' => 'GET',
-      'request_data' => $postbackData,
-      'response_data' => $response->body(),
-      'status_code' => $response->status(),
-      'response_time_ms' => $responseTime,
-      'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
-    ]);
-
-    $response = $this->runPostback($postbackUrl, $postback);
-    /* // Preparar los datos para el postback
-    $postbackData = [
-      'click_id' => $clickId,
-      'payout' => $payout,
-      'transaction_id' => $postback->transaction_id,
-      'currency' => $postback->currency,
-      'event' => $postback->event,
-    ];
-    if (app()->environment('local')) {
-      TailLogger::saveLog("Postback data for local environment", 'services/postback-redirect', 'info', [
-        'postback_id' => $postback->id,
-        'postback_data' => $postbackData
-      ]);
-      return;
-    } */
     try {
       $startTime = microtime(true);
-      $response = Http::timeout(30)->get($postbackUrl, $postbackData);
-      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
-      // Registrar la petición en PostbackApiRequests
-      PostbackApiRequests::create([
-        'postback_id' => $postback->id,
-        'request_id' => uniqid('req_'),
-        'service' => 'max_conv',
-        'endpoint' => $postbackUrl,
-        'method' => 'GET',
-        'request_data' => $postbackData,
-        'response_data' => $response->body(),
-        'status_code' => $response->status(),
-        'response_time_ms' => $responseTime,
-        'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
-      ]);
+      // Delegar toda la lógica de Maxconv al servicio especializado
+      $result = $this->maxconvService->processPostback($postback);
 
-      if ($response->successful()) {
-        TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
-          'postback_id' => $postback->id,
-          'redirect_url' => $postbackUrl,
-          'status_code' => $response->status(),
-          'response_time_ms' => $responseTime
-        ]);
-      } else {
-        TailLogger::saveLog("Error en la redirección del postback", 'services/postback-redirect', 'error', [
-          'postback_id' => $postback->id,
-          'redirect_url' => $postbackUrl,
-          'status_code' => $response->status(),
-          'response_body' => $response->body(),
-          'response_time_ms' => $responseTime
-        ]);
-      }
+      // Actualizar el registro con los resultados
+      $newPostbackApiRequest->endpoint = $result['url'];
+      $newPostbackApiRequest->request_data = $result['data'];
+      $newPostbackApiRequest->response_data = $result['response']->body();
+      $newPostbackApiRequest->status_code = $result['response']->status();
+      $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
+      $newPostbackApiRequest->update();
     } catch (\Throwable $e) {
-      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [
-        'postback_id' => $postback->id,
-        'exception' => $e->getMessage(),
+      $errorContext = [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
         'trace' => $e->getTraceAsString()
-      ]);
+      ];
+      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [ ...$errorContext, 'postback_id' => $postback->id ]);
 
-      // Registrar el error en PostbackApiRequests
-      PostbackApiRequests::create([
-        'postback_id' => $postback->id,
-        'service' => 'postback_redirect',
-        'endpoint' => $postbackUrl ?? 'unknown',
-        'request_data' => $postbackData ?? [],
-        'response_data' => [
-          'error' => $e->getMessage(),
-          'trace' => $e->getTraceAsString()
-        ],
-        'status_code' => 0,
-        'response_time_ms' => 0,
-        'related_type' => 'postback_redirect_error',
-        'related_id' => $postback->id
-      ]);
+      // Actualizar el registro con el error
+      $newPostbackApiRequest->endpoint = 'error';
+      $newPostbackApiRequest->request_data = $postback->toArray();
+      $newPostbackApiRequest->response_data = $errorContext;
+      $newPostbackApiRequest->status_code = 0;
+      $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
+      $newPostbackApiRequest->update();
     }
-  }
-  public function runPostback(string $postbackUrl, Postback $postback): array
-  {
-    $response = [
-      'success' => false,
-      'message' => '',
-      'data' => []
-    ];
-    // Si es local, devolver datos de ejemplo
-    if (app()->environment('local')) {
-      /* TailLogger::saveLog("Postback data for local environment", 'services/postback-redirect', 'info', [
-        'postback_id' => $postback->id,
-        'postback_data' => $postbackData
-      ]); */
-      $response['success'] = true;
-      $response['message'] = 'Postback data for local environment';
-      return $response;
-    }
-    try {
-      $startTime = microtime(true);
-      $response = Http::timeout(30)->get($postbackUrl, $postbackData);
-      $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-      // Registrar la petición en PostbackApiRequests
-      PostbackApiRequests::create([
-        'postback_id' => $postback->id,
-        'request_id' => uniqid('req_'),
-        'service' => 'max_conv',
-        'endpoint' => $postbackUrl,
-        'method' => 'GET',
-        'request_data' => $postbackData,
-        'response_data' => $response->body(),
-        'status_code' => $response->status(),
-        'response_time_ms' => $responseTime,
-        'related_type' => PostbackApiRequests::RELATED_TYPE_POSTBACK_REDIRECT,
-      ]);
-
-      if ($response->successful()) {
-        TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
-          'postback_id' => $postback->id,
-          'redirect_url' => $postbackUrl,
-          'status_code' => $response->status(),
-          'response_time_ms' => $responseTime
-        ]);
-      } else {
-        TailLogger::saveLog("Error en la redirección del postback", 'services/postback-redirect', 'error', [
-          'postback_id' => $postback->id,
-          'redirect_url' => $postbackUrl,
-          'status_code' => $response->status(),
-          'response_body' => $response->body(),
-          'response_time_ms' => $responseTime
-        ]);
-      }
-    } catch (\Throwable $e) {
-      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [
-        'postback_id' => $postback->id,
-        'exception' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
-      ]);
-
-      // Registrar el error en PostbackApiRequests
-      PostbackApiRequests::create([
-        'postback_id' => $postback->id,
-        'service' => 'postback_redirect',
-        'endpoint' => $postbackUrl ?? 'unknown',
-        'request_data' => $postbackData ?? [],
-        'response_data' => [
-          'error' => $e->getMessage(),
-          'trace' => $e->getTraceAsString()
-        ],
-        'status_code' => 0,
-        'response_time_ms' => 0,
-        'related_type' => 'postback_redirect_error',
-        'related_id' => $postback->id
-      ]);
-    }
-
   }
 
   /**
