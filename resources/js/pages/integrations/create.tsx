@@ -1,4 +1,4 @@
-import { IntegrationForm, createBreadcrumbs } from '@/components/integrations';
+import { IntegrationForm, createBreadcrumbs } from '@/components/integrations/index';
 import PageHeader from '@/components/page-header';
 import { IntegrationsProvider } from '@/context/integrations-provider.jsx';
 import AppLayout from '@/layouts/app-layout';
