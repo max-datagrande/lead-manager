@@ -38,8 +38,9 @@ class NaturalIntelligenceService
       throw new NaturalIntelligenceServiceException($messsage);
     }
     return [
-      'offer_id' => $offer->offer_id,
-      'offer_event' => $offer->name
+      'offer_id' => $offer['offer_id'],
+      'offer_event' => $offer['name'],
+      'offer_url' => $offer['postback_url']
     ];
   }
 
