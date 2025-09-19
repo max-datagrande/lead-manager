@@ -9,7 +9,6 @@ use Maxidev\Logger\TailLogger;
 use App\Services\NaturalIntelligenceService;
 use App\Services\MaxconvService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
 
 class PostbackService
 {
@@ -130,6 +129,7 @@ class PostbackService
         'status' => Postback::STATUS_PROCESSED,
         'processed_at' => now(),
         'response_data' => $result['response']->body(),
+        'message' => 'Postback processed successfully',
       ]);
     } catch (\Throwable $e) {
       $errorContext = [
@@ -151,7 +151,7 @@ class PostbackService
       //Actualizar postback
       $postback->update([
         'status' => Postback::STATUS_FAILED,
-        'failure_reason' => $e->getMessage(),
+        'message' => $e->getMessage(),
         'response_data' => $errorContext,
       ]);
     }
@@ -217,17 +217,29 @@ class PostbackService
           continue; // Ignorar si ya existe
         }
         $offerData = $this->niService->getOfferData($conversion);
-        $postback = Postback::create([
+
+        // Crear la instancia sin guardar aún
+        $postback = new Postback([
           'click_id' => $clickId,
           'offer_id' => $offerData['offer_id'],
           'event' => $offerData['offer_event'],
           'payout' => $conversion['payout'] ?? 0.0,
           'currency' => 'USD',
           'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
-          'status' => Postback::STATUS_PENDING, // Marcar como completado ya que tiene payout
-          'created_at' => $reconciliationDate,
-          'updated_at' => $reconciliationDate,
+          'status' => Postback::STATUS_PENDING, // Marcar como pendiente
+          'message' => 'Pending verification',
         ]);
+        // Deshabilitar timestamps automáticos temporalmente para esta instancia
+        $postback->timestamps = false;
+
+        // Setear fechas personalizadas (usa Carbon si necesitas parsear)
+        $postback->created_at = Carbon::parse($reconciliationDate);
+        $postback->updated_at = Carbon::parse($reconciliationDate);
+
+        // Guardar el registro (ahora con tus fechas)
+        $postback->save();
+
+        //Increase counters
         $createdCount++;
         $this->redirectPostback($postback);
         $processedCount++;
