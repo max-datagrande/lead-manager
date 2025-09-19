@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\Response;
 use GuzzleHttp\Psr7\Response as Psr7Response;
+use Maxidev\Logger\TailLogger;
 
 class MaxconvService
 {
@@ -92,7 +93,6 @@ class MaxconvService
   public function buildPostbackUrl(Postback $postback): ?string
   {
     $offer = $this->getOffer($postback->offer_id);
-
     if (!$offer || empty($offer['postback_url'])) {
       Log::warning("URL de postback no encontrada para oferta: {$postback->offer_id}");
       return null;
@@ -202,7 +202,6 @@ class MaxconvService
 
     // Construir los datos del postback
     $postbackData = $this->buildPostbackData($postback);
-    dd($postbackData, $postbackUrl);
 
     // Ejecutar el postback
     $response = $this->executePostbackRequest($postbackUrl, $postbackData);
@@ -233,8 +232,15 @@ class MaxconvService
         ]))
       );
     }
-
-    // Ejecutar la petición HTTP real
-    return Http::timeout(30)->get($postbackUrl, $postbackData);
+    $response = Http::timeout(30)->get($postbackUrl, $postbackData);
+    //Logging to update taillogger after
+    TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
+      'postbackData' => $postbackData,
+      'postbackUrl' => $postbackUrl,
+      'responseTime' => $response->elapsedTime(),
+      'body' => $response->body(),
+      'statusCode' => $response->status(),
+    ]);
+    return $response;
   }
 }
