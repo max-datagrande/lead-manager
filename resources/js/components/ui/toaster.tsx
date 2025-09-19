@@ -59,7 +59,7 @@ type ToastContextType = {
   addMessage: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-const ToastContext = createContext<ToastContextType | null>(null);
+export const ToastContext = createContext<ToastContextType | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const addMessage = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -85,10 +85,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 // Hook para usar el contexto
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
-  }
-  return context;
-};
+

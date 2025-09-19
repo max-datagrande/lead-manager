@@ -58,6 +58,11 @@ const GeneralGroup: NavGroupType = {
           href: route('companies.index'),
           icon: Factory,
         },
+        {
+          title: 'Integrations',
+          href: route('integrations.index'),
+          icon: Webhook,
+        },
       ],
     },
   ],

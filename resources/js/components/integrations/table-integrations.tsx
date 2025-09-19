@@ -1,14 +1,23 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { DataTablePagination } from '../data-table/table-pagination';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
+import { getSortState } from '@/utils/table';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { useState } from 'react';
 import { columns } from './list-columns';
-import { useFields } from '@/hooks/use-fields';;
 
-export function TableFields({ entries }) {
-  const { resetTrigger, setResetTrigger, sorting, setSorting, globalFilter, setGlobalFilter, pagination, setPagination } = useFields();
+export function TableIntegrations({ entries, filters }) {
+  const { sort } = filters;
+  const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [resetTrigger, setResetTrigger] = useState(false);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
   const table = useReactTable({
     data: entries,
     columns: columns,
@@ -18,7 +27,6 @@ export function TableFields({ entries }) {
       pagination,
     },
     onPaginationChange: setPagination,
-    onPageSizeChange: setPagination,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getPaginationRowModel: getPaginationRowModel(),
@@ -26,20 +34,14 @@ export function TableFields({ entries }) {
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     rowCount: entries.length,
-    globalFilterFn: 'includesString', // Removido el espacio extra
+    globalFilterFn: 'includesString',
   });
 
   return (
     <>
-      {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar
-            table={table}
-            searchPlaceholder="Search..."
-            resetTrigger={resetTrigger}
-            setResetTrigger={setResetTrigger}
-          />
+          <DataTableToolbar table={table} searchPlaceholder="Search integrations..." resetTrigger={resetTrigger} setResetTrigger={setResetTrigger} />
         </div>
       </div>
       <div className="rounded-md border">

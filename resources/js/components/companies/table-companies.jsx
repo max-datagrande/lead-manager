@@ -37,8 +37,6 @@ export function TableCompanies({ entries }) {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            globalQuery={globalFilter}
-            setGlobalQuery={setGlobalFilter}
             resetTrigger={resetTrigger}
             setResetTrigger={setResetTrigger}
           />

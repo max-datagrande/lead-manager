@@ -37,7 +37,7 @@ const Index = ({ rows }: IndexProps) => {
     <CompaniesProvider>
       <Head title="Companies" />
       <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
-        <PageHeader title="Companies" description="Manage companies." className="flex flex-row items-center justify-between gap-4">
+        <PageHeader title="Companies" description="Manage companies.">
           <CompaniesActions />
         </PageHeader>
         <TableCompanies entries={rows} />

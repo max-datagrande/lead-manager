@@ -1,5 +1,5 @@
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { usePage } from '@inertiajs/react';
 import { Activity } from 'lucide-react';
