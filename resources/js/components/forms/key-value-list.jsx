@@ -110,7 +110,7 @@ function AddButton({ handleClick, addButtonText, textOnTooltip = false }) {
           <Plus className="h-4 w-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent className="bg-black text-white" arrowClassName="bg-black fill-black">
+      <TooltipContent className="bg-black text-white" arrowClassName="bg-black fill-black" side='left'>
         <p>{addButtonText}</p>
       </TooltipContent>
     </Tooltip>

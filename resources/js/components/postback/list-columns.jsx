@@ -2,11 +2,11 @@ import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { MoreHorizontal } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // --- Columnas TanStack ---
 const vendors = {
@@ -26,12 +26,8 @@ const ActionsCell = ({ row }) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => showStatusModal(postback)}>
-          Change Status
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => showRequestViewer(postback)}>
-          View API Requests
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => showStatusModal(postback)}>Change Status</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => showRequestViewer(postback)}>View API Requests</DropdownMenuItem>
         <DropdownMenuItem onClick={() => showDeleteModal(postback)} className="text-red-600">
           Delete
         </DropdownMenuItem>
@@ -78,16 +74,14 @@ export const postbackColumns = [
       }
       const value = cell.getValue();
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltipContent}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>
+          </TooltipTrigger>
+          <TooltipContent className="bg-black text-white" arrowClassName="bg-black fill-black">
+            <p>{tooltipContent}</p>
+          </TooltipContent>
+        </Tooltip>
       );
     },
     enableSorting: true,
