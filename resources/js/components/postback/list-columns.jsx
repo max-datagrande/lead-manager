@@ -6,6 +6,7 @@ import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { MoreHorizontal } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // --- Columnas TanStack ---
 const vendors = {
@@ -59,13 +60,35 @@ export const postbackColumns = [
     accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row, cell }) => {
+      const { status, message } = row.original;
       const colors = {
         pending: 'secondary',
         processed: 'default',
         failed: 'destructive',
       };
+
+      let tooltipContent = message;
+      if (!tooltipContent) {
+        const defaultMessages = {
+          processed: 'Processed successfully',
+          pending: 'Pending verification',
+          failed: 'Failed with unknown error',
+        };
+        tooltipContent = defaultMessages[status] ?? '';
+      }
       const value = cell.getValue();
-      return <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{tooltipContent}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     },
     enableSorting: true,
     enableHiding: true,
@@ -110,26 +133,6 @@ export const postbackColumns = [
   {
     accessorKey: 'event',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Event Name" />,
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'message',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Message" />,
-    cell: ({ row }) => {
-        const { status, message } = row.original;
-        if (status === 'failed') {
-            return <Badge variant="destructive">{message}</Badge>;
-        }
-        if (message) {
-            return <span className="text-muted-foreground text-sm">{message}</span>;
-        }
-        const defaultMessages = {
-            processed: 'Processed successfully',
-            pending: 'Pending verification',
-        };
-        return <span className="text-muted-foreground/50 text-sm italic">{defaultMessages[status] ?? ''}</span>;
-    },
     enableSorting: true,
     enableHiding: true,
   },
