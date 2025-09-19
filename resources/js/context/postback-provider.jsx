@@ -1,9 +1,10 @@
 import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { getSortState, serializeSort } from '@/utils/table';
-import { router, usePage } from '@inertiajs/react';
+import { router, usePage, useForm } from '@inertiajs/react';
 import { createContext, useCallback, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 import { useModal } from '@/hooks/use-modal';
+import { useToast } from '@/hooks/use-toast';
 
 export const PostbackContext = createContext(null);
 
@@ -18,6 +19,9 @@ export function PostbackProvider({ children }) {
   const [columnFilters, setColumnFilters] = useState(filters.current);
   const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
+  const { addMessage: setNotify } = useToast();
+  const { delete: destroy, processing } = useForm();
+
 
   const showRequestViewer = async (postback) => {
     const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
@@ -43,7 +47,7 @@ export function PostbackProvider({ children }) {
   };
 
   const deletePostback = async (entry) => {
-    const url = route('companies.destroy', entry.id);
+    const url = route('postbacks.destroy', entry.id);
     destroy(url, {
       preserveScroll: true,
       preserveState: true,

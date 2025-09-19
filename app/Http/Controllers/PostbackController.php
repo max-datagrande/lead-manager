@@ -105,7 +105,17 @@ class PostbackController extends Controller
 
   public function store(Request $request) {}
   public function update(Request $request) {}
-  public function destroy(Request $request) {}
+  public function destroy(Request $request, Postback $postback)
+  {
+    if (!$postback) {
+      session()->flash('error', 'Postback not found');
+      return redirect()->back();
+    }
+    $postback->delete();
+    session()->flash('success', 'Postback deleted successfully');
+    return redirect()->back();
+
+  }
 
   /**
    * Display the specified resource.
