@@ -204,7 +204,7 @@ function ModalRoot({ stack, onCloseId }: { stack: ModalItem[]; onCloseId: (id: n
       {stack.map((item) => {
         const maxWidth = item.options?.maxWidth || 'sm:max-w-lg';
         const className = item.options?.className || '';
-        const finalClassName = `max-h-[90vh] overflow-y-auto ${maxWidth} w-fit ${className}`.trim();
+        const finalClassName = `no-scrollbar max-h-[90vh] overflow-y-auto ${maxWidth} w-fit ${className}`.trim();
 
         return (
           <Dialog key={item.id} open onOpenChange={(open) => !open && onCloseId(item.id)}>
