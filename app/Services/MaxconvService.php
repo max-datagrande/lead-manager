@@ -237,7 +237,6 @@ class MaxconvService
     TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
       'postbackData' => $postbackData,
       'postbackUrl' => $postbackUrl,
-      'responseTime' => $response->elapsedTime(),
       'body' => $response->body(),
       'statusCode' => $response->status(),
     ]);
