@@ -1,14 +1,35 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { usePostbacks } from '@/hooks/use-posbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
+
 
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
 };
+
+// Componente para las acciones de la fila
+const ActionsCell = ({ row, table }) => {
+  const postback = row.original;
+  const { showDeleteModal } = usePostbacks();
+  const { showRequestViewer } = table.options.meta || {};
+  return (
+    <div className="flex items-center gap-2">
+      <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
+        <Eye className="mr-1 h-3 w-3" />
+        API Requests
+      </Button>
+      <Button variant="destructive" size="sm" onClick={() => showDeleteModal(postback)} className="h-8 w-8 p-0">
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 export const postbackColumns = [
   {
     accessorKey: 'id',
@@ -121,18 +142,9 @@ export const postbackColumns = [
   },
   {
     id: 'actions',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
+    header: 'Actions',
+    cell: ActionsCell,
     enableSorting: false,
-    cell: ({ row, table }) => {
-      const postback = row.original;
-      const { showRequestViewer } = table.options.meta || {};
-
-      return (
-        <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
-          <Eye className="mr-1 h-3 w-3" />
-          API Requests
-        </Button>
-      );
-    },
+    enableHiding: false,
   },
 ];

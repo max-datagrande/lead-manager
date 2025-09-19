@@ -28,6 +28,28 @@ export function PostbackProvider({ children }) {
     setColumnFilters([]);
   };
 
+  const showDeleteModal = async (postback) => {
+    const isConfirmed = await modal.confirm({
+      title: 'Delete element',
+      description: 'This action cannot be undone. Are you sure you want to continue?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (isConfirmed) {
+      setNotify('Deleting postback', 'info');
+      deletePostback(postback);
+    }
+  };
+
+  const deletePostback = async (entry) => {
+    const url = route('companies.destroy', entry.id);
+    destroy(url, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
   const getPostbacks = useDebouncedFunction(
     useCallback(
       (newData) => {
@@ -75,6 +97,7 @@ export function PostbackProvider({ children }) {
         resetTrigger,
         setResetTrigger,
         isLoading,
+        showDeleteModal,
       }}
     >
       {children}
