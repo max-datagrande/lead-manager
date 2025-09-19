@@ -21,7 +21,7 @@ export function PostbackProvider({ children }) {
 
   const showRequestViewer = async (postback) => {
     const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
-    modal.open(<PostbackApiRequestsViewer postbackId={postback.id} />);
+    modal.open(<PostbackApiRequestsViewer postbackId={postback.id} />, { className: 'max-w-4xl sm:max-w-4xl w-full' });
   };
 
   const handleClearFilters = () => {
