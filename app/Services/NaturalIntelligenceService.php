@@ -29,6 +29,20 @@ class NaturalIntelligenceService
   {
     return $this->ni->reportUrl;
   }
+  public function getOfferData(array $conversion): array
+  {
+    $offers = collect(config('offers.maxconv'));
+    $offer = $offers->firstWhere('name', $conversion['pub_param_2']);
+    if (!$offer) {
+      $messsage = "Offer not found : " . $conversion['pub_param_2'];
+      throw new NaturalIntelligenceServiceException($messsage);
+    }
+    return [
+      'offer_id' => $offer['offer_id'],
+      'offer_event' => $offer['name'],
+      'offer_url' => $offer['postback_url']
+    ];
+  }
 
   /**
    * Obtiene reportes de conversiones de los últimos 3 días
@@ -60,10 +74,46 @@ class NaturalIntelligenceService
       'request_id' => uniqid('req_'),
     ]);
 
+    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+  }
+
+  /**
+   * Obtiene reportes de conversiones para reconciliación diaria (sin postback_id)
+   */
+  public function getReportForReconciliation(string $fromDate, string $toDate): array
+  {
+    // Preparar datos de la petición usando la librería
+    $startTime = microtime(true);
+    $payload = $this->ni->buildPayload($fromDate, $toDate);
+
+    // Registrar petición de reconciliación (sin postback_id)
+    $apiRequest = PostbackApiRequests::create([
+      'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+      'endpoint' => $this->ni->reportUrl,
+      'method' => 'POST',
+      'request_data' => $payload,
+      'related_type' => PostbackApiRequests::RELATED_TYPE_RECONCILIATION,
+      'postback_id' => null, // Explícitamente null para reconciliación
+      'request_id' => uniqid('reconcile_'),
+    ]);
+    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+  }
+
+  /**
+   * Ejecuta la petición de reporte y maneja la respuesta
+   */
+  private function executeReportRequest(
+    PostbackApiRequests $apiRequest,
+    array $payload,
+    float $startTime,
+    string $fromDate,
+    string $toDate
+  ): array {
+
     try {
       $this->ni->login();
       // Obtener reporte usando la librería
-      $this->report  = $this->ni->getReport($payload);
+      $this->report = $this->ni->getReport($payload);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       // Obtener información de la última petición
@@ -154,7 +204,7 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'total_conversions' => count($conversions)
         ]);
-        throw new PayoutNotFoundException('Click ID: ' . $clickId . ' not found in conversions');
+        throw new PayoutNotFoundException('Click ID not found in payouts: ' . $clickId);
       }
 
       $payout = $conversion['payout'] ?? null;
@@ -163,7 +213,7 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'conversion' => $conversion
         ]);
-        throw new PayoutNotFoundException('Payout not found for click ID: ' . $clickId);
+        throw new PayoutNotFoundException('Click ID found but with no payout value: ' . $clickId);
       }
 
       TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
@@ -179,7 +229,7 @@ class NaturalIntelligenceService
       ]);
       throw $e;
     } catch (\Exception $e) {
-      if ($e instanceof NaturalIntelligenceServiceException) {
+      if ($e instanceof PayoutNotFoundException) { // Si no se encuentra, lanzamos el mismo error
         throw $e;
       }
       if ($e instanceof NaturalIntelligenceException) {
@@ -188,6 +238,8 @@ class NaturalIntelligenceService
 
       TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
@@ -206,8 +258,8 @@ class NaturalIntelligenceServiceException extends \Exception
 
 class PayoutNotFoundException extends \Exception
 {
-  public function __construct(string $clid)
+  public function __construct(string $clickId)
   {
-    parent::__construct("Payout not found for CLID: {$clid}");
+    parent::__construct("Payout not found: {$clickId}");
   }
 }

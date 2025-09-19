@@ -1,18 +1,38 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { usePostbacks } from '@/hooks/use-posbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 
 
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
 };
+
+// Componente para las acciones de la fila
+const ActionsCell = ({ row }) => {
+  const postback = row.original;
+  const { showDeleteModal, showRequestViewer } = usePostbacks();
+  return (
+    <div className="flex items-center gap-2">
+      <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
+        <Eye className="mr-1 h-3 w-3" />
+        API Requests
+      </Button>
+      <Button variant="destructive" size="sm" onClick={() => showDeleteModal(postback)} className="h-8 w-8 p-0">
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
 export const postbackColumns = [
   {
     accessorKey: 'id',
+    cessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
     cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
     enableSorting: true,
@@ -41,16 +61,18 @@ export const postbackColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'clid',
+    accessorKey: 'click_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Click ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('clid')}</div>,
+    cell: ({ row }) => {
+      return <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('click_id')}</div>;
+    },
     enableSorting: false,
     enableHiding: true,
   },
   {
-    accessorKey: 'txid',
+    accessorKey: 'transaction_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Transaction ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('txid')}</div>,
+    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('transaction_id')}</div>,
     enableSorting: false,
     enableHiding: true,
   },
@@ -69,8 +91,8 @@ export const postbackColumns = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
       const currency = row.original.currency;
-      const value = cell.getValue();
-      return value ? `${value.toFixed(2)} ${currency}` : value;
+      const cellValue = cell.getValue();
+      return `${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue;
     },
     enableSorting: true,
     enableHiding: true,
@@ -119,19 +141,9 @@ export const postbackColumns = [
   },
   {
     id: 'actions',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
+    header: 'Actions',
+    cell: ActionsCell,
     enableSorting: false,
-    cell: ({ row, table }) => {
-      const postback = row.original;
-      const { showRequestViewer } = table.options.meta || {};
-
-      return (
-        <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
-          <Eye className="mr-1 h-3 w-3" />
-          API Requests
-        </Button>
-      );
-    },
+    enableHiding: false,
   },
 ];
-

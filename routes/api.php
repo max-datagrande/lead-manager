@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\Api\PostbackController;
 use App\Http\Controllers\Api\GeolocationController;
+use App\Http\Controllers\Api\MaxconvController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -36,6 +37,10 @@ Route::prefix('postback')->group(function () {
   Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
     ->name('api.postback.search-payout');
 
+  // Ruta para reconciliar payouts de un día
+  Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
+    ->name('api.postback.reconcile');
+
   // Ruta para obtener reportes de NI (admin)
   Route::get('/report', [PostbackController::class, 'getReport'])
     ->name('api.postback.report');
@@ -50,4 +55,27 @@ Route::middleware(['domain.whitelist'])->prefix('geolocation')->group(function (
   // Endpoint para verificar el estado de la API
   Route::get('/status', [GeolocationController::class, 'status'])
     ->name('api.geolocation.status');
+});
+
+// Rutas para Maxconv Service
+Route::prefix('maxconv')->group(function () {
+  // Obtener todas las ofertas
+  Route::get('/offers', [MaxconvController::class, 'getOffers'])
+    ->name('api.maxconv.offers');
+
+  // Obtener una oferta específica
+  Route::get('/offers/{offerId}', [MaxconvController::class, 'getOffer'])
+    ->name('api.maxconv.offer');
+
+  // Construir URL de oferta con placeholders
+  Route::post('/build-offer-url', [MaxconvController::class, 'buildOfferUrl'])
+    ->name('api.maxconv.build-offer-url');
+
+  // Validar placeholders
+  Route::post('/validate-placeholders', [MaxconvController::class, 'validatePlaceholders'])
+    ->name('api.maxconv.validate-placeholders');
+
+  // Preview de datos de postback
+  Route::get('/postback/{postbackId}/preview', [MaxconvController::class, 'previewPostbackData'])
+    ->name('api.maxconv.postback-preview');
 });

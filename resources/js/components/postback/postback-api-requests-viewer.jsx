@@ -156,7 +156,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                         : 'bg-yellow-500'
                   }`}
                 />
-                <span>Intento {index + 1}</span>
+                <span>Attempt {index + 1}</span>
                 {request.error_message && <AlertCircle className="h-3 w-3 text-red-500" />}
                 <span className="ml-1 text-xs text-gray-500">({request.status_code || 'N/A'})</span>
               </TabsTrigger>

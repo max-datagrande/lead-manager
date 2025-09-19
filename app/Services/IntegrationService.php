@@ -206,9 +206,9 @@ class IntegrationServiceException extends Exception
   {
     parent::__construct($message, $code, $previous);
     TailLogger::saveLog(
-      'Integration Service Error',
+      $message,
       'integrations/services',
-      'errors',
+      'error',
       array_merge(['error' => $message], $context)
     );
   }

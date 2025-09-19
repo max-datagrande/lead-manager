@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   //Postbacks
   Route::prefix('postbacks')->name('postbacks.')->group(function () {
     Route::get('/', [PostbackController::class, 'index'])->name('index');
+    Route::delete('/{postback}', [PostbackController::class, 'destroy'])->name('destroy');
     Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
   });
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);

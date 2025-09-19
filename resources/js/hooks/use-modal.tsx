@@ -1,8 +1,16 @@
 import ConfirmDialog from '@/components/confirm-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { router } from '@inertiajs/react';
+/* import { router } from '@inertiajs/react'; */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+
+/**
+ * Options for opening a modal
+ */
+type ModalOptions = {
+  maxWidth?: string;
+  className?: string;
+};
 /**
  * Represents an individual modal in the modal stack
  */
@@ -11,6 +19,7 @@ type ModalItem = {
   node: React.ReactNode;
   resolve?: (value: any) => void;
   reject?: (reason?: any) => void;
+  options?: ModalOptions;
 };
 
 /**
@@ -28,8 +37,8 @@ type ConfirmOptions = {
  * Modal context type that exposes the entire API
  */
 type ModalContextType = {
-  open: (node: React.ReactNode) => number;
-  openAsync: <T = unknown>(node: React.ReactNode) => Promise<T>;
+  open: (node: React.ReactNode, options?: ModalOptions) => number;
+  openAsync: <T = unknown>(node: React.ReactNode, options?: ModalOptions) => Promise<T>;
   confirm: (opts: ConfirmOptions) => Promise<boolean>;
   close: (id?: number) => void;
   closeAll: () => void;
@@ -54,19 +63,19 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
   /**
    * Opens a modal with arbitrary React content
    */
-  const open = useCallback((node: React.ReactNode) => {
+  const open = useCallback((node: React.ReactNode, options?: ModalOptions) => {
     const id = ++_id;
-    setStack((s) => [...s, { id, node: <ModalScope id={id}>{node}</ModalScope> }]);
+    setStack((s) => [...s, { id, node: <ModalScope id={id}>{node}</ModalScope>, options }]);
     return id;
   }, []);
 
   /**
    * Opens a modal and returns a typed promise with the result
    */
-  const openAsync = useCallback(<T,>(node: React.ReactNode) => {
+  const openAsync = useCallback(<T,>(node: React.ReactNode, options?: ModalOptions) => {
     const id = ++_id;
     return new Promise<T>((resolve, reject) => {
-      setStack((s) => [...s, { id, resolve, reject, node: <ModalScope id={id}>{node}</ModalScope> }]);
+      setStack((s) => [...s, { id, resolve, reject, node: <ModalScope id={id}>{node}</ModalScope>, options }]);
     });
   }, []);
 
@@ -192,11 +201,17 @@ export function useCurrentModalId() {
 function ModalRoot({ stack, onCloseId }: { stack: ModalItem[]; onCloseId: (id: number) => void }) {
   return (
     <>
-      {stack.map((item) => (
-        <Dialog key={item.id} open onOpenChange={(open) => !open && onCloseId(item.id)}>
-          <DialogContent className="sm:max-w-lg">{item.node}</DialogContent>
-        </Dialog>
-      ))}
+      {stack.map((item) => {
+        const maxWidth = item.options?.maxWidth || 'sm:max-w-lg';
+        const className = item.options?.className || '';
+        const finalClassName = `no-scrollbar max-h-[90vh] overflow-y-auto ${maxWidth} w-fit ${className}`.trim();
+
+        return (
+          <Dialog key={item.id} open onOpenChange={(open) => !open && onCloseId(item.id)}>
+            <DialogContent className={finalClassName}>{item.node}</DialogContent>
+          </Dialog>
+        );
+      })}
     </>
   );
 }

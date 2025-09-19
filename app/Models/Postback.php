@@ -13,9 +13,9 @@ class Postback extends Model
   protected $fillable = [
     'id',
     'vendor',
-    'clid',
+    'click_id',
     'payout',
-    'txid',
+    'transaction_id',
     'currency',
     'event',
     'offer_id',
