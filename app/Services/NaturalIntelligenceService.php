@@ -29,6 +29,19 @@ class NaturalIntelligenceService
   {
     return $this->ni->reportUrl;
   }
+  public function getOfferData(array $conversion): array
+  {
+    $offers = collect(config('offers.maxconv'));
+    $offer = $offers->firstWhere('name', $conversion['pub_param_2']);
+    if (!$offer) {
+      $messsage = "Offer not found : " . $conversion['pub_param_2'];
+      throw new NaturalIntelligenceServiceException($messsage);
+    }
+    return [
+      'offer_id' => $offer->offer_id,
+      'offer_event' => $offer->name
+    ];
+  }
 
   /**
    * Obtiene reportes de conversiones de los últimos 3 días

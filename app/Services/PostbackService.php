@@ -115,7 +115,13 @@ class PostbackService
       'currency' => $postback->currency,
       'event' => $postback->event,
     ];
-
+    if (app()->environment('local')) {
+      TailLogger::saveLog("Postback data for local environment", 'services/postback-redirect', 'info', [
+        'postback_id' => $postback->id,
+        'postback_data' => $postbackData
+      ]);
+      return;
+    }
     try {
       $startTime = microtime(true);
       $response = Http::timeout(30)->get($postbackUrl, $postbackData);
@@ -192,6 +198,7 @@ class PostbackService
     try {
       $reportResult = $this->niService->getReportForReconciliation($date, $date);
       $wasSuccessful = $reportResult['success'] ?? false;
+
       if (!$wasSuccessful) {
         TailLogger::saveLog('PostbackService: No se pudo obtener el reporte de NI', 'postback-reconciliation', 'error', [
           'date' => $date,
@@ -201,6 +208,7 @@ class PostbackService
       }
 
       $conversions = $reportResult['data'] ?? [];
+
       if (empty($conversions)) {
         TailLogger::saveLog('PostbackService: No se encontraron conversiones en el reporte para la fecha', 'postback-reconciliation', 'warning', [
           'date' => $date,
@@ -233,14 +241,16 @@ class PostbackService
           $processedCount++;
           continue; // Ignorar si ya existe
         }
+        $offerData = $this->niService->getOfferData($conversion);
         $postback = Postback::create([
           'click_id' => $clickId,
-          'offer_name' => $conversion['pub_param_2'] ?? 'N/A',
+          'offer_id' => $offerData['offer_id'],
+          'event' => $offerData['offer_event'],
           'payout' => $conversion['payout'] ?? 0.0,
+          'currency' => 'USD',
           'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
           'status' => Postback::STATUS_PROCESSED, // Marcar como completado ya que tiene payout
-          'created_at' => $reconciliationDate,
-          'updated_at' => $reconciliationDate,
+          'processed_at' => $reconciliationDate,
         ]);
         $createdCount++;
         $this->redirectPostback($postback);
@@ -258,7 +268,7 @@ class PostbackService
         'processed' => $processedCount,
       ];
     } catch (\Exception $e) {
-      TailLogger::saveLog('PostbackService: Error durante la reconciliación', 'postback-reconciliation', 'error', [
+      TailLogger::saveLog('PostbackService: Error during reconciliation', 'postback-reconciliation', 'error', [
         'date' => $date,
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString(),
