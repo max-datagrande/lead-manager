@@ -35,7 +35,7 @@ class NaturalIntelligenceService
     $offer = $offers->firstWhere('name', $conversion['pub_param_2']);
     if (!$offer) {
       $messsage = "Offer not found : " . $conversion['pub_param_2'];
-      throw new NaturalIntelligenceServiceException($messsage);
+      throw new NaturalIntelligenceServiceException($messsage, $conversion);
     }
     return [
       'offer_id' => $offer['offer_id'],
@@ -160,7 +160,12 @@ class NaturalIntelligenceService
         'response_time_ms' => $responseTime
       ]);
 
-      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
+      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'response_time_ms' => $responseTime,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     }
   }
 
@@ -222,20 +227,22 @@ class NaturalIntelligenceService
       ]);
 
       return (float) $payout;
+    } catch (PayoutNotFoundException $e) {
+      // Si no se encuentra el payout, simplemente relanzamos la excepción
+      throw $e;
     } catch (NaturalIntelligenceServiceException $e) {
       TailLogger::saveLog('NI Service: Error de servicio al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
         'error' => $e->getMessage()
       ]);
       throw $e;
+    } catch (NaturalIntelligenceException $e) {
+      throw new NaturalIntelligenceServiceException('Error getting payout: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     } catch (\Exception $e) {
-      if ($e instanceof PayoutNotFoundException) { // Si no se encuentra, lanzamos el mismo error
-        throw $e;
-      }
-      if ($e instanceof NaturalIntelligenceException) {
-        throw new NaturalIntelligenceServiceException('Error getting payout: ' . $e->getMessage(), 0, $e);
-      }
-
       TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
         'file' => $e->getFile(),
@@ -243,16 +250,26 @@ class NaturalIntelligenceService
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
-      throw new NaturalIntelligenceServiceException('Unexpected error getting payout: ' . $e->getMessage(), 0, $e);
+      throw new NaturalIntelligenceServiceException('Unexpected error getting payout: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     }
   }
 }
 
 class NaturalIntelligenceServiceException extends \Exception
 {
-  public function __construct(string $message, int $code = 0, ?\Throwable $previous = null)
+  protected array $context = [];
+  public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
+    $this->context = $context;
+  }
+  public function getContext(): array
+  {
+    return $this->context;
   }
 }
 

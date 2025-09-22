@@ -173,7 +173,6 @@ class PostbackService
     try {
       $reportResult = $this->niService->getReportForReconciliation($date, $date);
       $wasSuccessful = $reportResult['success'] ?? false;
-
       if (!$wasSuccessful) {
         TailLogger::saveLog('PostbackService: No se pudo obtener el reporte de NI', 'postback-reconciliation', 'error', [
           'date' => $date,
@@ -181,7 +180,6 @@ class PostbackService
         ]);
         return ['success' => false, 'message' => 'Failed to get report from NI.'];
       }
-
       $conversions = $reportResult['data'] ?? [];
 
       if (empty($conversions)) {
@@ -221,7 +219,14 @@ class PostbackService
           $processedCount++;
           continue; // Ignorar si ya existe
         }
-        $offerData = $this->niService->getOfferData($conversion);
+        $offerData = $this->getOfferData($conversion);
+        if (!$offerData) {
+          TailLogger::saveLog('PostbackService: No se encontró información de oferta para el click ID', 'postback-reconciliation', 'warning', [
+            'click_id' => $clickId,
+            'conversion' => $conversion
+          ]);
+          continue;
+        }
 
         // Crear la instancia sin guardar aún
         $postback = new Postback([
@@ -274,6 +279,15 @@ class PostbackService
       ]);
       return ['success' => false, 'message' => $e->getMessage()];
     }
+  }
+  public function getOfferData(array $conversion): ?array
+  {
+    try {
+      $offerData = $this->niService->getOfferData($conversion);
+    } catch (\Throwable $th) {
+      return null;
+    }
+    return $offerData;
   }
 }
 
