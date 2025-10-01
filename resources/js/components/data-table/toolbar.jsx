@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
+import { useState } from 'react';
 
-export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filters = [], resetTrigger, setResetTrigger }) {
+export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filters = [] }) {
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
+  const [reset, setReset] = useState(false);
   return (
     <div className="flex w-full flex-col gap-2">
       <div className="flex w-full flex-1 flex-col-reverse items-start gap-2 sm:flex-row sm:items-center">
@@ -25,7 +27,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filte
               const newFilters = [...otherFilters, { id: 'from_date', value: from.toISOString() }, { id: 'to_date', value: to.toISOString() }];
               table.setColumnFilters(newFilters);
             }}
-            isReset={resetTrigger}
+            isReset={reset}
             align="start"
             locale="en-US"
             showCompare={false}
@@ -33,7 +35,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filte
           <DataTableViewOptions columns={table.getAllColumns()} />
         </div>
       </div>
-      <div className="flex w-full gap-2 my-3">
+      <div className="my-3 flex w-full gap-2">
         {filters.length > 0 && (
           <>
             <span className="flex items-center">Filters:</span>
@@ -52,7 +54,7 @@ export function DataTableToolbar({ table, searchPlaceholder = 'Filter...', filte
             onClick={() => {
               table.resetColumnFilters();
               table.setGlobalFilter('');
-              setResetTrigger(true);
+              setReset(true);
             }}
             className="ml-auto gap-1 px-2 lg:px-3"
           >
