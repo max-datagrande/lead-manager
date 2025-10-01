@@ -1,10 +1,9 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
 import { usePostbacks } from '@/hooks/use-postbacks';
-import { usePage } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useEffect } from 'react';
 //Icons
@@ -23,18 +22,8 @@ const postbackColumns = createPostbackColumns();
  * @returns {JSX.Element} Tabla completa con datos de postbacks y controles de paginación
  */
 export default function TablePostbacks({ entries, meta, data }) {
-  const {
-    getPostbacks,
-    columnFilters,
-    setColumnFilters,
-    sorting,
-    setSorting,
-    globalFilter,
-    setGlobalFilter,
-    isLoading,
-    pagination,
-    setPagination,
-  } = usePostbacks();
+  const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, isLoading, pagination, setPagination } =
+    usePostbacks();
 
   const vendorFilterOptions = data.vendorFilterOptions ?? [];
   const statusFilterOptions = mapIcon(data.statusFilterOptions ?? []);
@@ -81,18 +70,22 @@ export default function TablePostbacks({ entries, meta, data }) {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            filters={[
-              {
-                columnId: 'vendor',
-                title: 'Vendor',
-                options: vendorFilterOptions,
-              },
-              {
-                columnId: 'status',
-                title: 'Status',
-                options: statusFilterOptions,
-              },
-            ]}
+            filterByColumn="created_at"
+            config={{
+              filters: [
+                {
+                  columnId: 'vendor',
+                  title: 'Vendor',
+                  options: vendorFilterOptions,
+                },
+                {
+                  columnId: 'status',
+                  title: 'Status',
+                  options: statusFilterOptions,
+                },
+              ],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
           />
         </div>
       </div>
