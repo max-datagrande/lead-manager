@@ -30,8 +30,6 @@ export default function TablePostbacks({ postbacks }) {
     setSorting,
     globalFilter,
     setGlobalFilter,
-    setResetTrigger,
-    resetTrigger,
     isLoading,
   } = usePostbacks();
 
@@ -39,7 +37,6 @@ export default function TablePostbacks({ postbacks }) {
   const links = rows.links ?? [];
   const vendors = data.vendors ?? [];
   const states = mapIcon(data.states ?? []);
-
   const pageIndex = (state.page ?? 1) - 1;
   const pageSize = state.per_page ?? 10;
 
@@ -80,8 +77,6 @@ export default function TablePostbacks({ postbacks }) {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            resetTrigger={resetTrigger}
-            setResetTrigger={setResetTrigger}
             filters={[
               {
                 columnId: 'vendor',
