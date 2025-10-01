@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\PostbackApiRequests;
 use Illuminate\Database\Eloquent\Collection;
 use App\Models\Postback;
+use App\Enums\PostbackVendor;
 use Maxidev\Logger\TailLogger;
 use App\Services\NaturalIntelligenceService;
 use App\Services\MaxconvService;
@@ -49,7 +50,7 @@ class PostbackService
       ]);
     }
     //Verificar si esta procesado
-    if ($postback->status === Postback::STATUS_PROCESSED) {
+    if ($postback->status === Postback::statusProcessed()) {
       throw new PostbackServiceException("Postback already marked as processed", [
         'postback_id' => $postbackId,
         'exists' => $postback ? 'sí' : 'no',
@@ -57,7 +58,7 @@ class PostbackService
       ]);
     }
     // Verificar si no está fallido
-    if ($postback->status === Postback::STATUS_FAILED) {
+    if ($postback->status === Postback::statusFailed()) {
       throw new PostbackServiceException("Postback already marked as failed", [
         'postback_id' => $postbackId,
         'exists' => $postback ? 'sí' : 'no',
@@ -126,7 +127,7 @@ class PostbackService
 
       //Update postback
       $postback->update([
-        'status' => Postback::STATUS_PROCESSED,
+        'status' => Postback::statusProcessed(),
         'processed_at' => now(),
         'response_data' => $result['response']->body(),
         'message' => 'Postback processed successfully',
@@ -150,7 +151,7 @@ class PostbackService
 
       //Actualizar postback
       $postback->update([
-        'status' => Postback::STATUS_FAILED,
+        'status' => Postback::statusFailed(),
         'message' => $e->getMessage(),
         'response_data' => $errorContext,
       ]);
@@ -235,8 +236,8 @@ class PostbackService
           'event' => $offerData['offer_event'],
           'payout' => $conversion['payout'] ?? 0.0,
           'currency' => 'USD',
-          'vendor' => 'ni', // Asumimos 'ni' ya que usamos NaturalIntelligenceService
-          'status' => Postback::STATUS_PENDING, // Marcar como pendiente
+          'vendor' => PostbackVendor::NI->value(), // Asumimos 'ni' ya que usamos NaturalIntelligenceService
+          'status' => Postback::statusPending(), // Marcar como pendiente
           'message' => 'Pending verification',
         ]);
         // Deshabilitar timestamps automáticos temporalmente para esta instancia

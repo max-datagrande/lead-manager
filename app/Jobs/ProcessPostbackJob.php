@@ -74,7 +74,7 @@ class ProcessPostbackJob implements ShouldQueue
       TailLogger::saveLog("Actualizando postback con payout obtenido", 'jobs/postback', 'info', [
         'postback_id' => $this->postbackId,
         'payout' => $payout,
-        'new_status' => Postback::STATUS_PROCESSED
+        'new_status' => Postback::statusProcessed(),
       ]);
       $responseData = [
         'postback_id' => $this->postbackId,

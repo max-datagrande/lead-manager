@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\FirePostbackRequest;
 use App\Http\Requests\SearchPayoutRequest;
 use App\Http\Requests\ReconcilePayoutsRequest;
+use App\Enums\PostbackVendor;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Services\PostbackService;
@@ -26,7 +27,7 @@ class PostbackController extends Controller
   public function __construct(protected NaturalIntelligenceService $niService, protected PostbackService $postbackService)
   {
     $this->vendorServices = [
-      'ni' =>  $niService
+      PostbackVendor::NI->value() =>  $niService
     ];
   }
   public function reconcilePayouts(ReconcilePayoutsRequest $request): JsonResponse
@@ -73,7 +74,8 @@ class PostbackController extends Controller
       $offerId = $validated['offer_id'];
 
       // Validar vendor
-      if (!in_array($vendor, ['ni'])) {
+      $vendorKeys = array_keys($this->vendorServices);
+      if (!in_array($vendor, $vendorKeys)) {
         return response()->json([
           'success' => false,
           'message' => 'Vendor not supported',
@@ -98,7 +100,7 @@ class PostbackController extends Controller
           'currency' => $validated['currency'],
           'event' => $validated['event'],
           'vendor' => $validated['vendor'],
-          'status' => Postback::STATUS_PENDING,
+          'status' => Postback::statusPending(),
           'message' => 'Pending verification',
         ]);
 
@@ -200,7 +202,7 @@ class PostbackController extends Controller
       // Crear un postback temporal para usar con el servicio
       $tempPostback = new Postback([
         'click_id' => $click_id,
-        'vendor' => 'ni',
+        'vendor' => PostbackVendor::NI->value(),
         'id' => 0
       ]);
       // Obtener reporte usando el servicio de Natural Intelligence

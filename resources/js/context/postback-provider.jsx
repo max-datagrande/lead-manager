@@ -67,7 +67,6 @@ export function PostbackProvider({ children, initialState }) {
       isFirstRender.current = false;
       return;
     }
-    console.log('updatePostbacks');
     setIsLoading(true);
     const data = {
       search: globalFilter || undefined,

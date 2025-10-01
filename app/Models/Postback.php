@@ -5,6 +5,49 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
+enum PostbackStatus: string
+{
+    case PENDING = 'pending';
+    case PROCESSED = 'processed';
+    case FAILED = 'failed';
+
+    public function label(): string
+    {
+        return match($this) {
+            self::PENDING => 'Pending',
+            self::PROCESSED => 'Processed',
+            self::FAILED => 'Failed',
+        };
+    }
+
+    public function icon(): string
+    {
+        return match($this) {
+            self::PENDING => 'Badge',
+            self::PROCESSED => 'BadgeCheck',
+            self::FAILED => 'BadgeAlert',
+        };
+    }
+
+    public function canTransitionTo(PostbackStatus $newStatus): bool
+    {
+        return match($this) {
+            self::PENDING => in_array($newStatus, [self::PROCESSED, self::FAILED]),
+            self::PROCESSED => false, // No se puede cambiar una vez procesado
+            self::FAILED => in_array($newStatus, [self::PENDING]), // Se puede reintentar
+        };
+    }
+
+    public static function toArray(): array
+    {
+        return array_map(fn($case) => [
+            'value' => $case->value,
+            'label' => $case->label(),
+            'iconName' => $case->icon(),
+        ], self::cases());
+    }
+}
+
 class Postback extends Model
 {
   protected $table = 'postbacks';
@@ -26,30 +69,26 @@ class Postback extends Model
   ];
 
   protected $casts = [
+    'status' => PostbackStatus::class,
     'payout' => 'decimal:2',
     'processed_at' => 'datetime',
     'response_data' => 'array'
   ];
 
-  // Constantes para los estados
-  const STATUS_PENDING = 'pending';
-  const STATUS_PROCESSED = 'processed';
-  const STATUS_FAILED = 'failed';
-
   // Scopes
   public function scopePending($query)
   {
-    return $query->where('status', self::STATUS_PENDING);
+    return $query->where('status', PostbackStatus::PENDING);
   }
 
   public function scopeProcessed($query)
   {
-    return $query->where('status', self::STATUS_PROCESSED);
+    return $query->where('status', PostbackStatus::PROCESSED);
   }
 
   public function scopeFailed($query)
   {
-    return $query->where('status', self::STATUS_FAILED);
+    return $query->where('status', PostbackStatus::FAILED);
   }
 
   public function scopeByVendor($query, $vendor)
@@ -61,7 +100,7 @@ class Postback extends Model
   public function markAsProcessed($responseData = null)
   {
     $this->update([
-      'status' => self::STATUS_PROCESSED,
+      'status' => PostbackStatus::PROCESSED,
       'processed_at' => now(),
       'response_data' => $responseData
     ]);
@@ -70,7 +109,7 @@ class Postback extends Model
   public function markAsFailed(?string $reason = null, $responseData = null)
   {
     $this->update([
-      'status' => self::STATUS_FAILED,
+      'status' => PostbackStatus::FAILED,
       'message' => $reason,
       'processed_at' => now(),
       'response_data' => $responseData
@@ -79,17 +118,17 @@ class Postback extends Model
 
   public function isPending()
   {
-    return $this->status === self::STATUS_PENDING;
+    return $this->status === PostbackStatus::PENDING;
   }
 
   public function isProcessed()
   {
-    return $this->status === self::STATUS_PROCESSED;
+    return $this->status === PostbackStatus::PROCESSED;
   }
 
   public function isFailed()
   {
-    return $this->status === self::STATUS_FAILED;
+    return $this->status === PostbackStatus::FAILED;
   }
 
   // Accessor para formatear el payout
@@ -102,5 +141,21 @@ class Postback extends Model
   public function setCurrencyAttribute($value)
   {
     $this->attributes['currency'] = strtoupper($value);
+  }
+
+  // Métodos estáticos para acceder fácilmente a los estados
+  public static function statusPending(): PostbackStatus
+  {
+    return PostbackStatus::PENDING;
+  }
+
+  public static function statusProcessed(): PostbackStatus
+  {
+    return PostbackStatus::PROCESSED;
+  }
+
+  public static function statusFailed(): PostbackStatus
+  {
+    return PostbackStatus::FAILED;
   }
 }

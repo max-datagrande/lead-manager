@@ -25,9 +25,9 @@ class UpdatePostbackStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::in([
-                Postback::STATUS_PENDING,
-                Postback::STATUS_PROCESSED,
-                Postback::STATUS_FAILED,
+                Postback::statusPending(),
+                Postback::statusProcessed(),
+                Postback::statusFailed(),
             ])],
             'message' => ['nullable', 'string', 'max:2048'],
         ];

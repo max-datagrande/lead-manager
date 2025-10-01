@@ -105,7 +105,6 @@ export default function TablePostbacks({ entries, meta, data }) {
         </Table>
       </div>
       <DataTablePagination table={table} />
-      {/* <Paginator pages={links} rows={rows} /> */}
     </>
   );
 }

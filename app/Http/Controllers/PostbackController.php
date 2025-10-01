@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DatatableTrait;
 use App\Models\Postback;
+use App\Enums\PostbackVendor;
 use App\Services\PostbackService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -60,34 +61,15 @@ class PostbackController extends Controller
     );
 
     // Datos adicionales para filtros
-    $vendorNames = [
-      'ni' => 'Natural Intelligence',
-      'maxconv' => 'MaxConv'
-    ];
+    $vendorNames = array_column(PostbackVendor::toArray(), 'label', 'value');
     $vendors = Postback::select('vendor')->distinct()->get()->map(function ($item) use ($vendorNames) {
       return [
         'value' => $item->vendor,
-        'label' => $vendorNames[$item->vendor] ?? $item->vendor
+        'label' => $vendorNames[$item->vendor] ?? "Other ({$item->vendor})"
       ];
     });
 
-    $states = [
-      [
-        'label' => "Pending",
-        'value' => Postback::STATUS_PENDING,
-        'iconName' => 'Badge'
-      ],
-      [
-        'label' => "Processed",
-        'value' => Postback::STATUS_PROCESSED,
-        'iconName' => 'BadgeCheck'
-      ],
-      [
-        'label' => "Failed",
-        'value' => Postback::STATUS_FAILED,
-        'iconName' => 'BadgeAlert'
-      ]
-    ];
+    $states = \App\Models\PostbackStatus::toArray();
     return Inertia::render('postback/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],
