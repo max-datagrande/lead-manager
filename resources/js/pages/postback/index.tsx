@@ -44,8 +44,8 @@ interface IndexProps {
     per_page?: number;
   };
   data: {
-    vendors: Array<{ value: string; label: string }>;
-    states: Array<{ label: string; value: string; iconName: string }>;
+    vendorFilterOptions: Array<{ value: string; label: string }>;
+    statusFilterOptions: Array<{ label: string; value: string; iconName: string }>;
   };
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {

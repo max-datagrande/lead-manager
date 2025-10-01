@@ -21,70 +21,57 @@ class PostbackController extends Controller
   public function index(Request $req)
   {
     $query = Postback::select('*');
-    // Configuración de búsqueda global
-    $searchableColumns = [
-      'click_id',
-      'transaction_id',
-      'event',
-    ];
 
-    // Configuración de filtros
-    $filterConfig = [
-      'vendor' => ['type' => 'lower'],
-      'status' => ['type' => 'lower'],
-      'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
-      'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
-    ];
-
-    // Configuración de ordenamiento
-    $allowedSort = [
-      'id',
-      'offer_id',
-      'status',
-      'vendor',
-      'payout',
-      'event',
-      'created_at',
-      'updated_at'
-    ];
-
-    // Procesar consulta usando el trait
-    $result = $this->processDatatableQuery(
-      $query,
-      $req,
-      $searchableColumns,
-      $filterConfig,
-      $allowedSort,
-      'created_at:desc',
-      10,
-      100
+    $table = $this->processDatatableQuery(
+      query: $query,
+      request: $req,
+      searchableColumns: [ // Configuración de búsqueda global
+        'click_id',
+        'transaction_id',
+        'event',
+      ],
+      filterConfig: [ // Configuración de filtros
+        'vendor' => ['type' => 'lower'],
+        'status' => ['type' => 'lower'],
+        'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
+        'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
+      ],
+      allowedSort: [ // Configuración de ordenamiento
+        'id',
+        'offer_id',
+        'status',
+        'vendor',
+        'payout',
+        'event',
+        'created_at',
+        'updated_at'
+      ],
+      defaultSort: 'created_at:desc',
+      defaultPerPage: 10,
+      maxPerPage: 100
     );
 
     // Datos adicionales para filtros
-    $vendorNames = array_column(PostbackVendor::toArray(), 'label', 'value');
-    $vendors = Postback::select('vendor')->distinct()->get()->map(function ($item) use ($vendorNames) {
+    $statusFilterOptions = \App\Models\PostbackStatus::toArray();
+    $vendorLabelMap = array_column(PostbackVendor::toArray(), 'label', 'value');
+    $vendorFilterOptions = Postback::select('vendor')->distinct()->get()->map(function ($item) use ($vendorLabelMap) {
       return [
         'value' => $item->vendor,
-        'label' => $vendorNames[$item->vendor] ?? "Other ({$item->vendor})"
+        'label' => $vendorLabelMap[$item->vendor] ?? "Other ({$item->vendor})"
       ];
     });
 
-    $states = \App\Models\PostbackStatus::toArray();
     return Inertia::render('postback/index', [
-      'rows' => $result['rows'],
-      'meta' => $result['meta'],
-      'state' => $result['state'],
+      'rows' => $table['rows'],
+      'meta' => $table['meta'],
+      'state' => $table['state'],
       'data' => [
-        'vendors' => $vendors,
-        'states' => $states
+        'vendorFilterOptions' => $vendorFilterOptions,
+        'statusFilterOptions' => $statusFilterOptions
       ]
     ]);
   }
-  public function create(Request $request)
-  {
-    /*  return Inertia::render('postback/create'); */
-  }
-
+  public function create(Request $request) {}
   public function store(Request $request) {}
   public function update(Request $request) {}
   public function destroy(Request $request, Postback $postback)

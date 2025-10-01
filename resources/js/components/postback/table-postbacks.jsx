@@ -36,8 +36,8 @@ export default function TablePostbacks({ entries, meta, data }) {
     setPagination,
   } = usePostbacks();
 
-  const vendors = data.vendors ?? [];
-  const states = mapIcon(data.states ?? []);
+  const vendorFilterOptions = data.vendorFilterOptions ?? [];
+  const statusFilterOptions = mapIcon(data.statusFilterOptions ?? []);
   const { pageIndex, pageSize } = pagination;
 
   const table = useReactTable({
@@ -85,12 +85,12 @@ export default function TablePostbacks({ entries, meta, data }) {
               {
                 columnId: 'vendor',
                 title: 'Vendor',
-                options: vendors,
+                options: vendorFilterOptions,
               },
               {
                 columnId: 'status',
                 title: 'Status',
-                options: states,
+                options: statusFilterOptions,
               },
             ]}
           />
