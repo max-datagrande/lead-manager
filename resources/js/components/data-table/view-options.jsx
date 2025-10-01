@@ -9,7 +9,7 @@ export function DataTableViewOptions({ columns }) {
   const hiddenColumns = columns
     .filter((column) => typeof column.accessorFn !== 'undefined' && column.getCanHide())
     .filter((column) => !column.getIsVisible());
-  
+
   const hasHiddenColumns = hiddenColumns.length > 0;
 
   return (
@@ -18,8 +18,8 @@ export function DataTableViewOptions({ columns }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant={hasHiddenColumns ? "secondary" : "outline"} 
+              <Button
+                variant={hasHiddenColumns ? "secondary" : "outline"}
                 className="ms-auto hidden lg:flex"
               >
                 {hasHiddenColumns ? (
@@ -44,9 +44,12 @@ export function DataTableViewOptions({ columns }) {
               return (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  className="capitalize"
+                  className="capitalize cursor-pointer"
                   checked={column.getIsVisible()}
                   onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  onSelect={(event) => {
+                    event.preventDefault();
+                  }}
                 >
                   {capitalize(columnName)}
                 </DropdownMenuCheckboxItem>
