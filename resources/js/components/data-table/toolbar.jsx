@@ -2,7 +2,8 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Filter, Search, X } from 'lucide-react';
 import { useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
@@ -15,24 +16,37 @@ export function DataTableToolbar({
     dateRange: { column: 'created_at', label: 'Created At' },
   },
 }) {
-  const {filters, dateRange} = config;
+  const { filters, dateRange } = config;
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
+
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full flex-1 flex-col-reverse items-start gap-2 sm:flex-row sm:items-center">
-        {/* Global Search */}
-        <div className="flex flex-col gap-2">
-          <Input
-            placeholder={searchPlaceholder}
-            value={table.getState().globalFilter ?? ''}
-            onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className="w-full max-w-sm"
-            id="globalSearch"
-          />
+    <div className="w-full space-y-4">
+      {/* Main toolbar row */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {/* Left section: Search */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="globalSearch" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <Search className="h-4 w-4" />
+              Global Search
+            </Label>
+            <Input
+              placeholder={searchPlaceholder}
+              value={table.getState().globalFilter ?? ''}
+              onChange={(event) => table.setGlobalFilter(event.target.value)}
+              className="w-full min-w-[280px] sm:max-w-sm"
+              id="globalSearch"
+            />
+          </div>
         </div>
-        <div className="ml-auto flex flex-col gap-1">
-          <Label className="mr-2 text-right text-sm">{dateRange.label}</Label>
+
+        {/* Right section: Date Range */}
+        <div className="flex flex-col gap-1.5">
+          <Label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <Filter className="h-4 w-4" />
+            {dateRange.label}
+          </Label>
           <DateRangePicker
             onUpdate={({ range: { from, to } }) => {
               const currentFilters = table.getState().columnFilters;
@@ -51,41 +65,62 @@ export function DataTableToolbar({
               table.setColumnFilters(newFilters);
             }}
             isReset={reset}
-            align="start"
+            align="end"
             locale="en-US"
             showCompare={false}
           />
-          <DataTableViewOptions columns={table.getAllColumns()} />
         </div>
       </div>
-      <div className="my-3 flex w-full gap-2">
-        {filters.length > 0 && (
-          <>
-            <span className="flex items-center">Filters:</span>
-            <div className="flex gap-x-2">
-              {filters.map((filter) => {
-                const column = table.getColumn(filter.columnId);
-                if (!column) return null;
-                return <DataTableFacetedFilter key={filter.columnId} column={column} title={filter.title} options={filter.options} />;
-              })}
+
+      {/* Separator */}
+      {(filters.length > 0 || isFiltered) && <Separator />}
+
+      {/* Filters and Actions row */}
+      {(filters.length > 0 || isFiltered) && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Filters section */}
+          {filters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <Filter className="h-4 w-4" />
+                Filters:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {filters.map((filter) => {
+                  const column = table.getColumn(filter.columnId);
+                  if (!column) return null;
+                  return <DataTableFacetedFilter key={filter.columnId} column={column} title={filter.title} options={filter.options} />;
+                })}
+              </div>
             </div>
-          </>
-        )}
-        {isFiltered && (
-          <Button
-            variant="destructive"
-            onClick={() => {
-              table.resetColumnFilters();
-              table.setGlobalFilter('');
-              setReset(true);
-            }}
-            className="ml-auto gap-1 px-2 lg:px-3"
-          >
-            Reset
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
+          )}
+
+          {/* Actions section */}
+          <div className="flex items-center gap-2">
+            {isFiltered && (
+              <>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    table.resetColumnFilters();
+                    table.setGlobalFilter('');
+                    setReset(true);
+                  }}
+                  className="h-8 gap-1.5 px-2.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear Filters
+                </Button>
+                <Separator orientation="vertical" className="h-6" />
+              </>
+            )}
+            <div className="flex items-center gap-1.5">
+              <DataTableViewOptions columns={table.getAllColumns()} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
