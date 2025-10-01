@@ -1,21 +1,35 @@
 import PageHeader from '@/components/page-header';
-import { TablePostbacks } from '@/components/postback/index';
+import { TablePostbacks, type Postback } from '@/components/postback/index';
 import { PostbackProvider } from '@/context/postback-provider';
 import AppLayout from '@/layouts/app-layout';
 import { type ReactNode } from 'react';
 import { Head } from '@inertiajs/react';
+import { PageLink } from '@/types';
+
 const breadcrumbs = [
   {
     title: 'Postbacks',
     href: '/postbacks',
   },
 ];
-/**
- * Index Page Component
- *
- * @description Página principal para mostrar visitantes con tabla paginada
- */
-const Index = ({ rows }) => {
+interface IndexProps {
+  rows: {
+    current_page: number;
+    data: Postback[];
+    first_page_url: string;
+    from: number;
+    last_page: number;
+    last_page_url: string;
+    links: PageLink[];
+    next_page_url: string;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number;
+    total: number;
+  };
+}
+const Index = ({ rows }: IndexProps) => {
   return (
     <PostbackProvider>
       <Head title="Postbacks" />
