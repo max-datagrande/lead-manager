@@ -2,9 +2,9 @@ import PageHeader from '@/components/page-header';
 import { TablePostbacks, type Postback } from '@/components/postback/index';
 import { PostbackProvider } from '@/context/postback-provider';
 import AppLayout from '@/layouts/app-layout';
-import { type ReactNode } from 'react';
-import { Head } from '@inertiajs/react';
 import { PageLink } from '@/types';
+import { Head } from '@inertiajs/react';
+import { type ReactNode } from 'react';
 
 const breadcrumbs = [
   {
@@ -14,8 +14,8 @@ const breadcrumbs = [
 ];
 interface IndexProps {
   rows: {
-    current_page: number;
     data: Postback[];
+    current_page: number;
     first_page_url: string;
     from: number;
     last_page: number;
@@ -28,14 +28,33 @@ interface IndexProps {
     to: number;
     total: number;
   };
+  meta: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+    from: number;
+    to: number;
+  };
+  state: {
+    search?: string;
+    sort?: string;
+    filters?: any[];
+    page?: number;
+    per_page?: number;
+  };
+  data: {
+    vendors: Array<{ value: string; label: string }>;
+    states: Array<{ label: string; value: string; iconName: string }>;
+  };
 }
-const Index = ({ rows }: IndexProps) => {
+const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (
-    <PostbackProvider>
+    <PostbackProvider initialState={state}>
       <Head title="Postbacks" />
       <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
         <PageHeader title="Postbacks" description="Check the status of your postbacks." />
-        <TablePostbacks postbacks={rows.data} />
+        <TablePostbacks entries={rows.data} meta={meta} data={data} />
       </div>
     </PostbackProvider>
   );

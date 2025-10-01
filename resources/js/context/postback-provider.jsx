@@ -1,26 +1,26 @@
 import { useDebouncedFunction } from '@/hooks/use-debounce';
-import { getSortState, serializeSort } from '@/utils/table';
-import { router, usePage, useForm } from '@inertiajs/react';
-import { createContext, useCallback, useRef, useState } from 'react';
-import { route } from 'ziggy-js';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
-
+import { getSortState, serializeSort } from '@/utils/table';
+import { router, useForm, usePage } from '@inertiajs/react';
+import { createContext, useRef, useState } from 'react';
+import { route } from 'ziggy-js';
 export const PostbackContext = createContext(null);
 
-export function PostbackProvider({ children }) {
-  const { state } = usePage().props;
+export function PostbackProvider({ children, initialState }) {
   const modal = useModal();
-  const filters = useRef(state?.filters ?? []);
-  const [resetTrigger, setResetTrigger] = useState(false);
-  const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
-  const [sorting, setSorting] = useState(state?.sort ? getSortState(state?.sort) : []);
+  const filters = useRef(initialState?.filters ?? []);
+  const [globalFilter, setGlobalFilter] = useState(initialState?.search ?? '');
+  const [sorting, setSorting] = useState(initialState?.sort ? getSortState(initialState?.sort) : []);
   const [columnFilters, setColumnFilters] = useState(filters.current);
   const [isLoading, setIsLoading] = useState(false);
   const isFirstRender = useRef(true);
   const { addMessage: setNotify } = useToast();
-  const { delete: destroy, processing } = useForm();
-
+  const { delete: destroy } = useForm();
+  const [pagination, setPagination] = useState({
+    pageIndex: (initialState.page ?? 1) - 1,
+    pageSize: initialState.per_page ?? 10,
+  });
   const showStatusModal = async (postback) => {
     try {
       const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
@@ -62,35 +62,33 @@ export function PostbackProvider({ children }) {
       preserveState: true,
     });
   };
+  const updatePostbacks = (newData) => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    console.log('updatePostbacks');
+    setIsLoading(true);
+    const data = {
+      search: globalFilter || undefined,
+      sort: serializeSort(sorting),
+      filters: JSON.stringify(columnFilters || []),
+      page: pagination.pageIndex + 1,
+      per_page: pagination.pageSize,
+      ...newData,
+    };
+    const url = route('postbacks.index');
+    const options = {
+      only: ['rows', 'meta', 'state'],
+      replace: true,
+      preserveState: true,
+      preserveScroll: true,
+      onFinish: () => setIsLoading(false),
+    };
+    router.get(url, data, options);
+  };
 
-  const getPostbacks = useDebouncedFunction(
-    useCallback(
-      (newData) => {
-        if (isFirstRender.current) {
-          isFirstRender.current = false;
-          return;
-        }
-        setIsLoading(true);
-        const data = {
-          search: globalFilter || undefined,
-          sort: serializeSort(sorting),
-          filters: JSON.stringify(columnFilters || []),
-          ...newData,
-        };
-        const url = route('postbacks.index');
-        const options = {
-          only: ['rows', 'meta', 'state'],
-          replace: true,
-          preserveState: true,
-          preserveScroll: true,
-          onFinish: () => setIsLoading(false),
-        };
-        router.get(url, data, options);
-      },
-      [sorting, columnFilters, globalFilter],
-    ),
-    200,
-  );
+  const getPostbacks = useDebouncedFunction(updatePostbacks, 200);
 
   return (
     <PostbackContext.Provider
@@ -105,11 +103,11 @@ export function PostbackProvider({ children }) {
         globalFilter,
         setGlobalFilter,
         showRequestViewer,
-        resetTrigger,
-        setResetTrigger,
         isLoading,
         showDeleteModal,
         showStatusModal,
+        pagination,
+        setPagination,
       }}
     >
       {children}

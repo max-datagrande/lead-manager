@@ -14,7 +14,7 @@ const vendors = {
 };
 
 // Componente para las acciones de la fila
-const ActionsCell = ({ row }) => {
+function ActionsCell({ row }) {
   const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
   const postback = row.original;
   return (
@@ -36,7 +36,7 @@ const ActionsCell = ({ row }) => {
   );
 };
 
-export const postbackColumns = [
+export const createPostbackColumns = () => [
   {
     accessorKey: 'id',
     cessorKey: 'payout',
