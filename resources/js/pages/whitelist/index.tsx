@@ -38,7 +38,7 @@ const Index = ({ rows }: IndexProps) => {
   return (
     <WhitelistProvider>
       <Head title="Whitelist Management" />
-      <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Whitelist Management" description="Manage allowed domains and IP addresses for API access control." className='flex flex-row justify-between gap-4 items-center'>
           <WhitelistActions />
         </PageHeader>

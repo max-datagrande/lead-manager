@@ -52,7 +52,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (
     <PostbackProvider initialState={state}>
       <Head title="Postbacks" />
-      <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Postbacks" description="Check the status of your postbacks." />
         <TablePostbacks entries={rows.data} meta={meta} data={data} />
       </div>
