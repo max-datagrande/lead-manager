@@ -54,6 +54,11 @@ const GeneralGroup: NavGroupType = {
       icon: Webhook, // Using Webhook icon as a placeholder
       subItems: [
         {
+          title: 'Mixes',
+          href: route('offerwall.index'),
+          icon: List,
+        },
+        {
           title: 'Conversions',
           href: route('offerwall.conversions'),
           icon: List,

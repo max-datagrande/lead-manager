@@ -22,4 +22,12 @@ class Integration extends Model
     {
         return $this->hasMany(IntegrationEnvironment::class);
     }
+
+    /**
+     * Get the company that owns the integration.
+     */
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 }

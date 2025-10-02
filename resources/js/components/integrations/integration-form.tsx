@@ -9,11 +9,11 @@ import { useIntegrations } from '@/hooks/use-integrations';
 import { EnvironmentTab } from './enviroments-tab';
 
 
-export function IntegrationForm() {
+export function IntegrationForm({ companies = [] }) {
   const { data, errors, processing, handleSubmit, setData } = useIntegrations();
   return (
     <form onSubmit={handleSubmit}>
-      <div className="flex w-full gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Name */}
         <div className="flex-auto space-y-2">
           <Label htmlFor="name">Name</Label>
@@ -34,9 +34,25 @@ export function IntegrationForm() {
             </SelectContent>
           </Select>
         </div>
+        {/* Company */}
+        <div className="flex-auto space-y-2">
+          <Label htmlFor="company_id">Company</Label>
+          <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
+            <SelectTrigger id="company_id">
+              <SelectValue placeholder="Select a company" />
+            </SelectTrigger>
+            <SelectContent>
+              {companies.map((company) => (
+                <SelectItem key={company.value} value={company.value.toString()}>
+                  {company.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="flex items-center space-x-2 pt-2">
+      <div className="flex items-center space-x-2 pt-4">
         <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
         <Label htmlFor="is_active">Active</Label>
       </div>

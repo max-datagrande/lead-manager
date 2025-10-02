@@ -58,7 +58,7 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     name: integration?.name ?? '',
     type: integration?.type ?? 'post-only',
     is_active: integration?.is_active ?? true,
-    company_id: integration?.company_id ?? 1, // Placeholder
+    company_id: integration?.company_id ?? '',
     environments: transformEnvironmentsForForm(integration?.environments),
   });
 

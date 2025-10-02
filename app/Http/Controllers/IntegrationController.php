@@ -43,7 +43,9 @@ class IntegrationController extends Controller
    */
   public function create()
   {
-    return Inertia::render('integrations/create');
+    return Inertia::render('integrations/create', [
+      'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
+    ]);
   }
 
   /**
@@ -78,6 +80,7 @@ class IntegrationController extends Controller
   {
     return Inertia::render('integrations/edit', [
       'integration' => $integration->load('environments'),
+      'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
     ]);
   }
 
