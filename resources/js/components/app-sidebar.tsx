@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Webhook, TextCursorInput, List, FileText, Shield, Cog, Factory } from 'lucide-react';
+import { Cog, Factory, FileText, LayoutGrid, List, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -46,6 +46,17 @@ const GeneralGroup: NavGroupType = {
           title: 'Fields',
           href: '/forms/fields',
           icon: TextCursorInput,
+        },
+      ],
+    },
+    {
+      title: 'Offerwall',
+      icon: Webhook, // Using Webhook icon as a placeholder
+      subItems: [
+        {
+          title: 'Conversions',
+          href: route('offerwall.conversions'),
+          icon: List,
         },
       ],
     },
