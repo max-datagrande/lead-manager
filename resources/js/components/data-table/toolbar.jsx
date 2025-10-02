@@ -19,6 +19,14 @@ export function DataTableToolbar({
   const { filters, dateRange } = config;
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
+
+  // Extraer valores iniciales de fecha de los filtros existentes
+  const currentFilters = table.getState().columnFilters;
+  const fromDateFilter = currentFilters.find(filter => filter.id === 'from_date');
+  const toDateFilter = currentFilters.find(filter => filter.id === 'to_date');
+
+  const initialDateFrom = fromDateFilter ? new Date(fromDateFilter.value) : undefined;
+  const initialDateTo = toDateFilter ? new Date(toDateFilter.value) : undefined;
   return (
     <div className="w-full space-y-4">
       {/* Main toolbar row */}
@@ -47,20 +55,23 @@ export function DataTableToolbar({
             {dateRange.label}
           </Label>
           <DateRangePicker
+            initialDateFrom={initialDateFrom}
+            initialDateTo={initialDateTo}
             onUpdate={({ range: { from, to } }) => {
               const currentFilters = table.getState().columnFilters;
               const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
               // Si es el mismo día, ajustar 'to' al final del día
               const adjustedTo =
-                from.toDateString() === to.toDateString()
-                  ? new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) // Agregar 24 horas menos 1ms
-                  : to;
+              from.toDateString() === to.toDateString()
+              ? new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) // Agregar 24 horas menos 1ms
+              : to;
 
               const newFilters = [
                 ...otherFilters,
                 { id: 'from_date', value: from.toISOString() },
                 { id: 'to_date', value: adjustedTo.toISOString() },
               ];
+              setReset(false);
               table.setColumnFilters(newFilters);
             }}
             isReset={reset}
