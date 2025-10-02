@@ -19,7 +19,6 @@ export function DataTableToolbar({
   const { filters, dateRange } = config;
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
-
   return (
     <div className="w-full space-y-4">
       {/* Main toolbar row */}
