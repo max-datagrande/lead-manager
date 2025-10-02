@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { OfferwallParserConfig } from './offerwall-parser-config';
 import { EnvironmentTab } from './enviroments-tab';
 
 
@@ -89,6 +90,8 @@ export function IntegrationForm({ companies = [] }) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {data.type === 'offerwall' && <OfferwallParserConfig />}
 
       <div className="mt-6 flex justify-end gap-2">
         <Button type="submit" disabled={processing}>

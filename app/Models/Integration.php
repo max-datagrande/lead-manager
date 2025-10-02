@@ -11,8 +11,18 @@ class Integration extends Model
         'name',
         'type',
         'is_active',
+        'parser_config',
         'user_id',
         'updated_user_id',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'parser_config' => 'array',
     ];
 
     /**

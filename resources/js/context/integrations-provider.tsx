@@ -1,7 +1,7 @@
 import { type EnvironmentDB, type EnvironmentForm, type EnvironmentType, type IntegrationForm } from '@/types/integrations';
 import { useForm } from '@inertiajs/react';
 import { produce } from 'immer';
-import { createContext } from 'react';
+import { createContext, useCallback, useMemo } from 'react';
 import { route } from 'ziggy-js';
 
 export const IntegrationsContext = createContext<any | null>(null);
@@ -10,7 +10,6 @@ export const IntegrationsContext = createContext<any | null>(null);
 const parseHeaders = (headersJson: string = '{}') => {
   try {
     const parsed = JSON.parse(headersJson);
-    console.log(parsed);
     const entries = Object.entries(parsed);
     if (entries.length === 0) {
       return [];
@@ -54,12 +53,27 @@ const transformEnvironmentsForForm = (environments = [] as EnvironmentDB[]) => {
 export const IntegrationsProvider = ({ children, integration = null }) => {
   const isEdit = !!integration;
 
-  const { data, setData, post, put, processing, errors } = useForm<IntegrationForm>({
+  // Memoizar environments iniciales para evitar recalcular en cada render
+  const initialEnvironments = useMemo(() => transformEnvironmentsForForm(integration?.environments), [integration?.environments]);
+
+  const { data, setData, post, put, processing, errors } = useForm<IntegrationForm & { parser_config: any }>({
     name: integration?.name ?? '',
     type: integration?.type ?? 'post-only',
     is_active: integration?.is_active ?? true,
     company_id: integration?.company_id ?? '',
-    environments: transformEnvironmentsForForm(integration?.environments),
+    environments: initialEnvironments,
+    parser_config: integration?.parser_config ?? {
+      offer_list_path: '',
+      mapping: {
+        title: '',
+        description: '',
+        logo_url: '',
+        click_url: '',
+        impression_url: '',
+        cpc: '',
+        display_name: '',
+      },
+    },
   });
 
   const handleEnvironmentChange = (env: EnvironmentType, field: keyof EnvironmentForm, value: any) => {

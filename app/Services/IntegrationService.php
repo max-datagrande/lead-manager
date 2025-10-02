@@ -32,6 +32,7 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
+      'parser_config' => 'required_if:type,offerwall|array',
       'environments' => 'required|array|size:2',
       'environments.development' => 'required|array',
       'environments.development.url' => 'required|url',
@@ -51,6 +52,7 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
+        'parser_config' => $data['parser_config'] ?? null,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {
@@ -87,6 +89,7 @@ class IntegrationService
       'name' => 'required|string|max:255',
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
+      'parser_config' => 'required_if:type,offerwall|array',
       'environments' => 'required|array|size:2',
       'environments.development' => 'required|array',
       'environments.development.url' => 'required|url',
@@ -105,6 +108,7 @@ class IntegrationService
         'name' => $data['name'],
         'type' => $data['type'],
         'is_active' => $data['is_active'],
+        'parser_config' => $data['parser_config'] ?? null,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {
