@@ -84,4 +84,6 @@ Route::prefix('maxconv')->group(function () {
 Route::prefix('offerwall')->group(function () {
     Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])
         ->name('api.offerwall.events.conversion');
+    Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
+        ->name('api.offerwall.integrations');
 });

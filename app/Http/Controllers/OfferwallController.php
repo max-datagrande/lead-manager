@@ -13,9 +13,24 @@ class OfferwallController extends Controller
   /**
    * Display a listing of the resource.
    */
-  public function index()
+  public function index(Request $request)
   {
-    return Inertia::render('offerwall/index');
+    return Inertia::render('offerwall/index', [
+      'rows' => [],
+      'state' => $request->only(['sort', 'direction', 'search']),
+    ]);
+  }
+
+  /**
+   * Get all offerwall integrations.
+   */
+  public function getOfferwallIntegrations()
+  {
+    $integrations = Integration::with('company:id,name')
+      ->where('type', 'offerwall')
+      ->get();
+
+    return response()->json($integrations);
   }
 
   /**
