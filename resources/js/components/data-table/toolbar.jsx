@@ -23,10 +23,10 @@ export function DataTableToolbar({
   return (
     <div className="w-full space-y-4">
       {/* Main toolbar row */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* Left section: Search */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
-          <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4 flex-1">
+          <div className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="globalSearch" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <Search className="h-4 w-4" />
               Global Search
@@ -35,7 +35,7 @@ export function DataTableToolbar({
               placeholder={searchPlaceholder}
               value={table.getState().globalFilter ?? ''}
               onChange={(event) => table.setGlobalFilter(event.target.value)}
-              className="w-full min-w-[280px] sm:max-w-sm"
+              className="w-full md:min-w-[280px] md:max-w-md"
               id="globalSearch"
             />
           </div>
@@ -77,7 +77,7 @@ export function DataTableToolbar({
 
       {/* Filters and Actions row */}
       {(filters.length > 0 || isFiltered) && (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           {/* Filters section */}
           {filters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
@@ -96,7 +96,7 @@ export function DataTableToolbar({
           )}
 
           {/* Actions section */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             {isFiltered && (
               <>
                 <Button

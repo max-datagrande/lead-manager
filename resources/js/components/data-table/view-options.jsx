@@ -20,7 +20,7 @@ export function DataTableViewOptions({ columns }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant={hasHiddenColumns ? "secondary" : "outline"}
-                className="ms-auto hidden lg:flex"
+                className="ms-auto flex"
               >
                 {hasHiddenColumns ? (
                   <EyeOff className="size-4" />
@@ -34,7 +34,7 @@ export function DataTableViewOptions({ columns }) {
             <p>Column Visibility</p>
           </TooltipContent>
         </Tooltip>
-        <DropdownMenuContent align="end" className="w-[150px]">
+        <DropdownMenuContent align="end" className="min-w-[150px]">
           <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {columns
