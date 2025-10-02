@@ -94,6 +94,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   showCompare = true,
   isReset = false
 })=> {
+  const hasInitialDates = initialDateFrom !== undefined || initialDateTo !== undefined;
   if (initialDateFrom === undefined) {
     initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0));
   }
@@ -544,6 +545,9 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
             onClick={() => {
               setIsOpen(false)
               resetValues()
+              if (!hasInitialDates) {
+                showPlaceholder.current = true
+              }
             }}
             variant="ghost"
           >
