@@ -1,6 +1,34 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
-import { DataTableRowActions } from '@/components/data-table/row-actions';
+import { Button } from '@/components/ui/button';
 import { useOfferwall } from '@/hooks/use-offerwall';
+import { Edit, Trash2 } from 'lucide-react';
+
+// Componente para las acciones de la fila
+const ActionsCell = ({ row }) => {
+  const { showEditModal, showDeleteModal } = useOfferwall();
+  const entry = row.original;
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => showEditModal(entry)}
+        className="h-8 w-8 p-0"
+      >
+        <Edit className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => showDeleteModal(entry)}
+        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
 
 export const columns = [
   {
@@ -15,15 +43,6 @@ export const columns = [
   },
   {
     id: 'actions',
-    cell: function Cell({ row }) {
-      const { showEditModal, showDeleteModal } = useOfferwall();
-      const entry = row.original;
-      return (
-        <DataTableRowActions
-          onEdit={() => showEditModal(entry)}
-          onDelete={() => showDeleteModal(entry)}
-        />
-      );
-    },
+    cell: ActionsCell,
   },
 ];
