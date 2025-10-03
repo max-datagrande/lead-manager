@@ -21,7 +21,7 @@ export function TableConversions({ entries, integrations, companies }) {
   } = useOfferwallConversions();
 
   const table = useReactTable({
-    data: entries.data,
+    data: entries,
     columns: columns,
     pageCount: entries.last_page,
     state: {
