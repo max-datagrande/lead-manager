@@ -9,7 +9,7 @@ export const OfferwallContext = createContext(null);
 
 export function OfferwallProvider({ children, initialState }) {
   const modal = useModal();
-  const inistialSorting = typeof initialState?.sort !== 'function' ? getSortState(initialState?.sort) : 'created_at:desc';
+  const inistialSorting = typeof initialState?.sort === 'string' ? getSortState(initialState.sort) : [];
   const { addMessage: setNotify } = useToast();
   const [currentRow, setCurrentRow] = useState(null);
   const [sorting, setSorting] = useState(inistialSorting);
@@ -68,8 +68,6 @@ export function OfferwallProvider({ children, initialState }) {
         showCreateModal,
         showEditModal,
         showDeleteModal,
-        resetTrigger,
-        setResetTrigger,
         sorting,
         setSorting,
         globalFilter,

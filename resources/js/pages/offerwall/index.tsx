@@ -28,6 +28,7 @@ const Index = ({ rows, state }: IndexProps) => {
         <PageHeader title="Offerwalls" description="Manage offerwall mixes.">
           <OfferwallActions />
         </PageHeader>
+        <TableOfferwalls entries={rows} />
       </div>
     </OfferwallProvider>
   );

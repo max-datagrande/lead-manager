@@ -15,7 +15,7 @@ export function TableOfferwalls({ entries }) {
     state: {
       sorting,
       globalFilter,
-      pagination,
+      pagination
     },
     onPaginationChange: setPagination,
     onPageSizeChange: setPagination,
