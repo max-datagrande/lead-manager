@@ -17,11 +17,12 @@ interface IndexProps {
   totalPayout: number;
   integrations: Array<{ value: string; label: string }>; // Added
   companies: Array<{ value: string; label: string }>;    // Added
+  state: { sort?: string; search?: string };
 }
 
-const Index = ({ rows, totalPayout, integrations, companies }: IndexProps) => {
+const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps) => {
   return (
-    <OfferwallConversionsProvider initialState={{ sort: 'created_at:desc' }}>
+    <OfferwallConversionsProvider initialState={state}>
       <Head title="Offerwall Conversions" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">

@@ -17,7 +17,7 @@ class OfferwallController extends Controller
   {
     return Inertia::render('offerwall/index', [
       'rows' => [],
-      'state' => $request->only(['sort', 'direction', 'search']),
+      'state' => $request->only(['sort', 'search']),
     ]);
   }
 

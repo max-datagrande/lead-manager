@@ -13,40 +13,41 @@ export const OfferwallConversionsProvider = ({ children, initialState }) => {
   const isFirstRender = useRef(true);
   const [isLoading, setIsLoading] = useState(false);
 
+  const inistialSorting = typeof initialState?.sort !== 'function' ? getSortState(initialState?.sort) : 'created_at:desc';
+
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
-  const [sorting, setSorting] = useState(initialState?.sort ? getSortState(initialState?.sort) : []);
+  const [sorting, setSorting] = useState(inistialSorting);
   const [columnFilters, setColumnFilters] = useState(filters?.columnFilters ?? []); // Assuming backend sends columnFilters
 
-  const getConversions = useDebouncedFunction(
-    useCallback(
-      (newData) => {
-        if (isFirstRender.current) {
-          isFirstRender.current = false;
-          return;
-        }
-        setIsLoading(true);
+  const updateConversions = useCallback(
+    (newData) => {
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+      }
+      setIsLoading(true);
 
-        const data = {
-          search: globalFilter || undefined,
-          sort: serializeSort(sorting),
-          filters: JSON.stringify(columnFilters || []),
-          ...newData, // For pagination or other explicit data
-        };
+      const data = {
+        search: globalFilter || undefined,
+        sort: serializeSort(sorting),
+        filters: JSON.stringify(columnFilters || []),
+        ...newData, // For pagination or other explicit data
+      };
 
-        const url = route('offerwall.conversions');
-        const options = {
-          only: ['rows', 'meta', 'state', 'filters'], // Request filters back from backend
-          replace: true,
-          preserveState: true,
-          preserveScroll: true,
-          onFinish: () => setIsLoading(false),
-        };
-        router.get(url, data, options);
-      },
-      [sorting, columnFilters, globalFilter],
-    ),
-    200,
+      const url = route('offerwall.conversions');
+      const options = {
+        only: ['rows', 'meta', 'state', 'filters'], // Request filters back from backend
+        replace: true,
+        preserveState: true,
+        preserveScroll: true,
+        onFinish: () => setIsLoading(false),
+      };
+      router.get(url, data, options);
+    },
+    [sorting, columnFilters, globalFilter],
   );
+
+  const getConversions = useDebouncedFunction(updateConversions, 200);
 
   const handleClearFilters = useCallback(() => {
     setGlobalFilter('');
