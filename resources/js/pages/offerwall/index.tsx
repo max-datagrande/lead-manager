@@ -20,15 +20,14 @@ interface IndexProps {
   };
 }
 
-const Index = ({ rows }: IndexProps) => {
+const Index = ({ rows, state }: IndexProps) => {
   return (
-    <OfferwallProvider>
+    <OfferwallProvider initialState={state}>
       <Head title="Offerwalls" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Offerwalls" description="Manage offerwall mixes.">
           <OfferwallActions />
         </PageHeader>
-        <TableOfferwalls entries={rows} />
       </div>
     </OfferwallProvider>
   );

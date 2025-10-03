@@ -7,16 +7,12 @@ import { createContext, useState } from 'react';
 
 export const OfferwallContext = createContext(null);
 
-export function OfferwallProvider({ children }) {
-  //Props sort
-  const {
-    filters: { sort },
-  } = usePage().props;
+export function OfferwallProvider({ children, initialState }) {
   const modal = useModal();
+  const inistialSorting = typeof initialState?.sort !== 'function' ? getSortState(initialState?.sort) : 'created_at:desc';
   const { addMessage: setNotify } = useToast();
   const [currentRow, setCurrentRow] = useState(null);
-  const [resetTrigger, setResetTrigger] = useState(false);
-  const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
+  const [sorting, setSorting] = useState(inistialSorting);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
     pageIndex: 0, //initial page index
