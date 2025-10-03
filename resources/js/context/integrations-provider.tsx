@@ -1,7 +1,7 @@
 import { type EnvironmentDB, type EnvironmentForm, type EnvironmentType, type IntegrationForm } from '@/types/integrations';
 import { useForm } from '@inertiajs/react';
 import { produce } from 'immer';
-import { createContext, useCallback, useMemo } from 'react';
+import { createContext, useMemo } from 'react';
 import { route } from 'ziggy-js';
 
 export const IntegrationsContext = createContext<any | null>(null);
@@ -56,7 +56,7 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
   // Memoizar environments iniciales para evitar recalcular en cada render
   const initialEnvironments = useMemo(() => transformEnvironmentsForForm(integration?.environments), [integration?.environments]);
 
-  const { data, setData, post, put, processing, errors } = useForm<IntegrationForm & { parser_config: any }>({
+  const { data, setData, post, put, processing, errors } = useForm<IntegrationForm>({
     name: integration?.name ?? '',
     type: integration?.type ?? 'post-only',
     is_active: integration?.is_active ?? true,
@@ -75,6 +75,7 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
       },
     },
   });
+  console.log('jhola');
 
   const handleEnvironmentChange = (env: EnvironmentType, field: keyof EnvironmentForm, value: any) => {
     const nextState = produce(data, (draftState) => {

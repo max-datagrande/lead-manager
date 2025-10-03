@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { useEffect, useState } from 'react';
 
 const MAPPING_FIELDS = [
   { key: 'title', label: 'Title' },
@@ -15,13 +16,36 @@ const MAPPING_FIELDS = [
 
 export function OfferwallParserConfig() {
   const { data, setData } = useIntegrations();
+  const [path, setPath] = useState(data.parser_config?.offer_list_path ?? '');
+  const [mapping, setMapping] = useState(data.parser_config?.mapping ?? {});
+
+  useEffect(() => {
+    setPath(data.parser_config?.offer_list_path ?? '');
+    setMapping(data.parser_config?.mapping ?? {});
+  }, [data.parser_config]);
+
+  // Debounce: cuando el usuario deja de escribir, guarda en el provider
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setData('parser_config', {
+        ...(data.parser_config ?? {}),
+        offer_list_path: path,
+        mapping,
+      });
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [path, mapping]);
 
   const handlePathChange = (e) => {
-    setData('parser_config', { ...data.parser_config, offer_list_path: e.target.value });
+    const newPath = e.target.value;
+    setPath(newPath);
   };
 
-  const handleMappingChange = (key, value) => {
-    setData('parser_config', { ...data.parser_config, mapping: { ...data.parser_config.mapping, [key]: value } });
+  const handleMappingChange = (e) => {
+    const fieldKey = e.target.name;
+    const fieldValue = e.target.value;
+    setMapping({ ...mapping, [fieldKey]: fieldValue });
   };
 
   return (
@@ -35,7 +59,7 @@ export function OfferwallParserConfig() {
           <Label htmlFor="offer_list_path">Offer List Path</Label>
           <Input
             id="offer_list_path"
-            value={data.parser_config.offer_list_path}
+            value={path}
             onChange={handlePathChange}
             placeholder="e.g., response.offers.items"
           />
@@ -45,14 +69,15 @@ export function OfferwallParserConfig() {
           <h4 className="mb-2 text-sm font-medium">Mapping</h4>
           <div className="grid grid-cols-1 gap-6 rounded-md md:grid-cols-2">
             {MAPPING_FIELDS.map((field) => (
-              <div key={field.key} className="flex lg:items-center flex-col lg:flex-row gap-0.5 lg:gap-2">
+              <div key={field.key} className="flex flex-col gap-0.5 lg:flex-row lg:items-center lg:gap-2">
                 <Label htmlFor={`mapping-${field.key}`} className="w-full lg:w-1/3">
                   {field.label}
                 </Label>
                 <Input
                   id={`mapping-${field.key}`}
-                  value={data.parser_config.mapping[field.key] ?? ""}
-                  onChange={(e) => handleMappingChange(field.key, e.target.value)}
+                  name={field.key}
+                  value={mapping[field.key] ?? ""}
+                  onChange={handleMappingChange}
                   placeholder={`e.g., ${field.key}`}
                 />
               </div>
