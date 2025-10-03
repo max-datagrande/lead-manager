@@ -1,14 +1,14 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { DataTablePagination } from '../data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
-import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { columns } from './list-columns';
 import { useOfferwall } from '@/hooks/use-offerwall';
+import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { columns } from './list-columns';
 
 export function TableOfferwalls({ entries }) {
-  const { resetTrigger, setResetTrigger, sorting, setSorting, globalFilter, setGlobalFilter, pagination, setPagination } = useOfferwall();
+  const { sorting, setSorting, globalFilter, setGlobalFilter, pagination, setPagination } = useOfferwall();
   const table = useReactTable({
     data: entries,
     columns: columns,
@@ -33,12 +33,7 @@ export function TableOfferwalls({ entries }) {
     <>
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar
-            table={table}
-            searchPlaceholder="Search..."
-            resetTrigger={resetTrigger}
-            setResetTrigger={setResetTrigger}
-          />
+          <DataTableToolbar table={table} searchPlaceholder="Search..." />
         </div>
       </div>
       <div className="rounded-md border">
