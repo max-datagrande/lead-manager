@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ArrowRightLeft } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ValueMappingModal } from './value-mapping-modal';
 
@@ -41,7 +43,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
       <div className="mt-4 space-y-4 rounded-md border p-4">
         <h4 className="text-lg font-medium">Token Configuration</h4>
         {tokens.map((token) => {
-          const field = fields.find(f => f.name === token);
+          const field = fields.find((f) => f.name === token);
           const hasPossibleValues = field && field.possible_values && field.possible_values.length > 0;
           console.log(field);
           return (
@@ -52,7 +54,11 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
               </div>
               <div>
                 <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
-                <Select id={`parser-type-${token}`} value={parsers[token]?.dataType} onValueChange={(value) => onParserChange(token, 'dataType', value)}>
+                <Select
+                  id={`parser-type-${token}`}
+                  value={parsers[token]?.dataType}
+                  onValueChange={(value) => onParserChange(token, 'dataType', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a type" />
                   </SelectTrigger>
@@ -65,7 +71,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`parser-default-${token}`}>Default Value</Label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <Input
                     id={`parser-default-${token}`}
                     data-token={token}
@@ -73,19 +79,27 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
                     onChange={handleInputValue}
                     placeholder="(optional)"
                   />
-                  {hasPossibleValues && <Button type="button" variant="outline" onClick={() => handleOpenModal(token, field)}>Map Values</Button>}
+                  {hasPossibleValues && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button type="button" variant="black" size="icon" onClick={() => handleOpenModal(token, field)}>
+                            <ArrowRightLeft className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Map Values</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-      <ValueMappingModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        tokenData={selectedTokenData}
-        onSave={onParserChange}
-      />
+      <ValueMappingModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} tokenData={selectedTokenData} onSave={onParserChange} />
     </>
   );
 }
