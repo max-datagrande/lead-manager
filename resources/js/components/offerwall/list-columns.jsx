@@ -1,6 +1,7 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Button } from '@/components/ui/button';
 import { useOfferwall } from '@/hooks/use-offerwall';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Edit, Trash2 } from 'lucide-react';
 
 // Componente para las acciones de la fila
@@ -24,19 +25,27 @@ export const columns = [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-    cell: ({ row }) => <div>{row.original.name}</div>,
+    cell: ({ row }) => <div className="px-2.5">{row.original.name}</div>,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
-    cell: ({ row }) => <div>{row.original.created_at}</div>,
+    cell: ({ row }) => (
+      <div className="text-sm whitespace-nowrap">
+        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
+        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
+      </div>
+    ),
     enableSorting: true,
     enableHiding: true,
   },
   {
     id: 'actions',
+    header: 'Actions',
     cell: ActionsCell,
+    enableSorting: false,
+    enableHiding: false,
   },
 ];
