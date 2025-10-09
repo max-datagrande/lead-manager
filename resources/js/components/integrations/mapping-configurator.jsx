@@ -1,0 +1,63 @@
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRef } from 'react';
+export function MappingConfigurator({ parsers = {}, onParserChange }) {
+  const tokens = Object.keys(parsers);
+  const timer = useRef(null);
+  if (tokens.length === 0) {
+    return null; // Don't render anything if no tokens are present
+  }
+
+  const handleInputValue = (e) => {
+    const value = e.target.value;
+    const token = e.target.dataset.token;
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      console.log('inserting')
+      onParserChange(token, 'defaultValue', value);
+    }, 500);
+  };
+
+
+  return (
+    <div className="mt-4 space-y-4 rounded-md border p-4">
+      <h4 className="text-lg font-medium">Token Configuration</h4>
+      {tokens.map((token) => {
+        return (
+          <div key={token} className="grid grid-cols-3 items-end gap-4">
+            <div className="space-y-2">
+              <Label>Token</Label>
+              <p className="rounded-md bg-slate-100 p-2 font-mono text-sm">{`{${token}}`}</p>
+            </div>
+            <div>
+              <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
+              <Select id={`parser-type-${token}`} value={parsers[token].dataType} onValueChange={(value) => onParserChange(token, 'dataType', value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="string">String</SelectItem>
+                  <SelectItem value="integer">Integer</SelectItem>
+                  <SelectItem value="boolean">Boolean</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`parser-default-${token}`}>Default Value</Label>
+              <Input
+                id={`parser-default-${token}`}
+                data-token={token}
+                value={parsers[token].defaultValue}
+                onChange={handleInputValue}
+                placeholder="(optional)"
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

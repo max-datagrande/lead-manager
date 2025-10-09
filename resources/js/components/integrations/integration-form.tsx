@@ -1,19 +1,40 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
-import { OfferwallParserConfig } from './offerwall-parser-config';
+import { useState } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
+import { MappingConfigurator } from './mapping-configurator';
+import { OfferwallParserConfig } from './offerwall-parser-config';
+import { TokenInserter } from './token-inserter';
 
+export function IntegrationForm({ companies = [], fields = [] }) {
+  const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();
+  const [tokensSelected, setTokensSelected] = useState({});
+  /* const prodTextareaRef = useRef(null); */
+  console.log({ data });
 
-export function IntegrationForm({ companies = [] }) {
-  const { data, errors, processing, handleSubmit, setData } = useIntegrations();
+  const handleTokenSelect = (tokenName: string) => {
+    setTokensSelected({ ...tokensSelected, [tokenName]: {} });
+  };
+
+  const handleMappingChange = (token: string, field, fieldValue) => {
+    const newParsers = {
+      ...tokensSelected,
+      [token]: {
+        [field]: fieldValue,
+      },
+    };
+    setData('parser_config', newParsers);
+  };
+
   return (
     <form onSubmit={handleSubmit}>
+      {/* Form Header */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Name */}
         <div className="flex-auto space-y-2">
@@ -53,11 +74,13 @@ export function IntegrationForm({ companies = [] }) {
         </div>
       </div>
 
+      {/* Active Switch */}
       <div className="flex items-center space-x-2 pt-4">
-        <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
         <Label htmlFor="is_active">Active</Label>
+        <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
       </div>
 
+      {/* Environment Tabs */}
       <Tabs defaultValue="development" className="mt-6">
         <TabsList className="flex w-full gap-2">
           <TabsTrigger className="flex-auto" value="development">
@@ -91,11 +114,25 @@ export function IntegrationForm({ companies = [] }) {
         </TabsContent>
       </Tabs>
 
+      {/* Production Payload Mapping - ONLY IN EDIT MODE */}
+      {isEdit && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Production Payload Mapping</CardTitle>
+            <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
+            <MappingConfigurator parsers={tokensSelected} onParserChange={handleMappingChange} />
+          </CardContent>
+        </Card>
+      )}
+
       {data.type === 'offerwall' && <OfferwallParserConfig />}
 
       <div className="mt-6 flex justify-end gap-2">
         <Button type="submit" disabled={processing}>
-          {processing ? 'Saving...' : 'Create Integration'}
+          {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
         </Button>
       </div>
     </form>
