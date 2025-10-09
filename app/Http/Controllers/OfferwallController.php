@@ -16,8 +16,10 @@ class OfferwallController extends Controller
    */
   public function index(Request $request)
   {
+    // Eager-load de integraciones (y compañía) para que el frontend tenga los datos completos
+    $rows = OfferwallMix::with(['integrations', 'integrations.company'])->get();
     return Inertia::render('offerwall/index', [
-      'rows' => [],
+      'rows' => $rows,
       'state' => $request->only(['sort', 'search']),
     ]);
   }
