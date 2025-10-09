@@ -25,6 +25,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
   });
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   Route::resource('integrations', IntegrationController::class);
+  Route::post('/offerwall/mixes/store', [OfferwallController::class, 'store'])
+    ->name('api.offerwall.mixes.store');
   Route::get('offerwall/conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
   Route::resource('offerwall', OfferwallController::class);
   Route::post('integrations/{integration}/environments/{environment}/test', [IntegrationController::class, 'test'])->name('integrations.test');

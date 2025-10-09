@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OfferwallConversion;
 use App\Models\Integration;
 use App\Models\Company;
+use App\Models\OfferwallMix;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -114,7 +115,34 @@ class OfferwallController extends Controller
    */
   public function store(Request $request)
   {
-    //
+    $request->validate([
+      'name' => 'required|string|max:255',
+      'description' => 'nullable|string',
+      'integration_ids' => 'required|array|min:1',
+      'integration_ids.*' => 'exists:integrations,id'
+    ]);
+    try {
+      $offerwallMix = OfferwallMix::create([
+        'name' => $request->name,
+        'description' => $request->description,
+        'is_active' => true,
+      ]);
+
+      // Attach integrations to the mix
+      $offerwallMix->integrations()->attach($request->integration_ids);
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Offerwall mix created successfully',
+        'data' => $offerwallMix->load('integrations')
+      ], 201);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Error creating offerwall mix: ' . $e->getMessage()
+      ], 500);
+    }
   }
 
   /**

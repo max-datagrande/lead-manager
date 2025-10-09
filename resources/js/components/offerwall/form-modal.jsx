@@ -1,31 +1,40 @@
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useModal } from '@/hooks/use-modal';
+import { useEffect, useState } from 'react';
+import { getCookie } from '@/utils/navigator';
 
 export function FormModal({ onResolve, onReject, ...props }) {
+  const modal = useModal();
   const [integrations, setIntegrations] = useState([]);
   const [filteredIntegrations, setFilteredIntegrations] = useState([]);
   const [selectedIntegrations, setSelectedIntegrations] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const { addMessage: setNotify } = useToast();
+  const [isCreating, setIsCreating] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: ''
+  });
 
   useEffect(() => {
     const fetchIntegrations = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(route('api.offerwall.integrations'));
+
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
         const data = await response.json();
+
         setIntegrations(data);
         setFilteredIntegrations(data);
       } catch (error) {
-        setNotify('Failed to fetch integrations', 'error');
         console.error('Fetch error:', error);
       } finally {
         setIsLoading(false);
@@ -36,14 +45,12 @@ export function FormModal({ onResolve, onReject, ...props }) {
   }, []);
 
   useEffect(() => {
-    const results = integrations.filter(integration =>
-      integration.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const results = integrations.filter((integration) => integration.name.toLowerCase().includes(searchTerm.toLowerCase()));
     setFilteredIntegrations(results);
   }, [searchTerm, integrations]);
 
   const handleSelect = (integrationId) => {
-    setSelectedIntegrations(prev => {
+    setSelectedIntegrations((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(integrationId)) {
         newSet.delete(integrationId);
@@ -54,37 +61,104 @@ export function FormModal({ onResolve, onReject, ...props }) {
     });
   };
 
-  const handleCreate = () => {
-    // Here you would typically post the selectedIntegrations to your backend
-    console.log('Creating offerwall mix with:', Array.from(selectedIntegrations));
-    setNotify('Offerwall mix created successfully!', 'success');
-    onResolve({ success: true, selected: Array.from(selectedIntegrations) });
+  const handleCancel = () => {
+    const modalId = modal.topId;
+    modal.resolve(modalId, false);
+  };
+
+  const handleCreate = async () => {
+    if (!formData.name.trim()) {
+      return;
+    }
+    setIsCreating(true);
+    try {
+      const endpoint = route('api.offerwall.mixes.store');
+      const csrfToken = getCookie('XSRF-TOKEN');
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-xsrf-token': csrfToken,
+          'x-requested-with': 'XMLHttpRequest',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          integration_ids: Array.from(selectedIntegrations),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const modalId = modal.topId;
+        modal.resolve(modalId, {
+          success: true,
+          data: data.data,
+          message: data.message
+        });
+      } else {
+        throw new Error(data.message || 'Error creating offerwall mix');
+      }
+    } catch (error) {
+      console.error('Error creating mix:', error);
+      alert('Error al crear el mix: ' + error.message);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
-    <Dialog open onOpenChange={(isOpen) => !isOpen && onReject()}>
-      <DialogContent className="sm:max-w-[625px]">
-        <DialogHeader>
-          <DialogTitle>Create Offerwall Mix</DialogTitle>
-          <DialogDescription>Select integrations to include in this mix.</DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
+    <>
+      <DialogHeader>
+        <DialogTitle>Create Offerwall Mix</DialogTitle>
+        <DialogDescription>Create a new mix by providing a name, description, and selecting integrations.</DialogDescription>
+      </DialogHeader>
+      <div className="py-4 space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="mix-name">Name *</Label>
+          <Input
+            id="mix-name"
+            placeholder="Enter mix name..."
+            value={formData.name}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            disabled={isCreating}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="mix-description">Description</Label>
+          <Textarea
+            id="mix-description"
+            placeholder="Enter mix description (optional)..."
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            disabled={isCreating}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Integrations *</Label>
           <Input
             placeholder="Search for an integration..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-4"
+            disabled={isCreating}
           />
-          <div className="max-h-[300px] overflow-y-auto pr-2">
+          <div className="max-h-[300px] overflow-y-auto pr-2 border rounded-md p-2 space-y-2">
             {isLoading ? (
-              <p>Loading integrations...</p>
+              <p className="text-center py-4">Loading integrations...</p>
             ) : (
-              filteredIntegrations.map(integration => (
-                <div key={integration.id} className="flex items-center space-x-2 mb-2 p-2 rounded-md hover:bg-gray-100">
+              filteredIntegrations.map((integration) => (
+                <div key={integration.id} className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-100">
                   <Checkbox
                     id={`integration-${integration.id}`}
                     checked={selectedIntegrations.has(integration.id)}
                     onCheckedChange={() => handleSelect(integration.id)}
+                    disabled={isCreating}
                   />
                   <label htmlFor={`integration-${integration.id}`} className="flex-1 cursor-pointer">
                     <div className="font-medium">{integration.name}</div>
@@ -94,17 +168,22 @@ export function FormModal({ onResolve, onReject, ...props }) {
               ))
             )}
             {!isLoading && filteredIntegrations.length === 0 && (
-                <p className='text-center text-sm text-gray-500'>No integrations found.</p>
+              <p className="text-center text-sm text-gray-500 py-4">No integrations found.</p>
             )}
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onReject}>Cancel</Button>
-          <Button onClick={handleCreate} disabled={selectedIntegrations.size === 0}>
-            Create Mix
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={handleCancel} disabled={isCreating}>
+          Cancel
+        </Button>
+        <Button
+          onClick={handleCreate}
+          disabled={selectedIntegrations.size === 0 || !formData.name.trim() || isCreating}
+        >
+          {isCreating ? 'Creating...' : 'Create Mix'}
+        </Button>
+      </DialogFooter>
+    </>
   );
 }

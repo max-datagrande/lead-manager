@@ -1,8 +1,8 @@
 import { FormModal } from '@/components/offerwall';
-import { useToast } from '@/hooks/use-toast';
 import { useModal } from '@/hooks/use-modal';
+import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { createContext, useState } from 'react';
 
 export const OfferwallContext = createContext(null);
@@ -23,6 +23,7 @@ export function OfferwallProvider({ children, initialState }) {
     try {
       const result = await modal.openAsync(<FormModal />);
       console.log(result);
+      result && setNotify('Offerwall mix created successfully!', 'success');
     } catch (error) {
       setNotify('Error creating offerwall mix', 'error');
       console.log('Modal cancelled or error:', error);
