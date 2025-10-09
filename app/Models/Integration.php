@@ -11,7 +11,8 @@ class Integration extends Model
         'name',
         'type',
         'is_active',
-        'parser_config',
+        'response_parser_config',
+        'request_mapping_config',
         'user_id',
         'updated_user_id',
     ];
@@ -22,7 +23,8 @@ class Integration extends Model
      * @var array
      */
     protected $casts = [
-        'parser_config' => 'array',
+        'response_parser_config' => 'array',
+        'request_mapping_config' => 'array',
     ];
 
     /**
