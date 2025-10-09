@@ -82,7 +82,7 @@ class IntegrationController extends Controller
     return Inertia::render('integrations/edit', [
       'integration' => $integration->load('environments'),
       'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
-      'fields' => Field::all(['id', 'name']),
+      'fields' => Field::all(['id', 'name', 'possible_values']),
     ]);
   }
 

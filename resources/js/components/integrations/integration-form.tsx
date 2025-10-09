@@ -14,22 +14,21 @@ import { TokenInserter } from './token-inserter';
 
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();
-  const [tokensSelected, setTokensSelected] = useState({});
-  /* const prodTextareaRef = useRef(null); */
-  console.log({ data });
 
   const handleTokenSelect = (tokenName: string) => {
-    setTokensSelected({ ...tokensSelected, [tokenName]: {} });
+    const newRequestMappingConfig = { ...data.request_mapping_config, [tokenName]: {} };
+    setData('request_mapping_config', newRequestMappingConfig);
   };
 
-  const handleMappingChange = (token: string, field, fieldValue) => {
-    const newParsers = {
-      ...tokensSelected,
+  const handleMappingChange = (token: string, field: string, fieldValue: any) => {
+    const newRequestMappingConfig = {
+      ...data.request_mapping_config,
       [token]: {
+        ...data.request_mapping_config[token],
         [field]: fieldValue,
       },
     };
-    setData('parser_config', newParsers);
+    setData('request_mapping_config', newRequestMappingConfig);
   };
 
   return (
@@ -123,7 +122,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           </CardHeader>
           <CardContent>
             <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
-            <MappingConfigurator parsers={tokensSelected} onParserChange={handleMappingChange} />
+            <MappingConfigurator parsers={data.request_mapping_config} onParserChange={handleMappingChange} fields={fields} />
           </CardContent>
         </Card>
       )}
