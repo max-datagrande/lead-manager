@@ -119,9 +119,9 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           <CardHeader>
             <CardTitle>Production Payload Mapping</CardTitle>
             <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
+            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
           </CardHeader>
           <CardContent>
-            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
             <MappingConfigurator parsers={data.request_mapping_config} onParserChange={handleMappingChange} fields={fields} />
           </CardContent>
         </Card>

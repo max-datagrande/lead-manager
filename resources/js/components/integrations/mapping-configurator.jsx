@@ -8,7 +8,6 @@ import { useRef, useState } from 'react';
 import { ValueMappingModal } from './value-mapping-modal';
 
 export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] }) {
-
   const tokens = Object.keys(parsers);
   const timer = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,65 +39,61 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
 
   return (
     <>
-      <div className="mt-4 space-y-4 rounded-md border p-4">
-        <h4 className="text-lg font-medium">Token Configuration</h4>
-        {tokens.map((token) => {
-          const field = fields.find((f) => f.name === token);
-          const hasPossibleValues = field && field.possible_values && field.possible_values.length > 0;
-          console.log(field);
-          return (
-            <div key={token} className="grid grid-cols-3 items-end gap-4">
-              <div className="space-y-2">
-                <Label>Token</Label>
-                <p className="rounded-md bg-slate-100 p-2 font-mono text-sm">{`{${token}}`}</p>
-              </div>
-              <div>
-                <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
-                <Select
-                  id={`parser-type-${token}`}
-                  value={parsers[token]?.dataType}
-                  onValueChange={(value) => onParserChange(token, 'dataType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="string">String</SelectItem>
-                    <SelectItem value="integer">Integer</SelectItem>
-                    <SelectItem value="boolean">Boolean</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor={`parser-default-${token}`}>Default Value</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id={`parser-default-${token}`}
-                    data-token={token}
-                    defaultValue={parsers[token]?.defaultValue}
-                    onChange={handleInputValue}
-                    placeholder="(optional)"
-                  />
-                  {hasPossibleValues && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button type="button" variant="black" size="icon" onClick={() => handleOpenModal(token, field)}>
-                            <ArrowRightLeft className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Map Values</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                </div>
+      {tokens.map((token) => {
+        const field = fields.find((f) => f.name === token);
+        const hasPossibleValues = field && field.possible_values && field.possible_values.length > 0;
+        return (
+          <div key={token} className="grid grid-cols-3 items-end gap-4">
+            <div className="space-y-2">
+              <Label>Token</Label>
+              <p className="rounded-md bg-slate-100 p-2 font-mono text-sm">{`{${token}}`}</p>
+            </div>
+            <div>
+              <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
+              <Select
+                id={`parser-type-${token}`}
+                value={parsers[token]?.dataType}
+                onValueChange={(value) => onParserChange(token, 'dataType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="string">String</SelectItem>
+                  <SelectItem value="integer">Integer</SelectItem>
+                  <SelectItem value="boolean">Boolean</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`parser-default-${token}`}>Default Value</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id={`parser-default-${token}`}
+                  data-token={token}
+                  defaultValue={parsers[token]?.defaultValue}
+                  onChange={handleInputValue}
+                  placeholder="(optional)"
+                />
+                {hasPossibleValues && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button type="button" variant="black" size="icon" onClick={() => handleOpenModal(token, field)}>
+                          <ArrowRightLeft className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Map Values</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
       <ValueMappingModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} tokenData={selectedTokenData} onSave={onParserChange} />
     </>
   );
