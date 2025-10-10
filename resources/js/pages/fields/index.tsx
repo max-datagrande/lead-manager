@@ -30,9 +30,9 @@ interface IndexProps {
   };
 }
 
-const Index = ({ rows }: IndexProps) => {
+const Index = ({ rows, state }: IndexProps) => {
   return (
-    <FieldsProvider>
+    <FieldsProvider initialState={state}>
       <Head title="Fields" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Fields" description="Manage fields to our forms.">

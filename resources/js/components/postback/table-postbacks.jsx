@@ -91,7 +91,7 @@ export default function TablePostbacks({ entries, meta, data }) {
       </div>
       <div className="rounded-md border">
         <Table>
-          <DataTableHeader table={table} sorting={sorting} setSorting={setSorting} />
+          <DataTableHeader table={table} />
           <TableBody>
             <DataTableContent table={table} data={entries} isLoading={isLoading} />
           </TableBody>

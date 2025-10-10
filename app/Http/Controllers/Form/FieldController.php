@@ -21,7 +21,7 @@ class FieldController extends Controller
       ->get();
     return Inertia::render('fields/index', [
       'rows' => $entries,
-      'filters' => compact('sort')
+      'state' => compact('sort')
     ]);
   }
 
