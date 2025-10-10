@@ -23,7 +23,7 @@ class Lead extends Model
    * - Carga los campos relacionados a cada respuesta (`fields`).
    *
    * @param  string  $fingerprint  Identificador único del lead.
-   * @return Leads|null Modelo del lead con relaciones cargadas, o `null` si no existe.
+   * @return Lead|null Modelo del lead con relaciones cargadas, o `null` si no existe.
    *
    * @example
    * $lead = Leads::getLeadResponses('abc123');

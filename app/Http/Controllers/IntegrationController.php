@@ -46,6 +46,7 @@ class IntegrationController extends Controller
   {
     return Inertia::render('integrations/create', [
       'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
+      'fields' => Field::all(['id', 'name', 'possible_values']),
     ]);
   }
 
