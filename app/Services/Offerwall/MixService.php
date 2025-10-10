@@ -40,13 +40,29 @@ class MixService
           return [];
         }
 
-        $responses = Http::pool(function (Pool $pool) use ($integrations, $leadData) {
-          foreach ($integrations as $integration) {
-            $prodEnv = $integration->environments->where('environment', 'production')->first();
-            $template =  $prodEnv->request_body ?? [];
-            $mappingConfig = $integration->request_mapping_config ?? [];
-            $payload = $this->buildPayload($leadData, $template, $mappingConfig);
-            $pool->as($integration->id)->withHeaders($prodEnv->request_headers ?? [])->post($prodEnv->url, $payload);
+        $requestsData = [];
+        foreach ($integrations as $integration) {
+          $prodEnv = $integration->environments->where('environment', 'production')->first();
+          if (!$prodEnv) {
+            continue;
+          }
+
+          $template = $prodEnv->request_body ?? '';
+          $mappingConfig = $integration->request_mapping_config ?? [];
+          $payload = $this->buildPayload($leadData, $template, $mappingConfig);
+          $method = strtolower($prodEnv->method ?? 'post');
+          $headers = json_decode($prodEnv->request_headers ?? '[]', true);
+          $url = $prodEnv->url;
+          $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
+        }
+        $responses = Http::pool(function (Pool $pool) use ($requestsData) {
+          foreach ($requestsData as $integrationId => $data) {
+            $url = $data['url'];
+            $headers = $data['headers'];
+            $payloadArray = json_decode($data['payload'], true) ?? [];
+            $method = $data['method'];
+            $request = $pool->as($integrationId)->withHeaders($headers);
+            $request->{$method}($url, $payloadArray);
           }
         });
 
@@ -54,8 +70,13 @@ class MixService
         $successfulCount = 0;
 
         foreach ($integrations as $integration) {
+          if (!isset($responses[$integration->id])) {
+            continue;
+          }
           $response = $responses[$integration->id];
-          $this->logIntegrationCall($mixLog, $integration, $response);
+          $requestData = $requestsData[$integration->id];
+
+          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
 
           if ($response->successful()) {
             $successfulCount++;
@@ -63,12 +84,13 @@ class MixService
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
-
+        $durationMs = (microtime(true) - $startTime) * 1000;
+        $durationRounded = (int) round($durationMs);
         $mixLog->update([
           'successful_integrations' => $successfulCount,
           'failed_integrations' => $integrations->count() - $successfulCount,
           'total_offers_aggregated' => count($aggregatedOffers),
-          'total_duration_ms' => (microtime(true) - $startTime) * 1000,
+          'total_duration_ms' => $durationRounded,
         ]);
 
         return $aggregatedOffers;
@@ -105,38 +127,46 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function buildPayload(array $leadData, array $template, array $mappingConfig): array
+  private function buildPayload(array $leadData, string $template, array $mappingConfig): string
   {
-    $payload = [];
-    foreach ($template as $key => $token) {
-      if (is_array($token)) {
-        $payload[$key] = $this->buildPayload($leadData, $token, $mappingConfig);
-      } else {
-        $tokenName = str_replace(['{', '}'], '', $token);
-        $config = $mappingConfig[$tokenName] ?? [];
-        $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? null;
-
-        if (isset($config['value_mapping']) && isset($config['value_mapping'][$value])) {
-          $value = $config['value_mapping'][$value];
-        }
-
-        $payload[$key] = $value;
-      }
+    if (empty($template)) {
+      return '';
     }
-    return $payload;
+
+    $replacements = [];
+    foreach ($mappingConfig as $tokenName => $config) {
+      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+
+      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
+        $value = $config['value_mapping'][$value];
+      }
+
+      if (is_array($value) || is_object($value)) {
+        $value = json_encode($value);
+      }
+
+      $replacements['{' . $tokenName . '}'] = (string) $value;
+    }
+
+    if (empty($replacements)) {
+      return $template;
+    }
+
+    return str_replace(array_keys($replacements), array_values($replacements), $template);
   }
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response): void
+  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response, string $method, array $headers, string $payload): void
   {
+    $duration = $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
     $mixLog->integrationCallLogs()->create([
       'integration_id' => $integration->id,
       'status' => $response->successful() ? 'success' : 'failed',
       'http_status_code' => $response->status(),
-      'duration_ms' => $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0,
-      'request_url' => $response->effectiveUri(),
-      'request_method' => 'POST', // Assuming POST
-      // 'request_headers' => // Need to get this from the request
-      // 'request_payload' => // Need to get this from the request
+      'duration_ms' => (int) round($duration),
+      'request_url' => (string) $response->effectiveUri(),
+      'request_method' => strtoupper($method),
+      'request_headers' => $headers,
+      'request_payload' => json_decode($payload, true) ?? ['raw_body' => $payload],
       'response_headers' => $response->headers(),
       'response_body' => $response->json() ?? $response->body(),
     ]);
