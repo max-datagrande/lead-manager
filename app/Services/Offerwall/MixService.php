@@ -71,7 +71,7 @@ class MixService
         return $aggregatedOffers;
       });
     } catch (Throwable $e) {
-      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage()]);
+      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
 
       $slack = new SlackMessageBundler();
       $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
