@@ -10,7 +10,8 @@ return [
      * The webhook URLs that we'll use to send a message to Slack.
      */
     'webhook_urls' => [
-        'default' => env('SLACK_ALERT_WEBHOOK'),
+        'default' => env('SLACK_NOTIFY_CHANNEL'),
+        'error' => env('SLACK_ERROR_CHANNEL'),
     ],
 
     /*
