@@ -54,7 +54,7 @@ export function OfferwallParserConfig() {
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="offer_list_path">Offer List Path</Label>
-          <Input id="offer_list_path" value={offerListPathRef.current} onChange={handlePathChange} placeholder="e.g., response.offers.items" />
+          <Input id="offer_list_path" value={offerListPathRef} onChange={handlePathChange} placeholder="e.g., response.offers.items" />
         </div>
 
         <div>
