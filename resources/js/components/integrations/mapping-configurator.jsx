@@ -3,11 +3,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ValueMappingModal } from './value-mapping-modal';
 
-export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] }) {
+export function MappingConfigurator({ parsers = {}, onParserChange, fields = [], onRemoveToken }) {
   const tokens = Object.keys(parsers);
   const timer = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -79,7 +79,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button type="button" variant="black" size="icon" onClick={() => handleOpenModal(token, field)}>
+                        <Button type="button" variant="black" size="sm" onClick={() => handleOpenModal(token, field)}>
                           <ArrowRightLeft className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -89,6 +89,11 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [] 
                     </Tooltip>
                   </TooltipProvider>
                 )}
+                <div className="flex justify-end">
+                  <Button type="button" variant="destructive" size="sm" onClick={() => onRemoveToken?.(token)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

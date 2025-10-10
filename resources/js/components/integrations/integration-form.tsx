@@ -30,6 +30,12 @@ export function IntegrationForm({ companies = [], fields = [] }) {
     setData('request_mapping_config', newRequestMappingConfig);
   };
 
+  const handleRemoveToken = (tokenName: string) => {
+    const newRequestMappingConfig = { ...data.request_mapping_config };
+    delete newRequestMappingConfig[tokenName];
+    setData('request_mapping_config', newRequestMappingConfig);
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       {/* Form Header */}
@@ -121,7 +127,12 @@ export function IntegrationForm({ companies = [], fields = [] }) {
             <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
           </CardHeader>
           <CardContent>
-            <MappingConfigurator parsers={data.request_mapping_config} onParserChange={handleMappingChange} fields={fields} />
+            <MappingConfigurator
+              parsers={data.request_mapping_config}
+              onParserChange={handleMappingChange}
+              fields={fields}
+              onRemoveToken={handleRemoveToken}
+            />
           </CardContent>
         </Card>
       )}
