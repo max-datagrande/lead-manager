@@ -8,8 +8,10 @@ import { useModal } from '@/hooks/use-modal';
 import { getCookie } from '@/utils/navigator';
 import { useEffect, useState } from 'react';
 
-export function FormModal({ entry = 0, ...props }) {
-  const initialIntegrations = entry.integrations.map((i) => i.id);
+export function FormModal({ entry = null, ...props }) {
+  console.log({ entry });
+
+  const initialIntegrations = entry?.integrations?.map((i) => i.id) ?? [];
   const modal = useModal();
   const [integrations, setIntegrations] = useState([]);
   const [filteredIntegrations, setFilteredIntegrations] = useState([]);
@@ -18,8 +20,8 @@ export function FormModal({ entry = 0, ...props }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
-    name: entry.name ?? '',
-    description: entry.description ?? '',
+    name: entry?.name ?? '',
+    description: entry?.description ?? '',
   });
 
   useEffect(() => {
@@ -177,7 +179,7 @@ export function FormModal({ entry = 0, ...props }) {
           Cancel
         </Button>
         <Button onClick={handleCreate} disabled={selectedIntegrations.size === 0 || !formData.name.trim() || isCreating}>
-          {isCreating ? 'Creating...' : entry.id ? 'Update Mix' : 'Create Mix'}
+          {isCreating ? 'Creating...' : entry?.id ? 'Update Mix' : 'Create Mix'}
         </Button>
       </DialogFooter>
     </>
