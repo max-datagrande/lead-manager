@@ -23,6 +23,13 @@ const ActionsCell = ({ row }) => {
 
 export const columns = [
   {
+    accessorKey: 'id',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Mix ID" />,
+    cell: ({ row }) => <div className="w-[80px] px-2.5">{row.getValue('id')}</div>,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => <div className="px-2.5">{row.original.name}</div>,

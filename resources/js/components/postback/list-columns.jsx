@@ -39,7 +39,6 @@ function ActionsCell({ row }) {
 export const createPostbackColumns = () => [
   {
     accessorKey: 'id',
-    cessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
     cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
     enableSorting: true,
