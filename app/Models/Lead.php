@@ -33,7 +33,7 @@ class Lead extends Model
    */
   public static function getLeadResponses($fingerprint)
   {
-    return self::with(['leadFieldResponses.fields'])
+    return self::with(['leadFieldResponses.field'])
       ->where('fingerprint', $fingerprint)
       ->first();
   }

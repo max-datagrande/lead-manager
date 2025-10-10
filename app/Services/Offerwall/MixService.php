@@ -25,6 +25,7 @@ class MixService
 
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
+
     $mixLog = null;
 
     try {
@@ -93,7 +94,7 @@ class MixService
 
   private function prepareLeadData(Lead $lead): array
   {
-    return $lead->leadFieldResponses->pluck('value', 'fields.name')->toArray();
+    return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
   private function buildPayload(array $leadData, array $template, array $mappingConfig): array
