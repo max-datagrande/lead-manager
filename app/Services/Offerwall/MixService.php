@@ -42,8 +42,11 @@ class MixService
 
         $responses = Http::pool(function (Pool $pool) use ($integrations, $leadData) {
           foreach ($integrations as $integration) {
-            $payload = $this->buildPayload($leadData, $integration->request_body['template'] ?? [], $integration->request_mapping_config ?? []);
-            $pool->as($integration->id)->withHeaders($integration->environments->first()->request_headers ?? [])->post($integration->environments->first()->url, $payload);
+            $prodEnv = $integration->environments->where('environment', 'production')->first();
+            $template =  $prodEnv->request_body ?? [];
+            $mappingConfig = $integration->request_mapping_config ?? [];
+            $payload = $this->buildPayload($leadData, $template, $mappingConfig);
+            $pool->as($integration->id)->withHeaders($prodEnv->request_headers ?? [])->post($prodEnv->url, $payload);
           }
         });
 
