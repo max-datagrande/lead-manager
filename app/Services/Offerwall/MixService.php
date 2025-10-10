@@ -27,7 +27,6 @@ class MixService
     $leadData = $this->prepareLeadData($lead);
 
     $mixLog = null;
-
     try {
       return DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
         $mixLog = OfferwallMixLog::create([
@@ -85,8 +84,14 @@ class MixService
       }
 
       $slack->addKeyValue('Error Message', $e->getMessage(), true, '📄')
-        ->addButton('View Admin', route('home'), 'primary')
-        ->sendDirect();
+        ->addButton('View Admin', route('home'), 'primary');
+
+      // Registrar en logs en modo debug, no enviar a Slack
+      if (app()->environment('local')) {
+        $slack->sendDebugLog('errors');
+      } else {
+        $slack->sendDirect();
+      }
 
       return ['error' => 'An unexpected error occurred'];
     }

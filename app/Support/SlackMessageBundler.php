@@ -298,4 +298,42 @@ class SlackMessageBundler
     }
     return $response === 'ok';
   }
+
+  /**
+   * Enviar el bundle acumulado a los logs (modo debug)
+   * En lugar de disparar un webhook de Slack, se registra el payload
+   * construido como attachments para facilitar diagnóstico.
+   */
+  public function sendDebugLog(string $channel = 'default'): void
+  {
+    // Preparar payload similar al de Slack (siempre como attachments)
+    $attachmentsPayload = $this->attachments;
+    $hasBlocks = count($this->blocks) > 0;
+    if ($hasBlocks) {
+      $attachmentsPayload[] = [
+        'blocks' => $this->blocks,
+      ];
+    }
+
+    $payload = [
+      'attachments' => $attachmentsPayload,
+    ];
+
+    // Registrar en logs
+    LoggerTailLogger::saveLog(
+      'Slack bundler debug output',
+      'notifications',
+      'info',
+      [
+        'channel' => $channel,
+        'attachments_count' => count($attachmentsPayload),
+        'payload' => $payload,
+      ]
+    );
+
+    // Limpiar estado interno
+    $this->blocks = [];
+    $this->attachments = [];
+    $this->openAttachmentIndex = null;
+  }
 }
