@@ -33,7 +33,19 @@ interface IntegrationForm extends IntegrationBase {
   environments: {
     development: Partial<EnvironmentForm>;
     production: Partial<EnvironmentForm>;
-  };
+  },
+  parser_config :{
+    offer_list_path: string,
+    mapping: {
+      title: string,
+      description: string,
+      logo_url: string,
+      click_url: string,
+      impression_url: string,
+      cpc: string,
+      display_name: string,
+    }
+  }
 }
 
 

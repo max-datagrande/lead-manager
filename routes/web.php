@@ -8,6 +8,7 @@ use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\Admin\WhitelistEntryController;
+use App\Http\Controllers\OfferwallController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -24,6 +25,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
   });
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   Route::resource('integrations', IntegrationController::class);
+  Route::post('/offerwall/mixes/store', [OfferwallController::class, 'store'])
+    ->name('api.offerwall.mixes.store');
+  Route::get('offerwall/conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
+  Route::resource('offerwall', OfferwallController::class);
   Route::post('integrations/{integration}/environments/{environment}/test', [IntegrationController::class, 'test'])->name('integrations.test');
   //Forms
   Route::prefix('forms')->group(function () {

@@ -15,12 +15,15 @@ export function DataTableContent({ table, data, isLoading = false }) {
       </TableRow>
     );
   }
-
   if (data.length === 0) {
     return <TableRowEmpty colSpan={table.getAllColumns().length}>No data found.</TableRowEmpty>;
   }
 
   const rowModel = table.getRowModel();
+  if (rowModel.rows.length === 0) {
+    return <TableRowEmpty colSpan={table.getAllColumns().length}>No data found.</TableRowEmpty>;
+  }
+
   return (
     <>
       {rowModel.rows.map((r) => (

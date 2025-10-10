@@ -68,7 +68,7 @@ const Index = ({ rows }: IndexProps) => {
   return (
     <VisitorsProvider>
       <Head title="Visitors" />
-      <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Visitors" description="Manage visitors from our landing pages." />
         <TableVisitors visitors={rows.data} />
       </div>

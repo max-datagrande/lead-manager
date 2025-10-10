@@ -26,7 +26,7 @@ export function CompaniesProvider({ children }) {
   const showCreateModal = async () => {
     try {
       const result = await modal.openAsync(<FormModal id={0} />);
-      console.log('result');
+      console.log(result);
     } catch (error) {
       setNotify('Error creating company entry', 'error');
       console.log('Modal cancelled or error:', error);
@@ -36,7 +36,7 @@ export function CompaniesProvider({ children }) {
   const showEditModal = async (entry) => {
     try {
       const result = await modal.openAsync(<FormModal id={0} entry={entry} isEdit={true} />);
-      console.log('result');
+      console.log(result);
     } catch (error) {
       setNotify('Error updating company entry', 'error');
       console.log('Modal cancelled or error:', error);

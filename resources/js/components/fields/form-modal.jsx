@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import TagInput from '@/components/ui/tag-input.jsx';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
 
@@ -15,6 +16,7 @@ export default function FormModal({ entry, isEdit = false }) {
   const { data, setData, post, put, processing, errors, reset } = useForm({
     name: entry?.name ?? '',
     label: entry?.label ?? '',
+    possible_values: entry?.possible_values ?? [],
   });
 
   /**
@@ -89,6 +91,17 @@ export default function FormModal({ entry, isEdit = false }) {
           <Label htmlFor="name">Parameter Name</Label>
           <Input id="name" type="text" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Parameter name" />
           {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+        </div>
+
+        {/* Possible Values */}
+        <div className="space-y-2">
+          <Label htmlFor="possible_values">Possible Values</Label>
+          <TagInput
+            id="possible_values"
+            value={data.possible_values}
+            onChange={(values) => setData('possible_values', values)}
+          />
+          {errors.possible_values && <p className="text-sm text-destructive">{errors.possible_values}</p>}
         </div>
 
         {/* Form Actions */}

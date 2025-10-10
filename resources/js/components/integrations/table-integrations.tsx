@@ -12,7 +12,6 @@ export function TableIntegrations({ entries, filters }) {
   const { sort } = filters;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [resetTrigger, setResetTrigger] = useState(false);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
@@ -41,7 +40,7 @@ export function TableIntegrations({ entries, filters }) {
     <>
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar table={table} searchPlaceholder="Search integrations..." resetTrigger={resetTrigger} setResetTrigger={setResetTrigger} />
+          <DataTableToolbar table={table} searchPlaceholder="Search integrations..." />
         </div>
       </div>
       <div className="rounded-md border">

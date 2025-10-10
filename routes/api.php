@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\Api\PostbackController;
 use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\MaxconvController;
+use App\Http\Controllers\Api\Offerwall\EventController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -78,4 +79,14 @@ Route::prefix('maxconv')->group(function () {
   // Preview de datos de postback
   Route::get('/postback/{postbackId}/preview', [MaxconvController::class, 'previewPostbackData'])
     ->name('api.maxconv.postback-preview');
+});
+
+Route::prefix('offerwall')->group(function () {
+    Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])
+        ->name('api.offerwall.events.conversion');
+    Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
+        ->name('api.offerwall.integrations');
+
+    Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
+        ->name('api.offerwall.mix.trigger');
 });

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import { Edit, Eye, Trash2 } from 'lucide-react';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
 // --- Type Definitions ---
 type Integration = {
@@ -66,6 +67,7 @@ export const columns = [
   {
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    cell: ({ row }) => <div className="px-2 whitespace-nowrap">{row.original.name}</div>,
   },
   {
     accessorKey: 'type',
@@ -76,6 +78,30 @@ export const columns = [
     accessorKey: 'is_active',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => <StatusBadge isActive={row.original.is_active} />,
+  },
+  {
+    accessorKey: 'created_at',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
+    cell: ({ row }) => (
+      <div className="text-sm">
+        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
+        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
+      </div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'updated_at',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
+    cell: ({ row }) => (
+      <div className="text-sm">
+        <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
+        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
+      </div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     id: 'actions',

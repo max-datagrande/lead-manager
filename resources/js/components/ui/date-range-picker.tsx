@@ -84,7 +84,7 @@ const PRESETS: Preset[] = [
 
 /** The DateRangePicker component allows a user to select a range of dates */
 export const DateRangePicker: FC<DateRangePickerProps> = ({
-  initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0)),
+  initialDateFrom,
   initialDateTo,
   initialCompareFrom,
   initialCompareTo,
@@ -94,8 +94,11 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   showCompare = true,
   isReset = false
 })=> {
+  const hasInitialDates = initialDateFrom !== undefined || initialDateTo !== undefined;
+  if (initialDateFrom === undefined) {
+    initialDateFrom = new Date(new Date().setHours(0, 0, 0, 0));
+  }
   const [isOpen, setIsOpen] = useState(false)
-
   const [range, setRange] = useState<DateRange>({
     from: getDateAdjustedForTimezone(initialDateFrom),
     to: initialDateTo
@@ -116,7 +119,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   // Refs to store the values of range and rangeCompare when the date picker is opened
   const openedRangeRef = useRef<DateRange | undefined>(undefined)
   const openedRangeCompareRef = useRef<DateRange | undefined>(undefined)
-
+  const showPlaceholder = useRef(initialDateTo ? false : true);
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined)
 
   const [isSmallScreen, setIsSmallScreen] = useState(false)
@@ -138,9 +141,9 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   }, [])
 
   useEffect(() => {
-    if (isReset) {
-      resetValues()
-    }
+    if (!isReset) return;
+    showPlaceholder.current = true;
+    resetValues();
   }, [isReset])
 
   const getPresetRange = (presetName: string): DateRange => {
@@ -206,6 +209,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
 
   const setPreset = (preset: string): void => {
     const range = getPresetRange(preset)
+    showPlaceholder.current = false;
     setRange(range)
     if (rangeCompare) {
       const rangeCompare = {
@@ -250,7 +254,6 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
         return
       }
     }
-
     setSelectedPreset(undefined)
   }
 
@@ -347,9 +350,15 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
         <Button variant="outline">
           <div className="text-right">
             <div className="py-1">
-              <div>{`${formatDate(range.from, locale)}${
-                range.to != null ? ' - ' + formatDate(range.to, locale) : ''
-              }`}</div>
+              {showPlaceholder.current ? (
+                'Select dates'
+              ) : (
+                <>
+                  {`${formatDate(range.from, locale)}${
+                    range.to != null ? ' - ' + formatDate(range.to, locale) : ''
+                  }`}
+                </>
+              )}
             </div>
             {rangeCompare != null && (
               <div className="opacity-60 text-xs -mt-1">
@@ -501,6 +510,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                   mode="range"
                   onSelect={(value: { from?: Date, to?: Date } | undefined) => {
                     if (value?.from != null) {
+                      showPlaceholder.current = false
                       setRange({ from: value.from, to: value?.to })
                     }
                   }}
@@ -535,6 +545,9 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
             onClick={() => {
               setIsOpen(false)
               resetValues()
+              if (!hasInitialDates) {
+                showPlaceholder.current = true
+              }
             }}
             variant="ghost"
           >
@@ -547,6 +560,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
                 !areRangesEqual(range, openedRangeRef.current) ||
                 !areRangesEqual(rangeCompare, openedRangeCompareRef.current)
               ) {
+                showPlaceholder.current = false
                 onUpdate?.({ range, rangeCompare })
               }
             }}

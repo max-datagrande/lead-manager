@@ -1,21 +1,12 @@
 import { KeyValueList } from '@/components/forms';
+import JsonEditor from '@/components/forms/json-editor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import JsonEditor from '@/components/forms/json-editor';
-import { useIntegrations } from '@/hooks/use-integrations';
 import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
+import { useIntegrations } from '@/hooks/use-integrations';
 
-interface Props {
-  env: 'development' | 'production';
-}
-
-interface KeyValue {
-  key: string;
-  value: string;
-}
-export function EnvironmentTab({ env }: Props) {
+export function EnvironmentTab({ env}) {
   const { data, handleEnvironmentChange } = useIntegrations();
   return (
     <div className="space-y-4">
@@ -50,7 +41,7 @@ export function EnvironmentTab({ env }: Props) {
         <KeyValueList
           label="Request Headers"
           initialValues={data.environments[env]?.request_headers ?? []}
-          onChange={(values: KeyValue[]) => handleEnvironmentChange(env, 'request_headers', values)}
+          onChange={(values) => handleEnvironmentChange(env, 'request_headers', values)}
           keyPlaceholder="Header Name"
           valuePlaceholder="Header Value"
           addButtonText="Add Header"

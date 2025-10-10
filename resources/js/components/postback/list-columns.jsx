@@ -1,3 +1,4 @@
+import CopyToClipboard from '@/components/copy-to-clipboard';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,14 +8,13 @@ import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { MoreHorizontal } from 'lucide-react';
-
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
 };
 
 // Componente para las acciones de la fila
-const ActionsCell = ({ row }) => {
+function ActionsCell({ row }) {
   const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
   const postback = row.original;
   return (
@@ -34,12 +34,11 @@ const ActionsCell = ({ row }) => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+}
 
-export const postbackColumns = [
+export const createPostbackColumns = () => [
   {
     accessorKey: 'id',
-    cessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
     cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
     enableSorting: true,
@@ -91,7 +90,14 @@ export const postbackColumns = [
     accessorKey: 'click_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Click ID" />,
     cell: ({ row }) => {
-      return <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('click_id')}</div>;
+      const value = row.getValue('click_id');
+      return (
+        <CopyToClipboard textToCopy={value}>
+          <span className="cursor-help font-mono text-xs whitespace-nowrap" title={value}>
+            {value}
+          </span>
+        </CopyToClipboard>
+      );
     },
     enableSorting: false,
     enableHiding: true,

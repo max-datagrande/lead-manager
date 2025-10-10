@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Field;
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
 use App\Services\IntegrationService;
@@ -43,7 +44,10 @@ class IntegrationController extends Controller
    */
   public function create()
   {
-    return Inertia::render('integrations/create');
+    return Inertia::render('integrations/create', [
+      'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
+      'fields' => Field::all(['id', 'name', 'possible_values']),
+    ]);
   }
 
   /**
@@ -78,6 +82,8 @@ class IntegrationController extends Controller
   {
     return Inertia::render('integrations/edit', [
       'integration' => $integration->load('environments'),
+      'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
+      'fields' => Field::all(['id', 'name', 'possible_values']),
     ]);
   }
 

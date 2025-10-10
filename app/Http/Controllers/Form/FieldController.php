@@ -21,7 +21,7 @@ class FieldController extends Controller
       ->get();
     return Inertia::render('fields/index', [
       'rows' => $entries,
-      'filters' => compact('sort')
+      'state' => compact('sort')
     ]);
   }
 
@@ -33,6 +33,7 @@ class FieldController extends Controller
     $validated = $request->validate([
       'name' => 'required|string|max:255',
       'label' => 'required|string|max:255',
+      'possible_values' => 'nullable|array',
     ]);
 
     Field::create($validated);
@@ -48,6 +49,7 @@ class FieldController extends Controller
       $validated = $request->validate([
         'name' => 'required|string|max:255',
         'label' => 'required|string|max:255',
+        'possible_values' => 'nullable|array',
       ]);
       $field->update($validated);
       add_flash_message('success', 'Field updated successfully.');

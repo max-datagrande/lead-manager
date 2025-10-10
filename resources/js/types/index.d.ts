@@ -40,6 +40,12 @@ export interface SharedData {
   };
   [key: string]: unknown;
 }
+export interface PageLink {
+  url: string | null;
+  label: string;
+  page: number | null;
+  active: boolean;
+};
 
 export interface User {
   id: number;
