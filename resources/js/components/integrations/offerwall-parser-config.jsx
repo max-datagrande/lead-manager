@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { useRef, useState } from 'react';
 
 const MAPPING_FIELDS = [
   { key: 'title', label: 'Title' },
@@ -14,14 +15,34 @@ const MAPPING_FIELDS = [
 ];
 
 export function OfferwallParserConfig() {
+  const timer = useRef(null);
   const { data, setData } = useIntegrations();
+  const [offerListPathRef, setOfferListPathRef] = useState(data.response_parser_config.offer_list_path ?? '');
+  const [mapping, setMapping] = useState(data.response_parser_config.mapping ?? {});
 
   const handlePathChange = (e) => {
-    setData('parser_config', { ...data.response_parser_config, offer_list_path: e.target.value });
+    const newValue = e.target.value;
+    setOfferListPathRef(newValue);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      console.log('Actualizando data mayor');
+
+      setData('response_parser_config', { ...data.response_parser_config, offer_list_path: newValue });
+    }, 500);
   };
 
   const handleMappingChange = (key, value) => {
-    setData('parser_config', { ...data.response_parser_config, mapping: { ...data.response_parser_config.mapping, [key]: value } });
+    const newEntry = { [key]: value };
+    setMapping({ ...mapping, ...newEntry });
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(() => {
+      console.log('Actualizando data mayor');
+      setData('response_parser_config', { ...data.response_parser_config, mapping: { ...data.response_parser_config.mapping, ...newEntry } });
+    }, 500);
   };
 
   return (
@@ -33,12 +54,7 @@ export function OfferwallParserConfig() {
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <Label htmlFor="offer_list_path">Offer List Path</Label>
-          <Input
-            id="offer_list_path"
-            value={data.response_parser_config.offer_list_path}
-            onChange={handlePathChange}
-            placeholder="e.g., response.offers.items"
-          />
+          <Input id="offer_list_path" value={offerListPathRef.current} onChange={handlePathChange} placeholder="e.g., response.offers.items" />
         </div>
 
         <div>
@@ -51,7 +67,7 @@ export function OfferwallParserConfig() {
                 </Label>
                 <Input
                   id={`mapping-${field.key}`}
-                  value={data.response_parser_config.mapping[field.key] ?? ''}
+                  value={mapping[field.key] ?? ''}
                   onChange={(e) => handleMappingChange(field.key, e.target.value)}
                   placeholder={`e.g., ${field.key}`}
                 />
