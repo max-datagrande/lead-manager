@@ -86,4 +86,7 @@ Route::prefix('offerwall')->group(function () {
         ->name('api.offerwall.events.conversion');
     Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
         ->name('api.offerwall.integrations');
+
+    Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
+        ->name('api.offerwall.mix.trigger');
 });
