@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, RefreshCw } from 'lucide-react';
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
@@ -15,8 +15,10 @@ const vendors = {
 
 // Componente para las acciones de la fila
 function ActionsCell({ row }) {
-  const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
+  const { showDeleteModal, showRequestViewer, showStatusModal, handleForceSync } = usePostbacks();
   const postback = row.original;
+  const canForceSync = postback.status === 'pending' || postback.status === 'failed';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -26,6 +28,12 @@ function ActionsCell({ row }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {canForceSync && (
+          <DropdownMenuItem onClick={() => handleForceSync(postback)}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            <span>Force Sync</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => showStatusModal(postback)}>Change Status</DropdownMenuItem>
         <DropdownMenuItem onClick={() => showRequestViewer(postback)}>View API Requests</DropdownMenuItem>
         <DropdownMenuItem onClick={() => showDeleteModal(postback)} className="text-red-600">
