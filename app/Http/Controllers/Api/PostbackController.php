@@ -10,13 +10,10 @@ use App\Enums\PostbackVendor;
 use App\Models\Postback;
 use App\Services\NaturalIntelligenceService;
 use App\Services\PostbackService;
-use App\Jobs\ProcessPostbackJob;
+// use App\Jobs\ProcessPostbackJob;
 use Illuminate\Http\JsonResponse;
 use Maxidev\Logger\TailLogger;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException;
-
 
 /**
  * Controller para manejar postbacks a Natural Intelligence desde landing pages
@@ -68,84 +65,28 @@ class PostbackController extends Controller
    */
   public function store(FirePostbackRequest $request): JsonResponse
   {
-    try {
-      $validated = $request->validated();
-      $vendor = $validated['vendor'];
-      $offerId = $validated['offer_id'];
+    $validated = $request->validated();
+    $vendor = $validated['vendor'];
+    $offerId = $validated['offer_id'];
 
-      // Validar vendor
-      $vendorKeys = array_keys($this->vendorServices);
-      if (!in_array($vendor, $vendorKeys)) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Vendor not supported',
-        ], 422);
-      }
-
-      $offers = collect(config('offers.maxconv'));
-      $offer = $offers->where('offer_id', $offerId)->first() ?? null;
-      if (!$offer) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Offer not found',
-        ], 422);
-      }
-      $postback = DB::transaction(function () use ($validated) {
-        // Crear postback con estado pending
-        $postback = Postback::create([
-          'offer_id' => $validated['offer_id'],
-          'click_id' => $validated['clid'],
-          'payout' => $validated['payout'] ?? null,
-          'transaction_id' => $validated['txid'],
-          'currency' => $validated['currency'],
-          'event' => $validated['event'],
-          'vendor' => $validated['vendor'],
-          'status' => Postback::statusPending(),
-          'message' => 'Pending verification',
-        ]);
-
-        // Despachar job para obtener payout
-        ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
-        return $postback;
-      });
-      TailLogger::saveLog('Postback recibido y job despachado', 'api/postback', 'info', [
-        'postback_id' => $postback->id,
-        'vendor' => $vendor,
-        'offer_id' => $offerId,
-        'click_id' => $validated['clid']
-      ]);
-
-      return response()->json([
-        'success' => true,
-        'message' => 'Postback received and queued for processing',
-        'data' => [
-          'postback_id' => $postback->id,
-          'vendor' => $vendor,
-          'status' => $postback->status,
-          'click_id' => $validated['clid']
-        ]
-      ], 200);
-    } catch (QueryException $e) {
-      if (str_contains($e->getMessage(), 'duplicate key value violates unique constraint')) {
-        return response()->json([
-          'success' => false,
-          'message' => 'Duplicate transaction ID (transaction_id) for this vendor.',
-        ], 409);
-      }
-      throw $e;
-    } catch (\Exception $e) {
-      TailLogger::saveLog('Postback: Error al procesar postback', 'api/postback', 'error', [
-        'vendor' => $vendor,
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
-      ]);
-
+    // Validar vendor
+    $vendorKeys = array_keys($this->vendorServices);
+    if (!in_array($vendor, $vendorKeys)) {
       return response()->json([
         'success' => false,
-        'message' => 'Error processing postback',
-        'error' => $e->getMessage()
-      ], 500);
+        'message' => 'Vendor not supported',
+      ], 422);
     }
+
+    $offers = collect(config('offers.maxconv'));
+    $offer = $offers->where('offer_id', $offerId)->first() ?? null;
+    if (!$offer) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Offer not found',
+      ], 422);
+    }
+    return $this->postbackService->queueForProcessing($validated);
   }
 
   /**

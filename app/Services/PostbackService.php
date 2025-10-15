@@ -10,6 +10,9 @@ use Maxidev\Logger\TailLogger;
 use App\Services\NaturalIntelligenceService;
 use App\Services\MaxconvService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Database\QueryException;
 
 class PostbackService
 {
@@ -139,7 +142,7 @@ class PostbackService
         'line' => $e->getLine(),
         'trace' => $e->getTraceAsString()
       ];
-      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [ ...$errorContext, 'postback_id' => $postback->id ]);
+      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [...$errorContext, 'postback_id' => $postback->id]);
 
       // Actualizar el registro con el error
       $newPostbackApiRequest->endpoint = 'error';
@@ -289,6 +292,75 @@ class PostbackService
       return null;
     }
     return $offerData;
+  }
+
+  /**
+   * Añade un postback a la cola de procesamiento.
+   *
+   * @param array $validatedData Los datos validados del postback
+   * @return JsonResponse Resultado de la operación con el postback creado o error
+   */
+  public function queueForProcessing(array $validatedData): JsonResponse
+  {
+    try {
+      $postback = DB::transaction(function () use ($validatedData) {
+        // Crear postback con estado pending
+        $postback = Postback::create([
+          'offer_id' => $validatedData['offer_id'],
+          'click_id' => $validatedData['clid'],
+          'payout' => $validatedData['payout'] ?? null,
+          'transaction_id' => $validatedData['txid'] ?? null,
+          'currency' => $validatedData['currency'],
+          'event' => $validatedData['event'],
+          'vendor' => $validatedData['vendor'],
+          'status' => Postback::statusPending(),
+          'message' => 'Pending verification',
+        ]);
+
+        return $postback;
+      });
+
+      TailLogger::saveLog('Postback añadido a la cola de procesamiento', 'services/postback', 'info', [
+        'postback_id' => $postback->id,
+        'vendor' => $validatedData['vendor'],
+        'offer_id' => $validatedData['offer_id'],
+        'click_id' => $validatedData['clid']
+      ]);
+
+      //ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
+      return response()->json([
+        'success' => true,
+        'postback' => $postback,
+        'message' => 'Postback received and queued for processing'
+      ]);
+    } catch (\Throwable $e) {
+      // Verificar si es una QueryException con duplicado
+      $errorMessage = $e->getMessage();
+      if ($e instanceof QueryException) {
+        $isDuplicateEntry = str_contains($errorMessage, 'duplicate key value violates unique constraint');
+        if ($isDuplicateEntry) {
+          return response()->json([
+            'success' => false,
+            'error' => 'duplicate',
+            'message' => 'Duplicate transaction ID (transaction_id) for this vendor.'
+          ], 422);
+        }
+      }
+
+      TailLogger::saveLog('Error al añadir postback a la cola', 'services/postback', 'error', [
+        'vendor' => $validatedData['vendor'] ?? 'unknown',
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'error' => 'general',
+        'message' => 'Error processing postback',
+      ], 500);
+    }
   }
 }
 
