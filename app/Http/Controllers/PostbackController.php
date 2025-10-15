@@ -135,12 +135,20 @@ class PostbackController extends Controller
   public function updateStatus(UpdatePostbackStatusRequest $request, Postback $postback): RedirectResponse
   {
     $validated = $request->validated();
-
-    $postback->status = $validated['status'];
+    $newStatus = $validated['status'];
+    $postback->status = $newStatus;
     // Only update the message if it's provided in the request.
     // Otherwise, keep the existing message (e.g., the original failure reason).
     if (isset($validated['message'])) {
       $postback->message = $validated['message'];
+    }
+    // Update the processed_at timestamp if the status is processed.
+    if ($newStatus == Postback::statusProcessed()) {
+      $postback->processed_at = now();
+    }
+    //Delete payout if status is pending
+    if ($newStatus == Postback::statusPending()) {
+      $postback->payout = null;
     }
 
     $postback->save();
