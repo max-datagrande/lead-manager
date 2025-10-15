@@ -17,11 +17,16 @@ use Illuminate\Database\QueryException;
 class PostbackService
 {
   protected ?PostbackApiRequests $lastPostbackApiRequest = null;
+  public array $vendorServices = [];
 
   public function __construct(
     protected NaturalIntelligenceService $niService,
     protected MaxconvService $maxconvService
-  ) {}
+  ) {
+    $this->vendorServices = [
+      PostbackVendor::NI->value() =>  $niService
+    ];
+  }
 
   /**
    * Redirige un postback procesado al vendor correspondiente.
@@ -244,7 +249,10 @@ class PostbackService
 
 
 
-
+  public function getCurrentVendorServices(string $vendor)
+  {
+    return $this->vendorServices[$vendor] ?? null;
+  }
   public function getOffers(): Collection
   {
     return collect(config('offers.maxconv'));

@@ -20,13 +20,8 @@ use Illuminate\Http\Request;
  */
 class PostbackController extends Controller
 {
-  public array $vendorServices = [];
-  public function __construct(protected NaturalIntelligenceService $niService, protected PostbackService $postbackService)
-  {
-    $this->vendorServices = [
-      PostbackVendor::NI->value() =>  $niService
-    ];
-  }
+  public function __construct(protected NaturalIntelligenceService $niService, protected PostbackService $postbackService) {}
+
   public function reconcilePayouts(ReconcilePayoutsRequest $request): JsonResponse
   {
     $validated = $request->validated();
@@ -52,11 +47,6 @@ class PostbackController extends Controller
     ]);
   }
 
-  public function getCurrentVendorServices(string $vendor)
-  {
-    return $this->vendorServices[$vendor] ?? null;
-  }
-
   /**
    * Endpoint fire para recibir postbacks de vendors específicos
    *
@@ -70,7 +60,7 @@ class PostbackController extends Controller
     $offerId = $validated['offer_id'];
 
     // Validar vendor
-    $vendorKeys = array_keys($this->vendorServices);
+    $vendorKeys = array_keys($this->postbackService->vendorServices);
     if (!in_array($vendor, $vendorKeys)) {
       return response()->json([
         'success' => false,
