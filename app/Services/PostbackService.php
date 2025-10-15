@@ -5,27 +5,33 @@ namespace App\Services;
 use App\Models\PostbackApiRequests;
 use Illuminate\Database\Eloquent\Collection;
 use App\Models\Postback;
-use App\Enums\PostbackVendor;
+/* use App\Enums\PostbackVendor; */
 use Maxidev\Logger\TailLogger;
-use App\Services\NaturalIntelligenceService;
 use App\Services\MaxconvService;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\JsonResponse;
+use App\Services\Postback\VendorServiceResolver;
+/* use Carbon\Carbon; */
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class PostbackService
 {
   protected ?PostbackApiRequests $lastPostbackApiRequest = null;
-  public array $vendorServices = [];
 
   public function __construct(
-    protected NaturalIntelligenceService $niService,
+    protected VendorServiceResolver $vendorResolver,
     protected MaxconvService $maxconvService
-  ) {
-    $this->vendorServices = [
-      PostbackVendor::NI->value() =>  $niService
-    ];
+  ) {}
+
+  public function searchPayout(string $clickId, string $vendor, ?string $fromDate, ?string $toDate): ?float
+  {
+    $vendorService = $this->vendorResolver->make($vendor);
+    return $vendorService->getPayoutForClickId($clickId, $fromDate, $toDate);
+  }
+
+  public function isVendorRegistered(string $vendor): bool
+  {
+    return $this->vendorResolver->isRegistered($vendor);
   }
 
   /**
@@ -114,12 +120,106 @@ class PostbackService
     }
   }
 
+  public function getOffers(): Collection
+  {
+    return collect(config('offers.maxconv'));
+  }
+  /**
+   * Añade un postback a la cola de procesamiento.
+   *
+   * @param array $validatedData Los datos validados del postback
+   * @return JsonResponse Resultado de la operación con el postback creado o error
+   */
+  public function queueForProcessing(array $validatedData): JsonResponse
+  {
+    try {
+      $postback = DB::transaction(function () use ($validatedData) {
+        // Crear postback con estado pending
+        $postback = Postback::create([
+          'offer_id' => $validatedData['offer_id'],
+          'click_id' => $validatedData['clid'],
+          'payout' => $validatedData['payout'] ?? null,
+          'transaction_id' => $validatedData['txid'] ?? null,
+          'currency' => $validatedData['currency'],
+          'event' => $validatedData['event'],
+          'vendor' => $validatedData['vendor'],
+          'status' => Postback::statusPending(),
+          'message' => 'Pending verification',
+        ]);
+
+        return $postback;
+      });
+
+      TailLogger::saveLog('Postback añadido a la cola de procesamiento', 'services/postback', 'info', [
+        'postback_id' => $postback->id,
+        'vendor' => $validatedData['vendor'],
+        'offer_id' => $validatedData['offer_id'],
+        'click_id' => $validatedData['clid']
+      ]);
+
+      //ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
+      return response()->json([
+        'success' => true,
+        'postback' => $postback,
+        'message' => 'Postback received and queued for processing'
+      ]);
+    } catch (\Throwable $e) {
+      // Verificar si es una QueryException con duplicado
+      $errorMessage = $e->getMessage();
+      if ($e instanceof QueryException) {
+        $isDuplicateEntry = str_contains($errorMessage, 'duplicate key value violates unique constraint');
+        if ($isDuplicateEntry) {
+          return response()->json([
+            'success' => false,
+            'error' => 'duplicate',
+            'message' => 'Duplicate transaction ID (transaction_id) for this vendor.'
+          ], 422);
+        }
+      }
+
+      TailLogger::saveLog('Error al añadir postback a la cola', 'services/postback', 'error', [
+        'vendor' => $validatedData['vendor'] ?? 'unknown',
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'error' => 'general',
+        'message' => 'Error processing postback',
+      ], 500);
+    }
+  }
+
+
+
+}
+
+class PostbackServiceException extends \Exception
+{
+  protected array $context = [];
+  public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
+  {
+    parent::__construct($message, $code, $previous);
+    $this->context = $context;
+  }
+  public function getContext(): array
+  {
+    return $this->context;
+  }
+}
+
+
+
+/*
+/*
   /**
    * Reconcilia los payouts de un día específico desde Natural Intelligence.
    *
    * @param string $date La fecha en formato Y-m-d.
    * @return array Un resumen de las operaciones.
-   */
   public function reconcileDailyPayouts(string $date): array
   {
     $startTime = microtime(true);
@@ -239,95 +339,6 @@ class PostbackService
       return ['success' => false, 'message' => $e->getMessage()];
     }
   }
-
-
-
-
-
-
-
-
-
-
-  public function getCurrentVendorServices(string $vendor)
-  {
-    return $this->vendorServices[$vendor] ?? null;
-  }
-  public function getOffers(): Collection
-  {
-    return collect(config('offers.maxconv'));
-  }
-  /**
-   * Añade un postback a la cola de procesamiento.
-   *
-   * @param array $validatedData Los datos validados del postback
-   * @return JsonResponse Resultado de la operación con el postback creado o error
-   */
-  public function queueForProcessing(array $validatedData): JsonResponse
-  {
-    try {
-      $postback = DB::transaction(function () use ($validatedData) {
-        // Crear postback con estado pending
-        $postback = Postback::create([
-          'offer_id' => $validatedData['offer_id'],
-          'click_id' => $validatedData['clid'],
-          'payout' => $validatedData['payout'] ?? null,
-          'transaction_id' => $validatedData['txid'] ?? null,
-          'currency' => $validatedData['currency'],
-          'event' => $validatedData['event'],
-          'vendor' => $validatedData['vendor'],
-          'status' => Postback::statusPending(),
-          'message' => 'Pending verification',
-        ]);
-
-        return $postback;
-      });
-
-      TailLogger::saveLog('Postback añadido a la cola de procesamiento', 'services/postback', 'info', [
-        'postback_id' => $postback->id,
-        'vendor' => $validatedData['vendor'],
-        'offer_id' => $validatedData['offer_id'],
-        'click_id' => $validatedData['clid']
-      ]);
-
-      //ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
-      return response()->json([
-        'success' => true,
-        'postback' => $postback,
-        'message' => 'Postback received and queued for processing'
-      ]);
-    } catch (\Throwable $e) {
-      // Verificar si es una QueryException con duplicado
-      $errorMessage = $e->getMessage();
-      if ($e instanceof QueryException) {
-        $isDuplicateEntry = str_contains($errorMessage, 'duplicate key value violates unique constraint');
-        if ($isDuplicateEntry) {
-          return response()->json([
-            'success' => false,
-            'error' => 'duplicate',
-            'message' => 'Duplicate transaction ID (transaction_id) for this vendor.'
-          ], 422);
-        }
-      }
-
-      TailLogger::saveLog('Error al añadir postback a la cola', 'services/postback', 'error', [
-        'vendor' => $validatedData['vendor'] ?? 'unknown',
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-        'trace' => $e->getTraceAsString()
-      ]);
-
-      return response()->json([
-        'success' => false,
-        'error' => 'general',
-        'message' => 'Error processing postback',
-      ], 500);
-    }
-  }
-
-
-  /*
   public function validatePostback(int $postbackId): Postback
   {
     $postback = Postback::find($postbackId);
@@ -363,18 +374,3 @@ class PostbackService
     return $postback;
   }
   */
-}
-
-class PostbackServiceException extends \Exception
-{
-  protected array $context = [];
-  public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
-  {
-    parent::__construct($message, $code, $previous);
-    $this->context = $context;
-  }
-  public function getContext(): array
-  {
-    return $this->context;
-  }
-}

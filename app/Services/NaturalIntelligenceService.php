@@ -2,16 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Maxidev\Logger\TailLogger;
 use App\Models\PostbackApiRequests;
-use App\Models\Postback;
+use App\Interfaces\Postback\VendorIntegrationInterface;
 use App\Libraries\NaturalIntelligence;
 use App\Libraries\NaturalIntelligenceException;
 
-class NaturalIntelligenceService
+class NaturalIntelligenceService implements VendorIntegrationInterface
 {
 
   private int $postbackId;
@@ -166,12 +163,20 @@ class NaturalIntelligenceService
   }
 
   /**
-   * Busca un click específico en los reportes recientes y retorna el payout
+   * Busca un click específico en los reportes del vendor y retorna el payout.
+   *
+   * @param string $clickId
+   * @param string|null $fromDate
+   * @param string|null $toDate
+   * @return float|null
    */
-  public function getPayoutForClickId(string $clickId): ?float
+  public function getPayoutForClickId(string $clickId, ?string $fromDate, ?string $toDate): ?float
   {
     try {
-      $report = $this->getRecentConversionsReport();
+      $report = ($fromDate && $toDate)
+        ? $this->getConversionsReport($fromDate, $toDate)
+        : $this->getRecentConversionsReport();
+
       if (!$report['success']) {
         TailLogger::saveLog('NI Service: Reporte no exitoso', 'api/ni', 'error', $report);
         throw new PayoutNotFoundException('Report no success');
