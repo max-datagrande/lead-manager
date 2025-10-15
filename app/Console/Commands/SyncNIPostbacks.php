@@ -84,12 +84,12 @@ class SyncNIPostbacks extends Command
         $conversion = $niConversions->get($clickId);
         $payout = $conversion['payout'] ?? null;
 
-        if ($payout !== null) {
+        if ($payout > 0) {
           $postback->update([
             'payout' => $payout,
             'status' => Postback::statusProcessed(),
             'message' => 'Payout updated via sync job.',
-            'response_data'=> $conversion,
+            'response_data' => $conversion,
             'processed_at' => now(),
           ]);
 
@@ -97,8 +97,19 @@ class SyncNIPostbacks extends Command
           PostbackProcessed::dispatch($postback);
           $updatedCount++;
           TailLogger::saveLog('SyncNIPostbacks: Updated postback.', 'cron/sync-ni', 'info', ['postback_id' => $postback->id, 'click_id' => $clickId, 'payout' => $payout]);
+        } else if ($payout !== null) { // Handles payout == 0
+          $postback->update([
+            'payout' => 0,
+            'status' => Postback::statusSkipped(),
+            'message' => 'Payout was 0, postback skipped.',
+            'response_data' => $conversion,
+            'processed_at' => now(),
+          ]);
+          // No event dispatch for skipped postbacks
+          TailLogger::saveLog('SyncNIPostbacks: Postback skipped, payout was 0.', 'cron/sync-ni', 'info', ['postback_id' => $postback->id, 'click_id' => $clickId]);
         } else {
-          TailLogger::saveLog('SyncNIPostbacks: Conversion found but no payout value.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId]);
+          // This case handles when the 'payout' key is missing from the conversion data
+          TailLogger::saveLog('SyncNIPostbacks: Conversion found but no payout value.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId, 'conversion' => $conversion]);
         }
       } else {
         $notFoundCount++;
