@@ -23,6 +23,11 @@ class PostbackService
     protected MaxconvService $maxconvService
   ) {}
 
+  public function getOffers(): Collection
+  {
+    return collect(config('offers.maxconv'));
+  }
+
   public function getApiRequests(int $postbackId): Collection
   {
     return PostbackApiRequests::where('postback_id', $postbackId)
@@ -223,8 +228,9 @@ class PostbackService
           $processedCount++;
           continue; // Ignorar si ya existe
         }
-        $offerData = $this->getOfferData($conversion);
-        if (!$offerData) {
+        $offers = $this->getOffers();
+        $offer = $offers->firstWhere('name', $conversion['pub_param_2']) ?? null;
+        if (!$offer) {
           TailLogger::saveLog('PostbackService: No se encontró información de oferta para el click ID', 'postback-reconciliation', 'warning', [
             'click_id' => $clickId,
             'conversion' => $conversion
@@ -232,11 +238,12 @@ class PostbackService
           continue;
         }
 
+
         // Crear la instancia sin guardar aún
         $postback = new Postback([
           'click_id' => $clickId,
-          'offer_id' => $offerData['offer_id'],
-          'event' => $offerData['offer_event'],
+          'offer_id' => $offer['offer_id'],
+          'event' => $offer['name'],
           'payout' => $conversion['payout'] ?? 0.0,
           'currency' => 'USD',
           'vendor' => PostbackVendor::NI->value(), // Asumimos 'ni' ya que usamos NaturalIntelligenceService
@@ -283,15 +290,6 @@ class PostbackService
       ]);
       return ['success' => false, 'message' => $e->getMessage()];
     }
-  }
-  public function getOfferData(array $conversion): ?array
-  {
-    try {
-      $offerData = $this->niService->getOfferData($conversion);
-    } catch (\Throwable $th) {
-      return null;
-    }
-    return $offerData;
   }
 
   /**
