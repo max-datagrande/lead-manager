@@ -40,10 +40,6 @@ Route::prefix('postback')->group(function () {
   // Ruta para reconciliar payouts de un día
   Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
     ->name('api.postback.reconcile');
-
-  // Ruta para obtener reportes de NI (admin)
-  Route::get('/report', [PostbackController::class, 'getReport'])
-    ->name('api.postback.report');
 });
 
 // Rutas de Geolocalización - Protegidas por whitelist de dominios
