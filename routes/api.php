@@ -37,11 +37,14 @@ Route::prefix('postback')->group(function () {
   Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
     ->name('api.postback.search-payout');
 
-  // Ruta para reconciliar payouts de un día
-  Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
-    ->name('api.postback.reconcile');
-});
-
+      // Ruta para reconciliar payouts de un día
+      Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
+          ->name('api.postback.reconcile');
+  
+      // Ruta para forzar la sincronización de un postback específico
+      Route::post('/{postback}/force-sync', [PostbackController::class, 'forceSync'])
+          ->name('api.postback.force-sync');
+  });
 // Rutas de Geolocalización - Protegidas por whitelist de dominios
 Route::middleware(['domain.whitelist'])->prefix('geolocation')->group(function () {
   // Endpoint principal para obtener geolocalización por IP

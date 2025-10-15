@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PostbackApiRequests;
 use Illuminate\Database\Eloquent\Collection;
+use App\Events\PostbackProcessed;
 use App\Models\Postback;
 /* use App\Enums\PostbackVendor; */
 use Maxidev\Logger\TailLogger;
@@ -23,15 +24,97 @@ class PostbackService
     protected MaxconvService $maxconvService
   ) {}
 
-  public function searchPayout(string $clickId, string $vendor, ?string $fromDate, ?string $toDate): ?float
+  public function searchPayout(string $clickId, string $vendor, ?string $fromDate, ?string $toDate, bool $returnConversionObject = false): float|array|null
   {
     $vendorService = $this->vendorResolver->make($vendor);
-    return $vendorService->getPayoutForClickId($clickId, $fromDate, $toDate);
+    return $vendorService->getPayoutForClickId($clickId, $fromDate, $toDate, $returnConversionObject);
   }
 
   public function isVendorRegistered(string $vendor): bool
   {
     return $this->vendorResolver->isRegistered($vendor);
+  }
+
+  /**
+   * Force sync a single postback against the vendor report.
+   *
+   * @param Postback $postback
+   * @return array
+   */
+  public function forceSyncPostback(Postback $postback): array
+  {
+    // 1. Calculate Date Range
+    $createdAt = $postback->created_at;
+    $fromDate = $createdAt->copy()->subDay()->format('Y-m-d');
+    $toDate = $createdAt->copy()->addDays(3)->format('Y-m-d');
+
+    // 2. Call searchPayout with the specific range and request the full conversion object
+    $conversionData = $this->searchPayout($postback->click_id, $postback->vendor, $fromDate, $toDate, true);
+
+    // 3. Handle result
+    if (is_array($conversionData)) {
+      $payout = $conversionData['payout'] ?? null;
+
+      if ($payout > 0) {
+        // 3a. Success: Payout found
+        $postback->update([
+          'payout' => $payout,
+          'status' => Postback::statusProcessed(),
+          'message' => "Payout {$payout} found via force sync on " . now()->toDateTimeString(),
+          'processed_at' => now(),
+          'response_data' => $conversionData,
+        ]);
+
+        // 4. Dispatch Event
+        PostbackProcessed::dispatch($postback);
+
+        TailLogger::saveLog('Postback force sync successful.', 'postback/force-sync', 'info', [
+          'postback_id' => $postback->id,
+          'payout' => $payout,
+        ]);
+
+        return [
+          'success' => true,
+          'message' => "Sync successful. Payout found: {$payout}",
+        ];
+      } else { // Handles payout == 0 or payout key not present in conversion
+        $postback->update([
+          'payout' => 0,
+          'status' => Postback::statusSkipped(),
+          'message' => 'Payout was 0 or null, postback skipped during force sync on ' . now()->toDateTimeString(),
+          'processed_at' => now(),
+          'response_data' => $conversionData,
+        ]);
+
+        TailLogger::saveLog('Postback force sync skipped: Payout was 0 or null.', 'postback/force-sync', 'info', [
+          'postback_id' => $postback->id,
+        ]);
+
+        return [
+          'success' => true,
+          'message' => 'Sync complete. Payout was 0 or null, so postback was skipped.',
+        ];
+      }
+    } else {
+      // 3b. Failure: Payout not found (searchPayout returned null)
+      $postback->update([
+        'status' => Postback::statusFailed(),
+        'message' => "Payout not found in vendor report during force sync on " . now()->toDateTimeString(),
+        'processed_at' => now(),
+        'response_data' => ['error' => 'Payout not found in vendor report.'],
+      ]);
+
+      TailLogger::saveLog('Postback force sync failed: Payout not found.', 'postback/force-sync', 'warning', [
+        'postback_id' => $postback->id,
+        'searched_from' => $fromDate,
+        'searched_to' => $toDate,
+      ]);
+
+      return [
+        'success' => false,
+        'message' => 'Payout not found in the vendor report for the specified period.',
+      ];
+    }
   }
 
   /**
