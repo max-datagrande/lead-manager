@@ -12,11 +12,13 @@ return new class extends Migration
   public function up(): void
   {
     Schema::table('postbacks', function (Blueprint $table) {
-      $schemaManager = Schema::getConnection()->getDoctrineSchemaManager();
-      $indexes = $schemaManager->listTableIndexes('postbacks');
-
-      if (array_key_exists('postbacks_vendor_click_id_unique', $indexes)) {
-        $table->dropUnique('postbacks_vendor_click_id_unique');
+      $indexes = Schema::getIndexes('postbacks');
+      
+      foreach ($indexes as $index) {
+        if ($index['name'] === 'postbacks_vendor_click_id_unique') {
+          $table->dropUnique('postbacks_vendor_click_id_unique');
+          break;
+        }
       }
     });
   }
