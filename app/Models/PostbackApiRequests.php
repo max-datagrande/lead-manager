@@ -36,6 +36,7 @@ class PostbackApiRequests extends Model
     const RELATED_TYPE_REPORT = 'report';
     const RELATED_TYPE_RECONCILIATION = 'reconciliation';
     const RELATED_TYPE_POSTBACK_REDIRECT = 'postback_redirect';
+    const RELATED_TYPE_SEARCH_PAYOUT = 'search_payout';
     //Relations
 
     public function postback()

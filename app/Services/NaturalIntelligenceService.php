@@ -26,21 +26,18 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
   {
     return $this->ni->reportUrl;
   }
-  /**
-   * Obtiene reportes de conversiones de los últimos 3 días
-   */
-  public function getRecentConversionsReport(): array
-  {
-    $fromDate = now()->subDays(3)->format('Y-m-d');
-    $toDate = now()->format('Y-m-d');
-    return $this->getConversionsReport($fromDate, $toDate);
-  }
 
   /**
    * Obtiene reportes de conversiones desde NI API
    */
-  public function getConversionsReport(string $fromDate, string $toDate): array
+  public function getConversionsReport(?string $fromDate, ?string $toDate, ?string $relatedType): array
   {
+    if (!$toDate) {
+      $toDate = now()->format('Y-m-d');
+    }
+    if (!$fromDate) {
+      $fromDate = now()->subDays(3)->format('Y-m-d');
+    }
     // Preparar datos de la petición usando la librería
     $startTime = microtime(true);
     $payload = $this->ni->buildPayload($fromDate, $toDate);
@@ -51,7 +48,7 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
       'endpoint' => $this->ni->reportUrl,
       'method' => 'POST',
       'request_data' => $payload,
-      'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
+      'related_type' => $relatedType ?? PostbackApiRequests::RELATED_TYPE_REPORT,
       'postback_id' => $this->postbackId ?? null,
       'request_id' => uniqid('req_'),
     ]);
@@ -59,27 +56,6 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
     return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
   }
 
-  /**
-   * Obtiene reportes de conversiones para reconciliación diaria (sin postback_id)
-   */
-  public function getReportForReconciliation(string $fromDate, string $toDate): array
-  {
-    // Preparar datos de la petición usando la librería
-    $startTime = microtime(true);
-    $payload = $this->ni->buildPayload($fromDate, $toDate);
-
-    // Registrar petición de reconciliación (sin postback_id)
-    $apiRequest = PostbackApiRequests::create([
-      'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
-      'endpoint' => $this->ni->reportUrl,
-      'method' => 'POST',
-      'request_data' => $payload,
-      'related_type' => PostbackApiRequests::RELATED_TYPE_RECONCILIATION,
-      'postback_id' => null, // Explícitamente null para reconciliación
-      'request_id' => uniqid('reconcile_'),
-    ]);
-    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
-  }
 
   /**
    * Ejecuta la petición de reporte y maneja la respuesta
@@ -173,10 +149,7 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
   public function getPayoutForClickId(string $clickId, ?string $fromDate, ?string $toDate): ?float
   {
     try {
-      $report = ($fromDate && $toDate)
-        ? $this->getConversionsReport($fromDate, $toDate)
-        : $this->getRecentConversionsReport();
-
+      $report = $this->getConversionsReport($fromDate, $toDate, PostbackApiRequests::RELATED_TYPE_SEARCH_PAYOUT);
       if (!$report['success']) {
         TailLogger::saveLog('NI Service: Reporte no exitoso', 'api/ni', 'error', $report);
         throw new PayoutNotFoundException('Report no success');
@@ -270,3 +243,27 @@ class PayoutNotFoundException extends \Exception
     parent::__construct("Payout not found: {$clickId}");
   }
 }
+
+
+
+/**
+ * Obtiene reportes de conversiones para reconciliación diaria (sin postback_id)
+ */
+/* public function getReportForReconciliation(string $fromDate, string $toDate): array
+{
+  // Preparar datos de la petición usando la librería
+  $startTime = microtime(true);
+  $payload = $this->ni->buildPayload($fromDate, $toDate);
+
+  // Registrar petición de reconciliación (sin postback_id)
+  $apiRequest = PostbackApiRequests::create([
+    'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+    'endpoint' => $this->ni->reportUrl,
+    'method' => 'POST',
+    'request_data' => $payload,
+    'related_type' => PostbackApiRequests::RELATED_TYPE_RECONCILIATION,
+    'postback_id' => null, // Explícitamente null para reconciliación
+    'request_id' => uniqid('reconcile_'),
+  ]);
+  return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+} */
