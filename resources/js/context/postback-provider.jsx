@@ -2,7 +2,7 @@ import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState, serializeSort } from '@/utils/table';
-import { router, useForm, usePage } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 export const PostbackContext = createContext(null);
@@ -52,6 +52,31 @@ export function PostbackProvider({ children, initialState }) {
     if (isConfirmed) {
       setNotify('Deleting postback', 'info');
       deletePostback(postback);
+    }
+  };
+
+  const handleForceSync = async (postback) => {
+    const isConfirmed = await modal.confirm({
+      title: 'Force Sync Postback',
+      description: `This will attempt to find a matching conversion for click ID: ${postback.click_id}. This action may take a few seconds.`,
+      confirmText: 'Sync',
+      cancelText: 'Cancel',
+    });
+
+    if (isConfirmed) {
+      const url = route('api.postback.force-sync', postback.id);
+      const options = {};
+      router.post(url, options, {
+        preserveScroll: true,
+        preserveState: false, // Allow table to refresh
+        onSuccess: (page) => {
+          setNotify('Postback sync completed.', 'success');
+        },
+        onError: (errors) => {
+          console.error('Error syncing postback:', errors);
+          setNotify('An unexpected error occurred.', 'error');
+        },
+      });
     }
   };
 
@@ -105,6 +130,7 @@ export function PostbackProvider({ children, initialState }) {
         isLoading,
         showDeleteModal,
         showStatusModal,
+        handleForceSync,
         pagination,
         setPagination,
       }}
