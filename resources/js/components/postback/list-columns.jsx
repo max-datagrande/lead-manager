@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { MoreHorizontal, RefreshCw } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
@@ -29,14 +29,17 @@ function ActionsCell({ row }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {canForceSync && (
-          <DropdownMenuItem onClick={() => handleForceSync(postback)}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            <span>Force Sync</span>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => handleForceSync(postback)}>
+            Force Sync
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={() => showStatusModal(postback)}>Change Status</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => showRequestViewer(postback)}>View API Requests</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => showDeleteModal(postback)} className="text-red-600">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showStatusModal(postback)}>
+          Change Status
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showRequestViewer(postback)}>
+          View API Requests
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => showDeleteModal(postback)}>
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
