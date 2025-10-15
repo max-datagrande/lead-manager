@@ -29,6 +29,27 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
 
   /**
    * Obtiene reportes de conversiones desde NI API
+   * 
+   * @param string|null $fromDate Fecha de inicio (Y-m-d)
+   * @param string|null $toDate Fecha de fin (Y-m-d)
+   * @param string|null $relatedType Tipo de relación para el request
+   * @return array{success: bool, data: array<int, array{data_type: string, device: string, pub_param_1: string, pub_param_2: string, external_campaign_id: string, external_traffic_source: string, clickouts: int, leads: int, payout: float, sales: int, visits: int, date_time: string}>}
+   * 
+   * Estructura de respuesta:
+   * - success: bool - Indica si la operación fue exitosa
+   * - data: array - Lista de conversiones con la siguiente estructura:
+   *   - data_type: string - Tipo de dato (ej: "payout")
+   *   - device: string - Dispositivo (ej: "Mobile", "Desktop")
+   *   - pub_param_1: string - Click ID único
+   *   - pub_param_2: string - Nombre de la campaña/oferta
+   *   - external_campaign_id: string - ID de campaña externa
+   *   - external_traffic_source: string - Fuente de tráfico
+   *   - clickouts: int - Número de clickouts
+   *   - leads: int - Número de leads
+   *   - payout: float - Payout en USD
+   *   - sales: int - Número de ventas
+   *   - visits: int - Número de visitas
+   *   - date_time: string - Fecha y hora en formato ISO 8601
    */
   public function getConversionsReport(?string $fromDate, ?string $toDate, ?string $relatedType): array
   {
@@ -150,6 +171,7 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
   {
     try {
       $report = $this->getConversionsReport($fromDate, $toDate, PostbackApiRequests::RELATED_TYPE_SEARCH_PAYOUT);
+      dd($report);
       if (!$report['success']) {
         TailLogger::saveLog('NI Service: Reporte no exitoso', 'api/ni', 'error', $report);
         throw new PayoutNotFoundException('Report no success');
