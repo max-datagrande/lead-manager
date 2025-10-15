@@ -11,6 +11,7 @@ use App\Libraries\NaturalIntelligenceException;
 class NaturalIntelligenceService implements VendorIntegrationInterface
 {
 
+  private ?array $lastFoundConversion = null;
   private int $postbackId;
   private array $report;
   private array $relevantFields = ['data_type', 'date', 'source_join', 'device', 'pub_param_1', 'pub_param_2', 'external_campaign_id', 'external_traffic_source', 'clickouts', 'leads', 'payout', 'sales', 'visits', 'bridge_visits', 'clicking_users', 'date_time'];
@@ -159,6 +160,11 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
     return $data->toArray();
   }
 
+  public function getLastFoundConversion(): ?array
+  {
+    return $this->lastFoundConversion;
+  }
+
   /**
    * Busca un click específico en los reportes del vendor y retorna el payout.
    *
@@ -167,8 +173,9 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
    * @param string|null $toDate
    * @return float|null
    */
-  public function getPayoutForClickId(string $clickId, ?string $fromDate, ?string $toDate): ?float
+  public function getPayoutForClickId(string $clickId, ?string $fromDate, ?string $toDate, bool $returnConversionObject = false): float|array|null
   {
+    $this->lastFoundConversion = null; // Reset before each search
     try {
       $report = $this->getConversionsReport($fromDate, $toDate, PostbackApiRequests::RELATED_TYPE_SEARCH_PAYOUT);
       if (!$report['success']) {
@@ -195,8 +202,10 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
         ]);
         throw new PayoutNotFoundException('Click ID not found in payouts: ' . $clickId);
       }
-
+      
+      $this->lastFoundConversion = $conversion; // Store the found conversion
       $payout = $conversion['payout'] ?? null;
+
       if ($payout === null) {
         TailLogger::saveLog('NI Service: Payout no disponible para click ID', 'api/ni', 'warning', [
           'clickId' => $clickId,
@@ -209,6 +218,11 @@ class NaturalIntelligenceService implements VendorIntegrationInterface
         'clickId' => $clickId,
         'payout' => $payout
       ]);
+
+      // Conditionally return the full object or just the payout
+      if ($returnConversionObject) {
+          return $conversion;
+      }
 
       return (float) $payout;
     } catch (PayoutNotFoundException $e) {
