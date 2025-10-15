@@ -7,45 +7,49 @@ use Carbon\Carbon;
 
 enum PostbackStatus: string
 {
-    case PENDING = 'pending';
-    case PROCESSED = 'processed';
-    case FAILED = 'failed';
+  case PENDING = 'pending';
+  case PROCESSED = 'processed';
+  case FAILED = 'failed';
+  case SKIPPED = 'skipped';
 
-    public function label(): string
-    {
-        return match($this) {
-            self::PENDING => 'Pending',
-            self::PROCESSED => 'Processed',
-            self::FAILED => 'Failed',
-        };
-    }
+  public function label(): string
+  {
+    return match ($this) {
+      self::PENDING => 'Pending',
+      self::PROCESSED => 'Processed',
+      self::FAILED => 'Failed',
+      self::SKIPPED => 'Skipped',
+    };
+  }
 
-    public function icon(): string
-    {
-        return match($this) {
-            self::PENDING => 'Badge',
-            self::PROCESSED => 'BadgeCheck',
-            self::FAILED => 'BadgeAlert',
-        };
-    }
+  public function icon(): string
+  {
+    return match ($this) {
+      self::PENDING => 'Badge',
+      self::PROCESSED => 'BadgeCheck',
+      self::FAILED => 'BadgeAlert',
+      self::SKIPPED => 'BadgeMinus',
+    };
+  }
 
-    public function canTransitionTo(PostbackStatus $newStatus): bool
-    {
-        return match($this) {
-            self::PENDING => in_array($newStatus, [self::PROCESSED, self::FAILED]),
-            self::PROCESSED => false, // No se puede cambiar una vez procesado
-            self::FAILED => in_array($newStatus, [self::PENDING]), // Se puede reintentar
-        };
-    }
+  public function canTransitionTo(PostbackStatus $newStatus): bool
+  {
+    return match ($this) {
+      self::PENDING => in_array($newStatus, [self::PROCESSED, self::FAILED]),
+      self::PROCESSED => false, // No se puede cambiar una vez procesado
+      self::FAILED => in_array($newStatus, [self::PENDING]), // Se puede reintentar
+      self::SKIPPED => false, // No se puede cambiar una vez saltado
+    };
+  }
 
-    public static function toArray(): array
-    {
-        return array_map(fn($case) => [
-            'value' => $case->value,
-            'label' => $case->label(),
-            'iconName' => $case->icon(),
-        ], self::cases());
-    }
+  public static function toArray(): array
+  {
+    return array_map(fn($case) => [
+      'value' => $case->value,
+      'label' => $case->label(),
+      'iconName' => $case->icon(),
+    ], self::cases());
+  }
 }
 
 class Postback extends Model
@@ -91,9 +95,21 @@ class Postback extends Model
     return $query->where('status', PostbackStatus::FAILED);
   }
 
+  public function scopeSkipped($query)
+  {
+    return $query->where('status', PostbackStatus::SKIPPED);
+  }
+
   public function scopeByVendor($query, $vendor)
   {
     return $query->where('vendor', $vendor);
+  }
+  public function markAsSkipped()
+  {
+    $this->update([
+      'status' => PostbackStatus::SKIPPED,
+      'processed_at' => now(),
+    ]);
   }
 
   // Métodos de utilidad
@@ -131,6 +147,11 @@ class Postback extends Model
     return $this->status === PostbackStatus::FAILED;
   }
 
+  public function isSkipped()
+  {
+    return $this->status === PostbackStatus::SKIPPED;
+  }
+
   // Accessor para formatear el payout
   public function getFormattedPayoutAttribute()
   {
@@ -157,5 +178,9 @@ class Postback extends Model
   public static function statusFailed(): PostbackStatus
   {
     return PostbackStatus::FAILED;
+  }
+  public static function statusSkipped(): PostbackStatus
+  {
+    return PostbackStatus::SKIPPED;
   }
 }
