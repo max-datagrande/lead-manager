@@ -134,6 +134,34 @@ class PostbackController extends Controller
       return response()->json(['success' => false, 'message' => 'An error occurred during the search.'], 500);
     }
   }
+
+  /**
+   * Force sync a single postback to find its payout.
+   *
+   * @param Postback $postback
+   * @return JsonResponse
+   */
+  public function forceSync(Postback $postback): JsonResponse
+  {
+    if (!in_array($postback->status, [Postback::statusPending(), Postback::statusFailed()])) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Only pending or failed postbacks can be synced.',
+      ], 422);
+    }
+
+    try {
+      $result = $this->postbackService->forceSyncPostback($postback);
+      return response()->json($result);
+    } catch (\Exception $e) {
+      TailLogger::saveLog('Error during force sync', 'api/postback', 'error', [
+        'postback_id' => $postback->id,
+        'error' => $e->getMessage(),
+      ]);
+
+      return response()->json(['success' => false, 'message' => 'An unexpected error occurred during the sync.'], 500);
+    }
+  }
 }
 
 /*
