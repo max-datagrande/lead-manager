@@ -22,8 +22,9 @@ class SearchPayoutRequest extends FormRequest
   {
     return [
       'clid' => 'required|string|max:255',
-      'fromDate' => 'required|date|date_format:Y-m-d|before_or_equal:toDate',
-      'toDate' => 'required|date|date_format:Y-m-d|after_or_equal:fromDate|before_or_equal:today'
+      'vendor' => 'required|string',
+      'fromDate' => 'nullable|date|date_format:Y-m-d|before_or_equal:toDate',
+      'toDate' => 'nullable|date|date_format:Y-m-d|after_or_equal:fromDate|before_or_equal:today'
     ];
   }
 
@@ -38,6 +39,8 @@ class SearchPayoutRequest extends FormRequest
       'clid.required' => 'The clid field is required.',
       'clid.string' => 'The clid field must be a string.',
       'clid.max' => 'The clid field cannot exceed 255 characters.',
+      'vendor.required' => 'The vendor field is required.',
+      'vendor.string' => 'The vendor field must be a string.',
       'fromDate.required' => 'The from date field is required.',
       'fromDate.date' => 'The from date must be a valid date.',
       'fromDate.date_format' => 'The from date must have the format Y-m-d.',

@@ -15,8 +15,10 @@ const vendors = {
 
 // Componente para las acciones de la fila
 function ActionsCell({ row }) {
-  const { showDeleteModal, showRequestViewer, showStatusModal } = usePostbacks();
+  const { showDeleteModal, showRequestViewer, showStatusModal, handleForceSync } = usePostbacks();
   const postback = row.original;
+  const canForceSync = postback.status === 'pending' || postback.status === 'failed';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -26,9 +28,18 @@ function ActionsCell({ row }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => showStatusModal(postback)}>Change Status</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => showRequestViewer(postback)}>View API Requests</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => showDeleteModal(postback)} className="text-red-600">
+        {canForceSync && (
+          <DropdownMenuItem className="cursor-pointer" onClick={() => handleForceSync(postback)}>
+            Force Sync
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showStatusModal(postback)}>
+          Change Status
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showRequestViewer(postback)}>
+          View API Requests
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => showDeleteModal(postback)}>
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

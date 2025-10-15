@@ -16,7 +16,6 @@ Route::middleware(['auth.host'])->group(function () {
   Route::prefix('visitor')->group(function () {
     Route::post('/register', [TrafficLogController::class, 'store'])->name('visitor.register');
   });
-
   Route::prefix('leads')->group(function () {
     Route::post('/register', [LeadController::class, 'store'])->name('api.leads.register');
     Route::post('/update', [LeadController::class, 'update'])->name('api.leads.update');
@@ -38,15 +37,14 @@ Route::prefix('postback')->group(function () {
   Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
     ->name('api.postback.search-payout');
 
-  // Ruta para reconciliar payouts de un día
-  Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
-    ->name('api.postback.reconcile');
-
-  // Ruta para obtener reportes de NI (admin)
-  Route::get('/report', [PostbackController::class, 'getReport'])
-    ->name('api.postback.report');
-});
-
+      // Ruta para reconciliar payouts de un día
+      Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
+          ->name('api.postback.reconcile');
+  
+      // Ruta para forzar la sincronización de un postback específico
+      Route::post('/{postback}/force-sync', [PostbackController::class, 'forceSync'])
+          ->name('api.postback.force-sync');
+  });
 // Rutas de Geolocalización - Protegidas por whitelist de dominios
 Route::middleware(['domain.whitelist'])->prefix('geolocation')->group(function () {
   // Endpoint principal para obtener geolocalización por IP
@@ -81,12 +79,13 @@ Route::prefix('maxconv')->group(function () {
     ->name('api.maxconv.postback-preview');
 });
 
+// Rutas para Offerwall Service
 Route::prefix('offerwall')->group(function () {
-    Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])
-        ->name('api.offerwall.events.conversion');
-    Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
-        ->name('api.offerwall.integrations');
+  Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])
+    ->name('api.offerwall.events.conversion');
+  Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
+    ->name('api.offerwall.integrations');
 
-    Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
-        ->name('api.offerwall.mix.trigger');
+  Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
+    ->name('api.offerwall.mix.trigger');
 });

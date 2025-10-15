@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\DatatableTrait;
 use App\Models\Postback;
+use App\Models\PostbackApiRequests;
 use App\Enums\PostbackVendor;
 use App\Services\PostbackService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Requests\UpdatePostbackStatusRequest;
 use Illuminate\Http\RedirectResponse;
+
 
 class PostbackController extends Controller
 {
@@ -96,14 +98,26 @@ class PostbackController extends Controller
   /**
    * Get API requests for a specific postback
    */
-  public function getApiRequests(Request $request, $postbackId)
+  public function getApiRequests($postbackId)
   {
-    $postbackServices = app(PostbackService::class);
     try {
-      $requests = $postbackServices->getApiRequests($postbackId);
       return response()->json([
         'success' => true,
-        'data' => $requests
+        'data' => PostbackApiRequests::where('postback_id', $postbackId)
+          ->orderBy('created_at', 'desc')
+          ->get([
+            'id',
+            'request_id',
+            'service',
+            'endpoint',
+            'method',
+            'request_data',
+            'response_data',
+            'status_code',
+            'error_message',
+            'response_time_ms',
+            'created_at'
+          ])
       ]);
     } catch (\Throwable $e) {
       session()->flash('error', $e->getMessage());
@@ -121,12 +135,20 @@ class PostbackController extends Controller
   public function updateStatus(UpdatePostbackStatusRequest $request, Postback $postback): RedirectResponse
   {
     $validated = $request->validated();
-
-    $postback->status = $validated['status'];
+    $newStatus = $validated['status'];
+    $postback->status = $newStatus;
     // Only update the message if it's provided in the request.
     // Otherwise, keep the existing message (e.g., the original failure reason).
     if (isset($validated['message'])) {
       $postback->message = $validated['message'];
+    }
+    // Update the processed_at timestamp if the status is processed.
+    if ($newStatus == Postback::statusProcessed()) {
+      $postback->processed_at = now();
+    }
+    //Delete payout if status is pending
+    if ($newStatus == Postback::statusPending()) {
+      $postback->payout = null;
     }
 
     $postback->save();
