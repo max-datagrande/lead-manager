@@ -46,6 +46,7 @@ export function OfferwallProvider({ children, initialState }) {
       preserveScroll: true,
       preserveState: true,
     });
+
   };
   const showDeleteModal = async (entry) => {
     const confirmed = await modal.confirm({

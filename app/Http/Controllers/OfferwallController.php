@@ -174,8 +174,10 @@ class OfferwallController extends Controller
   /**
    * Remove the specified resource from storage.
    */
-  public function destroy(string $id)
+  public function destroy(OfferwallMix $offerwallMix)
   {
-    //
+    $offerwallMix->delete();
+    add_flash_message(type: "success", message: "Offerwall mix deleted successfully.");
+    return  back();
   }
 }

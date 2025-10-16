@@ -35,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('mixes/store', [OfferwallController::class, 'store'])->name('offerwall.mixes.store');
     Route::get('conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
   });
-  Route::resource('offerwall', OfferwallController::class);
+  Route::resource('offerwall', OfferwallController::class)->parameters(['offerwall' => 'offerwallMix']);
 
   //Forms
   Route::prefix('forms')->group(function () {
