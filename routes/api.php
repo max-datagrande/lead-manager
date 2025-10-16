@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PostbackController;
 use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\MaxconvController;
 use App\Http\Controllers\Api\Offerwall\EventController;
+use App\Http\Controllers\Api\Form\FieldController as ApiFieldController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -84,4 +85,9 @@ Route::prefix('offerwall')->group(function () {
 
   Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
     ->name('api.offerwall.mix.trigger');
+});
+
+Route::prefix('fields')->group(function () {
+    Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');
+    Route::post('/import', [ApiFieldController::class, 'import'])->name('api.fields.import');
 });
