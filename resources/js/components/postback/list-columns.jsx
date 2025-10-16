@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { MoreHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
@@ -24,10 +24,10 @@ function ActionsCell({ row }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="start">
         {canForceSync && (
           <DropdownMenuItem className="cursor-pointer" onClick={() => handleForceSync(postback)}>
             Force Sync
@@ -51,7 +51,12 @@ export const createPostbackColumns = () => [
   {
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
-    cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
+    cell: ({ row }) => (
+      <div className="w-[80px] flex items-center gap-2">
+        <ActionsCell row={row} />
+        {row.getValue('id')}
+      </div>
+    ),
     enableSorting: true,
     enableHiding: true,
   },
@@ -134,11 +139,10 @@ export const createPostbackColumns = () => [
     accessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
-
       const currency = row.original.currency;
       const cellValue = cell.getValue();
       const isNull = cellValue === null;
-      return isNull ? '' : `${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue;
+      return isNull ? '' : (`${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue);
     },
     enableSorting: true,
     enableHiding: true,
@@ -174,10 +178,15 @@ export const createPostbackColumns = () => [
     enableHiding: true,
   },
   {
-    id: 'actions',
-    header: 'Actions',
-    cell: ActionsCell,
-    enableSorting: false,
-    enableHiding: false,
+    accessorKey: 'processed_at',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Processed At" />,
+    cell: ({ row }) => (
+      <div className="text-sm whitespace-nowrap">
+        <div className="font-medium">{formatDateTime(row.original.processed_at)}</div>
+        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.processed_at)}</div>
+      </div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
   },
 ];
