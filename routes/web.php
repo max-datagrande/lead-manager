@@ -24,13 +24,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/{postback}/status', [PostbackController::class, 'updateStatus'])->name('updateStatus');
     Route::post('/{postback}/force-sync', [PostbackController::class, 'forceSync'])->name('force-sync');
   });
+  //Companies
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
-  Route::resource('integrations', IntegrationController::class);
-  Route::post('/offerwall/mixes/store', [OfferwallController::class, 'store'])
-    ->name('api.offerwall.mixes.store');
-  Route::get('offerwall/conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
-  Route::resource('offerwall', OfferwallController::class);
+  //Integrations
   Route::post('integrations/{integration}/environments/{environment}/test', [IntegrationController::class, 'test'])->name('integrations.test');
+  Route::resource('integrations', IntegrationController::class);
+
+  //Offerwalls
+  Route::prefix('offerwall')->group(function () {
+    Route::post('mixes/store', [OfferwallController::class, 'store'])->name('offerwall.mixes.store');
+    Route::get('conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
+  });
+  Route::resource('offerwall', OfferwallController::class);
+
   //Forms
   Route::prefix('forms')->group(function () {
     Route::resource('fields', FieldController::class);

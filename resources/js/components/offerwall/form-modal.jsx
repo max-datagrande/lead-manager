@@ -75,7 +75,7 @@ export function FormModal({ entry = null, ...props }) {
     }
     setIsCreating(true);
     try {
-      const endpoint = route('api.offerwall.mixes.store');
+      const endpoint = route('offerwall.mixes.store');
       const csrfToken = getCookie('XSRF-TOKEN');
 
       const response = await fetch(endpoint, {
