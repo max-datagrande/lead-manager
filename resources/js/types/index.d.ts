@@ -37,6 +37,8 @@ export interface SharedData {
     message?: string | string[];
     error?: string | string[];
     success?: string | string[];
+    info?: string | string[];
+    warning?: string | string[];
   };
   [key: string]: unknown;
 }
