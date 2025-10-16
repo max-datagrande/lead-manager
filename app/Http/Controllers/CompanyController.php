@@ -39,8 +39,8 @@ class CompanyController extends Controller
     ]);
 
     Company::create($validated);
-    add_flash_message('success', 'Company created successfully.');
-    return  back();
+    add_flash_message(type: "success", message: "Company created successfully.");
+    return back();
   }
   /**
    * Update the specified resource in storage.
@@ -56,11 +56,11 @@ class CompanyController extends Controller
         'active' => 'boolean',
       ]);
       $company->update($validated);
-      add_flash_message('success', 'Company updated successfully.');
+      add_flash_message(type: "success", message: "Company updated successfully.");
       return  back();
     } catch (\Throwable $th) {
       $message = $th->getMessage();
-      add_flash_message('error', 'Something went wrong: ' . $message);
+      add_flash_message(type: "error", message: "Something went wrong: " . $message);
       return back()->withErrors(['message' => 'Something went wrong.']);
     }
   }
@@ -70,7 +70,7 @@ class CompanyController extends Controller
   public function destroy(Company $company)
   {
     $company->delete();
-    add_flash_message('success', 'Company deleted successfully.');
+    add_flash_message(type: "success", message: "Company deleted successfully.");
     return  back();
   }
 }

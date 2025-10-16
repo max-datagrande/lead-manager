@@ -37,7 +37,7 @@ class FieldController extends Controller
     ]);
 
     Field::create($validated);
-    add_flash_message('success', 'Field created successfully.');
+    add_flash_message(type: "success", message: "Field created successfully.");
     return  back();
   }
   /**
@@ -52,11 +52,11 @@ class FieldController extends Controller
         'possible_values' => 'nullable|array',
       ]);
       $field->update($validated);
-      add_flash_message('success', 'Field updated successfully.');
+      add_flash_message(type: "success", message: "Field updated successfully.");
       return  back();
     } catch (\Throwable $th) {
       $message = $th->getMessage();
-      add_flash_message('error', 'Something went wrong: ' . $message);
+      add_flash_message(type: "error", message: "Something went wrong: " . $message);
       return back()->withErrors(['message' => 'Something went wrong.']);
     }
   }
@@ -66,7 +66,7 @@ class FieldController extends Controller
   public function destroy(Field $field)
   {
     $field->delete();
-    add_flash_message('success', 'Field deleted successfully.');
+    add_flash_message(type: "success", message: "Field deleted successfully.");
     return  back();
   }
 }

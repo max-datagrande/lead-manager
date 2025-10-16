@@ -57,10 +57,10 @@ class IntegrationController extends Controller
   {
     try {
       $this->integrationService->createIntegration($request->all());
-      add_flash_message('success', 'Integration created successfully.');
+      add_flash_message(type: "success", message: "Integration created successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      add_flash_message('error', $e->getMessage());
+      add_flash_message(type: "error", message: $e->getMessage());
       return back();
     }
   }
@@ -94,10 +94,10 @@ class IntegrationController extends Controller
   {
     try {
       $this->integrationService->updateIntegration($integration, $request->all());
-      add_flash_message('success', 'Integration updated successfully.');
+      add_flash_message(type: "success", message: "Integration updated successfully.");
       return back();
     } catch (IntegrationServiceException $e) {
-      add_flash_message('error', $e->getMessage());
+      add_flash_message(type: "error", message: $e->getMessage());
       return back();
     }
   }
@@ -109,10 +109,10 @@ class IntegrationController extends Controller
   {
     try {
       $this->integrationService->deleteIntegration($integration);
-      add_flash_message('success', 'Integration deleted successfully.');
+      add_flash_message(type: "success", message: "Integration deleted successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      add_flash_message('error', $e->getMessage());
+      add_flash_message(type: "error", message: $e->getMessage());
       return back();
     }
   }
