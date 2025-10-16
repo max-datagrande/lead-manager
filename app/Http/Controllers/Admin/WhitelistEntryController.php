@@ -61,7 +61,7 @@ class WhitelistEntryController extends Controller
     $data = $request->all();
     $entry = WhitelistEntry::create($data);
     $message = $request->type === 'domain' ? 'Domain successfully added' : 'IP successfully added';
-    add_flash_message('success', $message);
+    add_flash_message(type: "success", message: $message);
     return redirect()->route('whitelist.index');
   }
 
@@ -83,7 +83,7 @@ class WhitelistEntryController extends Controller
     // Asegurar el booleano
     $newData['is_active'] = $request->boolean('is_active');
     $whitelist->update($newData);
-    add_flash_message('success', 'Field updated successfully.');
+    add_flash_message(type: "success", message: "Whitelist entry updated successfully.");
     return back();
   }
 
@@ -97,7 +97,7 @@ class WhitelistEntryController extends Controller
     $type = $whitelist->type;
     $whitelist->delete();
     $message = $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed';
-    add_flash_message('success', $message);
+    add_flash_message(type: "success", message: $message);
     return back();
   }
 }
