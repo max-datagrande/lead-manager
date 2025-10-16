@@ -86,7 +86,7 @@ class ProcessPostbackJob implements ShouldQueue
       ];
       $postback->markAsProcessed($responseData);
       // Disparar evento de postback procesado
-      event(new PostbackProcessed($postback));
+      /* event(new PostbackProcessed($postback)); */
       TailLogger::saveLog("Postback procesado exitosamente", 'jobs/postback', 'success', [
         'postback_id' => $this->postbackId,
         'click_id' => $this->clickId,
