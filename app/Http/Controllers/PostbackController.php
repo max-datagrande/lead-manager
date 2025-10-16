@@ -152,8 +152,33 @@ class PostbackController extends Controller
     }
 
     $postback->save();
-    add_flash_message('success', 'Postback status updated successfully.');
+    add_flash_message(type: "success", message: "Postback status updated successfully.");
     // Redirect back to the index page. Inertia will handle the success flash message.
     return redirect()->route('postbacks.index');
+  }
+
+  /**
+   * Force sync a single postback to find its payout.
+   *
+   * @param Postback $postback
+   * @return RedirectResponse
+   */
+  public function forceSync(Postback $postback, PostbackService $postbackService): RedirectResponse
+  {
+    add_flash_message(type: "info", message: "Syncing postback...");
+    if (!in_array($postback->status, [Postback::statusPending(), Postback::statusFailed()])) {
+      add_flash_message(type: "error", message: "Only pending or failed postbacks can be synced.");
+      return back();
+    }
+
+    try {
+      $postbackService->forceSyncPostback($postback);
+    } catch (\Exception $e) {
+      add_flash_message(type: "error", message: "An unexpected error occurred during the sync: " . $e->getMessage());
+    }
+
+
+
+    return back();
   }
 }

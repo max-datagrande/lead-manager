@@ -64,19 +64,20 @@ export function PostbackProvider({ children, initialState }) {
     });
 
     if (isConfirmed) {
-      const url = route('api.postback.force-sync', postback.id);
-      const options = {};
-      router.post(url, options, {
-        preserveScroll: true,
-        preserveState: false, // Allow table to refresh
-        onSuccess: (page) => {
-          setNotify('Postback sync completed.', 'success');
+      const url = route('postbacks.force-sync', postback.id);
+      router.post(
+        url,
+        {},
+        {
+          preserveScroll: true,
+          onSuccess: (page) => {
+            console.log(page);
+          },
+          onError: (errors) => {
+            console.error('Error syncing postback:', errors);
+          },
         },
-        onError: (errors) => {
-          console.error('Error syncing postback:', errors);
-          setNotify('An unexpected error occurred.', 'error');
-        },
-      });
+      );
     }
   };
 

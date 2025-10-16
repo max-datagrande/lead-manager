@@ -41,7 +41,7 @@ class PostbackService
    * @param Postback $postback
    * @return array
    */
-  public function forceSyncPostback(Postback $postback): array
+  public function forceSyncPostback(Postback $postback):void
   {
     // 1. Calculate Date Range
     $createdAt = $postback->created_at;
@@ -52,51 +52,8 @@ class PostbackService
     $conversionData = $this->searchPayout($postback->click_id, $postback->vendor, $fromDate, $toDate, true);
 
     // 3. Handle result
-    if (is_array($conversionData)) {
-      $payout = $conversionData['payout'] ?? null;
-
-      if ($payout > 0) {
-        // 3a. Success: Payout found
-        $postback->update([
-          'payout' => $payout,
-          'status' => Postback::statusProcessed(),
-          'message' => "Payout {$payout} found via force sync on " . now()->toDateTimeString(),
-          'processed_at' => now(),
-          'response_data' => $conversionData,
-        ]);
-
-        // 4. Dispatch Event
-        PostbackProcessed::dispatch($postback);
-
-        TailLogger::saveLog('Postback force sync successful.', 'postback/force-sync', 'info', [
-          'postback_id' => $postback->id,
-          'payout' => $payout,
-        ]);
-
-        return [
-          'success' => true,
-          'message' => "Sync successful. Payout found: {$payout}",
-        ];
-      } else { // Handles payout == 0 or payout key not present in conversion
-        $postback->update([
-          'payout' => 0,
-          'status' => Postback::statusSkipped(),
-          'message' => 'Payout was 0 or null, postback skipped during force sync on ' . now()->toDateTimeString(),
-          'processed_at' => now(),
-          'response_data' => $conversionData,
-        ]);
-
-        TailLogger::saveLog('Postback force sync skipped: Payout was 0 or null.', 'postback/force-sync', 'info', [
-          'postback_id' => $postback->id,
-        ]);
-
-        return [
-          'success' => true,
-          'message' => 'Sync complete. Payout was 0 or null, so postback was skipped.',
-        ];
-      }
-    } else {
-      // 3b. Failure: Payout not found (searchPayout returned null)
+    // 3b. Failure: Payout not found (searchPayout returned null)
+    if (!is_array($conversionData)) {
       $postback->update([
         'status' => Postback::statusFailed(),
         'message' => "Payout not found in vendor report during force sync on " . now()->toDateTimeString(),
@@ -110,12 +67,50 @@ class PostbackService
         'searched_to' => $toDate,
       ]);
 
-      return [
-        'success' => false,
-        'message' => 'Payout not found in the vendor report for the specified period.',
-      ];
+      add_flash_message(type: "error", message: "Payout not found in the vendor report for the specified period.");
+      return;
     }
+
+    $payout = $conversionData['payout'] ?? null;
+
+    // Handles payout == 0 or payout key not present in conversion
+    if ($payout <= 0) {
+      $postback->update([
+        'payout' => 0,
+        'status' => Postback::statusSkipped(),
+        'message' => 'Payout was 0 or null, postback skipped during force sync on ' . now()->toDateTimeString(),
+        'processed_at' => now(),
+        'response_data' => $conversionData,
+      ]);
+
+      TailLogger::saveLog('Postback force sync skipped: Payout was 0 or null.', 'postback/force-sync', 'info', [
+        'postback_id' => $postback->id,
+      ]);
+
+      add_flash_message(type: "info", message: "Sync complete. Payout was 0 or null, so postback was skipped.");
+      return;
+    }
+
+    // 3a. Success: Payout found
+    $postback->update([
+      'payout' => $payout,
+      'status' => Postback::statusProcessed(),
+      'message' => "Payout {$payout} found via force sync on " . now()->toDateTimeString(),
+      'processed_at' => now(),
+      'response_data' => $conversionData,
+    ]);
+
+    // 4. Dispatch Event
+    PostbackProcessed::dispatch($postback);
+
+    TailLogger::saveLog('Postback force sync successful.', 'postback/force-sync', 'info', [
+      'postback_id' => $postback->id,
+      'payout' => $payout,
+    ]);
+
+    add_flash_message(type: "success", message: "Sync successful. Payout found: {$payout}");
   }
+
 
   /**
    * Redirige un postback procesado al vendor correspondiente.
@@ -275,9 +270,6 @@ class PostbackService
       ], 500);
     }
   }
-
-
-
 }
 
 class PostbackServiceException extends \Exception
