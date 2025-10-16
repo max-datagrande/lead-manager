@@ -26,13 +26,17 @@ export interface NavItem {
   isActive?: boolean;
   subItems?: NavSubItem[];
 }
-
+type ServicesConfig = Record<string, any>;
 export interface SharedData {
   name: string;
   quote: { message: string; author: string };
   auth: Auth;
   ziggy: Config & { location: string };
   sidebarOpen: boolean;
+  app: {
+    env: string;
+    services: ServicesConfig;
+  };
   flash: {
     message?: string | string[];
     error?: string | string[];
