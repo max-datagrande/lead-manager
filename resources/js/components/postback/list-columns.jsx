@@ -134,9 +134,11 @@ export const createPostbackColumns = () => [
     accessorKey: 'payout',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
+
       const currency = row.original.currency;
       const cellValue = cell.getValue();
-      return `${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue;
+      const isNull = cellValue === null;
+      return isNull ? '' : `${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue;
     },
     enableSorting: true,
     enableHiding: true,

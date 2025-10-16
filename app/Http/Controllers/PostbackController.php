@@ -147,7 +147,7 @@ class PostbackController extends Controller
       $postback->processed_at = now();
     }
     //Delete payout if status is pending
-    if ($newStatus == Postback::statusPending()) {
+    if ($newStatus == Postback::statusPending()->value) {
       $postback->payout = null;
     }
 
