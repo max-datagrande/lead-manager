@@ -41,7 +41,7 @@ class PostbackService
    * @param Postback $postback
    * @return array
    */
-  public function forceSyncPostback(Postback $postback):void
+  public function forceSyncPostback(Postback $postback): void
   {
     // 1. Calculate Date Range
     $createdAt = $postback->created_at;
@@ -94,14 +94,13 @@ class PostbackService
     // 3a. Success: Payout found
     $postback->update([
       'payout' => $payout,
-      'status' => Postback::statusProcessed(),
       'message' => "Payout {$payout} found via force sync on " . now()->toDateTimeString(),
       'processed_at' => now(),
       'response_data' => $conversionData,
     ]);
 
     // 4. Dispatch Event
-    PostbackProcessed::dispatch($postback);
+    event(new PostbackProcessed($postback));
 
     TailLogger::saveLog('Postback force sync successful.', 'postback/force-sync', 'info', [
       'postback_id' => $postback->id,
@@ -109,6 +108,7 @@ class PostbackService
     ]);
 
     add_flash_message(type: "success", message: "Sync successful. Payout found: {$payout}");
+    return;
   }
 
 
@@ -166,10 +166,12 @@ class PostbackService
       $newPostbackApiRequest->update();
 
       //Update postback
+      $json = $result['response']->json();
+      $body =  $result['response']->body();
       $postback->update([
         'status' => Postback::statusProcessed(),
         'processed_at' => now(),
-        'response_data' => $result['response']->body(),
+        'response_data' => $json ?? $body,
         'message' => 'Postback processed successfully',
       ]);
     } catch (\Throwable $e) {
