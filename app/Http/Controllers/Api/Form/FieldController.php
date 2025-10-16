@@ -50,16 +50,31 @@ class FieldController extends Controller
         ], $response->status());
       }
 
-      $fields = $response->json();
+      $data = $response->json();
 
-      if (empty($fields)) {
+      // Ensure we have a plain, numerically-indexed array for the 'insert' method.
+      // This converts an object like {"0":{...}, "1":{...}} into a proper array [{...}, {...}]
+      $fieldsToInsert = is_array($data) ? array_values($data) : [];
+
+      if (empty($fieldsToInsert)) {
         return response()->json(['message' => 'No fields to import from production.']);
       }
+
+      // Pre-process fields to handle array-to-JSON conversion for 'possible_values'
+      $processedFields = array_map(function ($field) {
+        if (isset($field['possible_values']) && is_array($field['possible_values'])) {
+          $field['possible_values'] = json_encode($field['possible_values']);
+        }
+        // Ensure 'created_at' and 'updated_at' are present, otherwise DB might complain
+        $field['created_at'] = $field['created_at'] ?? now();
+        $field['updated_at'] = $field['updated_at'] ?? now();
+        return $field;
+      }, $fieldsToInsert);
 
       // Using PostgreSQL syntax from project context
       DB::statement('TRUNCATE TABLE fields RESTART IDENTITY CASCADE');
 
-      Field::insert($fields);
+      Field::insert($processedFields);
 
       return response()->json(['message' => 'Fields synchronized successfully from production.']);
     } catch (\Throwable $th) {
