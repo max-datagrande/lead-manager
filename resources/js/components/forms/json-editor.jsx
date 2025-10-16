@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrentTheme } from '@/hooks/use-appearance';
+
+const theme = getCurrentTheme();
 
 const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...props }) => {
   const { addMessage } = useToast();
   const handleEditorChange = useCallback((val) => {
     onChange(val);
   }, [onChange]);
-
   const formatJson = () => {
     try {
       // Asegurar que el valor sea un string
@@ -30,7 +32,11 @@ const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...pr
   return (
     <div className={cn('space-y-2', className)}>
       <div className="mb-2 flex justify-between gap-4">
-        {label && <Label className='flex items-center gap-2' htmlFor="json-editor">{label}</Label>}
+        {label && (
+          <Label className="flex items-center gap-2" htmlFor="json-editor">
+            {label}
+          </Label>
+        )}
         <Button type="button" variant="outline" size="sm" onClick={formatJson}>
           Format JSON
         </Button>
@@ -42,7 +48,7 @@ const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...pr
         height="200px" // Ajusta la altura según sea necesario
         extensions={[json()]}
         onChange={handleEditorChange}
-        theme="light" // O "dark", según tu preferencia
+        theme={theme} // O "dark", según tu preferencia
         placeholder={placeholder}
         // Las opciones de CodeMirror se pasan directamente al componente
         // No hay una prop 'options' en @uiw/react-codemirror, se configuran con props
