@@ -2,7 +2,8 @@ import { FormModal } from '@/components/fields/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
+import axios from 'axios';
 import { createContext, useState } from 'react';
 
 export const FieldsContext = createContext(null);
@@ -41,13 +42,6 @@ export function FieldsProvider({ children, initialState }) {
     }
   };
 
-  const deleteEntry = async (entry) => {
-    const url = route('fields.destroy', entry.id);
-    destroy(url, {
-      preserveScroll: true,
-      preserveState: true,
-    });
-  };
   const showDeleteModal = async (entry) => {
     const confirmed = await modal.confirm({
       title: 'Delete element',
@@ -59,6 +53,42 @@ export function FieldsProvider({ children, initialState }) {
     if (confirmed) {
       setNotify('Deleting field', 'info');
       deleteEntry(entry);
+    }
+  };
+
+  const deleteEntry = async (entry) => {
+    const url = route('fields.destroy', entry.id);
+    destroy(url, {
+      preserveScroll: true,
+      preserveState: true,
+    });
+  };
+
+  const confirmSync = async () => {
+    const confirmed = await modal.confirm({
+      title: 'Sync fields',
+      description:
+        'This action will sync all fields from production to local. Are you sure you want to sync from production? This will TRUNCATE your local fields table!',
+      confirmText: 'Sync',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (confirmed) {
+      setNotify('Syncing fields', 'info');
+      syncFields();
+    }
+  };
+  const syncFields = async () => {
+    const url = route('api.fields.import');
+    try {
+      const response = await axios.post(url);
+      const notify = response.data.message || 'Sync completed!';
+      setNotify(notify, 'success');
+      router.reload();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'An unknown error occurred.';
+      console.log(error);
+      setNotify(errorMessage, 'error');
     }
   };
 
@@ -78,6 +108,7 @@ export function FieldsProvider({ children, initialState }) {
         setGlobalFilter,
         pagination,
         setPagination,
+        confirmSync,
       }}
     >
       {children}
