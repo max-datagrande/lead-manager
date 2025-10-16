@@ -35,25 +35,24 @@ const showMessages = ({ messages, toastFn }: showMessageParams) => {
 };
 export function Toaster() {
   const { props: { flash } } = usePage<SharedData>();
+
   useEffect(() => {
-    // Display success messages if they exist
-    if (flash.success) {
-      showMessages({ messages: flash.success, toastFn: toast.success });
-    }
+    const toastMap = {
+      success: toast.success,
+      error: toast.error,
+      info: toast.info,
+      warning: toast.warning,
+    };
 
-    // Display error messages if they exist
-    if (flash.error) {
-      showMessages({ messages: flash.error, toastFn: toast.error });
-    }
-
-    // Display info messages if they exist
-    if (flash.info) {
-      showMessages({ messages: flash.info, toastFn: toast.info });
-    }
-
-    // Display warning messages if they exist
-    if (flash.warning) {
-      showMessages({ messages: flash.warning, toastFn: toast.warning });
+    for (const type in toastMap) {
+      const messages = flash[type as keyof typeof toastMap];
+      if (!messages) {
+        continue;
+      }
+      showMessages({
+        messages,
+        toastFn: toastMap[type as keyof typeof toastMap],
+      });
     }
   }, [flash]); // Re-run effect when flash messages change
 
