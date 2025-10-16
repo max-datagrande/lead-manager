@@ -76,7 +76,6 @@ class SyncNIPostbacks extends Command
     // 3. Match and Update
     $updatedCount = 0;
     $notFoundCount = 0;
-    dd($niConversions);
     $this->withProgressBar($pendingPostbacks, function ($postback) use ($niConversions, &$updatedCount, &$notFoundCount) {
       $clickId = $postback->click_id;
 
