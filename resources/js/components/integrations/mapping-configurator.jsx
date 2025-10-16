@@ -46,7 +46,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [],
           <div key={token} className="grid grid-cols-3 items-end gap-4">
             <div className="space-y-2">
               <Label>Token</Label>
-              <p className="rounded-md bg-slate-100 p-2 font-mono text-sm">{`{${token}}`}</p>
+              <p className="rounded-md bg-muted p-2 font-mono text-sm text-foreground">{`{${token}}`}</p>
             </div>
             <div>
               <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
