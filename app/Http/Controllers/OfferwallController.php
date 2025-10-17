@@ -150,25 +150,62 @@ class OfferwallController extends Controller
   /**
    * Display the specified resource.
    */
-  public function show(string $id)
+  public function show(OfferwallMix $offerwallMix)
   {
-    //
+    $offerwallMix->load(['integrations', 'integrations.company']);
+    
+    return response()->json([
+      'success' => true,
+      'data' => $offerwallMix
+    ]);
   }
 
   /**
    * Show the form for editing the specified resource.
    */
-  public function edit(string $id)
+  public function edit(OfferwallMix $offerwallMix)
   {
-    //
+    $offerwallMix->load(['integrations', 'integrations.company']);
+    
+    return response()->json([
+      'success' => true,
+      'data' => $offerwallMix
+    ]);
   }
 
   /**
    * Update the specified resource in storage.
    */
-  public function update(Request $request, string $id)
+  public function update(Request $request, OfferwallMix $offerwallMix)
   {
-    //
+    $request->validate([
+      'name' => 'required|string|max:255',
+      'description' => 'nullable|string',
+      'integration_ids' => 'required|array|min:1',
+      'integration_ids.*' => 'exists:integrations,id'
+    ]);
+
+    try {
+      $offerwallMix->update([
+        'name' => $request->name,
+        'description' => $request->description,
+      ]);
+
+      // Sync integrations (this will remove old ones and add new ones)
+      $offerwallMix->integrations()->sync($request->integration_ids);
+
+      return response()->json([
+        'success' => true,
+        'message' => 'Offerwall mix updated successfully',
+        'data' => $offerwallMix->load('integrations')
+      ], 200);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Error updating offerwall mix: ' . $e->getMessage()
+      ], 500);
+    }
   }
 
   /**
