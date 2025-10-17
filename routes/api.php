@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\PostbackController;
 use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\MaxconvController;
 use App\Http\Controllers\Api\Offerwall\EventController;
+use App\Http\Controllers\OfferwallController;
+use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\Form\FieldController as ApiFieldController;
 
 Route::any('/health', function () {
@@ -38,10 +40,10 @@ Route::prefix('postback')->group(function () {
   Route::post('/search-payout', [PostbackController::class, 'searchPayout'])
     ->name('api.postback.search-payout');
 
-      // Ruta para reconciliar payouts de un día
-      Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
+  // Ruta para reconciliar payouts de un día
+  Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])
     ->name('api.postback.reconcile');
-  });
+});
 // Rutas de Geolocalización - Protegidas por whitelist de dominios
 Route::middleware(['domain.whitelist'])->prefix('geolocation')->group(function () {
   // Endpoint principal para obtener geolocalización por IP
@@ -77,17 +79,13 @@ Route::prefix('maxconv')->group(function () {
 });
 
 // Rutas para Offerwall Service
-Route::prefix('offerwall')->group(function () {
-  Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])
-    ->name('api.offerwall.events.conversion');
-  Route::get('/integrations', [\App\Http\Controllers\OfferwallController::class, 'getOfferwallIntegrations'])
-    ->name('api.offerwall.integrations');
-
-  Route::post('/mix/{offerwallMix}', [\App\Http\Controllers\Api\Offerwall\MixController::class, 'trigger'])
-    ->name('api.offerwall.mix.trigger');
+Route::prefix('offerwall')->name('api.offerwall.')->group(function () {
+  Route::get('/integrations', [OfferwallController::class, 'getOfferwallIntegrations'])->name('integrations');
+  Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])->name('events.conversion');
+  Route::post('/mix/{offerwallMix}', [OfferwallMixController::class, 'trigger']) ->name('mix.trigger');
 });
 
 Route::prefix('fields')->group(function () {
-    Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');
-    Route::post('/import', [ApiFieldController::class, 'import'])->name('api.fields.import');
+  Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');
+  Route::post('/import', [ApiFieldController::class, 'import'])->name('api.fields.import');
 });
