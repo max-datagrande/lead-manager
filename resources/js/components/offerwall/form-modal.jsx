@@ -152,19 +152,19 @@ export function FormModal({ entry = null, isEdit, ...props }) {
         <div className="space-y-2">
           <Label>Integrations *</Label>
           <Input placeholder="Search for an integration..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={isSaving} />
-          <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-md border p-2 pr-2">
+          <div className="max-h-[300px] overflow-y-auto rounded-md border">
             {isLoading ? (
               <p className="py-4 text-center">Loading integrations...</p>
             ) : (
               filteredIntegrations.map((integration) => (
-                <div key={integration.id} className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-100">
+                <div key={integration.id} className="flex items-center rounded-md py-2 px-3 hover:bg-muted">
                   <Checkbox
                     id={`integration-${integration.id}`}
                     checked={selectedIntegrations.has(integration.id)}
                     onCheckedChange={() => handleSelect(integration.id)}
                     disabled={isSaving}
                   />
-                  <label htmlFor={`integration-${integration.id}`} className="flex-1 cursor-pointer">
+                  <label htmlFor={`integration-${integration.id}`} className="flex-1 cursor-pointer pl-3">
                     <div className="font-medium">{integration.name}</div>
                     {integration.company && <div className="text-sm text-gray-500">{integration.company.name}</div>}
                   </label>
