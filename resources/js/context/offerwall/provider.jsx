@@ -2,7 +2,7 @@ import { FormModal } from '@/components/offerwall';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { createContext, useState } from 'react';
 
 export const OfferwallContext = createContext(null);
@@ -33,6 +33,9 @@ export function OfferwallProvider({ children, initialState }) {
   const showEditModal = async (entry) => {
     try {
       const result = await modal.openAsync(<FormModal entry={entry} isEdit={true} />);
+      if (result?.success) {
+        router.reload();
+      }
       console.log(result);
     } catch (error) {
       setNotify('Error updating offerwall mix', 'error');
@@ -46,7 +49,6 @@ export function OfferwallProvider({ children, initialState }) {
       preserveScroll: true,
       preserveState: true,
     });
-
   };
   const showDeleteModal = async (entry) => {
     const confirmed = await modal.confirm({
