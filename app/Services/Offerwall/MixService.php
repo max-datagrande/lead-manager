@@ -18,11 +18,10 @@ class MixService
   public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
   {
     $startTime = microtime(true);
-    $lead = Lead::getLeadResponses($fingerprint);
+    $lead = Lead::getLeadWithResponses($fingerprint);
     if (!$lead) {
       return ['error' => 'Lead not found'];
     }
-
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
 
