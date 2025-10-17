@@ -153,7 +153,7 @@ class OfferwallController extends Controller
   public function show(OfferwallMix $offerwallMix)
   {
     $offerwallMix->load(['integrations', 'integrations.company']);
-    
+
     return response()->json([
       'success' => true,
       'data' => $offerwallMix
@@ -166,7 +166,7 @@ class OfferwallController extends Controller
   public function edit(OfferwallMix $offerwallMix)
   {
     $offerwallMix->load(['integrations', 'integrations.company']);
-    
+
     return response()->json([
       'success' => true,
       'data' => $offerwallMix

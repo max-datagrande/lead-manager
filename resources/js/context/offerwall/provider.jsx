@@ -22,11 +22,12 @@ export function OfferwallProvider({ children, initialState }) {
   const showCreateModal = async () => {
     try {
       const result = await modal.openAsync(<FormModal />);
-      console.log(result);
-      result && setNotify('Offerwall mix created successfully!', 'success');
+      if (result?.success) {
+        setNotify('Offerwall mix created successfully!', 'success');
+        router.reload();
+      }
     } catch (error) {
       setNotify('Error creating offerwall mix', 'error');
-      console.log('Modal cancelled or error:', error);
     }
   };
 
@@ -36,10 +37,8 @@ export function OfferwallProvider({ children, initialState }) {
       if (result?.success) {
         router.reload();
       }
-      console.log(result);
     } catch (error) {
-      setNotify('Error updating offerwall mix', 'error');
-      console.log('Modal cancelled or error:', error);
+      setNotify(error, 'error');
     }
   };
 
