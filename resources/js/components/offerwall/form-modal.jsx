@@ -8,9 +8,7 @@ import { useModal } from '@/hooks/use-modal';
 import { getCookie } from '@/utils/navigator';
 import { useEffect, useState } from 'react';
 
-export function FormModal({ entry = null, ...props }) {
-  console.log({ entry });
-
+export function FormModal({ entry = null, isEdit, ...props }) {
   const initialIntegrations = entry?.integrations?.map((i) => i.id) ?? [];
   const modal = useModal();
   const [integrations, setIntegrations] = useState([]);
@@ -18,7 +16,7 @@ export function FormModal({ entry = null, ...props }) {
   const [selectedIntegrations, setSelectedIntegrations] = useState(new Set(initialIntegrations));
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: entry?.name ?? '',
     description: entry?.description ?? '',
@@ -73,13 +71,16 @@ export function FormModal({ entry = null, ...props }) {
     if (!formData.name.trim()) {
       return;
     }
-    setIsCreating(true);
+    setIsSaving(true);
     try {
-      const endpoint = route('api.offerwall.mixes.store');
+      // Determinar endpoint y método según si es edición o creación
+      const endpoint = isEdit ? route('offerwall.update', entry.id) : route('offerwall.store');
+
+      const method = isEdit ? 'PUT' : 'POST';
       const csrfToken = getCookie('XSRF-TOKEN');
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'x-xsrf-token': csrfToken,
@@ -90,11 +91,11 @@ export function FormModal({ entry = null, ...props }) {
           name: formData.name,
           description: formData.description,
           integration_ids: Array.from(selectedIntegrations),
+          ...(isEdit && { _method: 'PUT' }), // Laravel method spoofing para formularios
         }),
       });
 
       const data = await response.json();
-
       if (response.ok && data.success) {
         const modalId = modal.topId;
         modal.resolve(modalId, {
@@ -103,21 +104,26 @@ export function FormModal({ entry = null, ...props }) {
           message: data.message,
         });
       } else {
-        throw new Error(data.message || 'Error creating offerwall mix');
+        throw new Error(data.message || `Error ${isEdit ? 'updating' : 'creating'} offerwall mix`);
       }
     } catch (error) {
-      console.error('Error creating mix:', error);
-      alert('Error al crear el mix: ' + error.message);
+      const message = isEdit ? 'Error updating offerwall mix' : 'Error creating offerwall mix';
+      console.error(message + ':', error);
+      modal.reject(modal.topId, message);
     } finally {
-      setIsCreating(false);
+      setIsSaving(false);
     }
   };
 
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Create Offerwall Mix</DialogTitle>
-        <DialogDescription>Create a new mix by providing a name, description, and selecting integrations.</DialogDescription>
+        <DialogTitle>{isEdit ? 'Edit Offerwall Mix' : 'Create Offerwall Mix'}</DialogTitle>
+        <DialogDescription>
+          {isEdit
+            ? 'Update the mix by modifying the name, description, and selecting integrations.'
+            : 'Create a new mix by providing a name, description, and selecting integrations.'}
+        </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
@@ -127,7 +133,7 @@ export function FormModal({ entry = null, ...props }) {
             placeholder="Enter mix name..."
             value={formData.name}
             onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-            disabled={isCreating}
+            disabled={isSaving}
           />
         </div>
 
@@ -138,32 +144,27 @@ export function FormModal({ entry = null, ...props }) {
             placeholder="Enter mix description (optional)..."
             value={formData.description}
             onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-            disabled={isCreating}
+            disabled={isSaving}
             rows={3}
           />
         </div>
 
         <div className="space-y-2">
           <Label>Integrations *</Label>
-          <Input
-            placeholder="Search for an integration..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            disabled={isCreating}
-          />
-          <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-md border p-2 pr-2">
+          <Input placeholder="Search for an integration..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} disabled={isSaving} />
+          <div className="max-h-[300px] overflow-y-auto rounded-md border">
             {isLoading ? (
               <p className="py-4 text-center">Loading integrations...</p>
             ) : (
               filteredIntegrations.map((integration) => (
-                <div key={integration.id} className="flex items-center space-x-2 rounded-md p-2 hover:bg-gray-100">
+                <div key={integration.id} className="flex items-center rounded-md py-2 px-3 hover:bg-muted">
                   <Checkbox
                     id={`integration-${integration.id}`}
                     checked={selectedIntegrations.has(integration.id)}
                     onCheckedChange={() => handleSelect(integration.id)}
-                    disabled={isCreating}
+                    disabled={isSaving}
                   />
-                  <label htmlFor={`integration-${integration.id}`} className="flex-1 cursor-pointer">
+                  <label htmlFor={`integration-${integration.id}`} className="flex-1 cursor-pointer pl-3">
                     <div className="font-medium">{integration.name}</div>
                     {integration.company && <div className="text-sm text-gray-500">{integration.company.name}</div>}
                   </label>
@@ -175,11 +176,11 @@ export function FormModal({ entry = null, ...props }) {
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={handleCancel} disabled={isCreating}>
+        <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>
           Cancel
         </Button>
-        <Button onClick={handleCreate} disabled={selectedIntegrations.size === 0 || !formData.name.trim() || isCreating}>
-          {isCreating ? 'Creating...' : entry?.id ? 'Update Mix' : 'Create Mix'}
+        <Button onClick={handleCreate} disabled={selectedIntegrations.size === 0 || !formData.name.trim() || isSaving}>
+          {isSaving ? 'Saving...' : entry?.id ? 'Update Mix' : 'Create Mix'}
         </Button>
       </DialogFooter>
     </>

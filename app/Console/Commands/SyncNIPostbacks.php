@@ -41,7 +41,7 @@ class SyncNIPostbacks extends Command
    */
   public function handle()
   {
-    $this->info('Starting NI Postback Synchronization...');
+    $this->info('Starting NI Postback Synchronization for date: ' . now()->format('Y-m-d') . ' ...');
     TailLogger::saveLog('SyncNIPostbacks: Starting job.', 'cron/sync-ni', 'info', []);
 
     // 1. Fetch NI Report

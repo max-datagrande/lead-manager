@@ -5,7 +5,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+/*  // Comparar los valores reales en lugar de referencias de objetos
+    const currentValues = pairs.map(({ id, ...rest }) => rest);
+    const initialValues = initialPairs.map(({ id, ...rest }) => rest);
 
+    // Solo llamar onChange si los valores realmente han cambiado
+    if (JSON.stringify(currentValues) !== JSON.stringify(initialValues)) {
+      onChange(currentValues);
+    } */
 export const KeyValueList = ({
   initialValues = [],
   onChange,
@@ -17,11 +24,15 @@ export const KeyValueList = ({
   textOnTooltip = false,
   label = null,
 }) => {
+  const initialPairs = initialValues.map((p) => ({ ...p, id: p.id || uuidv4() }));
   // Add a unique ID to initial values for React key prop, if they don't have one
-  const [pairs, setPairs] = useState(() => initialValues.map((p) => ({ ...p, id: p.id || uuidv4() })));
+  const [pairs, setPairs] = useState(initialPairs);
+  console.log({ pairs });
 
   useEffect(() => {
-    // Inform the parent component of changes, stripping the internal ID
+    if (initialPairs === pairs) {
+      return;
+    }
     onChange(pairs.map(({ id, ...rest }) => rest));
   }, [pairs]);
 

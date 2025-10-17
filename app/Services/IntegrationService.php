@@ -90,6 +90,7 @@ class IntegrationService
       'name' => 'required|string|max:255',
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
+      'company_id' => 'required|exists:companies,id',
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
@@ -109,6 +110,7 @@ class IntegrationService
         'name' => $data['name'],
         'type' => $data['type'],
         'is_active' => $data['is_active'],
+        'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
       ]);
