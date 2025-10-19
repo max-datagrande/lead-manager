@@ -27,23 +27,23 @@ const JsonViewer = ({ data, title, className = "" }) => {
 
   const renderValue = (value, path = '', level = 0) => {
     if (value === null) {
-      return <span className="text-gray-500 italic">null</span>;
+      return <span className="text-gray-500 dark:text-gray-400 italic">null</span>;
     }
 
     if (value === undefined) {
-      return <span className="text-gray-500 italic">undefined</span>;
+      return <span className="text-gray-500 dark:text-gray-400 italic">undefined</span>;
     }
 
     if (typeof value === 'boolean') {
-      return <span className={value ? 'text-green-600' : 'text-red-600'}>{value.toString()}</span>;
+      return <span className={value ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{value.toString()}</span>;
     }
 
     if (typeof value === 'number') {
-      return <span className="text-blue-600">{value}</span>;
+      return <span className="text-blue-600 dark:text-blue-400">{value}</span>;
     }
 
     if (typeof value === 'string') {
-      return <span className="text-green-700">"{value}"</span>;
+      return <span className="text-green-700 dark:text-green-300">"{value}"</span>;
     }
 
     if (Array.isArray(value)) {
@@ -54,7 +54,7 @@ const JsonViewer = ({ data, title, className = "" }) => {
         <div className="inline-block">
           <button
             onClick={() => toggleExpanded(path)}
-            className="flex items-center gap-1 hover:bg-gray-100 rounded px-1 -ml-1"
+            className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -ml-1"
             disabled={isEmpty}
           >
             {!isEmpty && (
@@ -62,13 +62,13 @@ const JsonViewer = ({ data, title, className = "" }) => {
                 <ChevronDown className="h-3 w-3" /> :
                 <ChevronRight className="h-3 w-3" />
             )}
-            <span className="text-gray-600">[{isEmpty ? '' : value.length}]</span>
+            <span className="text-gray-600 dark:text-gray-300">[{isEmpty ? '' : value.length}]</span>
           </button>
           {isExpanded && !isEmpty && (
             <div className="ml-4 mt-1">
               {value.map((item, index) => (
                 <div key={index} className="mb-1">
-                  <span className="text-gray-500 text-sm">{index}: </span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">{index}: </span>
                   {renderValue(item, `${path}[${index}]`, level + 1)}
                 </div>
               ))}
@@ -87,7 +87,7 @@ const JsonViewer = ({ data, title, className = "" }) => {
         <div className="inline-block">
           <button
             onClick={() => toggleExpanded(path)}
-            className="flex items-center gap-1 hover:bg-gray-100 rounded px-1 -ml-1"
+            className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -ml-1"
             disabled={isEmpty}
           >
             {!isEmpty && (
@@ -95,14 +95,14 @@ const JsonViewer = ({ data, title, className = "" }) => {
                 <ChevronDown className="h-3 w-3" /> :
                 <ChevronRight className="h-3 w-3" />
             )}
-            <span className="text-gray-600">{isEmpty ? '{}' : `{${keys.length}}`}</span>
+            <span className="text-gray-600 dark:text-gray-300">{isEmpty ? '{}' : `{${keys.length}}`}</span>
           </button>
           {isExpanded && !isEmpty && (
             <div className="ml-4 mt-1">
               {keys.map((key) => (
                 <div key={key} className="mb-1">
-                  <span className="text-purple-600 font-medium">"{key}"</span>
-                  <span className="text-gray-500">: </span>
+                  <span className="text-purple-600 dark:text-purple-400 font-medium">"{key}"</span>
+                  <span className="text-gray-500 dark:text-gray-400">: </span>
                   {renderValue(value[key], `${path}.${key}`, level + 1)}
                 </div>
               ))}
@@ -112,7 +112,7 @@ const JsonViewer = ({ data, title, className = "" }) => {
       );
     }
 
-    return <span className="text-gray-800">{String(value)}</span>;
+    return <span className="text-gray-800 dark:text-gray-200">{String(value)}</span>;
   };
 
   const parseData = () => {
@@ -129,17 +129,17 @@ const JsonViewer = ({ data, title, className = "" }) => {
 
   if (!parsedData) {
     return (
-      <div className={cn('p-3 bg-gray-50 border rounded-md', className)}>
-        <div className="text-gray-500 text-sm italic">No data available</div>
+      <div className={cn('p-3 bg-gray-50 dark:bg-accent border rounded-md', className)}>
+        <div className="text-gray-500 dark:text-gray-400 text-sm italic">No data available</div>
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-gray-50 border rounded-md overflow-auto', className)}>
+    <div className={cn('bg-background border rounded-md overflow-auto', className)}>
       {title && (
-        <div className="flex items-center justify-between p-3 border-b bg-gray-100">
-          <h4 className="font-medium text-sm">{title}</h4>
+        <div className="flex items-center justify-between p-3 border-b bg-muted">
+          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">{title}</h4>
           <Button
             variant="ghost"
             size="sm"
@@ -147,14 +147,14 @@ const JsonViewer = ({ data, title, className = "" }) => {
             className="h-6 px-2"
           >
             {copied ? (
-              <Check className="h-3 w-3 text-green-600" />
+              <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
             ) : (
               <Copy className="h-3 w-3" />
             )}
           </Button>
         </div>
       )}
-      <div className="p-3 font-mono text-xs">
+      <div className="p-3 font-mono text-xs text-gray-900 dark:text-gray-100">
         {renderValue(parsedData, 'root')}
       </div>
     </div>
