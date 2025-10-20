@@ -138,7 +138,14 @@ class IntegrationService
    */
   public function deleteIntegration(Integration $integration)
   {
-    // Logic to delete an integration will be implemented here
+    try {
+      $integration->delete();
+    } catch (\Throwable $th) {
+      throw new IntegrationServiceException(
+        'Failed to delete integration: ' . $th->getMessage(),
+        ['integration_id' => $integration->id]
+      );
+    }
   }
 
   /**

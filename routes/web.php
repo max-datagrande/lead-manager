@@ -9,6 +9,7 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\OfferwallController;
+use App\Http\Controllers\Logs\OfferwallMixLogController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -42,6 +43,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
   });
   //Whitelist
   Route::get('whitelist', [WhitelistEntryController::class, 'index'])->name('whitelist.index');
+
+  // Logs
+  Route::prefix('logs')->name('logs.')->group(function () {
+    Route::resource('offerwall-mixes', OfferwallMixLogController::class)
+      ->only(['index', 'show'])
+      ->parameters(['offerwall-mixes' => 'offerwallMixLog']);
+  });
 });
 
 require __DIR__ . '/settings.php';

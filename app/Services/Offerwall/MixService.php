@@ -18,9 +18,15 @@ class MixService
   public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
   {
     $startTime = microtime(true);
-    $lead = Lead::getLeadResponses($fingerprint);
+    $lead = Lead::getLeadWithResponses($fingerprint);
+
     if (!$lead) {
-      return ['error' => 'Lead not found'];
+      return [
+        'success' => false,
+        'message' => 'Lead not found',
+        'status_code' => 404,
+        'data' => null
+      ];
     }
 
     $integrations = $mix->integrations()->where('is_active', true)->get();
@@ -28,7 +34,7 @@ class MixService
 
     $mixLog = null;
     try {
-      return DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
+      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
         $mixLog = OfferwallMixLog::create([
           'offerwall_mix_id' => $mix->id,
           'fingerprint' => $lead->fingerprint,
@@ -37,7 +43,12 @@ class MixService
         ]);
 
         if ($integrations->isEmpty()) {
-          return [];
+          return [
+            'success' => true,
+            'message' => 'No active integrations found',
+            'status_code' => 200,
+            'data' => []
+          ];
         }
 
         $requestsData = [];
@@ -55,6 +66,7 @@ class MixService
           $url = $prodEnv->url;
           $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
         }
+
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
@@ -77,7 +89,6 @@ class MixService
           $requestData = $requestsData[$integration->id];
 
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
-
           if ($response->successful()) {
             $successfulCount++;
             $offers = $this->parseOffers($response, $integration);
@@ -93,8 +104,37 @@ class MixService
           'total_duration_ms' => $durationRounded,
         ]);
 
-        return $aggregatedOffers;
+        // Validar que el array de ofertas no esté vacío
+        if (empty($aggregatedOffers)) {
+          return [
+            'success' => false,
+            'message' => 'No offers were found from any integration',
+            'status_code' => 404,
+            'data' => [],
+            'meta' => [
+              'total_offers' => 0,
+              'successful_integrations' => $successfulCount,
+              'failed_integrations' => $integrations->count() - $successfulCount,
+              'duration_ms' => $durationRounded
+            ]
+          ];
+        }
+
+        return [
+          'success' => true,
+          'message' => 'Offers aggregated successfully',
+          'status_code' => 200,
+          'data' => $aggregatedOffers,
+          'meta' => [
+            'total_offers' => count($aggregatedOffers),
+            'successful_integrations' => $successfulCount,
+            'failed_integrations' => $integrations->count() - $successfulCount,
+            'duration_ms' => $durationRounded
+          ]
+        ];
       });
+
+      return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
 
@@ -118,7 +158,12 @@ class MixService
         $slack->sendDirect();
       }
 
-      return ['error' => 'An unexpected error occurred'];
+      return [
+        'success' => false,
+        'message' => 'An unexpected error occurred while processing offers',
+        'status_code' => 500,
+        'data' => null
+      ];
     }
   }
 
@@ -175,7 +220,9 @@ class MixService
   private function parseOffers(Response $response, $integration): array
   {
     $parserConfig = $integration->response_parser_config;
-    $offers = data_get($response->json(), $parserConfig['offer_list_path'] ?? '');
+    $jsonResponse = $response->json();
+    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $offers = data_get($jsonResponse, $pathOfOffers);
 
     if (!is_array($offers)) {
       return [];
