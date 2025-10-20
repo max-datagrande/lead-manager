@@ -13,7 +13,7 @@ return new class extends Migration
   {
     Schema::table('postbacks', function (Blueprint $table) {
       $indexes = Schema::getIndexes('postbacks');
-      
+
       foreach ($indexes as $index) {
         if ($index['name'] === 'postbacks_vendor_click_id_unique') {
           $table->dropUnique('postbacks_vendor_click_id_unique');
@@ -29,7 +29,6 @@ return new class extends Migration
   public function down(): void
   {
     Schema::table('postbacks', function (Blueprint $table) {
-      $table->unique(['vendor', 'click_id']);
     });
   }
 };
