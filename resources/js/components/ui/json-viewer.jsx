@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const JsonViewer = ({ data, title, className = "" }) => {
+const JsonViewer = ({ data, title = null, className = "" }) => {
   const [expanded, setExpanded] = useState({});
   const [copied, setCopied] = useState(false);
 
