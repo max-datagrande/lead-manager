@@ -19,7 +19,7 @@ class MixService
   {
     $startTime = microtime(true);
     $lead = Lead::getLeadWithResponses($fingerprint);
-    
+
     if (!$lead) {
       return [
         'success' => false,
@@ -28,7 +28,7 @@ class MixService
         'data' => null
       ];
     }
-    
+
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
 
@@ -66,7 +66,7 @@ class MixService
           $url = $prodEnv->url;
           $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
         }
-        
+
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
@@ -89,14 +89,12 @@ class MixService
           $requestData = $requestsData[$integration->id];
 
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
-
           if ($response->successful()) {
             $successfulCount++;
             $offers = $this->parseOffers($response, $integration);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
-        
         $durationMs = (microtime(true) - $startTime) * 1000;
         $durationRounded = (int) round($durationMs);
         $mixLog->update([
@@ -135,7 +133,7 @@ class MixService
           ]
         ];
       });
-      
+
       return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
@@ -223,8 +221,9 @@ class MixService
   {
     $parserConfig = $integration->response_parser_config;
     $jsonResponse = $response->json();
-    $offers = data_get($jsonResponse, $parserConfig['offer_list_path'] ?? '');
-    
+    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $offers = data_get($jsonResponse, $pathOfOffers);
+
     if (!is_array($offers)) {
       return [];
     }
