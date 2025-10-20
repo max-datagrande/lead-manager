@@ -1,19 +1,22 @@
-import { useCallback } from 'react';
-import CodeMirror from '@uiw/react-codemirror';
-import { json } from '@codemirror/lang-json';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
 import { getCurrentTheme } from '@/hooks/use-appearance';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { json } from '@codemirror/lang-json';
+import CodeMirror from '@uiw/react-codemirror';
+import { useCallback } from 'react';
 
-const theme = getCurrentTheme();
+const JsonEditor = ({ label, className = '', value, onChange, placeholder, ...props }) => {
+  const theme = getCurrentTheme();
 
-const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...props }) => {
   const { addMessage } = useToast();
-  const handleEditorChange = useCallback((val) => {
-    onChange(val);
-  }, [onChange]);
+  const handleEditorChange = useCallback(
+    (val) => {
+      onChange(val);
+    },
+    [onChange],
+  );
   const formatJson = () => {
     try {
       // Asegurar que el valor sea un string
@@ -24,7 +27,7 @@ const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...pr
       const formattedJson = JSON.stringify(parsed, null, 2);
       onChange(formattedJson);
     } catch (error) {
-      console.error("Error formatting JSON:", error);
+      console.error('Error formatting JSON:', error);
       addMessage('Error formatting JSON', 'error');
     }
   };
@@ -48,7 +51,7 @@ const JsonEditor = ({ label, className = "", value, onChange, placeholder, ...pr
         height="200px" // Ajusta la altura según sea necesario
         extensions={[json()]}
         onChange={handleEditorChange}
-        theme={theme} // O "dark", según tu preferencia
+        theme={theme === 'dark' ? 'dark' : 'light'} // O "dark", según tu preferencia
         placeholder={placeholder}
         // Las opciones de CodeMirror se pasan directamente al componente
         // No hay una prop 'options' en @uiw/react-codemirror, se configuran con props
