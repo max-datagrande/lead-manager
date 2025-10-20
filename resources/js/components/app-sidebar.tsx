@@ -66,6 +66,17 @@ const GeneralGroup: NavGroupType = {
       ],
     },
     {
+      title: 'Logs',
+      icon: List, // Using List icon as a placeholder
+      subItems: [
+        {
+          title: 'Offerwall Mixes',
+          href: route('logs.offerwall-mixes.index'),
+          icon: List,
+        },
+      ],
+    },
+    {
       title: 'Settings',
       icon: Cog,
       subItems: [
