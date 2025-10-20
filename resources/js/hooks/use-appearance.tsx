@@ -47,7 +47,11 @@ export function initializeTheme() {
   mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 export function getCurrentTheme() {
-  return localStorage.getItem('appearance') as Appearance || 'system';
+  const currentTheme = (localStorage.getItem('appearance') as Appearance) || 'system';
+  if (currentTheme === 'system') {
+    return prefersDark() ? 'dark' : 'light';
+  }
+  return currentTheme;
 }
 
 export function useAppearance() {
