@@ -37,10 +37,13 @@ interface PaginatedLogs {
 
 interface IndexProps {
   rows: PaginatedLogs;
-  filters: { [key: string]: string };
+  state: {
+    sort: string;
+    filters: { [key: string]: string };
+  }
 }
 
-const Index = ({ rows, filters }: IndexProps) => {
+const Index = ({ rows }: IndexProps) => {
   return (
     <>
       <Head title="Offerwall Mix Logs" />
