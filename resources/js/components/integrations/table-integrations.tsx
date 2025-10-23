@@ -4,15 +4,26 @@ import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
 import { useModal } from '@/hooks/use-modal';
+import { type SharedData } from '@/types';
 import { getSortState } from '@/utils/table';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useState } from 'react';
 import { columns } from './list-columns';
 
-export function TableIntegrations({ entries, filters }) {
+interface IntegrationsPageData extends SharedData {
+  state: {
+    sort: string;
+    filters: Record<string, string>;
+  };
+}
+
+export function TableIntegrations({ entries }) {
+  const {
+    props: { state },
+  } = usePage<IntegrationsPageData>();
   const modal = useModal();
-  const { sort } = filters;
+  const { sort } = state;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
