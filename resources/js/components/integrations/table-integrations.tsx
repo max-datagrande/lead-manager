@@ -30,6 +30,7 @@ export function TableIntegrations({ entries }) {
     pageIndex: 0,
     pageSize: 10,
   });
+  const companies = entries.map((entry) => entry.company?.name || 'N/A');
   const showDeleteModal = async (integrationToDelete: any) => {
     const confirmed = await modal.confirm({
       title: 'Delete Integration',

@@ -71,6 +71,15 @@ export const columns = [
     cell: ({ row }) => <div className="px-2 whitespace-nowrap">{row.original.name}</div>,
   },
   {
+    accessorKey: 'company.name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
+    cell: ({ row }) => (
+      <div className="px-2 whitespace-nowrap">
+        {row.original.company?.name || 'N/A'}
+      </div>
+    ),
+  },
+  {
     accessorKey: 'type',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     cell: ({ row }) => <TypeBadge type={row.original.type} />,
