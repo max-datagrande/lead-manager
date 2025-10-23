@@ -25,12 +25,18 @@ export function TableIntegrations({ entries }) {
   const modal = useModal();
   const { sort } = state;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
+  const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
-  const companies = entries.map((entry) => entry.company?.name || 'N/A');
+
+  // Crear opciones de filtro únicas para Company y Type
+  const companyOptions = Array.from(
+    new Set(entries.map((entry) => entry.company?.name).filter(Boolean))
+  ).map((name) => ({ label: name, value: name }));
+
   const showDeleteModal = async (integrationToDelete: any) => {
     const confirmed = await modal.confirm({
       title: 'Delete Integration',
@@ -46,17 +52,20 @@ export function TableIntegrations({ entries }) {
       });
     }
   };
+  console.log(columns);
 
   const table = useReactTable({
     data: entries,
     columns: columns,
     state: {
       sorting,
+      columnFilters,
       globalFilter,
       pagination,
     },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
@@ -73,7 +82,20 @@ export function TableIntegrations({ entries }) {
     <>
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar table={table} searchPlaceholder="Search integrations..." />
+          <DataTableToolbar
+            table={table}
+            searchPlaceholder="Search integrations..."
+            config={{
+              filters: [
+                {
+                  columnId: 'company',
+                  title: 'Company',
+                  options: companyOptions,
+                },
+              ],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
+          />
         </div>
       </div>
       <div className="rounded-md border">

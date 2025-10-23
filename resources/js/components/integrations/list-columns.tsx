@@ -71,6 +71,7 @@ export const columns = [
     cell: ({ row }) => <div className="px-2 whitespace-nowrap">{row.original.name}</div>,
   },
   {
+    id: 'company',
     accessorKey: 'company.name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
     cell: ({ row }) => (
@@ -78,6 +79,10 @@ export const columns = [
         {row.original.company?.name || 'N/A'}
       </div>
     ),
+    filterFn: (row, id, value) => {
+      const companyName = row.original.company?.name || '';
+      return value.includes(companyName);
+    },
   },
   {
     accessorKey: 'type',
