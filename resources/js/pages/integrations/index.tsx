@@ -5,22 +5,33 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { route } from 'ziggy-js';
+
+interface Integration {
+  id: number;
+  company_id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  type: string;
+  response_parser_config: Record<string, any>;
+  request_mapping_config: Record<string, any>;
+  status: string;
+}
 interface IndexProps {
-  rows: any[]; // Deberíamos definir un tipo estricto para Integration
-  filters: {
+  rows: Integration[];
+  state: {
+    filters: Record<string, string>;
     sort: string;
   };
 }
 
-const Index = ({ rows, filters }: IndexProps) => {
+const Index = ({ rows }: IndexProps) => {
   return (
     <>
       <Head title="Integrations" />
       <div className="relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
-        <PageHeader
-          title="Integrations"
-          description="Manage integrations and their environments."
-        >
+        <PageHeader title="Integrations" description="Manage integrations and their environments.">
           <Link href={route('integrations.create')}>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -28,7 +39,7 @@ const Index = ({ rows, filters }: IndexProps) => {
             </Button>
           </Link>
         </PageHeader>
-        <TableIntegrations entries={rows} filters={filters} />
+        <TableIntegrations entries={rows} />
       </div>
     </>
   );

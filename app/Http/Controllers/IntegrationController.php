@@ -29,13 +29,15 @@ class IntegrationController extends Controller
     [$col, $dir] = get_sort_data($sort);
     $data = $request->all();
     $integrations = $this->integrationService->getIntegrations($data);
-    $entries = $integrations->orderBy($col, $dir)
+    $entries = $integrations->with('company') // Cargar la relación con company
+      ->orderBy($col, $dir)
       ->get();
     return Inertia::render('integrations/index', [
       'rows' => $entries,
-      'filters' => [
+      'state' => [
         'sort' => $sort,
-      ],
+        'filters' => []
+      ]
     ]);
   }
 
