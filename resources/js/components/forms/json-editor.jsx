@@ -3,8 +3,10 @@ import { Label } from '@/components/ui/label';
 import { getCurrentTheme } from '@/hooks/use-appearance';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { json } from '@codemirror/lang-json';
+import { json, jsonParseLinter } from '@codemirror/lang-json';
+import { linter, lintGutter } from '@codemirror/lint';
 import CodeMirror from '@uiw/react-codemirror';
+import { parse } from 'jsonc-parser';
 import { useCallback } from 'react';
 
 const JsonEditor = ({ label, className = '', value, onChange, placeholder, ...props }) => {
@@ -21,11 +23,9 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, ...pr
     try {
       // Asegurar que el valor sea un string
       const stringValue = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-
-      // Parsear y formatear manualmente ya que Prettier standalone no incluye el parser JSON
-      const parsed = JSON.parse(stringValue);
-      const formattedJson = JSON.stringify(parsed, null, 2);
-      onChange(formattedJson);
+      const parsed = parse(stringValue);
+      const formatted = JSON.stringify(parsed, null, 2);
+      onChange(formatted);
     } catch (error) {
       console.error('Error formatting JSON:', error);
       addMessage('Error formatting JSON', 'error');
@@ -49,7 +49,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, ...pr
         id="json-editor"
         value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
         height="200px" // Ajusta la altura según sea necesario
-        extensions={[json()]}
+        extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
         onChange={handleEditorChange}
         theme={theme === 'dark' ? 'dark' : 'light'} // O "dark", según tu preferencia
         placeholder={placeholder}
