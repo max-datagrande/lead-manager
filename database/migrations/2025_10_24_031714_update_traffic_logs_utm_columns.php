@@ -21,10 +21,6 @@ return new class extends Migration
       $table->string('utm_campaign_name')->nullable()->after('utm_campaign_id');
       $table->string('utm_term')->nullable()->after('utm_campaign_name');
       $table->string('utm_content')->nullable()->after('utm_term');
-
-      // Agregar columnas de plataforma y origen
-      $table->string('platform')->nullable()->after('utm_content');
-      $table->string('channel')->nullable()->after('platform');
     });
   }
 
@@ -35,7 +31,7 @@ return new class extends Migration
   {
     Schema::table('traffic_logs', function (Blueprint $table) {
       // Eliminar columnas agregadas
-      $table->dropColumn(['utm_campaign_name', 'utm_term', 'utm_content', 'platform', 'channel']);
+      $table->dropColumn(['utm_campaign_name', 'utm_term', 'utm_content']);
 
       // Revertir nombres de columnas
       $table->renameColumn('utm_source', 'traffic_source');
