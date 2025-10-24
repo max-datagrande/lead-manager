@@ -47,7 +47,7 @@ class TrafficLogController extends Controller
       $trafficLog = $this->trafficLogService->createTrafficLog($data);
       $fingerprint = $trafficLog->fingerprint;
       $geolocation = collect($this->request->geoService()->getGeolocation())
-        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip'])
+        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip', 'region_code'])
         ->toArray();
       //Loggin
       $this->successLog($trafficLog);
@@ -81,7 +81,7 @@ class TrafficLogController extends Controller
     TailLogger::saveLog('Traffic log successfully created from controller', 'traffic-log/store', 'info', [
       'id' => $currentVisitor->id,
       'fingerprint' => $currentVisitor->fingerprint,
-      'traffic_source' => $currentVisitor->traffic_source,
+      'utm_source' => $currentVisitor->utm_source,
     ]);
   }
 

@@ -4,21 +4,39 @@ import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
 import { useModal } from '@/hooks/use-modal';
+import { type SharedData } from '@/types';
 import { getSortState } from '@/utils/table';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useState } from 'react';
 import { columns } from './list-columns';
 
-export function TableIntegrations({ entries, filters }) {
+interface IntegrationsPageData extends SharedData {
+  state: {
+    sort: string;
+    filters: Record<string, string>;
+  };
+}
+
+export function TableIntegrations({ entries }) {
+  const {
+    props: { state },
+  } = usePage<IntegrationsPageData>();
   const modal = useModal();
-  const { sort } = filters;
+  const { sort } = state;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
+  const [columnFilters, setColumnFilters] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10,
   });
+
+  // Crear opciones de filtro únicas para Company y Type
+  const companyOptions = Array.from(
+    new Set(entries.map((entry) => entry.company?.name).filter(Boolean))
+  ).map((name) => ({ label: name, value: name }));
+
   const showDeleteModal = async (integrationToDelete: any) => {
     const confirmed = await modal.confirm({
       title: 'Delete Integration',
@@ -34,17 +52,20 @@ export function TableIntegrations({ entries, filters }) {
       });
     }
   };
+  console.log(columns);
 
   const table = useReactTable({
     data: entries,
     columns: columns,
     state: {
       sorting,
+      columnFilters,
       globalFilter,
       pagination,
     },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),
@@ -61,7 +82,20 @@ export function TableIntegrations({ entries, filters }) {
     <>
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar table={table} searchPlaceholder="Search integrations..." />
+          <DataTableToolbar
+            table={table}
+            searchPlaceholder="Search integrations..."
+            config={{
+              filters: [
+                {
+                  columnId: 'company',
+                  title: 'Company',
+                  options: companyOptions,
+                },
+              ],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
+          />
         </div>
       </div>
       <div className="rounded-md border">

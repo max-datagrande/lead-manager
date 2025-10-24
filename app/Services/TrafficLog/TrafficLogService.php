@@ -5,10 +5,11 @@ namespace App\Services\TrafficLog;
 use App\Models\TrafficLog;
 use App\Services\BotDetectorService;
 use App\Services\GeolocationService;
+use App\Services\UtmService;
 use Illuminate\Http\Request;
 use Maxidev\Logger\TailLogger;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
+
 /**
  * Exception personalizada para errores en creación de traffic logs
  */
@@ -30,6 +31,7 @@ class TrafficLogService
     private FingerprintGeneratorService $fingerprintGenerator,
     private BotDetectorService $botDetectorService,
     private GeolocationService $geolocationService,
+    private UtmService $utmService,
     protected Request $request,
   ) {}
 
@@ -52,7 +54,6 @@ class TrafficLogService
       $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
       TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
 
-      // Verificar duplicados recientes (últimos 5 minutos)
       $existingTraffic = $this->getExistingTraffic($fingerprint);
       if ($existingTraffic) {
         $this->currentVisitor = $existingTraffic;
@@ -68,14 +69,14 @@ class TrafficLogService
       }
       //Creating new visitor
       $newTraffic = new TrafficLog();
-      $newTraffic->id = (string) Str::uuid();//Id unico generado
+      $newTraffic->id = (string) Str::uuid(); //Id unico generado
       $newTraffic->fingerprint = $fingerprint;
       $newTraffic->user_agent = $userAgent;
       $newTraffic->ip_address = $ip;
       $newTraffic->visit_date = date('Y-m-d');
       $newTraffic->visit_count = 1;
-      // Detectar si es bot (solo si no se especificó en el request)
-      $newTraffic->is_bot = $data['is_bot'] ?? $this->botDetectorService->detectBot($userAgent);
+      $newTraffic->is_bot = $data['is_bot'] ?? false;
+      // $newTraffic->is_bot = $data['is_bot'] ?? $this->botDetectorService->detectBot($userAgent);
 
       //Device detection
       $deviceInfo = $this->deviceDetectionService->detectDevice($userAgent);
@@ -84,8 +85,8 @@ class TrafficLogService
       $newTraffic->os = $deviceInfo['os'];
 
       //Referer
-      $landingReferer = $data['referer'] ?? null;
-      $newTraffic->referrer = $landingReferer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
+      $referer = $data['referer'] ?? null;
+      $newTraffic->referrer = $referer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
       //Host origin
       $newTraffic->host = $landingHost;
       //Page visited
@@ -101,15 +102,22 @@ class TrafficLogService
 
       //Campaign Code
       $newTraffic->campaign_code = $queryParams['cptype'] ?? null;
-      //Campaign ID
-      $newTraffic->campaign_id = $queryParams['campaign_id'] ?? null;
-      //Click ID
-      $newTraffic->click_id = $queryParams['click_id'] ?? null;
 
-      // Analizar fuente de tráfico
-      $trafficSource = $this->trafficSourceAnalyzer->analyze($landingReferer, $queryParams, $landingHost);
-      $newTraffic->traffic_source = $trafficSource['traffic_source'];
-      $newTraffic->traffic_medium = $trafficSource['traffic_medium'];
+      // Analizar fuente de tráfico usando UtmService para extracción integral
+      $trafficData = $this->utmService->analyzeTrafficData(referrer: $referer, queryParams: $queryParams);
+
+      // Asignar datos UTM y de tráfico de manera limpia
+      // Los valores pueden ser null si no están presentes en los parámetros UTM
+      $newTraffic->utm_source = $trafficData['utm_source'];
+      $newTraffic->utm_medium = $trafficData['utm_medium']; // Canal de marketing (cpc, email, etc.)
+      $newTraffic->utm_campaign_id = $trafficData['utm_campaign_id'];
+      $newTraffic->utm_campaign_name = $trafficData['utm_campaign_name'];
+      $newTraffic->utm_term = $trafficData['utm_term'];
+      $newTraffic->utm_content = $trafficData['utm_content'];
+      $newTraffic->click_id = $trafficData['click_id'];
+      $newTraffic->platform = $trafficData['platform'];
+      $newTraffic->channel = $trafficData['channel'];
+
       // Obtener geolocalización
       $geolocation = $this->geolocationService->getGeolocation();
       $newTraffic->country_code = $geolocation['country'] ?? null;
@@ -122,7 +130,7 @@ class TrafficLogService
       TailLogger::saveLog('Traffic log creado exitosamente', 'traffic-log/store', 'info', [
         'id' => $newTraffic->id,
         'fingerprint' => $newTraffic->fingerprint,
-        'traffic_source' => $newTraffic->traffic_source,
+        'utm_source' => $newTraffic->utm_source,
         'is_bot' => $newTraffic->is_bot,
       ]);
       $this->currentVisitor = $newTraffic;

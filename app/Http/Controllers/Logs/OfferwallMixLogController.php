@@ -21,7 +21,10 @@ class OfferwallMixLogController extends Controller
 
     return Inertia::render('logs/mixes/index', [
       'rows' => $logs,
-      'filters' => $request->only(['sort']),
+      'state' => [
+        'sort' => $sort,
+        'filters' => []
+      ],
     ]);
   }
 

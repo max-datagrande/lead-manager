@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ArrowRightLeft, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ValueMappingModal } from './value-mapping-modal';
+import { Fragment } from 'react';
 
 export function MappingConfigurator({ parsers = {}, onParserChange, fields = [], onRemoveToken }) {
   const tokens = Object.keys(parsers);
@@ -38,17 +39,19 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [],
   };
 
   return (
-    <>
+    <div className="grid grid-cols-[auto_auto_1fr] items-end gap-4">
       {tokens.map((token) => {
         const field = fields.find((f) => f.name === token);
         const hasPossibleValues = field && field.possible_values && field.possible_values.length > 0;
         return (
-          <div key={token} className="grid grid-cols-3 items-end gap-4">
+          <Fragment key={token}>
+            {/* Token */}
             <div className="space-y-2">
               <Label>Token</Label>
               <p className="rounded-md bg-muted p-2 font-mono text-sm text-foreground">{`{${token}}`}</p>
             </div>
-            <div>
+            {/* Data Type */}
+            <div className="">
               <Label htmlFor={`parser-type-${token}`}>Data Type</Label>
               <Select
                 id={`parser-type-${token}`}
@@ -65,6 +68,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [],
                 </SelectContent>
               </Select>
             </div>
+            {/* Default & Actions */}
             <div className="space-y-2">
               <Label htmlFor={`parser-default-${token}`}>Default Value</Label>
               <div className="flex items-center gap-2">
@@ -96,10 +100,10 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [],
                 </div>
               </div>
             </div>
-          </div>
+          </Fragment>
         );
       })}
       <ValueMappingModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} tokenData={selectedTokenData} onSave={onParserChange} />
-    </>
+    </div>
   );
 }
