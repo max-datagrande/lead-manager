@@ -47,7 +47,7 @@ class TrafficLogController extends Controller
       $trafficLog = $this->trafficLogService->createTrafficLog($data);
       $fingerprint = $trafficLog->fingerprint;
       $geolocation = collect($this->request->geoService()->getGeolocation())
-        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip'])
+        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip', 'region_code'])
         ->toArray();
       //Loggin
       $this->successLog($trafficLog);
