@@ -62,16 +62,16 @@ class UtmService
   {
     $source = null;
     $platform = null;
-    $origin = 'direct';
+    $channel = 'direct';
     $utmSource = $urlParams['utm_source'] ?? null;
 
     // Verificar parámetros UTM primero
     if (!empty($utmSource)) {
       $source = $utmSource;
-      $origin = 'organic';
+      $channel = 'organic';
     } elseif (!empty($referrer)) {
       $source = $this->extractSourceFromReferrer($referrer);
-      $origin = 'organic';
+      $channel = 'organic';
     }
 
     // Verificar si es tráfico pagado
@@ -79,13 +79,13 @@ class UtmService
     $clickId = $clickData['click_id'];
     if ($clickId) {
       $platform = $clickData['platform'];
-      $origin = 'ads';
+      $channel = 'ads';
     }
 
     return [
       'source' => $source,
       'platform' => $platform, // Ahora solo contiene la plataforma detectada
-      'origin' => $origin,
+      'channel' => $channel,
       'click_id' => $clickId
     ];
   }
@@ -280,7 +280,7 @@ class UtmService
 
       // Información adicional de tráfico
       'platform' => $sourceData['platform'] ?? null,
-      'origin' => $sourceData['origin'] ?? null,
+      'channel' => $sourceData['channel'] ?? null,
       'click_id' => $sourceData['click_id'] ?? null,
       'utm_params' => $utmParams,
 
@@ -289,7 +289,7 @@ class UtmService
         'has_utm_params' => !empty($utmParams),
         'has_click_id' => !empty($sourceData['click_id']),
         'is_paid_traffic' => !empty($sourceData['click_id']),
-        'traffic_type' => $sourceData['origin']
+        'traffic_type' => $sourceData['channel']
       ]
     ];
   }
