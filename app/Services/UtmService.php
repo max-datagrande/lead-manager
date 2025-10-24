@@ -6,36 +6,49 @@ use App\Models\TrafficLog;
 
 class UtmService
 {
+  protected $adPlatforms = [
+    'gclid' => 'Google Ads',
+    'dclid' => 'Google Display & Video',
+    'gbraid' => 'Google Ads (iOS)',
+    'wbraid' => 'Google Ads (iOS)',
+    'gclsrc' => 'Google Ads Source',
+    'msclkid' => 'Microsoft Ads (Bing)',
+    'fbclid' => 'Meta Ads (Facebook/Instagram)',
+    'ttclid' => 'TikTok Ads',
+    'li_fat_id' => 'LinkedIn Ads',
+    'scid' => 'Snapchat Ads',
+    'epik' => 'Pinterest Ads',
+    'twclid' => 'Twitter Ads',
+    'rdt_cid' => 'Reddit Ads',
+    'yclid' => 'Yandex Ads',
+    'sccid' => 'Snapchat Ads',
+    'ymcid' => 'Yandex Ads',
+    'yqrid' => 'Yandex Ads',
+    'yzcrid' => 'Yandex Ads',
+    'sznclid' => 'Seznam/Sklik',
+    'zanpid' => 'Awin',
+    'vmcid' => 'Yahoo Ads',
+  ];
   /**
    * Extrae el click ID de los parámetros de URL basándose en plataformas publicitarias conocidas
    *
    * @param array $urlParams Parámetros de la URL
    * @return string|null
    */
-  public function getClickID($urlParams)
+  public function getClickData($urlParams)
   {
-    // Mapeo de parámetros a plataformas publicitarias
-    $adPlatforms = [
-      'gclid' => 'Google Ads',
-      'msclkid' => 'Microsoft Ads (Bing)',
-      'fbclid' => 'Meta Ads (Facebook/Instagram)',
-      'ttclid' => 'TikTok Ads',
-      'li_fat_id' => 'LinkedIn Ads',
-      'scid' => 'Snapchat Ads',
-      'epik' => 'Pinterest Ads',
-      'twclid' => 'Twitter Ads',
-      'rdt_cid' => 'Reddit Ads',
-      'yclid' => 'Yandex Ads',
-    ];
-
+    $clickId = null;
+    $medium = null;
     // Buscar el primer parámetro de ads presente
-    foreach ($adPlatforms as $param => $platform) {
+    foreach ($this->adPlatforms as $param => $platform) {
       if (isset($urlParams[$param]) && !empty($urlParams[$param])) {
-        return $urlParams[$param];
+        $clickId = $urlParams[$param];
+        $medium = $this->adPlatforms[$param];
+        break;
       }
     }
 
-    return null;
+    return ['click_id' => $clickId, 'medium' => $medium];
   }
 
   /**
@@ -45,34 +58,34 @@ class UtmService
    * @param string|null $referrer URL de referencia
    * @return array
    */
-  public function getTrafficSource($urlParams, $referrer = null)
+  public function getSourceData($urlParams, $referrer = null)
   {
-    $source = '';
-    $medium = '';
-    $origin = 'direct traffic';
+    $source = null;
+    $medium = null;
+    $origin = 'direct';
+    $utmSource = $urlParams['utm_source'] ?? null;
 
     // Verificar parámetros UTM primero
-    if (isset($urlParams['utm_source']) && !empty($urlParams['utm_source'])) {
-      $source = $urlParams['utm_source'];
+    if (!empty($utmSource)) {
+      $source = $utmSource;
       $medium = $urlParams['utm_medium'] ?? '';
       $origin = 'organic';
-    }
-    // Si no hay UTM source, analizar referrer
-    elseif (!empty($referrer)) {
+    } elseif (!empty($referrer)) {
       $source = $this->extractSourceFromReferrer($referrer);
       $origin = 'organic';
     }
 
     // Verificar si es tráfico pagado
-    $clickId = $this->getClickID($urlParams);
+    $clickData = $this->getClickData($urlParams);
+    $clickId = $clickData['click_id'];
     if ($clickId) {
-      $medium = $this->getPlatformFromClickId($urlParams);
-      $origin = 'paid search';
+      $medium = $clickData['medium'];
+      $origin = 'ads';
     }
 
     return [
-      'utm_source' => $source,
-      'utm_medium' => $medium,
+      'source' => $source,
+      'medium' => $medium,
       'origin' => $origin,
       'click_id' => $clickId
     ];
@@ -258,9 +271,11 @@ class UtmService
     $utmParams = [
       'utm_source' => $urlParams['utm_source'] ?? null,
       'utm_medium' => $urlParams['utm_medium'] ?? null,
-      'utm_campaign' => $urlParams['utm_campaign'] ?? null,
+      'utm_campaign_id' => $urlParams['campaign_id'] ?? $urlParams['cid'] ?? null,
+      'utm_campaign_name' => $urlParams['utm_campaign'] ?? null,
       'utm_term' => $urlParams['utm_term'] ?? null,
       'utm_content' => $urlParams['utm_content'] ?? null,
+
     ];
 
     // Limpiar valores vacíos
@@ -280,5 +295,45 @@ class UtmService
     return TrafficLog::where('fingerprint', $fingerprint)
       ->latest('created_at')
       ->first();
+  }
+
+  /**
+   * Analiza y extrae toda la información de tráfico de manera integral
+   *
+   * @param string|null $referrer URL de referencia
+   * @param array $queryParams Parámetros de la URL
+   * @return array Información completa de tráfico y UTM
+   */
+  public function analyzeTrafficData($referrer = null, $queryParams = [])
+  {
+    // Procesar parámetros UTM
+    $utmParams = $this->processUtmParams($queryParams);
+
+    // Obtener información de fuente de tráfico
+    $sourceData = $this->getSourceData($queryParams, $referrer);
+
+    return [
+      // Columnas UTM estándar
+      'utm_source' => $utmParams['utm_source'],
+      'utm_medium' => $utmParams['utm_medium'],
+      'utm_campaign_name' => $utmParams['utm_campaign_name'],
+      'utm_campaign_id' => $utmParams['utm_campaign_id'],
+      'utm_term' => $utmParams['utm_term'] ?? null,
+      'utm_content' => $utmParams['utm_content'] ?? null,
+
+      // Información adicional de tráfico
+      'click_id' => $sourceData['click_id'],
+      'origin' => $sourceData['origin'],
+      'medium' => $sourceData['medium'],
+      'utm_params' => $utmParams,
+
+      // Información de análisis
+      'analysis' => [
+        'has_utm_params' => !empty($utmParams),
+        'has_click_id' => !empty($sourceData['click_id']),
+        'is_paid_traffic' => !empty($sourceData['click_id']),
+        'traffic_type' => $sourceData['origin']
+      ]
+    ];
   }
 }
