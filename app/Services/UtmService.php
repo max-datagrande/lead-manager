@@ -38,17 +38,17 @@ class UtmService
   public function getClickData($urlParams)
   {
     $clickId = null;
-    $medium = null;
+    $platform = null;
     // Buscar el primer parámetro de ads presente
     foreach ($this->adPlatforms as $param => $platform) {
       if (isset($urlParams[$param]) && !empty($urlParams[$param])) {
         $clickId = $urlParams[$param];
-        $medium = $this->adPlatforms[$param];
+        $platform = $this->adPlatforms[$param];
         break;
       }
     }
 
-    return ['click_id' => $clickId, 'medium' => $medium];
+    return ['click_id' => $clickId, 'platform' => $platform];
   }
 
   /**
@@ -61,14 +61,13 @@ class UtmService
   public function getSourceData($urlParams, $referrer = null)
   {
     $source = null;
-    $medium = null;
+    $platform = null;
     $origin = 'direct';
     $utmSource = $urlParams['utm_source'] ?? null;
 
     // Verificar parámetros UTM primero
     if (!empty($utmSource)) {
       $source = $utmSource;
-      $medium = $urlParams['utm_medium'] ?? '';
       $origin = 'organic';
     } elseif (!empty($referrer)) {
       $source = $this->extractSourceFromReferrer($referrer);
@@ -79,13 +78,13 @@ class UtmService
     $clickData = $this->getClickData($urlParams);
     $clickId = $clickData['click_id'];
     if ($clickId) {
-      $medium = $clickData['medium'];
+      $platform = $clickData['platform'];
       $origin = 'ads';
     }
 
     return [
       'source' => $source,
-      'medium' => $medium,
+      'platform' => $platform, // Ahora solo contiene la plataforma detectada
       'origin' => $origin,
       'click_id' => $clickId
     ];
@@ -314,7 +313,7 @@ class UtmService
 
     return [
       // Columnas UTM estándar
-      'utm_source' => $utmParams['utm_source'] ?? null,
+      'utm_source' => $utmParams['utm_source'] ?? $sourceData['source'],
       'utm_medium' => $utmParams['utm_medium'] ?? null,
       'utm_campaign_name' => $utmParams['utm_campaign_name'] ?? null,
       'utm_campaign_id' => $utmParams['utm_campaign_id'] ?? null,
@@ -322,9 +321,9 @@ class UtmService
       'utm_content' => $utmParams['utm_content'] ?? null,
 
       // Información adicional de tráfico
-      'click_id' => $sourceData['click_id'] ?? null,
+      'platform' => $sourceData['platform'] ?? null,
       'origin' => $sourceData['origin'] ?? null,
-      'medium' => $sourceData['medium'] ?? null,
+      'click_id' => $sourceData['click_id'] ?? null,
       'utm_params' => $utmParams,
 
       // Información de análisis
