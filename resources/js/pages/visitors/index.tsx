@@ -17,27 +17,6 @@ const breadcrumbs: BreadcrumbItem[] = [
  *
  * @description Página principal para mostrar visitantes con tabla paginada
  */
-/* {
-  "id": "25b6fa22-e564-4851-a28f-9e9b645dcdee",
-  "fingerprint": "46a05aadb9d47cb5ffff60a66f3d6e86a95b612a12465540c79109230a0ff4db",
-  "visit_date": "2025-08-26T00:00:00.000000Z",
-  "visit_count": 2,
-  "ip_address": "216.131.83.235",
-  "device_type": "iPhone",
-  "browser": "Safari",
-  "os": "iOS",
-  "country_code": "US",
-  "state": "New York",
-  "city": "New York City",
-  "traffic_source": "direct",
-  "traffic_medium": "direct",
-  "host": "offer.top-carinsurance.test",
-  "path_visited": "quotes",
-  "referrer": "https://quotes.top-carinsurance.test/rates",
-  "is_bot": false,
-  "created_at": "2025-08-26T13:54:19.000000Z",
-  "updated_at": "2025-08-26T13:54:21.000000Z"
-} */
 type Visitor = {
   id: string;
   fingerprint: string;
@@ -50,8 +29,8 @@ type Visitor = {
   country_code: string;
   state: string;
   city: string;
-  traffic_source: string;
-  traffic_medium: string;
+  utm_source: string;
+  utm_medium: string;
   host: string;
   path_visited: string;
   referrer: string;

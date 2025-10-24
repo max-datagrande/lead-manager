@@ -84,9 +84,9 @@ export const visitorColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'traffic_source',
+    accessorKey: 'utm_source',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Traffic Source" />,
-    cell: ({ row }) => <TrafficSourceBadge source={row.original.traffic_source} />,
+    cell: ({ row }) => <TrafficSourceBadge source={row.original.utm_source} />,
     enableSorting: true,
     enableHiding: true,
   },

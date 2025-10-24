@@ -29,8 +29,8 @@ class TrafficController extends Controller
       'country_code',
       'state',
       'city',
-      'traffic_source',
-      'traffic_medium',
+      'utm_source',
+      'utm_medium',
       'host',
       'path_visited',
       'referrer',
@@ -45,12 +45,12 @@ class TrafficController extends Controller
       'ip_address',
       'host',
       'path_visited',
-      'traffic_source'
+      'utm_source'
     ];
 
     // Configuración de filtros
     $filterConfig = [
-      'traffic_source' => ['type' => 'exact'],
+      'utm_source' => ['type' => 'exact'],
       'country_code' => ['type' => 'upper'],
       'is_bot' => ['type' => 'exact'],
       'device_type' => ['type' => 'exact'],
@@ -75,7 +75,7 @@ class TrafficController extends Controller
       'device_type',
       'browser',
       'os',
-      'traffic_source',
+      'utm_source',
       'visit_count',
       'is_bot'
     ];

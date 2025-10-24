@@ -81,7 +81,7 @@ class TrafficLogController extends Controller
     TailLogger::saveLog('Traffic log successfully created from controller', 'traffic-log/store', 'info', [
       'id' => $currentVisitor->id,
       'fingerprint' => $currentVisitor->fingerprint,
-      'traffic_source' => $currentVisitor->traffic_source,
+      'utm_source' => $currentVisitor->utm_source,
     ]);
   }
 
