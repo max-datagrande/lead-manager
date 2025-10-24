@@ -314,17 +314,17 @@ class UtmService
 
     return [
       // Columnas UTM estándar
-      'utm_source' => $utmParams['utm_source'],
-      'utm_medium' => $utmParams['utm_medium'],
-      'utm_campaign_name' => $utmParams['utm_campaign_name'],
-      'utm_campaign_id' => $utmParams['utm_campaign_id'],
+      'utm_source' => $utmParams['utm_source'] ?? null,
+      'utm_medium' => $utmParams['utm_medium'] ?? null,
+      'utm_campaign_name' => $utmParams['utm_campaign_name'] ?? null,
+      'utm_campaign_id' => $utmParams['utm_campaign_id'] ?? null,
       'utm_term' => $utmParams['utm_term'] ?? null,
       'utm_content' => $utmParams['utm_content'] ?? null,
 
       // Información adicional de tráfico
-      'click_id' => $sourceData['click_id'],
-      'origin' => $sourceData['origin'],
-      'medium' => $sourceData['medium'],
+      'click_id' => $sourceData['click_id'] ?? null,
+      'origin' => $sourceData['origin'] ?? null,
+      'medium' => $sourceData['medium'] ?? null,
       'utm_params' => $utmParams,
 
       // Información de análisis
