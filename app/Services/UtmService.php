@@ -118,49 +118,6 @@ class UtmService
   }
 
   /**
-   * Obtiene la plataforma publicitaria basándose en el click ID presente
-   *
-   * @param array $urlParams
-   * @return string
-   */
-  private function getPlatformFromClickId($urlParams)
-  {
-    $adPlatforms = [
-      'gclid' => 'Google Ads',
-      'dclid' => 'Google Display & Video',
-      'gbraid' => 'Google Ads (iOS)',
-      'wbraid' => 'Google Ads (iOS)',
-      'gclsrc' => 'Google Ads Source',
-      'msclkid' => 'Microsoft Ads (Bing)',
-      'fbclid' => 'Meta Ads (Facebook/Instagram)',
-      'ttclid' => 'TikTok Ads',
-      'li_fat_id' => 'LinkedIn Ads',
-      'sccid' => 'Snapchat Ads', // Corregido de 'scid' a 'sccid'
-      'epik' => 'Pinterest Ads',
-      'twclid' => 'Twitter Ads',
-      'rdt_cid' => 'Reddit Ads',
-      'yclid' => 'Yandex Ads',
-      'ymcid' => 'Yandex Ads',
-      'yqrid' => 'Yandex Ads',
-      'yzcrid' => 'Yandex Ads',
-      'sznclid' => 'Seznam/Sklik',
-      'zanpid' => 'Awin',
-      'vmcid' => 'Yahoo Ads',
-    ];
-
-    // Convertir las claves de urlParams a lowercase para comparación insensible a mayúsculas
-    $urlParamsLower = array_change_key_case($urlParams, CASE_LOWER);
-
-    foreach ($adPlatforms as $param => $platform) {
-      if (isset($urlParamsLower[$param]) && !empty($urlParamsLower[$param])) {
-        return $platform;
-      }
-    }
-
-    return '';
-  }
-
-  /**
    * Busca registros de tráfico por fingerprint
    *
    * @param string $fingerprint
@@ -306,6 +263,7 @@ class UtmService
   public function analyzeTrafficData($referrer = null, $queryParams = [])
   {
     // Procesar parámetros UTM
+    $queryParams = array_change_key_case($queryParams, CASE_LOWER);
     $utmParams = $this->processUtmParams($queryParams);
 
     // Obtener información de fuente de tráfico
