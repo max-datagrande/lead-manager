@@ -24,9 +24,10 @@ class FingerprintGeneratorService
   {
     // Normalizar datos para consistencia
     $normalizedHost = $this->normalizeHost($originHost);
+    //Current now
+    $now = now()->format('Y-m-d');
     // Crear string base para el hash
-    $baseString = implode('|', [$userAgent, $ipAddress, $normalizedHost]);
-
+    $baseString = implode('|', [$userAgent, $ipAddress, $normalizedHost, $now]);
     // Generar hash SHA-256
     return hash('sha256', $baseString);
   }
