@@ -40,9 +40,9 @@ class FieldController extends Controller
     }
     $endpoint = route('api.fields.export');
     // Replace local host for production
-    $endpoint = str_replace($localUrl, $productionUrl, $endpoint);
+    $productionEndpoint = str_replace($localUrl, $productionUrl, $endpoint);
     try {
-      $response = Http::get($endpoint);
+      $response = Http::get($productionEndpoint);
       if ($response->failed()) {
         return response()->json([
           'error' => 'Failed to fetch fields from production.',
