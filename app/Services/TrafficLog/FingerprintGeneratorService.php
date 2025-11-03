@@ -22,6 +22,12 @@ class FingerprintGeneratorService
    */
   public function generate(string $userAgent, string $ipAddress, string $originHost): string
   {
+    $isPostman = str_contains(request()->header('user_agent'), 'PostmanRuntime');
+    if (empty($originHost) && !$isPostman) {
+      throw new \Exception('Origin host is empty or not valid');
+    } else if ($isPostman) {
+      $originHost = 'postman';
+    }
     // Normalizar datos para consistencia
     $normalizedHost = $this->normalizeHost($originHost);
     //Current now
@@ -115,19 +121,23 @@ class FingerprintGeneratorService
    */
   private function normalizeHost(string $host): string
   {
-    // Remover protocolo si existe
-    $host = preg_replace('/^https?:\/\//', '', $host);
+    try {
+      // Remover protocolo si existe
+      $host = preg_replace('/^https?:\/\//', '', $host);
 
-    // Remover www. si existe
-    $host = preg_replace('/^www\./', '', $host);
+      // Remover www. si existe
+      $host = preg_replace('/^www\./', '', $host);
 
-    // Remover path, query parameters y fragments
-    $host = strtok($host, '/');
-    $host = strtok($host, '?');
-    $host = strtok($host, '#');
+      // Remover path, query parameters y fragments
+      $host = strtok($host, '/');
+      $host = strtok($host, '?');
+      $host = strtok($host, '#');
 
-    // Convertir a minúsculas y limpiar espacios
-    return strtolower(trim($host));
+      // Convertir a minúsculas y limpiar espacios
+      return strtolower(trim($host));
+    } catch (\Throwable $th) {
+      throw new \InvalidArgumentException('Invalid host format: ' . $host, 0, $th);
+    }
   }
 
   /**
