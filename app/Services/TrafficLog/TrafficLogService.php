@@ -45,11 +45,13 @@ class TrafficLogService
   public function createTrafficLog(array $data): TrafficLog
   {
     try {
+      $isDev = app()->environment('local');
+      $originParam = $isDev ? 'local-origin' : 'origin';
       // Generar fingerprint único
       $userAgent = $data['user_agent'];
       $ip = $this->request->geoService()->getIpAddress();
-      $landingOrigin = $this->request->header('origin') ?? '';
-      $landingHost = parse_url($landingOrigin, PHP_URL_HOST);
+      $landingOrigin = $this->request->header($originParam) ?? '';
+      $landingHost = parse_url($landingOrigin, PHP_URL_HOST) ?? "";
       $currentPagePath = $data['current_page'];
       $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
       TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
@@ -140,7 +142,7 @@ class TrafficLogService
         'data' => $data,
         'error' => $e->getTraceAsString(),
       ]);
-      throw new TrafficLogCreationException('Failed to create traffic log: ' . $e->getMessage(), 0, $e);
+      throw new TrafficLogCreationException('Failed to create traffic log', 0, $e);
     }
   }
 
