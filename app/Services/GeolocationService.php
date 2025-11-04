@@ -71,9 +71,11 @@ class GeolocationService
    *
    * @return array Datos de geolocalización
    */
-  public function getGeolocation(): array
+  public function getGeolocation(?string $ip = null): array
   {
-    $ip = $this->getIpAddress();
+    if ($ip === null) {
+      $ip = $this->getIpAddress();
+    }
 
     // Generar clave de cache única por IP
     $cacheKey = "geolocation:ip:{$ip}";

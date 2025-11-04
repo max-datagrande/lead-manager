@@ -1,9 +1,10 @@
+import { FieldsActions, TableFields } from '@/components/fields/index';
 import PageHeader from '@/components/page-header';
+import { FieldsProvider } from '@/context/fields-provider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import {TableFields} from '@/components/fields/index';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -11,16 +12,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: route('fields.index'),
   },
 ];
-/* {
-  "id": 27,
-  "name": "vehicle_model",
-  "label": "Vehicle Model",
-  "validation_rules": null,
-  "user_id": 2,
-  "updated_user_id": 2,
-  "created_at": "2025-07-27T22:08:00.000000Z",
-  "updated_at": "2025-07-27T22:08:00.000000Z"
-} */
+
 type Field = {
   id: number;
   name: string;
@@ -30,7 +22,7 @@ type Field = {
   updated_user_id: number;
   created_at: string;
   updated_at: string;
-}
+};
 interface IndexProps {
   rows: Field[];
   state: {
@@ -40,13 +32,15 @@ interface IndexProps {
 
 const Index = ({ rows, state }: IndexProps) => {
   return (
-    <>
+    <FieldsProvider initialState={state}>
       <Head title="Fields" />
-      <div className="slide-in-up relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
-        <PageHeader title="Fields" description="Manage fields to our forms." />
-        <TableFields fields={rows} state={state} />
+      <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
+        <PageHeader title="Fields" description="Manage fields to our forms.">
+          <FieldsActions />
+        </PageHeader>
+        <TableFields entries={rows} />
       </div>
-    </>
+    </FieldsProvider>
   );
 };
 

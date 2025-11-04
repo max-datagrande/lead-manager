@@ -12,7 +12,7 @@ return [
     |
     */
 
-  'name' => env('APP_NAME', 'Laravel'),
+  'name' => env('APP_NAME', 'DataLeads'),
 
   /*
     |--------------------------------------------------------------------------
@@ -52,6 +52,7 @@ return [
     */
 
   'url' => env('APP_URL', 'http://localhost'),
+  'production_url' => env('APP_API_PRODUCTION_URL'),
 
   /*
     |--------------------------------------------------------------------------

@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Landing extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'project_id',
         'name',

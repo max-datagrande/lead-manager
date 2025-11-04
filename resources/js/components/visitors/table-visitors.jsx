@@ -77,8 +77,6 @@ export const TableVisitors = ({ visitors }) => {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            globalQuery={globalFilter}
-            setGlobalQuery={setGlobalFilter}
             resetTrigger={resetTrigger}
             setResetTrigger={setResetTrigger}
             filters={[

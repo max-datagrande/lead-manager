@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Users, Webhook, TextCursorInput, List, FileText } from 'lucide-react';
+import { Cog, Factory, FileText, LayoutGrid, List, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -49,6 +49,49 @@ const GeneralGroup: NavGroupType = {
         },
       ],
     },
+    {
+      title: 'Offerwall',
+      icon: Webhook, // Using Webhook icon as a placeholder
+      subItems: [
+        {
+          title: 'Mixes',
+          href: route('offerwall.index'),
+          icon: List,
+        },
+        {
+          title: 'Conversions',
+          href: route('offerwall.conversions'),
+          icon: List,
+        },
+      ],
+    },
+    {
+      title: 'Logs',
+      icon: List, // Using List icon as a placeholder
+      subItems: [
+        {
+          title: 'Offerwall Mixes',
+          href: route('logs.offerwall-mixes.index'),
+          icon: List,
+        },
+      ],
+    },
+    {
+      title: 'Settings',
+      icon: Cog,
+      subItems: [
+        {
+          title: 'Companies',
+          href: route('companies.index'),
+          icon: Factory,
+        },
+        {
+          title: 'Integrations',
+          href: route('integrations.index'),
+          icon: Webhook,
+        },
+      ],
+    },
   ],
 };
 const navGroups: NavGroupType[] = [GeneralGroup];
@@ -60,6 +103,11 @@ const AdminGroup: NavGroupType = {
       title: 'Users',
       href: '/users',
       icon: Users,
+    },
+    {
+      title: 'Whitelist',
+      href: route('whitelist.index'),
+      icon: Shield,
     },
   ],
 };
@@ -75,7 +123,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard" prefetch>
+              <Link href="/" prefetch>
                 <AppLogo />
               </Link>
             </SidebarMenuButton>

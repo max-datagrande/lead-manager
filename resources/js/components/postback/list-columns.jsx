@@ -1,20 +1,62 @@
+import CopyToClipboard from '@/components/copy-to-clipboard';
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePostbacks } from '@/hooks/use-postbacks';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { Eye } from 'lucide-react';
-
-
+import { SlidersHorizontal } from 'lucide-react';
 // --- Columnas TanStack ---
 const vendors = {
   ni: 'Natural Intelligence',
 };
-export const postbackColumns = [
+
+// Componente para las acciones de la fila
+function ActionsCell({ row }) {
+  const { showDeleteModal, showRequestViewer, showStatusModal, handleForceSync } = usePostbacks();
+  const postback = row.original;
+  const canForceSync = postback.status === 'pending' || postback.status === 'failed';
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {canForceSync && (
+          <DropdownMenuItem className="cursor-pointer" onClick={() => handleForceSync(postback)}>
+            Force Sync
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showStatusModal(postback)}>
+          Change Status
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => showRequestViewer(postback)}>
+          View API Requests
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => showDeleteModal(postback)}>
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export const createPostbackColumns = () => [
   {
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
-    cell: ({ row }) => <div className="w-[80px]">{row.getValue('id')}</div>,
+    cell: ({ row }) => (
+      <div className="w-[80px] flex items-center gap-2">
+        <ActionsCell row={row} />
+        {row.getValue('id')}
+      </div>
+    ),
     enableSorting: true,
     enableHiding: true,
   },
@@ -29,28 +71,57 @@ export const postbackColumns = [
     accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row, cell }) => {
+      const { status, message } = row.original;
       const colors = {
         pending: 'secondary',
         processed: 'default',
         failed: 'destructive',
       };
+
+      let tooltipContent = message;
+      if (!tooltipContent) {
+        const defaultMessages = {
+          processed: 'Processed successfully',
+          pending: 'Pending verification',
+          failed: 'Failed with unknown error',
+        };
+        tooltipContent = defaultMessages[status] ?? '';
+      }
       const value = cell.getValue();
-      return <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant={colors[value] ?? 'secondary'}>{capitalize(value)}</Badge>
+          </TooltipTrigger>
+          <TooltipContent className="bg-black text-white" arrowClassName="bg-black fill-black">
+            <p>{tooltipContent}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
     },
     enableSorting: true,
     enableHiding: true,
   },
   {
-    accessorKey: 'clid',
+    accessorKey: 'click_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Click ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('clid')}</div>,
+    cell: ({ row }) => {
+      const value = row.getValue('click_id');
+      return (
+        <CopyToClipboard textToCopy={value}>
+          <span className="cursor-help font-mono text-xs whitespace-nowrap" title={value}>
+            {value}
+          </span>
+        </CopyToClipboard>
+      );
+    },
     enableSorting: false,
     enableHiding: true,
   },
   {
-    accessorKey: 'txid',
+    accessorKey: 'transaction_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Transaction ID" />,
-    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('txid')}</div>,
+    cell: ({ row }) => <div className="w-[80px] overflow-hidden text-ellipsis whitespace-nowrap">{row.getValue('transaction_id')}</div>,
     enableSorting: false,
     enableHiding: true,
   },
@@ -69,8 +140,9 @@ export const postbackColumns = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row, cell }) => {
       const currency = row.original.currency;
-      const value = cell.getValue();
-      return value ? `${value.toFixed(2)} ${currency}` : value;
+      const cellValue = cell.getValue();
+      const isNull = cellValue === null;
+      return isNull ? '' : (`${Number(cellValue).toFixed(2)} ${currency}` ?? cellValue);
     },
     enableSorting: true,
     enableHiding: true,
@@ -78,18 +150,6 @@ export const postbackColumns = [
   {
     accessorKey: 'event',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Event Name" />,
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'failure_reason',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Is Failed" />,
-    cell: ({ row, cell }) => {
-      const hasError = row.original.failure_reason !== null && row.original.failure_reason !== '';
-      if (hasError) {
-        return <Badge variant="destructive">{cell.getValue()}</Badge>;
-      }
-    },
     enableSorting: true,
     enableHiding: true,
   },
@@ -118,20 +178,15 @@ export const postbackColumns = [
     enableHiding: true,
   },
   {
-    id: 'actions',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Actions" />,
-    enableSorting: false,
-    cell: ({ row, table }) => {
-      const postback = row.original;
-      const { showRequestViewer } = table.options.meta || {};
-
-      return (
-        <Button variant="black" size="sm" className="h-8 px-2" onClick={() => showRequestViewer(postback)}>
-          <Eye className="mr-1 h-3 w-3" />
-          API Requests
-        </Button>
-      );
-    },
+    accessorKey: 'processed_at',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Processed At" />,
+    cell: ({ row }) => (
+      <div className="text-sm whitespace-nowrap">
+        <div className="font-medium">{formatDateTime(row.original.processed_at)}</div>
+        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.processed_at)}</div>
+      </div>
+    ),
+    enableSorting: true,
+    enableHiding: true,
   },
 ];
-

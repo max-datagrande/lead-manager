@@ -23,7 +23,7 @@ class Lead extends Model
    * - Carga los campos relacionados a cada respuesta (`fields`).
    *
    * @param  string  $fingerprint  Identificador único del lead.
-   * @return Leads|null Modelo del lead con relaciones cargadas, o `null` si no existe.
+   * @return Lead|null Modelo del lead con relaciones cargadas, o `null` si no existe.
    *
    * @example
    * $lead = Leads::getLeadResponses('abc123');
@@ -31,9 +31,9 @@ class Lead extends Model
    *     echo $response->fields->name . ": " . $response->value;
    * }
    */
-  public static function getLeadResponses($fingerprint)
+  public static function getLeadWithResponses($fingerprint)
   {
-    return self::with(['leadFieldResponses.fields'])
+    return self::with(['leadFieldResponses.field'])
       ->where('fingerprint', $fingerprint)
       ->first();
   }
@@ -60,11 +60,6 @@ class Lead extends Model
       ->withPivot('value')
       ->withTimestamps();
   }
-  public function sales()
-  {
-    return $this->hasMany(Sale::class, 'fingerprint', 'fingerprint');
-  }
-
   /**
    * Relation to the lead's traffic logs by fingerprint.
    */
@@ -80,13 +75,5 @@ class Lead extends Model
   {
     return $this->trafficLogs()->latest('visit_date')->value('host');
   }
-
-    /**
-     * Relación con logs de conversiones
-     */
-    public function conversionLogs()
-    {
-        return $this->hasMany(ConversionLog::class, 'fingerprint', 'fingerprint');
-    }
 }
 

@@ -46,6 +46,13 @@ export function initializeTheme() {
   // Add the event listener for system theme changes...
   mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
+export function getCurrentTheme() {
+  const currentTheme = (localStorage.getItem('appearance') as Appearance) || 'system';
+  if (currentTheme === 'system') {
+    return prefersDark() ? 'dark' : 'light';
+  }
+  return currentTheme;
+}
 
 export function useAppearance() {
   const [appearance, setAppearance] = useState<Appearance>('system');

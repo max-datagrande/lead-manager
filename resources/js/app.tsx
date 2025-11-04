@@ -21,7 +21,6 @@ createInertiaApp({
       console.log(error);
       return await resolvePageComponent(`./pages/${name}.jsx`, pages);
     }
-
   },
   setup({ el, App, props }) {
     const root = createRoot(el);
@@ -29,7 +28,7 @@ createInertiaApp({
     root.render(<App {...props} />);
   },
   progress: {
-    color: '#4B5563',
+    color: '#272931',
   },
 });
 

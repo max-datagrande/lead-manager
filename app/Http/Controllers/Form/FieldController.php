@@ -14,18 +14,14 @@ class FieldController extends Controller
    */
   public function index(Request $request)
   {
-    $search = trim((string) $request->input('search', ''));
-    $query = Field::query();
-    if ($search) {
-      $query->where('name', 'like', "%{$search}%")
-        ->orWhere('label', 'like', "%{$search}%");
-    }
-    $fields = $query->get();
+    $sort = $request->get('sort', 'created_at:desc');
+    [$col, $dir] = get_sort_data($sort);
+    $entries = Field::query()
+      ->orderBy($col, $dir)
+      ->get();
     return Inertia::render('fields/index', [
-      'rows' => $fields,
-      'state' => [
-        'sort' => 'created_at:desc',
-      ]
+      'rows' => $entries,
+      'state' => compact('sort')
     ]);
   }
 
@@ -37,10 +33,11 @@ class FieldController extends Controller
     $validated = $request->validate([
       'name' => 'required|string|max:255',
       'label' => 'required|string|max:255',
+      'possible_values' => 'nullable|array',
     ]);
 
     Field::create($validated);
-    add_flash_message('success', 'Field created successfully.');
+    add_flash_message(type: "success", message: "Field created successfully.");
     return  back();
   }
   /**
@@ -52,13 +49,14 @@ class FieldController extends Controller
       $validated = $request->validate([
         'name' => 'required|string|max:255',
         'label' => 'required|string|max:255',
+        'possible_values' => 'nullable|array',
       ]);
       $field->update($validated);
-      add_flash_message('success', 'Field updated successfully.');
+      add_flash_message(type: "success", message: "Field updated successfully.");
       return  back();
     } catch (\Throwable $th) {
       $message = $th->getMessage();
-      add_flash_message('error', 'Something went wrong: ' . $message);
+      add_flash_message(type: "error", message: "Something went wrong: " . $message);
       return back()->withErrors(['message' => 'Something went wrong.']);
     }
   }
@@ -68,7 +66,7 @@ class FieldController extends Controller
   public function destroy(Field $field)
   {
     $field->delete();
-    add_flash_message('success', 'Field deleted successfully.');
+    add_flash_message(type: "success", message: "Field deleted successfully.");
     return  back();
   }
 }

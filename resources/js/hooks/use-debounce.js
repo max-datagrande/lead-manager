@@ -32,7 +32,6 @@ export function setStateDebounced(value, delay = 500) {
  */
 export function useDebouncedCallback(callback, delay = 500) {
   const [debouncedCallback, setDebouncedCallback] = useState(callback);
-
   useEffect(() => {
     // Crear un timer que actualice el valor debounced después del delay
     const handler = setTimeout(() => {

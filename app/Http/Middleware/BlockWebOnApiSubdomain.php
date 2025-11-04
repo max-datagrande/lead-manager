@@ -41,7 +41,6 @@ class BlockWebOnApiSubdomain
 
     $apiUrl = env('APP_API_URL');
     $isInternalApi = $apiUrl ? (parse_url($apiUrl, PHP_URL_HOST) === $host) : false;
-
     $subdomainStartsWithApi = str_starts_with($host, 'api.');
     $isApiOrigin = $subdomainStartsWithApi || $isInternalApi;
 

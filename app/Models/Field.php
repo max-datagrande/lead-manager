@@ -11,8 +11,13 @@ class Field extends Model
     'name',
     'label',
     'validation_rules',
+    'possible_values',
     'user_id',
     'updated_user_id',
+  ];
+
+  protected $casts = [
+    'possible_values' => 'array',
   ];
   protected static function booted(): void
   {

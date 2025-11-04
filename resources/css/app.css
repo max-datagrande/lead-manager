@@ -333,3 +333,19 @@ html body[data-scroll-locked] {
     height: 0;
   }
 }
+
+/* Fix para el scroll del body cuando se abre un modal */
+/* Radix UI aplica data-scroll-locked al body, pero esto causa layout shift */
+/* Esta solución mantiene el scrollbar visible pero deshabilitado */
+[data-scroll-locked] {
+  overflow-y: hidden !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Alternativa más específica si la anterior no funciona */
+body[data-scroll-locked] {
+  overflow-y: hidden !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}

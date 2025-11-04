@@ -39,7 +39,7 @@
     }
   </style>
 
-  <title inertia>{{ config('app.name', 'Laravel') }}</title>
+  <title inertia>{{ config('app.name', 'DataLeads') }}</title>
 
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -54,7 +54,7 @@
   @inertiaHead
 </head>
 
-<body class="font-inter antialiased">
+<body class="font-inter antialiased no-scrollbar">
   @inertia
 </body>
 

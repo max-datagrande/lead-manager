@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Maxidev\Logger\TailLogger;
 use App\Models\PostbackApiRequests;
-use App\Models\Postback;
+use App\Interfaces\Postback\VendorIntegrationInterface;
 use App\Libraries\NaturalIntelligence;
 use App\Libraries\NaturalIntelligenceException;
 
-class NaturalIntelligenceService
+class NaturalIntelligenceService implements VendorIntegrationInterface
 {
 
+  private ?array $lastFoundConversion = null;
   private int $postbackId;
   private array $report;
   private array $relevantFields = ['data_type', 'date', 'source_join', 'device', 'pub_param_1', 'pub_param_2', 'external_campaign_id', 'external_traffic_source', 'clickouts', 'leads', 'payout', 'sales', 'visits', 'bridge_visits', 'clicking_users', 'date_time'];
@@ -31,20 +29,37 @@ class NaturalIntelligenceService
   }
 
   /**
-   * Obtiene reportes de conversiones de los últimos 3 días
-   */
-  public function getRecentConversionsReport(): array
-  {
-    $fromDate = now()->subDays(3)->format('Y-m-d');
-    $toDate = now()->format('Y-m-d');
-    return $this->getConversionsReport($fromDate, $toDate);
-  }
-
-  /**
    * Obtiene reportes de conversiones desde NI API
+   *
+   * @param string|null $fromDate Fecha de inicio (Y-m-d)
+   * @param string|null $toDate Fecha de fin (Y-m-d)
+   * @param string|null $relatedType Tipo de relación para el request
+   * @return array{success: bool, data: array<int, array{data_type: string, device: string, pub_param_1: string, pub_param_2: string, external_campaign_id: string, external_traffic_source: string, clickouts: int, leads: int, payout: float, sales: int, visits: int, date_time: string}>}
+   *
+   * Estructura de respuesta:
+   * - success: bool - Indica si la operación fue exitosa
+   * - data: array - Lista de conversiones con la siguiente estructura:
+   *   - data_type: string - Tipo de dato (ej: "payout")
+   *   - device: string - Dispositivo (ej: "Mobile", "Desktop")
+   *   - pub_param_1: string - Click ID único
+   *   - pub_param_2: string - Nombre de la campaña/oferta
+   *   - external_campaign_id: string - ID de campaña externa
+   *   - external_traffic_source: string - Fuente de tráfico
+   *   - clickouts: int - Número de clickouts
+   *   - leads: int - Número de leads
+   *   - payout: float - Payout en USD
+   *   - sales: int - Número de ventas
+   *   - visits: int - Número de visitas
+   *   - date_time: string - Fecha y hora en formato ISO 8601
    */
-  public function getConversionsReport(string $fromDate, string $toDate): array
+  public function getConversionsReport(?string $fromDate, ?string $toDate, ?string $relatedType): array
   {
+    if (!$toDate) {
+      $toDate = now()->format('Y-m-d');
+    }
+    if (!$fromDate) {
+      $fromDate = now()->subDays(3)->format('Y-m-d');
+    }
     // Preparar datos de la petición usando la librería
     $startTime = microtime(true);
     $payload = $this->ni->buildPayload($fromDate, $toDate);
@@ -55,15 +70,30 @@ class NaturalIntelligenceService
       'endpoint' => $this->ni->reportUrl,
       'method' => 'POST',
       'request_data' => $payload,
-      'related_type' => PostbackApiRequests::RELATED_TYPE_REPORT,
+      'related_type' => $relatedType ?? PostbackApiRequests::RELATED_TYPE_REPORT,
       'postback_id' => $this->postbackId ?? null,
       'request_id' => uniqid('req_'),
     ]);
 
+    return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+  }
+
+
+  /**
+   * Ejecuta la petición de reporte y maneja la respuesta
+   */
+  private function executeReportRequest(
+    PostbackApiRequests $apiRequest,
+    array $payload,
+    float $startTime,
+    string $fromDate,
+    string $toDate
+  ): array {
+
     try {
       $this->ni->login();
       // Obtener reporte usando la librería
-      $this->report  = $this->ni->getReport($payload);
+      $this->report = $this->ni->getReport($payload);
       $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
       // Obtener información de la última petición
@@ -110,7 +140,12 @@ class NaturalIntelligenceService
         'response_time_ms' => $responseTime
       ]);
 
-      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), 0, $e);
+      throw new NaturalIntelligenceServiceException('Error getting report: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'response_time_ms' => $responseTime,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     }
   }
 
@@ -125,13 +160,24 @@ class NaturalIntelligenceService
     return $data->toArray();
   }
 
-  /**
-   * Busca un click específico en los reportes recientes y retorna el payout
-   */
-  public function getPayoutForClickId(string $clickId): ?float
+  public function getLastFoundConversion(): ?array
   {
+    return $this->lastFoundConversion;
+  }
+
+  /**
+   * Busca un click específico en los reportes del vendor y retorna el payout.
+   *
+   * @param string $clickId
+   * @param string|null $fromDate
+   * @param string|null $toDate
+   * @return float|null
+   */
+  public function getPayoutForClickId(string $clickId, ?string $fromDate, ?string $toDate, bool $returnConversionObject = false): float|array|null
+  {
+    $this->lastFoundConversion = null; // Reset before each search
     try {
-      $report = $this->getRecentConversionsReport();
+      $report = $this->getConversionsReport($fromDate, $toDate, PostbackApiRequests::RELATED_TYPE_SEARCH_PAYOUT);
       if (!$report['success']) {
         TailLogger::saveLog('NI Service: Reporte no exitoso', 'api/ni', 'error', $report);
         throw new PayoutNotFoundException('Report no success');
@@ -154,16 +200,18 @@ class NaturalIntelligenceService
           'clickId' => $clickId,
           'total_conversions' => count($conversions)
         ]);
-        throw new PayoutNotFoundException('Click ID: ' . $clickId . ' not found in conversions');
+        throw new PayoutNotFoundException('Click ID not found in payouts: ' . $clickId);
       }
-
+      
+      $this->lastFoundConversion = $conversion; // Store the found conversion
       $payout = $conversion['payout'] ?? null;
+
       if ($payout === null) {
         TailLogger::saveLog('NI Service: Payout no disponible para click ID', 'api/ni', 'warning', [
           'clickId' => $clickId,
           'conversion' => $conversion
         ]);
-        throw new PayoutNotFoundException('Payout not found for click ID: ' . $clickId);
+        throw new PayoutNotFoundException('Click ID found but with no payout value: ' . $clickId);
       }
 
       TailLogger::saveLog('NI Service: Payout encontrado para click ID', 'api/ni', 'info', [
@@ -171,43 +219,86 @@ class NaturalIntelligenceService
         'payout' => $payout
       ]);
 
+      // Conditionally return the full object or just the payout
+      if ($returnConversionObject) {
+          return $conversion;
+      }
+
       return (float) $payout;
+    } catch (PayoutNotFoundException $e) {
+      // Si no se encuentra el payout, simplemente relanzamos la excepción
+      throw $e;
     } catch (NaturalIntelligenceServiceException $e) {
       TailLogger::saveLog('NI Service: Error de servicio al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
         'error' => $e->getMessage()
       ]);
       throw $e;
+    } catch (NaturalIntelligenceException $e) {
+      throw new NaturalIntelligenceServiceException('Error getting payout: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     } catch (\Exception $e) {
-      if ($e instanceof NaturalIntelligenceServiceException) {
-        throw $e;
-      }
-      if ($e instanceof NaturalIntelligenceException) {
-        throw new NaturalIntelligenceServiceException('Error getting payout: ' . $e->getMessage(), 0, $e);
-      }
-
       TailLogger::saveLog('NI Service: Error inesperado al buscar payout para click ID', 'api/ni', 'error', [
         'clickId' => $clickId,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
         'error' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
-      throw new NaturalIntelligenceServiceException('Unexpected error getting payout: ' . $e->getMessage(), 0, $e);
+      throw new NaturalIntelligenceServiceException('Unexpected error getting payout: ' . $e->getMessage(), [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ], 0, $e);
     }
   }
 }
 
 class NaturalIntelligenceServiceException extends \Exception
 {
-  public function __construct(string $message, int $code = 0, ?\Throwable $previous = null)
+  protected array $context = [];
+  public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
+    $this->context = $context;
+  }
+  public function getContext(): array
+  {
+    return $this->context;
   }
 }
 
 class PayoutNotFoundException extends \Exception
 {
-  public function __construct(string $clid)
+  public function __construct(string $clickId)
   {
-    parent::__construct("Payout not found for CLID: {$clid}");
+    parent::__construct("Payout not found: {$clickId}");
   }
 }
+
+
+
+/**
+ * Obtiene reportes de conversiones para reconciliación diaria (sin postback_id)
+ */
+/* public function getReportForReconciliation(string $fromDate, string $toDate): array
+{
+  // Preparar datos de la petición usando la librería
+  $startTime = microtime(true);
+  $payload = $this->ni->buildPayload($fromDate, $toDate);
+
+  // Registrar petición de reconciliación (sin postback_id)
+  $apiRequest = PostbackApiRequests::create([
+    'service' => PostbackApiRequests::SERVICE_NATURAL_INTELLIGENCE,
+    'endpoint' => $this->ni->reportUrl,
+    'method' => 'POST',
+    'request_data' => $payload,
+    'related_type' => PostbackApiRequests::RELATED_TYPE_RECONCILIATION,
+    'postback_id' => null, // Explícitamente null para reconciliación
+    'request_id' => uniqid('reconcile_'),
+  ]);
+  return $this->executeReportRequest($apiRequest, $payload, $startTime, $fromDate, $toDate);
+} */

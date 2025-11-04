@@ -5,6 +5,11 @@ use Inertia\Inertia;
 use App\Http\Controllers\TrafficController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\Form\FieldController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\IntegrationController;
+use App\Http\Controllers\Admin\WhitelistEntryController;
+use App\Http\Controllers\OfferwallController;
+use App\Http\Controllers\Logs\OfferwallMixLogController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -15,15 +20,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
   //Postbacks
   Route::prefix('postbacks')->name('postbacks.')->group(function () {
     Route::get('/', [PostbackController::class, 'index'])->name('index');
+    Route::delete('/{postback}', [PostbackController::class, 'destroy'])->name('destroy');
     Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
+    Route::patch('/{postback}/status', [PostbackController::class, 'updateStatus'])->name('updateStatus');
+    Route::post('/{postback}/force-sync', [PostbackController::class, 'forceSync'])->name('force-sync');
   });
+  //Companies
+  Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
+  //Integrations
+  Route::post('integrations/{integration}/environments/{environment}/test', [IntegrationController::class, 'test'])->name('integrations.test');
+  Route::resource('integrations', IntegrationController::class);
+
+  //Offerwalls
+  Route::prefix('offerwall')->group(function () {
+    Route::get('conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
+  });
+  Route::resource('offerwall', OfferwallController::class)->parameters(['offerwall' => 'offerwallMix']);
+
   //Forms
   Route::prefix('forms')->group(function () {
-    Route::get('fields', [FieldController::class, 'index'])->name('fields.index');
+    Route::resource('fields', FieldController::class);
+  });
+  //Whitelist
+  Route::get('whitelist', [WhitelistEntryController::class, 'index'])->name('whitelist.index');
+
+  // Logs
+  Route::prefix('logs')->name('logs.')->group(function () {
+    Route::resource('offerwall-mixes', OfferwallMixLogController::class)
+      ->only(['index', 'show'])
+      ->parameters(['offerwall-mixes' => 'offerwallMixLog']);
   });
 });
 
 require __DIR__ . '/settings.php';
+require __DIR__ . '/admin.php';
 require __DIR__ . '/auth.php';
 
 

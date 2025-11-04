@@ -4,8 +4,10 @@
 /public/build
 /public/hot
 /public/storage
+/public/cdn
 /storage/*.key
 /storage/pail
+/storage/debugbar
 /backups
 /vendor
 /docs
@@ -25,3 +27,5 @@ yarn-error.log
 /.vscode
 /.zed
 /.trae
+/.gemini
+GEMINI.*
