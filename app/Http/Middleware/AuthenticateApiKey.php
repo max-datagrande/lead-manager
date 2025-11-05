@@ -16,7 +16,7 @@ class AuthenticateApiKey
    */
   public function handle(Request $request, Closure $next): Response
   {
-    TailLogger::saveLog('Connection from ' . $request->ip(), 'webhooks/leads/store', 'info', $request->all());
+    TailLogger::saveLog('Connection from ' . $request->ip(), 'webhooks/leads/store', 'info', ['request' => $request->all(), 'headers' => $request->headers->all()]);
     $apiKey = $request->header('X-API-KEY');
     $validApiKey = config('auth.webhooks.api_key');
     if (!$apiKey || !hash_equals($validApiKey, $apiKey)) {
