@@ -115,4 +115,8 @@ return [
     'enabled' => env('POSTMAN_ENABLED', false),
     'secret' => env('POSTMAN_AUTH_TOKEN'),
   ],
+
+  'webhooks' => [
+    'api_key' => env('WEBHOOKS_API_KEY'),
+  ],
 ];
