@@ -89,3 +89,5 @@ Route::prefix('fields')->group(function () {
   Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');
   Route::post('/import', [ApiFieldController::class, 'import'])->name('api.fields.import');
 });
+
+require __DIR__ . '/webhook.php';
