@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
+use App\Models\WebhookLead;
 use Illuminate\Http\Request;
 
 class LeadController extends Controller
@@ -20,7 +21,15 @@ class LeadController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $webhookLead = WebhookLead::create([
+            'source' => $request->route('source', 'default'), // Example: get source from route
+            'payload' => $request->all(),
+        ]);
+
+        return response()->json([
+            'message' => 'Webhook processed successfully',
+            'id' => $webhookLead->id,
+        ], 201);
     }
 
     /**
