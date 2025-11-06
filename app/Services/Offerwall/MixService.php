@@ -69,7 +69,8 @@ class MixService
           $mappingConfig = $integration->request_mapping_config ?? [];
           $payload = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
           $method = strtolower($prodEnv->method ?? 'post');
-          $headers = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
+          $headersParsed = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
+          $headers = json_decode($headersParsed, true) ?? [];
           $url = $prodEnv->url;
           $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
         }
@@ -144,7 +145,6 @@ class MixService
       return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
-
       $slack = new SlackMessageBundler();
       $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
