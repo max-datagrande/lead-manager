@@ -11,10 +11,18 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
+use App\Services\IntegrationService;
 use Throwable;
 
 class MixService
 {
+  private IntegrationService $integrationService;
+
+  public function __construct(IntegrationService $integrationService)
+  {
+    $this->integrationService = $integrationService;
+  }
+
   public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
   {
     $startTime = microtime(true);
@@ -31,7 +39,6 @@ class MixService
 
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
-
     $mixLog = null;
     try {
       $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
@@ -60,9 +67,9 @@ class MixService
 
           $template = $prodEnv->request_body ?? '';
           $mappingConfig = $integration->request_mapping_config ?? [];
-          $payload = $this->buildPayload($leadData, $template, $mappingConfig);
+          $payload = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
           $method = strtolower($prodEnv->method ?? 'post');
-          $headers = json_decode($prodEnv->request_headers ?? '[]', true);
+          $headers = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
           $url = $prodEnv->url;
           $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
         }
@@ -172,33 +179,7 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function buildPayload(array $leadData, string $template, array $mappingConfig): string
-  {
-    if (empty($template)) {
-      return '';
-    }
 
-    $replacements = [];
-    foreach ($mappingConfig as $tokenName => $config) {
-      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
-
-      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
-        $value = $config['value_mapping'][$value];
-      }
-
-      if (is_array($value) || is_object($value)) {
-        $value = json_encode($value);
-      }
-
-      $replacements['{' . $tokenName . '}'] = (string) $value;
-    }
-
-    if (empty($replacements)) {
-      return $template;
-    }
-
-    return str_replace(array_keys($replacements), array_values($replacements), $template);
-  }
 
   private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response, string $method, array $headers, string $payload): void
   {
