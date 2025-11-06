@@ -27,13 +27,15 @@ export const KeyValueList = ({
   const initialPairs = initialValues.map((p) => ({ ...p, id: p.id || uuidv4() }));
   // Add a unique ID to initial values for React key prop, if they don't have one
   const [pairs, setPairs] = useState(initialPairs);
-  console.log({ pairs });
 
   useEffect(() => {
-    if (initialPairs === pairs) {
-      return;
-    }
-    onChange(pairs.map(({ id, ...rest }) => rest));
+    const timeoutId = setTimeout(() => {
+      if (initialPairs === pairs) {
+        return;
+      }
+      onChange(pairs.map(({ id, ...rest }) => rest));
+    }, 300);
+    return () => clearTimeout(timeoutId);
   }, [pairs]);
 
   const addPair = () => {
