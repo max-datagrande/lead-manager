@@ -29,15 +29,15 @@ class WebhookApiKeyService
    */
   private function handleFacebook(Request $request): bool|Response
   {
+
     if ($request->isMethod('get')) {
       $verifyToken = config('auth.webhooks.api_key');
-
       if (
-        $request->input('hub.mode') === 'subscribe' &&
-        $request->input('hub.verify_token') === $verifyToken
+        $request->input('hub_mode') === 'subscribe' &&
+        $request->input('hub_verify_token') === $verifyToken
       ) {
         // Respond directly with the challenge code as required by Facebook.
-        return response($request->input('hub.challenge'), 200);
+        return response($request->input('hub_challenge'), 200);
       }
 
       // If verification fails, deny access.
