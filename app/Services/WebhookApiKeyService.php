@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Request;
+use Maxidev\Logger\TailLogger;
 use Symfony\Component\HttpFoundation\Response;
 
 class WebhookApiKeyService
@@ -29,26 +30,54 @@ class WebhookApiKeyService
    */
   private function handleFacebook(Request $request): bool|Response
   {
-
     if ($request->isMethod('get')) {
       $verifyToken = config('auth.webhooks.api_key');
+
       if (
         $request->input('hub_mode') === 'subscribe' &&
         $request->input('hub_verify_token') === $verifyToken
       ) {
-        // Respond directly with the challenge code as required by Facebook.
+        // Log the result
+        TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
+          'message' => 'Verification successful',
+        ]);
         return response($request->input('hub_challenge'), 200);
       }
 
-      // If verification fails, deny access.
-      return false;
+      return false; // Verification failed
     }
 
-    // For POST requests, for now, we allow them to pass through for logging.
-    // Later, we will add X-Hub-Signature-256 validation here.
-    return true;
-  }
+    if ($request->isMethod('post')) {
+      $appSecret = config('services.facebook.app_secret');
+      $signature = $request->header('X-Hub-Signature-256');
 
+      if (!$appSecret || !$signature) {
+        TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
+          'message' => 'Configuration or signature missing',
+        ]);
+        return false; // Configuration or signature missing
+      }
+
+      // Calculate expected signature
+      $hash = hash_hmac('sha256', $request->getContent(), $appSecret);
+      $expectedSignature = 'sha256=' . $hash;
+      $isEquals = hash_equals($expectedSignature, $signature);
+      //Log the result
+      TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
+        'isEquals' => $isEquals,
+        'expectedSignature' => $expectedSignature,
+        'signature' => $signature,
+      ]);
+      // Securely compare signatures
+      return $isEquals;
+    }
+    // Log the result
+    TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
+      'message' => 'Invalid signature',
+    ]);
+
+    return false; // Invalid signature
+  }
   /**
    * Handle the generic API key validation.
    */
