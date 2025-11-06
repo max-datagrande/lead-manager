@@ -209,6 +209,33 @@ class IntegrationService
     }
     return json_encode($mappedHeaders);
   }
+  public function parseParams(array $leadData, string $template, array $mappingConfig): string
+  {
+    if (empty($template)) {
+      return '';
+    }
+
+    $replacements = [];
+    foreach ($mappingConfig as $tokenName => $config) {
+      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+
+      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
+        $value = $config['value_mapping'][$value];
+      }
+
+      if (is_array($value) || is_object($value)) {
+        $value = json_encode($value);
+      }
+
+      $replacements['{' . $tokenName . '}'] = (string) $value;
+    }
+
+    if (empty($replacements)) {
+      return $template;
+    }
+
+    return str_replace(array_keys($replacements), array_values($replacements), $template);
+  }
 }
 
 /**
