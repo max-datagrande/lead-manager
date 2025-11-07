@@ -114,6 +114,8 @@ class SyncNIPostbacks extends Command
         $notFoundCount++;
         TailLogger::saveLog('SyncNIPostbacks: Click ID not found in NI report.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId]);
       }
+      $this->line("Processed postback {$postback->id} for click ID {$clickId}");
+      sleep(2);
     });
 
     $this->newLine(2);
