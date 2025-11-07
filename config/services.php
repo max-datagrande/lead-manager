@@ -44,4 +44,8 @@ return [
     'username' => env('NATURAL_INTELLIGENCE_API_USER', 'carla@datagrande.io'),
     'password' => env('NATURAL_INTELLIGENCE_API_KEY', 'qunttj8dUYmYaL9'),
   ],
+  'facebook' => [
+    'app_secret' => env('FACEBOOK_APP_SECRET'),
+    'verify_token' => env('FACEBOOK_VERIFY_TOKEN'),
+  ],
 ];
