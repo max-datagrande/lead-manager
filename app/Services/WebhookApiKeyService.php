@@ -30,6 +30,32 @@ class WebhookApiKeyService
    */
   private function handleFacebook(Request $request): bool|Response
   {
+    $hasSignature = $request->header('x-hub-signature-256') ?? null;
+    if ($hasSignature) {
+      $appSecret  = trim((string) config('services.facebook.app_secret'));
+      $signature = (string) $request->header('x-hub-signature-256');
+      if (!$appSecret || !$signature) {
+        TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
+          'message' => 'Configuration or signature missing',
+        ]);
+        return false; // Configuration or signature missing
+      }
+      $body = $request->getContent();
+      $expectedSignature = 'sha256=' . hash_hmac('sha256', $body, $appSecret);
+      $isEquals = hash_equals($expectedSignature, $signature);
+
+      //Log the result
+      TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
+        'message' => 'Verification attempt',
+        'body'   => $body,
+        'expectedSignature' => $expectedSignature,
+        'signature' => $signature,
+        'isEquals' => $isEquals,
+      ]);
+      // Securely compare signatures
+      return $isEquals;
+    }
+
     if ($request->isMethod('get')) {
       $verifyToken = config('auth.webhooks.api_key');
 
@@ -45,31 +71,6 @@ class WebhookApiKeyService
       }
 
       return false; // Verification failed
-    }
-
-    if ($request->isMethod('post')) {
-      $appSecret = config('services.facebook.app_secret');
-      $signature = $request->header('X-Hub-Signature-256');
-
-      if (!$appSecret || !$signature) {
-        TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
-          'message' => 'Configuration or signature missing',
-        ]);
-        return false; // Configuration or signature missing
-      }
-
-      // Calculate expected signature
-      $hash = hash_hmac('sha256', $request->getContent(), $appSecret);
-      $expectedSignature = 'sha256=' . $hash;
-      $isEquals = hash_equals($expectedSignature, $signature);
-      //Log the result
-      TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
-        'isEquals' => $isEquals,
-        'expectedSignature' => $expectedSignature,
-        'signature' => $signature,
-      ]);
-      // Securely compare signatures
-      return $isEquals;
     }
     // Log the result
     TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
