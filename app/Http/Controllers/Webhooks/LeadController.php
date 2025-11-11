@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Webhooks;
 use App\Http\Controllers\Controller;
 use App\Models\WebhookLead;
 use Illuminate\Http\Request;
+use Maxidev\Logger\TailLogger;
 
 class LeadController extends Controller
 {
@@ -21,19 +22,22 @@ class LeadController extends Controller
    */
   public function store(Request $request)
   {
+    $source = $request->route('source', 'default');
+    $payload = $request->all();
+    TailLogger::saveLog('Webhook received for source: ' . $source, 'webhooks/leads/store', 'info', ['payload' => $payload]);
     try {
       $webhookLead = WebhookLead::create([
-        'source' => $request->route('source', 'default'),
-        'payload' => $request->all(),
+        'source' => $source,
+        'payload' => $payload,
       ]);
-
+      TailLogger::saveLog('Webhook processed successfully for source: ' . $source, 'webhooks/leads/store', 'info', ['id' => $webhookLead->id]);
       return response()->json([
         'message' => 'Webhook processed successfully',
         'id' => $webhookLead->id,
       ], 201);
     } catch (\Exception $e) {
       $slack = new \App\Support\SlackMessageBundler();
-
+      TailLogger::saveLog('Webhook processing failed for source: ' . $source, 'webhooks/leads/store', 'error', ['error' => $e->getMessage()]);
       $slack->addTitle('Webhook Processing Failed', '🚨')
         ->addSection('An exception occurred while processing an incoming webhook.')
         ->addDivider()
