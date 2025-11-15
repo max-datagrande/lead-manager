@@ -44,14 +44,21 @@ interface IndexProps {
     data: Visitor[];
   };
   state: stateDatatable;
+  meta: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+  };
+  data: Record<string, string>;
 }
-const Index = ({ rows, state }: IndexProps ) => {
+const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (
     <VisitorsProvider initialState={state}>
       <Head title="Visitors" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Visitors" description="Manage visitors from our landing pages." />
-        <TableVisitors entries={rows.data} />
+        <TableVisitors entries={rows.data} meta={meta} data={data} />
       </div>
     </VisitorsProvider>
   );

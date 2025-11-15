@@ -1,9 +1,6 @@
-import Paginator from '@/components/data-table/paginator';
-
 import { Table, TableBody} from '@/components/ui/table';
 import { useEffect } from 'react';
 
-import { usePage } from '@inertiajs/react';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
 import { DataTableContent } from '@/components/data-table/table-content';
@@ -12,14 +9,18 @@ import { useVisitors } from '@/hooks/use-visitors';
 import { visitorColumns } from './list-columns';
 
 import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
+
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
  *
  * @param {Object} props - Propiedades del componente
- * @param {Object} props.visitors - Datos de visitantes con información de paginación
+ * @param {Object} props.entries - Datos de visitantes con información de paginación
+ * @param {Object} props.meta - Metadatos de la paginación
+ * @param {Object} props.data - Datos adicionales como hosts y states
  * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
  */
-export const TableVisitors = ({ visitors }) => {
+export const TableVisitors = ({ entries, meta, data }) => {
   const {
     getVisitors,
     columnFilters,
@@ -31,17 +32,14 @@ export const TableVisitors = ({ visitors }) => {
     setResetTrigger,
     resetTrigger,
     isLoading,
+    pagination,
+    setPagination,
   } = useVisitors();
-  const { rows, meta, state, data } = usePage().props;
-  const links = rows.links ?? [];
-  const hosts = data.hosts ?? [];
-  const states = data.states ?? [];
-
-  const pageIndex = (state.page ?? 1) - 1;
-  const pageSize = state.per_page ?? 10;
+  const { hosts = [], states = [] } = data;
+  const { pageIndex, pageSize } = pagination;
 
   const table = useReactTable({
-    data: visitors,
+    data: entries,
     columns: visitorColumns,
     state: {
       sorting,
@@ -52,6 +50,10 @@ export const TableVisitors = ({ visitors }) => {
     onSortingChange: (sortingUpdate) => {
       const newSorting = typeof sortingUpdate === 'function' ? sortingUpdate(sorting) : sortingUpdate;
       setSorting(newSorting);
+    },
+    onPaginationChange: (paginationUpdate) => {
+      const newPagination = typeof paginationUpdate === 'function' ? paginationUpdate(pagination) : paginationUpdate;
+      setPagination(newPagination);
     },
     onColumnFiltersChange: (filtersUpdate) => {
       const newFilters = typeof filtersUpdate === 'function' ? filtersUpdate(columnFilters) : filtersUpdate;
@@ -96,13 +98,13 @@ export const TableVisitors = ({ visitors }) => {
       </div>
       <div className="rounded-md border">
         <Table>
-          <DataTableHeader table={table}/>
+          <DataTableHeader table={table} />
           <TableBody>
-            <DataTableContent table={table} data={visitors} isLoading={isLoading} />
+            <DataTableContent table={table} data={entries} isLoading={isLoading} />
           </TableBody>
         </Table>
       </div>
-      <Paginator pages={links} rows={rows} />
+      <DataTablePagination table={table} />
     </>
   );
 };
