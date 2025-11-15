@@ -5,120 +5,43 @@ namespace App\Http\Controllers;
 use App\DatatableTrait;
 use Inertia\Inertia;
 use App\Models\TrafficLog;
+use App\Services\VisitorService;
 use Illuminate\Http\Request;
 
 class VisitorController extends Controller
 {
   use DatatableTrait;
 
+  public function __construct(protected VisitorService $visitorService) {}
   /**
    * Display a listing of the resource.
    */
   public function index(Request $req)
   {
-    // Seleccionamos solo las columnas necesarias para optimizar la consulta
-    $query = TrafficLog::select([
-      'id',
-      'fingerprint',
-      'visit_date',
-      'visit_count',
-      'ip_address',
-      'device_type',
-      'browser',
-      'os',
-      'country_code',
-      'state',
-      'city',
-      'utm_source',
-      'utm_medium',
-      'host',
-      'path_visited',
-      'referrer',
-      'is_bot',
-      'created_at',
-      'updated_at'
-    ]);
+    // Obtener configuración del datatable desde el servicio
+    $config = $this->visitorService->getDatatableConfig();
 
-    // Configuración de búsqueda global
-    $searchableColumns = [
-      'fingerprint',
-      'ip_address',
-      'host',
-      'path_visited',
-      'utm_source'
-    ];
-
-    // Configuración de filtros
-    $filterConfig = [
-      'utm_source' => ['type' => 'exact'],
-      'country_code' => ['type' => 'upper'],
-      'is_bot' => ['type' => 'exact'],
-      'device_type' => ['type' => 'exact'],
-      'browser' => ['type' => 'like'],
-      'os' => ['type' => 'like'],
-      'host' => ['type' => 'like'],
-      'state' => ['type' => 'like'],
-      'city' => ['type' => 'like'],
-      'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
-      'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
-    ];
-
-    // Configuración de ordenamiento
-    $allowedSort = [
-      'visit_date',
-      'created_at',
-      'updated_at',
-      'host',
-      'country_code',
-      'city',
-      'state',
-      'device_type',
-      'browser',
-      'os',
-      'utm_source',
-      'visit_count',
-      'is_bot'
-    ];
-
-    // Procesar consulta usando el trait
+    // Procesar consulta usando el trait con la configuración del servicio
     $result = $this->processDatatableQuery(
-      query: $query,
+      query: $config['query'],
       request: $req,
-      searchableColumns: $searchableColumns,
-      filterConfig: $filterConfig,
-      allowedSort: $allowedSort,
+      searchableColumns: $config['searchableColumns'],
+      filterConfig: $config['filterConfig'],
+      allowedSort: $config['allowedSort'],
       defaultSort: 'created_at:desc'
     );
 
     // Datos adicionales para filtros
-    $hosts = TrafficLog::select('host')->distinct()->get()->map(function ($item) {
-      return [
-        'value' => $item->host,
-        'label' => $item->host
-      ];
-    });
-
-    $states = TrafficLog::select('state')
-      ->whereNotNull('state')
-      ->where('state', '<>', '')
-      ->distinct()
-      ->get()
-      ->map(function ($item) {
-        return [
-          'value' => $item->state,
-          'label' => ucfirst($item->state),
-        ];
-      })
-      ->values();
+    $data = [
+      'hosts' => $this->visitorService->getExistingHosts(),
+      'states' => $this->visitorService->getExistingStates()
+    ];
 
     return Inertia::render('visitors/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],
       'state' => $result['state'],
-      'data' => [
-        'hosts' => $hosts,
-        'states' => $states
-      ]
+      'data' => $data
     ]);
   }
 
