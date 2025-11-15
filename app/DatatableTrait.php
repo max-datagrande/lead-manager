@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 trait DatatableTrait
 {
   const DEFAULT_SORT = 'created_at:desc';
+  const DEFAULT_PER_PAGE = 10;
+  const MAX_PER_PAGE = 100;
   /**
    * Aplica búsqueda global a la consulta
    */
@@ -122,15 +124,45 @@ trait DatatableTrait
   }
 
   /**
-   * Aplica paginación y retorna el resultado paginado
+   * Aplica paginación a la consulta y retorna resultado paginado
+   *
+   * Esta función maneja la paginación de resultados para datatables, con:
+   * - Validación de límites de registros por página
+   * - Preservación de parámetros de consulta en URLs de paginación
+   * - Valores por defecto seguros
+   *
+   * @param Builder $query La consulta Eloquent a paginar
+   * @param Request $request Request HTTP con parámetros de paginación
+   *
+   * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+   *
+   * Parámetros del request:
+   * - per_page: Número de registros por página (default: 10, max: 100)
+   * - page: Número de página actual (default: 1)
+   *
+   * Ejemplo de uso:
+   * $resultados = $this->applyPagination($query, $request);
+   *
+   * Seguridad:
+   * - Valida que per_page esté entre 1 y self::MAX_PER_PAGE
+   * - Convierte valores a enteros para prevenir inyección
+   * - Preserva todos los parámetros de búsqueda/filtro en la paginación
    */
-  protected function applyPagination(Builder $query, Request $request, int $defaultPerPage = 10, int $maxPerPage = 100)
+  protected function applyPagination(Builder $query, Request $request)
   {
-    $perPage = (int) $request->input('per_page', $defaultPerPage);
-    $perPage = max(1, min($perPage, $maxPerPage));
+    // Obtener registros por página del request, con valor por defecto
+    $perPage = (int) $request->input('per_page', self::DEFAULT_PER_PAGE);
+
+    // Validar límites: mínimo 1, máximo self::MAX_PER_PAGE (prevenir valores maliciosos)
+    $perPage = max(1, min($perPage, self::MAX_PER_PAGE));
+
+    // Obtener número de página actual (default: 1)
     $page = (int) $request->input('page', 1);
+
+    // Obtener todos los parámetros del query string para preservarlos en la paginación
     $queryParams = $request->query();
 
+    // Aplicar paginación y preservar parámetros en links de paginación
     return $query->paginate($perPage, ['*'], 'page', $page)->appends($queryParams);
   }
 
@@ -144,8 +176,6 @@ trait DatatableTrait
     array $filterConfig = [],
     array $allowedSort = [],
     string $defaultSort = 'created_at:desc',
-    int $defaultPerPage = 10,
-    int $maxPerPage = 100
   ) {
     // Búsqueda global
     $search = trim((string) $request->input('search', ''));
@@ -166,7 +196,7 @@ trait DatatableTrait
     }
 
     // Paginación
-    $paginatedResults = $this->applyPagination($query, $request, $defaultPerPage, $maxPerPage);
+    $paginatedResults = $this->applyPagination($query, $request);
 
     return [
       'rows' => $paginatedResults,
@@ -183,7 +213,7 @@ trait DatatableTrait
         'filters' => $filters,
         'sort' => $sort,
         'page' => (int) $request->input('page', 1),
-        'per_page' => (int) $request->input('per_page', $defaultPerPage),
+        'per_page' => (int) $request->input('per_page', self::DEFAULT_PER_PAGE),
       ]
     ];
   }
