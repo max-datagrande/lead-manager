@@ -4,44 +4,34 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Cog, Factory, FileText, LayoutGrid, List, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
+import { Factory, FileText, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook, Coins, Bug } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
 
-const GeneralGroup: NavGroupType = {
-  title: 'General',
+const DashboardGroup: NavGroupType = {
+  title: 'Dashboard',
   items: [
     {
-      title: 'Dashboard',
+      title: 'Overview',
       href: '/',
-      icon: LayoutGrid, // ✅ Perfecto para dashboard
+      icon: LayoutGrid,
     },
+  ],
+};
+
+const LeadManagementGroup: NavGroupType = {
+  title: 'Lead Management',
+  items: [
     {
       title: 'Visitors',
       href: '/visitors',
       icon: Users,
     },
     {
-      title: 'Postbacks',
-      icon: Webhook,
-      subItems: [
-        {
-          title: 'Queue',
-          href: '/postbacks',
-          icon: List,
-        },
-      ],
-    },
-    {
       title: 'Forms',
       icon: FileText,
       subItems: [
-        /* {
-          title: 'List',
-          href: '/forms',
-          icon: List,
-        }, */
         {
           title: 'Fields',
           href: '/forms/fields',
@@ -50,51 +40,57 @@ const GeneralGroup: NavGroupType = {
       ],
     },
     {
-      title: 'Offerwall',
-      icon: Webhook, // Using Webhook icon as a placeholder
+      title: 'Postbacks',
+      icon: Webhook,
       subItems: [
         {
-          title: 'Mixes',
-          href: route('offerwall.index'),
-          icon: List,
-        },
-        {
-          title: 'Conversions',
-          href: route('offerwall.conversions'),
-          icon: List,
-        },
-      ],
-    },
-    {
-      title: 'Logs',
-      icon: List, // Using List icon as a placeholder
-      subItems: [
-        {
-          title: 'Offerwall Mixes',
-          href: route('logs.offerwall-mixes.index'),
-          icon: List,
-        },
-      ],
-    },
-    {
-      title: 'Settings',
-      icon: Cog,
-      subItems: [
-        {
-          title: 'Companies',
-          href: route('companies.index'),
-          icon: Factory,
-        },
-        {
-          title: 'Integrations',
-          href: route('integrations.index'),
-          icon: Webhook,
+          title: 'Queue',
+          href: '/postbacks',
+          icon: LayoutList,
         },
       ],
     },
   ],
 };
-const navGroups: NavGroupType[] = [GeneralGroup];
+
+const OfferwallGroup: NavGroupType = {
+  title: 'Offerwall',
+  items: [
+    {
+      title: 'List',
+      href: route('offerwall.index'),
+      icon: LayoutList,
+    },
+    {
+      title: 'Conversions',
+      href: route('offerwall.conversions'),
+      icon: Coins,
+    },
+    {
+      title: 'Logs',
+      href: route('logs.offerwall-mixes.index'),
+      icon: Bug,
+    },
+  ],
+};
+
+const SystemGroup: NavGroupType = {
+  title: 'Settings',
+  items: [
+    {
+      title: 'Companies',
+      href: route('companies.index'),
+      icon: Factory,
+    },
+    {
+      title: 'Integrations',
+      href: route('integrations.index'),
+      icon: Webhook,
+    },
+  ],
+};
+
+const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, OfferwallGroup, SystemGroup];
 
 const AdminGroup: NavGroupType = {
   title: 'Admin',
