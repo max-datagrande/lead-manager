@@ -7,7 +7,7 @@ use Inertia\Inertia;
 use App\Models\TrafficLog;
 use Illuminate\Http\Request;
 
-class TrafficController extends Controller
+class VisitorController extends Controller
 {
   use DatatableTrait;
 

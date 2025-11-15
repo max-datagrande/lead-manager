@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\TrafficController;
+use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\CompanyController;
@@ -16,7 +16,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     return Inertia::render('dashboard');
   })->name('home');
   //Visitors
-  Route::get('visitors', [TrafficController::class, 'index'])->name('visitors.index');
+  Route::get('visitors', [VisitorController::class, 'index'])->name('visitors.index');
   //Postbacks
   Route::prefix('postbacks')->name('postbacks.')->group(function () {
     Route::get('/', [PostbackController::class, 'index'])->name('index');
