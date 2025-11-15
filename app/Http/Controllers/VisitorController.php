@@ -82,14 +82,12 @@ class VisitorController extends Controller
 
     // Procesar consulta usando el trait
     $result = $this->processDatatableQuery(
-      $query,
-      $req,
-      $searchableColumns,
-      $filterConfig,
-      $allowedSort,
-      'created_at:desc',
-      10,
-      100
+      query: $query,
+      request: $req,
+      searchableColumns: $searchableColumns,
+      filterConfig: $filterConfig,
+      allowedSort: $allowedSort,
+      defaultSort: 'created_at:desc'
     );
 
     // Datos adicionales para filtros
