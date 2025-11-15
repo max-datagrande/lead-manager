@@ -2,7 +2,7 @@ import PageHeader from '@/components/page-header';
 import { TableVisitors } from '@/components/visitors';
 import { VisitorsProvider } from '@/context/visitors-provider';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, stateDatatable } from '@/types';
+import { type BreadcrumbItem, stateDatatable, metaDatatable } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
@@ -44,12 +44,7 @@ interface IndexProps {
     data: Visitor[];
   };
   state: stateDatatable;
-  meta: {
-    total: number;
-    per_page: number;
-    current_page: number;
-    last_page: number;
-  };
+  meta: metaDatatable;
   data: Record<string, string>;
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
