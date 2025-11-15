@@ -2,7 +2,7 @@ import PageHeader from '@/components/page-header';
 import { TableVisitors } from '@/components/visitors';
 import { VisitorsProvider } from '@/context/visitors-provider';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, stateDatatable } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
@@ -38,18 +38,20 @@ type Visitor = {
   created_at: string;
   updated_at: string;
 }
+
 interface IndexProps {
   rows: {
     data: Visitor[];
   };
+  state: stateDatatable;
 }
-const Index = ({ rows }: IndexProps) => {
+const Index = ({ rows, state }: IndexProps ) => {
   return (
-    <VisitorsProvider>
+    <VisitorsProvider initialState={state}>
       <Head title="Visitors" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Visitors" description="Manage visitors from our landing pages." />
-        <TableVisitors visitors={rows.data} />
+        <TableVisitors entries={rows.data} />
       </div>
     </VisitorsProvider>
   );

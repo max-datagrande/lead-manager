@@ -63,3 +63,11 @@ export interface User {
   updated_at: string;
   [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface stateDatatable {
+  search: string;
+  filters: [];
+  sort: string;
+  page: number;
+  per_page: number;
+}
