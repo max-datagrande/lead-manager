@@ -2,7 +2,7 @@ import PageHeader from '@/components/page-header';
 import { TableVisitors } from '@/components/visitors';
 import { VisitorsProvider } from '@/context/visitors-provider';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, stateDatatable, metaDatatable } from '@/types';
+import { type BreadcrumbItem, DatatablePageProps } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 
@@ -39,13 +39,8 @@ type Visitor = {
   updated_at: string;
 }
 
-interface IndexProps {
-  rows: {
-    data: Visitor[];
-  };
-  state: stateDatatable;
-  meta: metaDatatable;
-  data: Record<string, string>;
+interface IndexProps extends DatatablePageProps<Visitor> {
+  // No necesitas definir nada más, hereda todo de DatatablePageProps<Visitor>
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (
