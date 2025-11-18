@@ -1,4 +1,4 @@
-import { Table, TableBody} from '@/components/ui/table';
+import { Table, TableBody } from '@/components/ui/table';
 import { useEffect } from 'react';
 
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -8,8 +8,8 @@ import { DataTableHeader } from '@/components/data-table/table-header';
 import { useVisitors } from '@/hooks/use-visitors';
 import { visitorColumns } from './list-columns';
 
-import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { DataTableToolbar } from '@/components/data-table/toolbar';
 
 /**
  * Componente principal para mostrar la tabla de visitantes con paginación
@@ -79,20 +79,22 @@ export const TableVisitors = ({ entries, meta, data }) => {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            resetTrigger={resetTrigger}
-            setResetTrigger={setResetTrigger}
-            filters={[
-              {
-                columnId: 'host',
-                title: 'Host',
-                options: hosts,
-              },
-              {
-                columnId: 'state',
-                title: 'State',
-                options: states,
-              },
-            ]}
+            filterByColumn="created_at"
+            config={{
+              filters: [
+                {
+                  columnId: 'host',
+                  title: 'Host',
+                  options: hosts,
+                },
+                {
+                  columnId: 'state',
+                  title: 'State',
+                  options: states,
+                },
+              ],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
           />
         </div>
       </div>

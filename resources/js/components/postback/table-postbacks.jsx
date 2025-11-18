@@ -59,10 +59,7 @@ export default function TablePostbacks({ entries, meta, data }) {
   });
 
   useEffect(() => {
-    let timeout = setTimeout(() => {
-      getPostbacks({ page: pageIndex + 1, per_page: pageSize });
-    }, 500);
-    return () => clearTimeout(timeout);
+    getPostbacks({ page: pageIndex + 1, per_page: pageSize });
   }, [sorting, columnFilters, globalFilter]);
 
   return (

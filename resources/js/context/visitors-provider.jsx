@@ -1,7 +1,6 @@
-import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { getSortState, serializeSort } from '@/utils/table';
 import { router } from '@inertiajs/react';
-import { createContext, useCallback, useRef, useState } from 'react';
+import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 export const VisitorsContext = createContext(null);
@@ -32,34 +31,28 @@ export function VisitorsProvider({ children, initialState }) {
     setColumnFilters([]);
   };
 
-  const getVisitors = useDebouncedFunction(
-    useCallback(
-      (newData) => {
-        if (isFirstRender.current) {
-          isFirstRender.current = false;
-          return;
-        }
-        setIsLoading(true);
-        const data = {
-          search: globalFilter || undefined,
-          sort: serializeSort(sorting),
-          filters: JSON.stringify(columnFilters || []),
-          ...newData,
-        };
-        const url = route('visitors.index');
-        const options = {
-          only: ['rows', 'meta', 'state'],
-          replace: true,
-          preserveState: true,
-          preserveScroll: true,
-          onFinish: () => setIsLoading(false),
-        };
-        router.get(url, data, options);
-      },
-      [sorting, columnFilters, globalFilter],
-    ),
-    200,
-  );
+  const getVisitors = (data) => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setIsLoading(true);
+    const payload = {
+      search: globalFilter || undefined,
+      sort: serializeSort(sorting),
+      filters: JSON.stringify(columnFilters || []),
+      ...data,
+    };
+    const url = route('visitors.index');
+    const options = {
+      only: ['rows', 'meta', 'state'],
+      replace: true,
+      preserveState: true,
+      preserveScroll: true,
+      onFinish: () => setIsLoading(false),
+    };
+    router.get(url, payload, options);
+  };
 
   return (
     <VisitorsContext.Provider
