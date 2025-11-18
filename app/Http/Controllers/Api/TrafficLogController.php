@@ -64,9 +64,10 @@ class TrafficLogController extends Controller
     } catch (\Exception $e) {
       $message = $e->getMessage();
       $isDev = app()->environment('local');
+      $errors = get_error_stack($e, $isDev);
       $statusCode = str_contains($message, 'Duplicate') ? 409 : 500;
       TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
-      return $this->errorResponse($message, get_error_stack($e, $isDev), $statusCode);
+      return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
     }
   }
 

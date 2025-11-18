@@ -227,11 +227,10 @@ class UtmService
     $utmParams = [
       'utm_source' => $urlParams['utm_source'] ?? null,
       'utm_medium' => $urlParams['utm_medium'] ?? null,
-      'utm_campaign_id' => $urlParams['campaign_id'] ?? $urlParams['cid'] ?? null,
+      'utm_campaign_id' => $urlParams['campaign_id'] ?? $urlParams['utm_id'] ?? $urlParams['cid'] ?? null,
       'utm_campaign_name' => $urlParams['utm_campaign'] ?? null,
       'utm_term' => $urlParams['utm_term'] ?? null,
       'utm_content' => $urlParams['utm_content'] ?? null,
-
     ];
 
     // Limpiar valores vacíos
@@ -273,8 +272,8 @@ class UtmService
       // Columnas UTM estándar
       'utm_source' => $utmParams['utm_source'] ?? $sourceData['source'],
       'utm_medium' => $utmParams['utm_medium'] ?? null,
-      'utm_campaign_name' => $utmParams['utm_campaign_name'] ?? null,
       'utm_campaign_id' => $utmParams['utm_campaign_id'] ?? null,
+      'utm_campaign_name' => $utmParams['utm_campaign_name'] ?? null,
       'utm_term' => $utmParams['utm_term'] ?? null,
       'utm_content' => $utmParams['utm_content'] ?? null,
 
