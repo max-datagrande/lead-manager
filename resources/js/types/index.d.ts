@@ -81,15 +81,15 @@ export interface metaDatatable {
 /**
  * Tipo genérico para páginas de datatables
  * @template T - Tipo de los elementos en rows.data
- * 
+ *
  * @example
  * ```typescript
  * // Para visitantes
  * type VisitorIndexProps = DatatablePageProps<Visitor>;
- * 
- * // Para usuarios  
+ *
+ * // Para usuarios
  * type UserIndexProps = DatatablePageProps<User>;
- * 
+ *
  * // Uso en componente
  * const MyComponent = ({ rows, meta, state, data }: DatatablePageProps<MyItem>) => {
  *   return <Table entries={rows.data} meta={meta} state={state} data={data} />;
@@ -102,5 +102,5 @@ export interface DatatablePageProps<T = any> {
   };
   state: stateDatatable;
   meta: metaDatatable;
-  data: Record<string, string>;
+  data: Record<string, any>;
 }
