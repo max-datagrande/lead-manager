@@ -1,7 +1,7 @@
-import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { Badge } from '@/components/ui/badge';
 
-import { formatDateTime, formatDateTimeUTC, formatOnlyDate, formatOnlyDateUTC } from '@/utils/table';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import ReactCountryFlag from 'react-country-flag';
 import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
@@ -20,28 +20,25 @@ export const visitorColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'visit_date',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Visit Date" />,
+    accessorKey: 'host',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'path_visited',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Path Visited" />,
     cell: ({ row }) => {
-      return (
-        <div className="text-sm">
-          <div className="font-medium">{formatOnlyDate(row.original.visit_date)}</div>
-          <div className="text-xs text-gray-500">{formatOnlyDateUTC(row.original.visit_date)}</div>
-        </div>
-      );
+      if (!row.original.path_visited) {
+        return null;
+      }
+      if (row.original.path_visited === '/') {
+        return <div className="text-sm">Home</div>;
+      }
+      //Replace / at the end
+      const path = row.original.path_visited.replace(/\/$/, '');
+      return <div className="text-sm">{path}</div>;
     },
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'city',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="City" />,
-    enableSorting: true,
-    enableHiding: true,
-  },
-  {
-    accessorKey: 'state',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
     enableSorting: true,
     enableHiding: true,
   },
@@ -65,6 +62,25 @@ export const visitorColumns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'state',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'city',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="City" />,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'postal_code',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Postal Code" />,
+    enableSorting: true,
+    enableHiding: true,
+  },
+
+  {
     accessorKey: 'device_type',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Device" />,
     cell: ({ row }) => <DeviceBadge deviceType={row.original.device_type} />,
@@ -84,9 +100,67 @@ export const visitorColumns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'is_bot',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    cell: ({ row }) => <BotBadge isBot={row.original.is_bot} />,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'platform',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Platform" />,
+    cell: ({ row }) => <div className="text-sm">{row.original.platform ?? ''}</div>,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'click_id',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Campaign Click ID" />,
+    cell: ({ row }) => {
+      if (!row.original.click_id) {
+        return null;
+      }
+      const truncated = row.original.click_id.substring(row.original.click_id.length - 20);
+      return (
+        <span className="text-xs" title={row.original.click_id}>
+          {truncated}...
+        </span>
+      );
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'utm_campaign_name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="UTM Campaign" />,
+    cell: ({ row }) => <div className="text-sm">{row.original.utm_campaign_name ?? ''}</div>,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'utm_content',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="UTM Content" />,
+    cell: ({ row }) => <div className="text-sm">{row.original.utm_content ?? ''}</div>,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'utm_source',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Traffic Source" />,
-    cell: ({ row }) => <TrafficSourceBadge source={row.original.utm_source} />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="UTM Source" />,
+    cell: ({ row }) => {
+      if (!row.original.utm_source) {
+        return null;
+      }
+      const utmSource = row.original.utm_source ?? '';
+      const utmMedium = row.original.utm_medium ?? '';
+      return <TrafficSourceBadge source={utmSource} medium={utmMedium} />
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'channel',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Channel" />,
     enableSorting: true,
     enableHiding: true,
   },
@@ -98,18 +172,12 @@ export const visitorColumns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'is_bot',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-    cell: ({ row }) => <BotBadge isBot={row.original.is_bot} />,
+    accessorKey: 'referrer',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Referrer" />,
     enableSorting: true,
     enableHiding: true,
   },
-  {
-    accessorKey: 'host',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
-    enableSorting: true,
-    enableHiding: true,
-  },
+
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
