@@ -40,7 +40,6 @@ type Visitor = {
 }
 
 interface IndexProps extends DatatablePageProps<Visitor> {
-  // No necesitas definir nada más, hereda todo de DatatablePageProps<Visitor>
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (

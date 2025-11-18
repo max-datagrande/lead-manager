@@ -12,7 +12,7 @@ import TrafficSourceBadge from './traffic-source-badge';
 export const visitorColumns = [
   {
     accessorKey: 'fingerprint',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Fingerprint" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
     cell: ({ row }) => {
       return <FingerprintCell fingerprint={row.original.fingerprint} />;
     },

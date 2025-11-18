@@ -30,7 +30,6 @@ export function DataTableToolbar({
 
   const handleSearch = (event) => {
     setGlobalSearch(event.target.value);
-    /* table.setGlobalFilter(event.target.value); */
   };
   useEffect(() => {
     let timeout = setTimeout(() => {
