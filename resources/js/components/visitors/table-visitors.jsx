@@ -57,11 +57,11 @@ export const TableVisitors = ({ entries, meta, data }) => {
       setGlobalFilter(filter);
       resetPagination();
     },
+    getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
     pageCount: meta.last_page,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   useEffect(() => {
