@@ -23,20 +23,31 @@ class VisitorService
     $query = TrafficLog::select([
       'id',
       'fingerprint',
-      'visit_date',
       'visit_count',
       'ip_address',
       'device_type',
       'browser',
       'os',
+      'referrer',
+      'host',
+      'path_visited',
+      's1',
+      's2',
+      's3',
+      's4',
+      'click_id',
+      'platform',
+      'channel',
+      'utm_source',
+      'utm_term',
+      'utm_content',
+      'utm_medium',
+      'utm_campaign_id',
+      'utm_campaign_name',
       'country_code',
       'state',
       'city',
-      'utm_source',
-      'utm_medium',
-      'host',
-      'path_visited',
-      'referrer',
+      'postal_code',
       'is_bot',
       'created_at',
       'updated_at'
@@ -48,7 +59,16 @@ class VisitorService
       'ip_address',
       'host',
       'path_visited',
-      'utm_source'
+      'utm_source',
+      'utm_content',
+      'utm_medium',
+      'country_code',
+      'state',
+      'city',
+      'postal_code',
+      'click_id',
+      'platform',
+      'channel'
     ];
 
     // Configuración de filtros por columna
@@ -80,7 +100,17 @@ class VisitorService
       'os',
       'utm_source',
       'visit_count',
-      'is_bot'
+      'is_bot',
+      'utm_source',
+      'utm_content',
+      'utm_medium',
+      'country_code',
+      'state',
+      'city',
+      'postal_code',
+      'click_id',
+      'platform',
+      'channel'
     ];
 
     return [
