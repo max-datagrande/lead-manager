@@ -26,7 +26,7 @@ interface ServerTableProps<TData> {
     filters?: Array<{
       columnId: string;
       title: string;
-      options: string[];
+      options: any;
     }>;
     dateRange?: { column: string; label: string };
   };
