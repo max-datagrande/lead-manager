@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Filter, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
 
@@ -19,30 +19,41 @@ export function DataTableToolbar({
   const { filters, dateRange } = config;
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
-
+  const [globalSearch, setGlobalSearch] = useState('');
   // Extraer valores iniciales de fecha de los filtros existentes
   const currentFilters = table.getState().columnFilters;
-  const fromDateFilter = currentFilters.find(filter => filter.id === 'from_date');
-  const toDateFilter = currentFilters.find(filter => filter.id === 'to_date');
+  const fromDateFilter = currentFilters.find((filter) => filter.id === 'from_date');
+  const toDateFilter = currentFilters.find((filter) => filter.id === 'to_date');
 
   const initialDateFrom = fromDateFilter ? new Date(fromDateFilter.value) : undefined;
   const initialDateTo = toDateFilter ? new Date(toDateFilter.value) : undefined;
+
+  const handleSearch = (event) => {
+    setGlobalSearch(event.target.value);
+  };
+  useEffect(() => {
+    let timeout = setTimeout(() => {
+      table.setGlobalFilter(globalSearch);
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [globalSearch]);
+
   return (
     <div className="w-full space-y-4">
       {/* Main toolbar row */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         {/* Left section: Search */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4 flex-1">
-          <div className="flex flex-col gap-1.5 w-full">
+        <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+          <div className="flex w-full flex-col gap-1.5">
             <Label htmlFor="globalSearch" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <Search className="h-4 w-4" />
               Global Search
             </Label>
             <Input
               placeholder={searchPlaceholder}
-              value={table.getState().globalFilter ?? ''}
-              onChange={(event) => table.setGlobalFilter(event.target.value)}
-              className="w-full md:min-w-[280px] md:max-w-md"
+              value={globalSearch}
+              onChange={handleSearch}
+              className="w-full md:max-w-md md:min-w-[280px]"
               id="globalSearch"
             />
           </div>
@@ -62,9 +73,9 @@ export function DataTableToolbar({
               const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
               // Si es el mismo día, ajustar 'to' al final del día
               const adjustedTo =
-              from.toDateString() === to.toDateString()
-              ? new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) // Agregar 24 horas menos 1ms
-              : to;
+                from.toDateString() === to.toDateString()
+                  ? new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) // Agregar 24 horas menos 1ms
+                  : to;
 
               const newFilters = [
                 ...otherFilters,
@@ -106,7 +117,7 @@ export function DataTableToolbar({
           )}
 
           {/* Actions section */}
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex items-center justify-end gap-2">
             {isFiltered && (
               <>
                 <Button

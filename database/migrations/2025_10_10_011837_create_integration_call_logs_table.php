@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('integration_call_logs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('offerwall_mix_log_id')->constrained('offerwall_mix_logs')->cascadeOnDelete();
+            $table->morphs('loggable');
             $table->foreignId('integration_id')->constrained('integrations')->cascadeOnDelete();
             $table->string('status'); // e.g., 'success', 'failed'
             $table->unsignedSmallInteger('http_status_code');

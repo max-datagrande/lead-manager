@@ -15,9 +15,9 @@ class IntegrationCallLog extends Model
         'response_body' => 'array',
     ];
 
-    public function offerwallMixLog()
+    public function loggable()
     {
-        return $this->belongsTo(OfferwallMixLog::class);
+        return $this->morphTo();
     }
 
     public function integration()

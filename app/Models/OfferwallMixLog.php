@@ -15,6 +15,6 @@ class OfferwallMixLog extends Model
 
     public function integrationCallLogs()
     {
-        return $this->hasMany(IntegrationCallLog::class);
+        return $this->morphMany(IntegrationCallLog::class, 'loggable');
     }
 }

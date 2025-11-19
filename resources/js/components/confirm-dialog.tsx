@@ -52,7 +52,7 @@ export default function ConfirmDialog({
         )}
       </DialogHeader>
 
-      <div className="mt-6 flex justify-end gap-2">
+      <div className="flex justify-end gap-2">
         <Button
           variant="outline"
           onClick={handleCancel}

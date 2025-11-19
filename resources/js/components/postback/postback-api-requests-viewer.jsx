@@ -41,21 +41,21 @@ export function PostbackApiRequestsViewer({ postbackId }) {
   const getStatusBadge = (statusCode, errorMessage) => {
     if (statusCode >= 200 && statusCode < 300) {
       return (
-        <Badge variant="default" className="border-green-200 bg-green-100 text-green-800 hover:bg-green-200">
+        <Badge variant="default" className="border-green-200 bg-green-100 text-green-800">
           <CheckCircle className="mr-1 h-3 w-3" />
           Success ({statusCode})
         </Badge>
       );
     } else if (statusCode >= 400 && statusCode < 500) {
       return (
-        <Badge variant="destructive" className="border-orange-200 bg-orange-100 text-orange-800 hover:bg-orange-200">
+        <Badge variant="destructive" className="border-orange-200 bg-orange-100 text-orange-800">
           <AlertCircle className="mr-1 h-3 w-3" />
           Client Error ({statusCode})
         </Badge>
       );
     } else if (statusCode >= 500) {
       return (
-        <Badge variant="destructive" className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200">
+        <Badge variant="destructive" className="border-red-200 bg-red-100 text-red-800">
           <AlertCircle className="mr-1 h-3 w-3" />
           Server Error ({statusCode})
         </Badge>
@@ -170,9 +170,9 @@ export function PostbackApiRequestsViewer({ postbackId }) {
 
           {apiRequests.slice(0, 4).map((request) => (
             <TabsContent key={request.id} value={request.id.toString()}>
-              <Card>
-                <CardHeader>
-                  <div className="mb-4 flex items-center justify-between">
+              <Card className="gap-4">
+                <CardHeader className="block">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`h-3 w-3 rounded-full ${
@@ -193,15 +193,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                           <span>•</span>
                           <span>{formatDateTime(request.created_at)}</span>
                           <span>•</span>
-                          <span
-                            className={`font-mono ${
-                              request.response_time_ms > 5000
-                                ? 'text-red-600'
-                                : request.response_time_ms > 2000
-                                  ? 'text-orange-600'
-                                  : 'text-green-600'
-                            }`}
-                          >
+                          <span className={`font-mono ${request.response_time_ms > 5000 ? 'text-red-600' : ''}`}>
                             {request.response_time_ms || 0}ms
                           </span>
                           {request.error_message && (
@@ -218,7 +210,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                     {getStatusBadge(request.status_code, request.error_message)}
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent>
                   {request.error_message && (
                     <div className="rounded-md border border-red-200 bg-red-50 p-3">
                       <div className="mb-1 flex items-center gap-2 font-medium text-red-700">
@@ -228,7 +220,6 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                       <p className="text-sm text-red-600">{request.error_message}</p>
                     </div>
                   )}
-
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <JsonViewer
                       data={request.request_data}
@@ -241,7 +232,6 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                         </div>
                       }
                     />
-
                     <JsonViewer
                       data={request.response_data}
                       title={
@@ -254,8 +244,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                       }
                     />
                   </div>
-
-                  <Separator />
+                  <Separator className="my-4" />
 
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <span>Request ID: {request.request_id}</span>

@@ -48,9 +48,7 @@ class PostbackController extends Controller
         'created_at',
         'updated_at'
       ],
-      defaultSort: 'created_at:desc',
-      defaultPerPage: 10,
-      maxPerPage: 100
+      defaultSort: 'created_at:desc'
     );
 
     // Datos adicionales para filtros

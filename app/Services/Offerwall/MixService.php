@@ -11,24 +11,37 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
+use App\Services\IntegrationService;
 use Throwable;
 
 class MixService
 {
+  private IntegrationService $integrationService;
+
+  public function __construct(IntegrationService $integrationService)
+  {
+    $this->integrationService = $integrationService;
+  }
+
   public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
   {
     $startTime = microtime(true);
-    $lead = Lead::getLeadResponses($fingerprint);
+    $lead = Lead::getLeadWithResponses($fingerprint);
+
     if (!$lead) {
-      return ['error' => 'Lead not found'];
+      return [
+        'success' => false,
+        'message' => 'Lead not found',
+        'status_code' => 404,
+        'data' => null
+      ];
     }
 
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
-
     $mixLog = null;
     try {
-      return DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
+      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
         $mixLog = OfferwallMixLog::create([
           'offerwall_mix_id' => $mix->id,
           'fingerprint' => $lead->fingerprint,
@@ -37,7 +50,12 @@ class MixService
         ]);
 
         if ($integrations->isEmpty()) {
-          return [];
+          return [
+            'success' => true,
+            'message' => 'No active integrations found',
+            'status_code' => 200,
+            'data' => []
+          ];
         }
 
         $requestsData = [];
@@ -49,12 +67,14 @@ class MixService
 
           $template = $prodEnv->request_body ?? '';
           $mappingConfig = $integration->request_mapping_config ?? [];
-          $payload = $this->buildPayload($leadData, $template, $mappingConfig);
+          $payload = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
           $method = strtolower($prodEnv->method ?? 'post');
-          $headers = json_decode($prodEnv->request_headers ?? '[]', true);
+          $headersParsed = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
+          $headers = json_decode($headersParsed, true) ?? [];
           $url = $prodEnv->url;
           $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
         }
+
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
@@ -77,7 +97,6 @@ class MixService
           $requestData = $requestsData[$integration->id];
 
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
-
           if ($response->successful()) {
             $successfulCount++;
             $offers = $this->parseOffers($response, $integration);
@@ -93,11 +112,39 @@ class MixService
           'total_duration_ms' => $durationRounded,
         ]);
 
-        return $aggregatedOffers;
+        // Validar que el array de ofertas no esté vacío
+        if (empty($aggregatedOffers)) {
+          return [
+            'success' => false,
+            'message' => 'No offers were found from any integration',
+            'status_code' => 404,
+            'data' => [],
+            'meta' => [
+              'total_offers' => 0,
+              'successful_integrations' => $successfulCount,
+              'failed_integrations' => $integrations->count() - $successfulCount,
+              'duration_ms' => $durationRounded
+            ]
+          ];
+        }
+
+        return [
+          'success' => true,
+          'message' => 'Offers aggregated successfully',
+          'status_code' => 200,
+          'data' => $aggregatedOffers,
+          'meta' => [
+            'total_offers' => count($aggregatedOffers),
+            'successful_integrations' => $successfulCount,
+            'failed_integrations' => $integrations->count() - $successfulCount,
+            'duration_ms' => $durationRounded
+          ]
+        ];
       });
+
+      return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
-
       $slack = new SlackMessageBundler();
       $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
@@ -118,7 +165,12 @@ class MixService
         $slack->sendDirect();
       }
 
-      return ['error' => 'An unexpected error occurred'];
+      return [
+        'success' => false,
+        'message' => 'An unexpected error occurred while processing offers',
+        'status_code' => 500,
+        'data' => null
+      ];
     }
   }
 
@@ -127,33 +179,7 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function buildPayload(array $leadData, string $template, array $mappingConfig): string
-  {
-    if (empty($template)) {
-      return '';
-    }
 
-    $replacements = [];
-    foreach ($mappingConfig as $tokenName => $config) {
-      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
-
-      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
-        $value = $config['value_mapping'][$value];
-      }
-
-      if (is_array($value) || is_object($value)) {
-        $value = json_encode($value);
-      }
-
-      $replacements['{' . $tokenName . '}'] = (string) $value;
-    }
-
-    if (empty($replacements)) {
-      return $template;
-    }
-
-    return str_replace(array_keys($replacements), array_values($replacements), $template);
-  }
 
   private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response, string $method, array $headers, string $payload): void
   {
@@ -175,7 +201,9 @@ class MixService
   private function parseOffers(Response $response, $integration): array
   {
     $parserConfig = $integration->response_parser_config;
-    $offers = data_get($response->json(), $parserConfig['offer_list_path'] ?? '');
+    $jsonResponse = $response->json();
+    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $offers = data_get($jsonResponse, $pathOfOffers);
 
     if (!is_array($offers)) {
       return [];

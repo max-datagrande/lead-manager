@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import { Edit, Eye, Trash2 } from 'lucide-react';
+
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
 // --- Type Definitions ---
@@ -28,8 +29,9 @@ const TypeBadge = ({ type }: { type: Integration['type'] }) => {
   return <Badge className={`${typeClasses[type]} text-white`}>{type}</Badge>;
 };
 
-const ActionsCell = ({ row }: { row: { original: Integration } }) => {
+const ActionsCell = ({ row, table }: { row: { original: Integration }, table: any }) => {
   const integration = row.original;
+  const { showDeleteModal } = table.options.meta;
 
   return (
     <div className="flex items-center gap-2">
@@ -43,11 +45,10 @@ const ActionsCell = ({ row }: { row: { original: Integration } }) => {
           <Edit className="h-4 w-4" />
         </Button>
       </Link>
-      {/* El borrado puede ser un modal de confirmación, lo implementaremos después */}
       <Button
         variant="ghost"
         size="sm"
-        // onClick={() => showDeleteModal(integration)}
+        onClick={() => showDeleteModal(integration)}
         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
       >
         <Trash2 className="h-4 w-4" />
@@ -68,6 +69,20 @@ export const columns = [
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => <div className="px-2 whitespace-nowrap">{row.original.name}</div>,
+  },
+  {
+    id: 'company',
+    accessorKey: 'company.name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
+    cell: ({ row }) => (
+      <div className="px-2 whitespace-nowrap">
+        {row.original.company?.name || 'N/A'}
+      </div>
+    ),
+    filterFn: (row, id, value) => {
+      const companyName = row.original.company?.name || '';
+      return value.includes(companyName);
+    },
   },
   {
     accessorKey: 'type',

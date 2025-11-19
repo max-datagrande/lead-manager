@@ -55,6 +55,7 @@ class HandleInertiaRequests extends Middleware
         'info' => fn() => $request->session()->get('info'),
       ],
       'app' => [
+        'env' => config('app.env'),
         'services' => config('services'),
       ]
     ];

@@ -90,6 +90,7 @@ class IntegrationService
       'name' => 'required|string|max:255',
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
+      'company_id' => 'required|exists:companies,id',
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
@@ -109,6 +110,7 @@ class IntegrationService
         'name' => $data['name'],
         'type' => $data['type'],
         'is_active' => $data['is_active'],
+        'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
       ]);
@@ -136,7 +138,14 @@ class IntegrationService
    */
   public function deleteIntegration(Integration $integration)
   {
-    // Logic to delete an integration will be implemented here
+    try {
+      $integration->delete();
+    } catch (\Throwable $th) {
+      throw new IntegrationServiceException(
+        'Failed to delete integration: ' . $th->getMessage(),
+        ['integration_id' => $integration->id]
+      );
+    }
   }
 
   /**
@@ -199,6 +208,33 @@ class IntegrationService
       }
     }
     return json_encode($mappedHeaders);
+  }
+  public function parseParams(array $leadData, string $template, array $mappingConfig): string
+  {
+    if (empty($template)) {
+      return '';
+    }
+
+    $replacements = [];
+    foreach ($mappingConfig as $tokenName => $config) {
+      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+
+      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
+        $value = $config['value_mapping'][$value];
+      }
+
+      if (is_array($value) || is_object($value)) {
+        $value = json_encode($value);
+      }
+
+      $replacements['{' . $tokenName . '}'] = (string) $value;
+    }
+
+    if (empty($replacements)) {
+      return $template;
+    }
+
+    return str_replace(array_keys($replacements), array_values($replacements), $template);
   }
 }
 

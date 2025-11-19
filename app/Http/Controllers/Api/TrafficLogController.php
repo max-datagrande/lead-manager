@@ -47,7 +47,7 @@ class TrafficLogController extends Controller
       $trafficLog = $this->trafficLogService->createTrafficLog($data);
       $fingerprint = $trafficLog->fingerprint;
       $geolocation = collect($this->request->geoService()->getGeolocation())
-        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency'])
+        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip', 'region_code'])
         ->toArray();
       //Loggin
       $this->successLog($trafficLog);
@@ -61,17 +61,13 @@ class TrafficLogController extends Controller
         status: 201,
         meta: compact('fingerprint', 'geolocation'),
       );
-    } catch (TrafficLogCreationException $e) {
-      // Manejar errores específicos del servicio de traffic log (duplicados, etc.)
-      $message = 'Traffic log creation failed: ' . $e->getMessage();
-      $statusCode = str_contains($e->getMessage(), 'Duplicate') ? 409 : 422;
-      TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
-      return $this->errorResponse($message, $e->getTrace(), $statusCode);
     } catch (\Exception $e) {
-      // Manejar cualquier otro error inesperado
-      $message = 'An unexpected error occurred while processing the traffic log';
-      TailLogger::saveLog($message . ': ' . $e->getMessage(), 'traffic-log/store', 'error', $this->errorContext($e, $data));
-      return $this->errorResponse($message, $e->getTrace(), 500);
+      $message = $e->getMessage();
+      $isDev = app()->environment('local');
+      $errors = get_error_stack($e, $isDev);
+      $statusCode = str_contains($message, 'Duplicate') ? 409 : 500;
+      TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
+      return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
     }
   }
 
@@ -81,7 +77,7 @@ class TrafficLogController extends Controller
     TailLogger::saveLog('Traffic log successfully created from controller', 'traffic-log/store', 'info', [
       'id' => $currentVisitor->id,
       'fingerprint' => $currentVisitor->fingerprint,
-      'traffic_source' => $currentVisitor->traffic_source,
+      'utm_source' => $currentVisitor->utm_source,
     ]);
   }
 

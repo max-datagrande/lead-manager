@@ -101,7 +101,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
               <CardDescription>Configuration for testing and development.</CardDescription>
             </CardHeader>
             <CardContent>
-              <EnvironmentTab env="development" />
+              <EnvironmentTab env="development" fields={fields} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -112,7 +112,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
               <CardDescription>Live, production-ready configuration.</CardDescription>
             </CardHeader>
             <CardContent>
-              <EnvironmentTab env="production" />
+              <EnvironmentTab env="production" fields={fields} />
             </CardContent>
           </Card>
         </TabsContent>
