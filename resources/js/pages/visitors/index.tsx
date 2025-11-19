@@ -1,7 +1,7 @@
-import PageHeader from '@/components/page-header';
 import { ServerTable } from '@/components/data-table/server-table';
-import { useServerTable } from '@/hooks/use-server-table';
+import PageHeader from '@/components/page-header';
 import { visitorColumns } from '@/components/visitors/list-columns';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, DatatablePageProps } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -11,7 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Visitors',
     href: route('visitors.index'),
-  },
+  }
 ];
 /**
  * Index Page Component
@@ -38,7 +38,7 @@ type Visitor = {
   is_bot: boolean;
   created_at: string;
   updated_at: string;
-}
+};
 
 interface IndexProps extends DatatablePageProps<Visitor> {
   data: {
@@ -51,7 +51,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
   const table = useServerTable({
     routeName: 'visitors.index',
     initialState: state,
-    defaultPageSize: 10
+    defaultPageSize: 10,
   });
 
   const { hosts = [], states = [] } = data;
