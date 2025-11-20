@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\DatatableTrait;
+use App\Traits\DatatableTrait;
 use App\Models\Postback;
 use App\Models\PostbackApiRequests;
 use App\Enums\PostbackVendor;
