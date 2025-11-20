@@ -1,29 +1,54 @@
-import { Table, TableBody } from '@/components/ui/table';
-import { useEffect } from 'react';
-
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { useVisitors } from '@/hooks/use-visitors';
-import { visitorColumns } from './list-columns';
-
 import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { Table, TableBody } from '@/components/ui/table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-/**
- * Componente principal para mostrar la tabla de visitantes con paginación
- *
- * @param {Object} props - Propiedades del componente
- * @param {Object} props.entries - Datos de visitantes con información de paginación
- * @param {Object} props.meta - Metadatos de la paginación
- * @param {Object} props.data - Datos adicionales como hosts y states
- * @returns {JSX.Element} Tabla completa con datos de visitantes y controles de paginación
- */
-export const TableVisitors = ({ entries, meta, data }) => {
-  const { getVisitors, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, isLoading, pagination, setPagination } =
-    useVisitors();
-  const { hosts = [], states = [] } = data;
+interface ServerTableProps<TData> {
+  data: TData[];
+  columns: any[];
+  meta: {
+    last_page: number;
+  };
+  isLoading: boolean;
+  pagination: { pageIndex: number; pageSize: number };
+  setPagination: (pagination: { pageIndex: number; pageSize: number }) => void;
+  sorting: any[];
+  setSorting: (sorting: any[]) => void;
+  columnFilters: any[];
+  setColumnFilters: (filters: any[]) => void;
+  globalFilter: string;
+  setGlobalFilter: (filter: string) => void;
+  toolbarConfig?: {
+    searchPlaceholder?: string;
+    filterByColumn?: string;
+    filters?: Array<{
+      columnId: string;
+      title: string;
+      options: any;
+    }>;
+    dateRange?: { column: string; label: string };
+  };
+  additionalData?: Record<string, any>;
+}
+
+export function ServerTable<TData>({
+  data,
+  columns,
+  meta,
+  isLoading,
+  pagination,
+  setPagination,
+  sorting,
+  setSorting,
+  columnFilters,
+  setColumnFilters,
+  globalFilter,
+  setGlobalFilter,
+  toolbarConfig = {},
+  additionalData = {},
+}: ServerTableProps<TData>) {
   const { pageIndex, pageSize } = pagination;
 
   const resetPagination = () => {
@@ -31,11 +56,11 @@ export const TableVisitors = ({ entries, meta, data }) => {
   };
 
   const table = useReactTable({
-    data: entries,
-    columns: visitorColumns,
+    data,
+    columns,
     state: {
       sorting,
-      columnFilters: columnFilters,
+      columnFilters,
       pagination: { pageIndex, pageSize },
       globalFilter,
     },
@@ -64,37 +89,22 @@ export const TableVisitors = ({ entries, meta, data }) => {
     pageCount: meta.last_page,
   });
 
-  useEffect(() => {
-    getVisitors({ page: pageIndex + 1, per_page: pageSize });
-  }, [sorting, columnFilters, globalFilter, pageIndex, pageSize]);
-
   return (
     <>
-      {/* Filtros */}
-      <div className="mb-4">
-        <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar
-            table={table}
-            searchPlaceholder="Search..."
-            filterByColumn="created_at"
-            config={{
-              filters: [
-                {
-                  columnId: 'host',
-                  title: 'Host',
-                  options: hosts,
-                },
-                {
-                  columnId: 'state',
-                  title: 'State',
-                  options: states,
-                },
-              ],
-              dateRange: { column: 'created_at', label: 'Created At' },
-            }}
-          />
+      {toolbarConfig && (
+        <div className="mb-4">
+          <div className="mb-4 flex justify-between gap-2">
+            <DataTableToolbar
+              table={table}
+              searchPlaceholder={toolbarConfig.searchPlaceholder || 'Search...'}
+              config={{
+                filters: toolbarConfig.filters || [],
+                dateRange: toolbarConfig.dateRange,
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <div className="relative overflow-hidden rounded-md border">
         {isLoading && (
           <div className="absolute top-0 right-0 bottom-0 left-0 z-10 flex h-full w-full items-center justify-center bg-white">
@@ -107,13 +117,11 @@ export const TableVisitors = ({ entries, meta, data }) => {
         <Table className="relative">
           <DataTableHeader table={table} />
           <TableBody>
-            <DataTableContent table={table} data={entries} />
+            <DataTableContent table={table} data={data} />
           </TableBody>
         </Table>
       </div>
-      {!isLoading && (
-        <DataTablePagination table={table} />
-      )}
+      {!isLoading && <DataTablePagination table={table} />}
     </>
   );
-};
+}

@@ -45,30 +45,26 @@ class TrafficLogService
   public function createTrafficLog(array $data): TrafficLog
   {
     try {
-      $isDev = app()->environment('local');
-      $originParam = $isDev ? 'local-origin' : 'origin';
+
       // Generar fingerprint único
       $userAgent = $data['user_agent'];
       $ip = $this->request->geoService()->getIpAddress();
-      $landingOrigin = $this->request->header($originParam) ?? '';
+      $landingOrigin = $this->getOrigin();
       $landingHost = parse_url($landingOrigin, PHP_URL_HOST) ?? "";
-      $currentPagePath = $data['current_page'];
       $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
       TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
 
       $existingTraffic = $this->getExistingTraffic($fingerprint);
       if ($existingTraffic) {
-        $this->currentVisitor = $existingTraffic;
-        // Incrementar visit_count para tráfico duplicado
-        $existingTraffic->increment('visit_count');
-
         TailLogger::saveLog("Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}", 'traffic-log/store', 'info', [
           'fingerprint' => $fingerprint,
           'visit_count' => $existingTraffic->visit_count,
           'id' => $existingTraffic->id
         ]);
-        return $existingTraffic;
+        $this->currentVisitor = $existingTraffic;
+        return $this->incrementVisitCount($existingTraffic);
       }
+
       //Creating new visitor
       $newTraffic = new TrafficLog();
       $newTraffic->id = (string) Str::uuid(); //Id unico generado
@@ -85,14 +81,13 @@ class TrafficLogService
       $newTraffic->device_type = $deviceInfo['deviceType'];
       $newTraffic->browser = $deviceInfo['browser'];
       $newTraffic->os = $deviceInfo['os'];
-
       //Referer
-      $referer = $data['referer'] ?? null;
+      $referer = $this->getReferer($data);
       $newTraffic->referrer = $referer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
       //Host origin
       $newTraffic->host = $landingHost;
       //Page visited
-      $newTraffic->path_visited = $currentPagePath;
+      $newTraffic->path_visited = $data['current_page'];
       //Query Params on page
       $queryParams = $data['query_params'] ?? null;
       $newTraffic->query_params = $queryParams;
@@ -136,6 +131,7 @@ class TrafficLogService
         'is_bot' => $newTraffic->is_bot,
       ]);
       $this->currentVisitor = $newTraffic;
+
       return $newTraffic;
     } catch (\Exception $e) {
       TailLogger::saveLog('Error inesperado en creación de traffic log: ' . $e->getMessage(), 'traffic-log/store', 'error', [
@@ -144,6 +140,29 @@ class TrafficLogService
       ]);
       throw new TrafficLogCreationException('Failed to create traffic log', 0, $e);
     }
+  }
+
+  private function getOrigin(): string
+  {
+    $isDev = app()->environment('local');
+    $originParam = $isDev ? 'dev-origin' : 'origin';
+    return $this->request->header($originParam) ?? '';
+  }
+  private function getReferer($data): ?string
+  {
+    $origin = $this->getOrigin();
+    $originHost = parse_url($origin, PHP_URL_HOST) ?? "";
+    $referer = $data['referer'] ?? null;
+    if ($referer && strpos($referer, $originHost) !== false) {
+      $referer = null;
+    }
+    return $referer;
+  }
+  private function incrementVisitCount(TrafficLog $trafficLog): TrafficLog
+  {
+    // Incrementar visit_count para tráfico duplicado
+    $trafficLog->increment('visit_count');
+    return $trafficLog;
   }
 
   /**

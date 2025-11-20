@@ -1,11 +1,15 @@
+import { ServerTable } from '@/components/data-table/server-table';
 import PageHeader from '@/components/page-header';
-import { TablePostbacks, type Postback } from '@/components/postback/index';
-import { PostbackProvider } from '@/context/postback-provider';
+import { type Postback } from '@/components/postback/index';
+import { createPostbackColumns } from '@/components/postback/list-columns';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { PageLink } from '@/types';
 import { Head } from '@inertiajs/react';
 import { type ReactNode } from 'react';
+import { PostbackProvider } from '@/context/postback-provider';
 
+const postbackColumns = createPostbackColumns();
 const breadcrumbs = [
   {
     title: 'Postbacks',
@@ -49,7 +53,12 @@ interface IndexProps {
   };
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
-  return (
+  const table = useServerTable({
+    routeName: 'postbacks.index',
+    initialState: state,
+    defaultPageSize: 10,
+  });
+  /* return (
     <PostbackProvider initialState={state}>
       <Head title="Postbacks" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
@@ -57,6 +66,46 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
         <TablePostbacks entries={rows.data} meta={meta} data={data} />
       </div>
     </PostbackProvider>
+  ); */
+  return (
+    <>
+      <PostbackProvider initialState={state}>
+        <Head title="Postbacks" />
+        <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
+          <PageHeader title="Postbacks" description="Check the status of your postbacks." />
+          <ServerTable
+            data={rows.data}
+            columns={postbackColumns}
+            meta={meta}
+            isLoading={table.isLoading}
+            pagination={table.pagination}
+            setPagination={table.setPagination}
+            sorting={table.sorting}
+            setSorting={table.setSorting}
+            columnFilters={table.columnFilters}
+            setColumnFilters={table.setColumnFilters}
+            globalFilter={table.globalFilter}
+            setGlobalFilter={table.setGlobalFilter}
+            toolbarConfig={{
+              searchPlaceholder: 'Search visitors...',
+              filters: [
+                {
+                  columnId: 'vendor',
+                  title: 'Vendor',
+                  options: data.vendorFilterOptions,
+                },
+                {
+                  columnId: 'status',
+                  title: 'Status',
+                  options: data.statusFilterOptions,
+                },
+              ],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
+          />
+        </div>
+      </PostbackProvider>
+    </>
   );
 };
 
