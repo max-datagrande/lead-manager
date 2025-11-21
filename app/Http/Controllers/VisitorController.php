@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\DatatableTrait;
+use App\Traits\DatatableTrait;
 use Inertia\Inertia;
 use App\Models\TrafficLog;
 use App\Services\VisitorService;

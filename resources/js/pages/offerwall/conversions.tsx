@@ -8,26 +8,38 @@ import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-pro
 import { OfferwallConversionsWidgets, TableConversions, OfferwallConversionsActions } from '@/components/offerwall-conversions';
 import { ServerTable } from '@/components/data-table/server-table';
 import { useServerTable } from '@/hooks/use-server-table';
-
+import { DatatablePageProps } from '@/types';
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
 ];
 
-interface IndexProps {
-  rows: any; // The paginator object
+type Conversions = {
+  id: number;
+  integration_id: number;
+  company_id: number;
+  amount: number;
+  fingerprint: string;
+  click_id: string;
+  utm_source: string;
+  utm_medium: string;
+  created_at: string;
+  updated_at: string;
+};
+interface IndexProps extends DatatablePageProps<Conversions> {
   totalPayout: number;
-  integrations: Array<{ value: string; label: string }>; // Added
-  companies: Array<{ value: string; label: string }>;    // Added
-  state: { sort?: string; search?: string };
+  data: {
+    companies: Array<{ value: string; label: string }>;
+    integrations: Array<{ value: string; label: string }>;
+  }
 }
 
-const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps) => {
+const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
   const table = useServerTable({
-      routeName: 'offerwall.conversions',
-      initialState: state,
-      defaultPageSize: 10,
-  })
+    routeName: 'offerwall.conversions',
+    initialState: state,
+    defaultPageSize: 10,
+  });
 
   return (
     <OfferwallConversionsProvider initialState={state}>
@@ -40,7 +52,7 @@ const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps
         <ServerTable
           data={rows.data}
           columns={columns}
-          meta={{last_page : 5}}
+          meta={{ last_page: 5 }}
           isLoading={table.isLoading}
           pagination={table.pagination}
           setPagination={table.setPagination}
@@ -52,9 +64,7 @@ const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps
           setGlobalFilter={table.setGlobalFilter}
           toolbarConfig={{
             searchPlaceholder: 'Search visitors...',
-            filters: [
-
-            ],
+            filters: [],
             dateRange: { column: 'created_at', label: 'Created At' },
           }}
         />
