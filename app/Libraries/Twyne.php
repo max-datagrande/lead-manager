@@ -51,7 +51,10 @@ class Twyne
 
     $this->buildRequest();
   }
-
+  public function getRequest(): array
+  {
+    return $this->formData;
+  }
   private function buildRequest(): void
   {
     $builtData = [];

@@ -76,6 +76,7 @@ class ProcessTwyneFormLeads extends Command
 
     foreach ($unprocessedLeads as $webhookLead) {
       $response = null;
+      $request = null;
       try {
         $this->info("Processing webhook_lead_id: {$webhookLead->id}");
 
@@ -84,7 +85,7 @@ class ProcessTwyneFormLeads extends Command
 
         // 2. Submit the pre-built request to the client API
         $response = $twyneRequest->submit();
-
+        $request = $twyneRequest->getRequest();
         // 3. Check if the request failed
         if ($response->failed()) {
           // This will throw an exception and be caught by the catch block
@@ -101,6 +102,7 @@ class ProcessTwyneFormLeads extends Command
         $this->info("Lead {$webhookLead->id} Accepted");
         // 4. If the call is successful, process the response
         $webhookLead->status = WebhookLeadStatus::PROCESSED;
+        $webhookLead->data = $request;
         $webhookLead->response = $data; // Store the successful JSON response
         $webhookLead->processed_at = now();
         $webhookLead->save();
@@ -122,6 +124,7 @@ class ProcessTwyneFormLeads extends Command
 
         // Store error information in the database for debugging
         $webhookLead->status = WebhookLeadStatus::FAILED;
+        $webhookLead->data = $request;
         $webhookLead->response = ['error' => $errorContext];
         $webhookLead->processed_at = now();
         $webhookLead->save();
