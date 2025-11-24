@@ -88,27 +88,31 @@ class ProcessTwyneFormLeads extends Command
         // --- Geolocation Step (before Twyne instantiation) ---
         $zipcode = data_get($webhookLead->payload, 'zipcode');
         if (empty($zipcode)) {
-          // If zipcode is missing, it should already be caught by requiredFields check,
-          // but this is an extra check before geolocation call.
           throw new \App\Exceptions\MissingRequiredFieldsException(
-            'Zipcode is required for geolocation.',
+            'Zipcode is required.',
             ['zipcode']
           );
         }
 
-        $addressInfo = $geolocationService->getCityAndStateFromZipcode($zipcode);
-
-        if (is_null($addressInfo)) {
-          throw new Exception("Geolocation failed for zipcode: {$zipcode}.");
+        // --- Extract 5-digit Zipcode ---
+        $rawZipcode = (string) $zipcode; // Ensure it's a string
+        $cleanZipcode = null;
+        if (preg_match('/\b(\d{5})\b/', $rawZipcode, $matches)) {
+          $cleanZipcode = $matches[1];
         }
 
-        $webhookLead->payload['city'] = $addressInfo['city'];
-        $webhookLead->payload['state'] = $addressInfo['state'];
+        if (empty($cleanZipcode)) {
+          throw new Exception("Could not extract a 5-digit zipcode from '{$rawZipcode}'.");
+        }
 
-        // --- Processing Step (only runs if validation and geolocation passes) ---
+        $addressInfo = $geolocationService->getCityAndStateFromZipcode($cleanZipcode);
+
+        if (is_null($addressInfo)) {
+          throw new Exception("Geolocation failed for zipcode: {$cleanZipcode}.");
+        }
 
         // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
-        $twyneRequest = new Twyne($webhookLead->payload, $twyneMapping);
+        $twyneRequest = new Twyne([...$webhookLead->payload, $addressInfo['city'],  $addressInfo['state']], $twyneMapping);
 
         // 2. Submit the pre-built request to the client API
         $response = $twyneRequest->submit();
