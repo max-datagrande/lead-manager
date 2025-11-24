@@ -13,6 +13,9 @@ class Twyne
   protected int $cid = 77;
   protected array $formData = [];
   protected array $apiFields = [
+    'ip',
+    'externalid',
+    'subid1',
     'first',
     'last',
     'email',
@@ -26,17 +29,11 @@ class Twyne
     'cq2',
     'cq3',
     'trustedform',
-    'ip',
-    'subid1'
   ];
 
   private array $payload;
   private ?array $mapping;
   private string $loggerFolder = 'webhooks/leads/twyne';
-
-  /* Example
-   TailLogger::saveLog('Webhook received for source: ' . $source, 'webhooks/leads/store', 'info', ['payload' => $payload]);
-  */
 
   public function __construct(array $payload, ?array $mapping = null)
   {
@@ -51,17 +48,15 @@ class Twyne
 
     $this->buildRequest();
   }
-
+  public function getRequest(): array
+  {
+    return $this->formData;
+  }
   private function buildRequest(): void
   {
     $builtData = [];
     $processedFields = [];
     $skippedFields = [];
-
-    TailLogger::saveLog('Starting to build Twyne request', $this->loggerFolder, 'info', [
-      'api_fields_count' => count($this->apiFields),
-      'payload_keys' => array_keys($this->payload)
-    ]);
 
     foreach ($this->apiFields as $field) {
       $map = $this->mapping[$field] ?? ['source' => $field]; // Default behavior: source key is same as field name
@@ -95,14 +90,22 @@ class Twyne
       'cid' => $this->cid,
     ]);
 
-    TailLogger::saveLog('Twyne request built successfully', $this->loggerFolder, 'info', [
-      'processed_fields' => $processedFields,
-      'skipped_fields' => $skippedFields,
-      'final_form_data_keys' => array_keys($this->formData),
-      'environment' => app()->environment()
-    ]);
-  }
+    // --- Validation Step ---
+    $requiredApiFields = $this->apiFields;
+    $missingFields = [];
+    foreach ($requiredApiFields as $requiredField) {
+      if (empty($this->formData[$requiredField])) {
+        $missingFields[] = $requiredField;
+      }
+    }
 
+    if (!empty($missingFields)) {
+      throw new \App\Exceptions\MissingRequiredFieldsException(
+        'Required fields are missing or empty.',
+        $missingFields
+      );
+    }
+  }
   public function submit()
   {
     TailLogger::saveLog('Submitting Twyne lead', $this->loggerFolder, 'info', [
@@ -132,7 +135,6 @@ class Twyne
       }
 
       return $response;
-
     } catch (\Exception $e) {
       TailLogger::saveLog('Twyne lead submission exception', $this->loggerFolder, 'error', [
         'error_message' => $e->getMessage(),
