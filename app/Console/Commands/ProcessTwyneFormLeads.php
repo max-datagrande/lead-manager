@@ -111,9 +111,21 @@ class ProcessTwyneFormLeads extends Command
 
         // Delay of 2 seconds between requests
         sleep(2);
+      } catch (\App\Exceptions\MissingRequiredFieldsException $e) {
+        // Catch the specific validation exception to SKIP the lead
+        $missingFields = $e->getMissingFields();
+        $this->warn("Skipping webhook_lead_id: {$webhookLead->id}. Reason: " . $e->getMessage() . " Missing: " . implode(', ', $missingFields));
+
+        $webhookLead->status = WebhookLeadStatus::SKIPPED;
+        $webhookLead->response = ['error' => $e->getMessage(), 'missing_fields' => $missingFields];
+        $webhookLead->processed_at = now();
+        $webhookLead->save();
+
+        // Continue to the next lead without stopping the whole command
+        continue;
       } catch (\Throwable $e) {
         $errorMessage = $e->getMessage();
-        // Get response body from the local $response variable or the exception itself                                               │
+        // Get response body from the local $response variable or the exception itself
         $responseBody = $response ? $response->body() : (method_exists($e, 'response') ? $e->response->body() : 'N/A');
         $errorContext = [
           'webhook_lead_id' => $webhookLead->id,
@@ -136,12 +148,11 @@ class ProcessTwyneFormLeads extends Command
           ->addDivider()
           ->addKeyValue('Webhook Lead ID', $webhookLead->id)
           ->addKeyValue('Error', $errorMessage, true)
-          ->addSection('Response Details: ```' . substr($responseBody, 0, 200) . '```')
+          ->addSection('Response Details: ```' . substr((string)$responseBody, 0, 200) . '```')
           ->sendDirect('error');
 
         $this->error("Failed to process Twyne lead. Error: {$errorMessage}");
 
-        //Log::error('Twyne Lead Processing Failed', $errorContext);
         TailLogger::saveLog('Twyne Lead Processing Failed', 'webhooks/leads/twyne', 'error', $errorContext);
 
         // Stop the command on error
