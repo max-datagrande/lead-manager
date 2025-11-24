@@ -9,6 +9,8 @@ use Illuminate\Console\Command;
 use App\Libraries\Twyne;
 use Maxidev\Logger\TailLogger;
 
+use App\Services\GeolocationService; // Import the service
+
 class ProcessTwyneFormLeads extends Command
 {
   /**
@@ -35,7 +37,7 @@ class ProcessTwyneFormLeads extends Command
   /**
    * Execute the console command.
    */
-  public function handle()
+  public function handle(GeolocationService $geolocationService)
   {
     $this->info('Starting to process pending Twyne form leads...');
     // Define the mapping for this specific command, including transformations.
@@ -45,6 +47,8 @@ class ProcessTwyneFormLeads extends Command
       'email' => ['source' => 'email'],
       'address1' => ['source' => 'address1'],
       'zip' => ['source' => 'zipcode'],
+      'city' => ['source' => 'city'],
+      'state' => ['source' => 'state'],
       'phone' => ['source' => 'phone1'],
       'trustedform' => ['source' => 'trustedform_cert_url'],
       'subid1' => ['source' => 'fb_form_id'],
@@ -80,6 +84,31 @@ class ProcessTwyneFormLeads extends Command
       try {
         $this->info("Processing webhook_lead_id: {$webhookLead->id}");
 
+        // --- Geolocation Step (before Twyne instantiation) ---
+        $zipcode = data_get($webhookLead->payload, 'zipcode');
+        if (empty($zipcode)) {
+          // If zipcode is missing, it should already be caught by requiredFields check,
+          // but this is an extra check before geolocation call.
+          throw new \App\Exceptions\MissingRequiredFieldsException(
+            'Zipcode is required for geolocation.',
+            ['zipcode']
+          );
+        }
+
+        $addressInfo = $geolocationService->getCityAndStateFromZipcode($zipcode);
+
+        if (is_null($addressInfo)) {
+          throw new \App\Exceptions\MissingRequiredFieldsException(
+            "Geolocation failed for zipcode: {$zipcode}.",
+            ['city', 'state']
+          );
+        }
+
+        $webhookLead->payload['city'] = $addressInfo['city'];
+        $webhookLead->payload['state'] = $addressInfo['state'];
+
+        // --- Processing Step (only runs if validation and geolocation passes) ---
+
         // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
         $twyneRequest = new Twyne($webhookLead->payload, $twyneMapping);
 
@@ -88,22 +117,21 @@ class ProcessTwyneFormLeads extends Command
         $request = $twyneRequest->getRequest();
         // 3. Check if the request failed
         if ($response->failed()) {
-          // This will throw an exception and be caught by the catch block
           $response->throw();
         }
         $data = $response->json();
         //Check if "Accepted" is into status string
-
         $isAccepted = isset($data['status']) && strpos($data['status'], 'Accepted') !== false;
         if (!$isAccepted) {
           throw new \Exception("Lead {$webhookLead->id} not Accepted by Twyne. Status: " . ($data['status'] ?? 'Unknown'));
         }
 
         $this->info("Lead {$webhookLead->id} Accepted");
+
         // 4. If the call is successful, process the response
         $webhookLead->status = WebhookLeadStatus::PROCESSED;
         $webhookLead->data = $request;
-        $webhookLead->response = $data; // Store the successful JSON response
+        $webhookLead->response = $data;
         $webhookLead->processed_at = now();
         $webhookLead->save();
 
@@ -124,8 +152,8 @@ class ProcessTwyneFormLeads extends Command
         // Continue to the next lead without stopping the whole command
         continue;
       } catch (\Throwable $e) {
+        // Catch all other exceptions as a FAILED attempt
         $errorMessage = $e->getMessage();
-        // Get response body from the local $response variable or the exception itself
         $responseBody = $response ? $response->body() : (method_exists($e, 'response') ? $e->response->body() : 'N/A');
         $errorContext = [
           'webhook_lead_id' => $webhookLead->id,
@@ -134,7 +162,7 @@ class ProcessTwyneFormLeads extends Command
           'response_body' => $responseBody,
         ];
 
-        // Store error information in the database for debugging
+        // Store error information in the database
         $webhookLead->status = WebhookLeadStatus::FAILED;
         $webhookLead->data = $request;
         $webhookLead->response = ['error' => $errorContext];
@@ -152,7 +180,6 @@ class ProcessTwyneFormLeads extends Command
           ->sendDirect('error');
 
         $this->error("Failed to process Twyne lead. Error: {$errorMessage}");
-
         TailLogger::saveLog('Twyne Lead Processing Failed', 'webhooks/leads/twyne', 'error', $errorContext);
 
         // Stop the command on error
