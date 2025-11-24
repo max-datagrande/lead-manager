@@ -110,9 +110,9 @@ class ProcessTwyneFormLeads extends Command
         if (is_null($addressInfo)) {
           throw new Exception("Geolocation failed for zipcode: {$cleanZipcode}.");
         }
-
+        $payload = [...$webhookLead->payload, 'city' => $addressInfo['city'],  'state' => $addressInfo['state']];
         // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
-        $twyneRequest = new Twyne([...$webhookLead->payload, $addressInfo['city'],  $addressInfo['state']], $twyneMapping);
+        $twyneRequest = new Twyne($payload, $twyneMapping);
 
         // 2. Submit the pre-built request to the client API
         $response = $twyneRequest->submit();
