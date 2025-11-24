@@ -1,0 +1,152 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Enums\WebhookLeadStatus;
+use App\Models\WebhookLead;
+use App\Support\SlackMessageBundler;
+use Illuminate\Console\Command;
+use App\Libraries\Twyne;
+use Maxidev\Logger\TailLogger;
+
+class ProcessTwyneFormLeads extends Command
+{
+  /**
+   * The name and signature of the console command.
+   *
+   * @var string
+   */
+  protected $signature = 'app:process-twyne-form-leads';
+
+  /**
+   * The console command description.
+   *
+   * @var string
+   */
+  protected $description = 'Process pending Twyne form leads by mapping data and sending to client API.';
+
+  /**
+   * The specific form ID for Twyne leads to process.
+   *
+   * @var string
+   */
+  protected string $formId = '1981121326072730';
+
+  /**
+   * Execute the console command.
+   */
+  public function handle()
+  {
+    $this->info('Starting to process pending Twyne form leads...');
+    // Define the mapping for this specific command, including transformations.
+    $twyneMapping = [
+      'first' => ['source' => 'first_name'],
+      'last' => ['source' => 'last_name'],
+      'email' => ['source' => 'email'],
+      'address1' => ['source' => 'address1'],
+      'zip' => ['source' => 'zipcode'],
+      'phone' => ['source' => 'phone1'],
+      'trustedform' => ['source' => 'trustedform_cert_url'],
+      'subid1' => ['source' => 'fb_form_id'],
+      'externalid' => ['source' => 'fb_lead_id'],
+      'ip' => ['source' => 'ip_address'],
+      'dob' => [
+        'source' => 'DOB',
+        'transform' => fn($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('m/d/Y') : null
+      ],
+      'cq1' => [
+        'source' => 'desired_amount_of_coverage',
+        'transform' => fn($value) => $value ? preg_replace('/[^\d]/', '', $value) : null
+      ],
+      'cq2' => ['source' => 'please_enter_your_beneficiary_s_name'],
+      'cq3' => ['source' => 'what_is_your_relationship_to_the_beneficiary'],
+    ];
+
+    $unprocessedLeads = WebhookLead::where('source', 'trusted')
+      ->where('status', WebhookLeadStatus::PENDING)
+      ->whereJsonContains('payload->fb_form_id', $this->formId)
+      ->get();
+
+    if ($unprocessedLeads->isEmpty()) {
+      $this->info('No pending Twyne form leads found to process.');
+      return Command::SUCCESS;
+    }
+
+    $this->info("Found {$unprocessedLeads->count()} Twyne form leads to process.");
+
+    foreach ($unprocessedLeads as $webhookLead) {
+      $response = null;
+      try {
+        $this->info("Processing webhook_lead_id: {$webhookLead->id}");
+
+        // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
+        $twyneRequest = new Twyne($webhookLead->payload, $twyneMapping);
+
+        // 2. Submit the pre-built request to the client API
+        $response = $twyneRequest->submit();
+
+        // 3. Check if the request failed
+        if ($response->failed()) {
+          // This will throw an exception and be caught by the catch block
+          $response->throw();
+        }
+        $data = $response->json();
+        //Check if "Accepted" is into status string
+
+        $isAccepted = isset($data['status']) && strpos($data['status'], 'Accepted') !== false;
+        if (!$isAccepted) {
+          throw new \Exception("Lead {$webhookLead->id} not Accepted by Twyne. Status: " . ($data['status'] ?? 'Unknown'));
+        }
+
+        $this->info("Lead {$webhookLead->id} Accepted");
+        // 4. If the call is successful, process the response
+        $webhookLead->status = WebhookLeadStatus::PROCESSED;
+        $webhookLead->response = $data; // Store the successful JSON response
+        $webhookLead->processed_at = now();
+        $webhookLead->save();
+
+        $this->info("Successfully processed webhook_lead_id: {$webhookLead->id}");
+
+        // Delay of 2 seconds between requests
+        sleep(2);
+      } catch (\Throwable $e) {
+        $errorMessage = $e->getMessage();
+        // Get response body from the local $response variable or the exception itself                                               │
+        $responseBody = $response ? $response->body() : (method_exists($e, 'response') ? $e->response->body() : 'N/A');
+        $errorContext = [
+          'webhook_lead_id' => $webhookLead->id,
+          'error' => $errorMessage,
+          'file' => $e->getFile() . ':' . $e->getLine(),
+          'response_body' => $responseBody,
+        ];
+
+        // Store error information in the database for debugging
+        $webhookLead->status = WebhookLeadStatus::FAILED;
+        $webhookLead->response = ['error' => $errorContext];
+        $webhookLead->processed_at = now();
+        $webhookLead->save();
+
+        // Send Slack notification
+        $slack = new SlackMessageBundler();
+        $slack->addTitle('Twyne Lead Processing Failed', '🚨')
+          ->addSection('The cron job failed to process a Twyne lead.')
+          ->addDivider()
+          ->addKeyValue('Webhook Lead ID', $webhookLead->id)
+          ->addKeyValue('Error', $errorMessage, true)
+          ->addSection('Response Details: ```' . substr($responseBody, 0, 200) . '```')
+          ->sendDirect('error');
+
+        $this->error("Failed to process Twyne lead. Error: {$errorMessage}");
+
+        //Log::error('Twyne Lead Processing Failed', $errorContext);
+        TailLogger::saveLog('Twyne Lead Processing Failed', 'webhooks/leads/twyne', 'error', $errorContext);
+
+        // Stop the command on error
+        return Command::FAILURE;
+      }
+    }
+
+    $this->info('All pending Twyne form leads have been processed.');
+    return Command::SUCCESS;
+  }
+}

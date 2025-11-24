@@ -93,14 +93,23 @@ class OfferwallController extends Controller
     $companies = Company::select('id', 'name')->get()->map(function ($company) {
       return ['value' => (string) $company->id, 'label' => $company->name];
     });
-
     return Inertia::render('offerwall/conversions', [
       'rows' => $conversions,
+      'state' => [
+        'filters' => $columnFilters,
+        ...$request->only(['sort', 'direction', 'search']),
+      ],
+      'meta' => [
+        'total' => $conversions->total(),
+        'per_page' => $conversions->perPage(),
+        'current_page' => $conversions->currentPage(),
+        'last_page' => $conversions->lastPage(),
+      ],
+      'data' => [
+        'companies' => $companies,
+        'integrations' => $integrations,
+      ],
       'totalPayout' => $totalPayout,
-      'state' => $request->only(['sort', 'direction', 'search']),
-      'filters' => ['columnFilters' => $columnFilters],
-      'integrations' => $integrations,
-      'companies' => $companies,
     ]);
   }
 
@@ -138,7 +147,6 @@ class OfferwallController extends Controller
         'message' => 'Offerwall mix created successfully',
         'data' => $offerwallMix->load('integrations')
       ], 201);
-
     } catch (\Exception $e) {
       return response()->json([
         'success' => false,
@@ -199,7 +207,6 @@ class OfferwallController extends Controller
         'message' => 'Offerwall mix updated successfully',
         'data' => $offerwallMix->load('integrations')
       ], 200);
-
     } catch (\Exception $e) {
       return response()->json([
         'success' => false,
