@@ -35,10 +35,6 @@ class Twyne
   private ?array $mapping;
   private string $loggerFolder = 'webhooks/leads/twyne';
 
-  /* Example
-   TailLogger::saveLog('Webhook received for source: ' . $source, 'webhooks/leads/store', 'info', ['payload' => $payload]);
-  */
-
   public function __construct(array $payload, ?array $mapping = null)
   {
     $this->payload = $payload;

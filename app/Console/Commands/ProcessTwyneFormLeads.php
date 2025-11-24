@@ -10,6 +10,7 @@ use App\Libraries\Twyne;
 use Maxidev\Logger\TailLogger;
 
 use App\Services\GeolocationService; // Import the service
+use Exception;
 
 class ProcessTwyneFormLeads extends Command
 {
@@ -98,10 +99,7 @@ class ProcessTwyneFormLeads extends Command
         $addressInfo = $geolocationService->getCityAndStateFromZipcode($zipcode);
 
         if (is_null($addressInfo)) {
-          throw new \App\Exceptions\MissingRequiredFieldsException(
-            "Geolocation failed for zipcode: {$zipcode}.",
-            ['city', 'state']
-          );
+          throw new Exception("Geolocation failed for zipcode: {$zipcode}.");
         }
 
         $webhookLead->payload['city'] = $addressInfo['city'];
