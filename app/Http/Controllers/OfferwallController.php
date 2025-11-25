@@ -80,7 +80,7 @@ class OfferwallController extends Controller
     $totalPayout = $query->sum('amount');
 
     // Apply sorting
-    $sort = $request->get('sort', 'created_at:desc');
+    $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
     $query->orderBy($sortColumn, $sortDirection);
 
@@ -93,12 +93,14 @@ class OfferwallController extends Controller
     $companies = Company::select('id', 'name')->get()->map(function ($company) {
       return ['value' => (string) $company->id, 'label' => $company->name];
     });
+    $state =  [
+      'filters' => $columnFilters,
+      'sort' => $sort,
+      'search' => $search,
+    ];
     return Inertia::render('offerwall/conversions', [
       'rows' => $conversions,
-      'state' => [
-        'filters' => $columnFilters,
-        ...$request->only(['sort', 'direction', 'search']),
-      ],
+      'state' => $state,
       'meta' => [
         'total' => $conversions->total(),
         'per_page' => $conversions->perPage(),

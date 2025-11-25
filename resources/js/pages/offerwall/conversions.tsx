@@ -52,7 +52,7 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
         <ServerTable
           data={rows.data}
           columns={columns}
-          meta={{ last_page: 5 }}
+          meta={meta}
           isLoading={table.isLoading}
           pagination={table.pagination}
           setPagination={table.setPagination}
