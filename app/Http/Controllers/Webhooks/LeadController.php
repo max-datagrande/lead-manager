@@ -24,11 +24,14 @@ class LeadController extends Controller
   {
     $source = $request->route('source', 'default');
     $payload = $request->all();
+    $headers = $request->headers->all();
     TailLogger::saveLog('Webhook received for source: ' . $source, 'webhooks/leads/store', 'info', ['payload' => $payload]);
     try {
       $webhookLead = WebhookLead::create([
         'source' => $source,
         'payload' => $payload,
+        'headers' => $headers,
+        'ip_origin' => $request->ip(),
       ]);
       TailLogger::saveLog('Webhook processed successfully for source: ' . $source, 'webhooks/leads/store', 'info', ['id' => $webhookLead->id]);
       return response()->json([
