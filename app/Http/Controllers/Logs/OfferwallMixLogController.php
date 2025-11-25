@@ -14,34 +14,25 @@ class OfferwallMixLogController extends Controller
     $sort = $request->get('sort', 'created_at:desc');
     [$col, $dir] = get_sort_data($sort);
     $columnFilters = json_decode($request->input('filters', '[]'), true);
-    $query = OfferwallMixLog::query();
-
-    if ($search = $request->input('search')) {
+    $query = OfferwallMixLog::query()->with('offerwallMix:id,name');
+    $search = $request->input('search');
+    if ($search) {
       $query->where(function ($q) use ($search) {
-        $q->where('click_id', 'like', '%' . $search . '%')
-          ->orWhere('utm_source', 'like', '%' . $search . '%')
-          ->orWhere('utm_medium', 'like', '%' . $search . '%')
-          ->orWhere('fingerprint', 'like', '%' . $search . '%')
-          ->orWhereHas('integration', function ($q2) use ($search) {
-            $q2->where('name', 'like', '%' . $search . '%');
-          })
-          ->orWhereHas('company', function ($q2) use ($search) {
+        $q->where('fingerprint', 'like', '%' . $search . '%')
+          ->orWhereHas('offerwallMix', function ($q2) use ($search) {
             $q2->where('name', 'like', '%' . $search . '%');
           });
       });
     }
     $perPage = $request->input('per_page', 15);
 
-    $logs = $query->with('offerwallMix:id,name')
-      ->orderBy($col, $dir)
+    $logs = $query->orderBy($col, $dir)
       ->paginate($perPage)->withQueryString();
-
     $state =  [
       'filters' => $columnFilters,
       'sort' => $sort,
       'search' => $search,
     ];
-
     return Inertia::render('logs/mixes/index', [
       'rows' => $logs,
       'state' =>  $state,
