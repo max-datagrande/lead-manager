@@ -84,7 +84,9 @@ class OfferwallController extends Controller
     [$sortColumn, $sortDirection] = get_sort_data($sort);
     $query->orderBy($sortColumn, $sortDirection);
 
-    $conversions = $query->paginate(15)->withQueryString();
+    //Apply pagination
+    $perPage = $request->input('per_page', 15);
+    $conversions = $query->paginate($perPage)->withQueryString();
 
     // Fetch data for faceted filters
     $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
