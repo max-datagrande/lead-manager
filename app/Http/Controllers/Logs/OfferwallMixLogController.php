@@ -33,15 +33,17 @@ class OfferwallMixLogController extends Controller
       'sort' => $sort,
       'search' => $search,
     ];
+
+    $meta = [
+      'total' => $logs->total(),
+      'per_page' => $logs->perPage(),
+      'current_page' => $logs->currentPage(),
+      'last_page' => $logs->lastPage(),
+    ];
     return Inertia::render('logs/mixes/index', [
       'rows' => $logs,
       'state' =>  $state,
-      'meta' => [
-        'total' => $logs->total(),
-        'per_page' => $logs->perPage(),
-        'current_page' => $logs->currentPage(),
-        'last_page' => $logs->lastPage(),
-      ],
+      'meta' => $meta,
       'data' => []
     ]);
   }
