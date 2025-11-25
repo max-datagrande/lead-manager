@@ -13,18 +13,36 @@ class OfferwallMixLogController extends Controller
   {
     $sort = $request->get('sort', 'created_at:desc');
     [$col, $dir] = get_sort_data($sort);
+    $columnFilters = json_decode($request->input('filters', '[]'), true);
+    $query = OfferwallMixLog::query()->with('offerwallMix:id,name');
+    $search = $request->input('search');
+    if ($search) {
+      $query->where(function ($q) use ($search) {
+        $q->where('fingerprint', 'like', '%' . $search . '%')
+          ->orWhereHas('offerwallMix', function ($q2) use ($search) {
+            $q2->where('name', 'like', '%' . $search . '%');
+          });
+      });
+    }
+    $perPage = $request->input('per_page', 15);
 
-    $logs = OfferwallMixLog::query()
-      ->with('offerwallMix:id,name')
-      ->orderBy($col, $dir)
-      ->paginate($request->get('limit', 15));
-
+    $logs = $query->orderBy($col, $dir)
+      ->paginate($perPage)->withQueryString();
+    $state =  [
+      'filters' => $columnFilters,
+      'sort' => $sort,
+      'search' => $search,
+    ];
     return Inertia::render('logs/mixes/index', [
       'rows' => $logs,
-      'state' => [
-        'sort' => $sort,
-        'filters' => []
+      'state' =>  $state,
+      'meta' => [
+        'total' => $logs->total(),
+        'per_page' => $logs->perPage(),
+        'current_page' => $logs->currentPage(),
+        'last_page' => $logs->lastPage(),
       ],
+      'data' => []
     ]);
   }
 
