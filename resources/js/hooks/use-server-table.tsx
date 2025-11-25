@@ -24,7 +24,7 @@ interface ServerTableState {
   resetPagination: () => void;
 }
 
-export function useServerTable({ routeName, initialState, defaultPageSize = 10, includeInReload }: ServerTableOptions): ServerTableState {
+export function useServerTable({ routeName, initialState, defaultPageSize = 10, includeInReload = [] }: ServerTableOptions): ServerTableState {
   const isFirstRender = useRef(true);
 
   // Estado inicial
