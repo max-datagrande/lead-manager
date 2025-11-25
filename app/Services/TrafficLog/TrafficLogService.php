@@ -145,7 +145,7 @@ class TrafficLogService
   private function getOrigin(): string
   {
     $isDev = app()->environment('local');
-    $originParam = $isDev ? 'local-origin' : 'origin';
+    $originParam = $isDev ? 'dev-origin' : 'origin';
     return $this->request->header($originParam) ?? '';
   }
   private function getReferer($data): ?string

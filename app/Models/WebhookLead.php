@@ -2,15 +2,27 @@
 
 namespace App\Models;
 
+use App\Enums\WebhookLeadStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class WebhookLead extends Model
 {
-  protected $guarded = [];
-  protected $table = 'webhook_leads';
-  protected $primaryKey = 'id';
-  protected $fillable = ['source', 'payload'];
-  protected $casts = [
-    'payload' => 'array',
-  ];
+    protected $table = 'webhook_leads';
+
+    protected $fillable = [
+        'source',
+        'payload',
+        'status',
+        'data',
+        'response',
+        'processed_at',
+    ];
+
+    protected $casts = [
+        'payload' => 'array',
+        'status' => WebhookLeadStatus::class,
+        'data' => 'array',
+        'response' => 'array',
+        'processed_at' => 'datetime',
+    ];
 }

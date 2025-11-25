@@ -1,26 +1,47 @@
+import { ServerTable } from '@/components/data-table/server-table';
+import { OfferwallConversionsActions, OfferwallConversionsWidgets } from '@/components/offerwall-conversions';
+import { columns } from '@/components/offerwall-conversions/list-columns';
+import PageHeader from '@/components/page-header';
+import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-provider';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { DatatablePageProps, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import PageHeader from '@/components/page-header';
-
-import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-provider';
-import { OfferwallConversionsWidgets, TableConversions, OfferwallConversionsActions } from '@/components/offerwall-conversions';
-
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
 ];
 
-interface IndexProps {
-  rows: any; // The paginator object
+type Conversions = {
+  id: number;
+  integration_id: number;
+  company_id: number;
+  amount: number;
+  fingerprint: string;
+  click_id: string;
+  utm_source: string;
+  utm_medium: string;
+  created_at: string;
+  updated_at: string;
+};
+interface IndexProps extends DatatablePageProps<Conversions> {
   totalPayout: number;
-  integrations: Array<{ value: string; label: string }>; // Added
-  companies: Array<{ value: string; label: string }>;    // Added
-  state: { sort?: string; search?: string };
+  data: {
+    companies: Array<{ value: string; label: string }>;
+    integrations: Array<{ value: string; label: string }>;
+  };
 }
 
-const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps) => {
+const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
+  const table = useServerTable({
+    routeName: 'offerwall.conversions',
+    initialState: state,
+    defaultPageSize: 10,
+    includeInReload: ['totalPayout'],
+  });
+  const { isLoading } = table;
+
   return (
     <OfferwallConversionsProvider initialState={state}>
       <Head title="Offerwall Conversions" />
@@ -28,8 +49,26 @@ const Index = ({ rows, totalPayout, integrations, companies, state }: IndexProps
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">
           <OfferwallConversionsActions />
         </PageHeader>
-        <OfferwallConversionsWidgets totalPayout={totalPayout} />
-        <TableConversions entries={rows} integrations={integrations} companies={companies} />
+        <OfferwallConversionsWidgets totalPayout={totalPayout} isLoading={isLoading} />
+        <ServerTable
+          data={rows.data}
+          columns={columns}
+          meta={meta}
+          isLoading={isLoading}
+          pagination={table.pagination}
+          setPagination={table.setPagination}
+          sorting={table.sorting}
+          setSorting={table.setSorting}
+          columnFilters={table.columnFilters}
+          setColumnFilters={table.setColumnFilters}
+          globalFilter={table.globalFilter}
+          setGlobalFilter={table.setGlobalFilter}
+          toolbarConfig={{
+            searchPlaceholder: 'Search visitors...',
+            filters: [],
+            dateRange: { column: 'created_at', label: 'Created At' },
+          }}
+        />
       </div>
     </OfferwallConversionsProvider>
   );

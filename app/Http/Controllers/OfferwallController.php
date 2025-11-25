@@ -80,11 +80,13 @@ class OfferwallController extends Controller
     $totalPayout = $query->sum('amount');
 
     // Apply sorting
-    $sort = $request->get('sort', 'created_at:desc');
+    $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
     $query->orderBy($sortColumn, $sortDirection);
 
-    $conversions = $query->paginate(15)->withQueryString();
+    //Apply pagination
+    $perPage = $request->input('per_page', 15);
+    $conversions = $query->paginate($perPage)->withQueryString();
 
     // Fetch data for faceted filters
     $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
@@ -93,14 +95,25 @@ class OfferwallController extends Controller
     $companies = Company::select('id', 'name')->get()->map(function ($company) {
       return ['value' => (string) $company->id, 'label' => $company->name];
     });
-
+    $state =  [
+      'filters' => $columnFilters,
+      'sort' => $sort,
+      'search' => $search,
+    ];
     return Inertia::render('offerwall/conversions', [
       'rows' => $conversions,
+      'state' => $state,
+      'meta' => [
+        'total' => $conversions->total(),
+        'per_page' => $conversions->perPage(),
+        'current_page' => $conversions->currentPage(),
+        'last_page' => $conversions->lastPage(),
+      ],
+      'data' => [
+        'companies' => $companies,
+        'integrations' => $integrations,
+      ],
       'totalPayout' => $totalPayout,
-      'state' => $request->only(['sort', 'direction', 'search']),
-      'filters' => ['columnFilters' => $columnFilters],
-      'integrations' => $integrations,
-      'companies' => $companies,
     ]);
   }
 
@@ -138,7 +151,6 @@ class OfferwallController extends Controller
         'message' => 'Offerwall mix created successfully',
         'data' => $offerwallMix->load('integrations')
       ], 201);
-
     } catch (\Exception $e) {
       return response()->json([
         'success' => false,
@@ -199,7 +211,6 @@ class OfferwallController extends Controller
         'message' => 'Offerwall mix updated successfully',
         'data' => $offerwallMix->load('integrations')
       ], 200);
-
     } catch (\Exception $e) {
       return response()->json([
         'success' => false,

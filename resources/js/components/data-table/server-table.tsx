@@ -87,6 +87,7 @@ export function ServerTable<TData>({
     manualFiltering: true,
     manualPagination: true,
     pageCount: meta.last_page,
+    meta: additionalData,
   });
 
   return (
