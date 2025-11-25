@@ -5,6 +5,8 @@ import { Link } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { ArrowRight } from 'lucide-react';
+import { FingerprintCell } from '@/components/visitors';
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 
 // Define the shape of our data
 interface OfferwallMixLog {
@@ -25,6 +27,15 @@ export const columns: ColumnDef<OfferwallMixLog>[] = [
     accessorKey: 'id',
     header: 'ID',
   },
+  {
+      accessorKey: 'fingerprint',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
+      cell: ({ row }) => {
+        return <FingerprintCell fingerprint={row.original.fingerprint} />;
+      },
+      enableSorting: false,
+      enableHiding: true,
+    },
   {
     accessorKey: 'offerwall_mix.name',
     header: 'Mix Name',
