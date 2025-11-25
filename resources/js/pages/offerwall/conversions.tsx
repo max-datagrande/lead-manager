@@ -1,14 +1,13 @@
+import { ServerTable } from '@/components/data-table/server-table';
+import { OfferwallConversionsActions, OfferwallConversionsWidgets } from '@/components/offerwall-conversions';
+import { columns } from '@/components/offerwall-conversions/list-columns';
+import PageHeader from '@/components/page-header';
+import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-provider';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { DatatablePageProps, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import PageHeader from '@/components/page-header';
-import { columns } from '@/components/offerwall-conversions/list-columns';
-import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-provider';
-import { OfferwallConversionsWidgets, TableConversions, OfferwallConversionsActions } from '@/components/offerwall-conversions';
-import { ServerTable } from '@/components/data-table/server-table';
-import { useServerTable } from '@/hooks/use-server-table';
-import { DatatablePageProps } from '@/types';
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
@@ -31,7 +30,7 @@ interface IndexProps extends DatatablePageProps<Conversions> {
   data: {
     companies: Array<{ value: string; label: string }>;
     integrations: Array<{ value: string; label: string }>;
-  }
+  };
 }
 
 const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
@@ -39,7 +38,9 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
     routeName: 'offerwall.conversions',
     initialState: state,
     defaultPageSize: 10,
+    includeInReload: ['totalPayout'],
   });
+  const { isLoading } = table;
 
   return (
     <OfferwallConversionsProvider initialState={state}>
@@ -48,12 +49,12 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">
           <OfferwallConversionsActions />
         </PageHeader>
-        <OfferwallConversionsWidgets totalPayout={totalPayout} />
+        <OfferwallConversionsWidgets totalPayout={totalPayout} isLoading={isLoading} />
         <ServerTable
           data={rows.data}
           columns={columns}
           meta={meta}
-          isLoading={table.isLoading}
+          isLoading={isLoading}
           pagination={table.pagination}
           setPagination={table.setPagination}
           sorting={table.sorting}
