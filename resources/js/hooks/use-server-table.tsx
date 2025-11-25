@@ -7,6 +7,7 @@ interface ServerTableOptions {
   routeName: string;
   initialState: any;
   defaultPageSize?: number;
+  includeInReload?: string[];
 }
 
 interface ServerTableState {
@@ -23,17 +24,13 @@ interface ServerTableState {
   resetPagination: () => void;
 }
 
-export function useServerTable({
-  routeName,
-  initialState,
-  defaultPageSize = 10
-}: ServerTableOptions): ServerTableState {
+export function useServerTable({ routeName, initialState, defaultPageSize = 10, includeInReload }: ServerTableOptions): ServerTableState {
   const isFirstRender = useRef(true);
-  
+
   // Estado inicial
   const initialSorting = typeof initialState?.sort === 'string' ? getSortState(initialState.sort) : [];
   const filters = initialState.filters ?? [];
-  
+
   // Estados
   const [sorting, setSorting] = useState(initialSorting);
   const [columnFilters, setColumnFilters] = useState(filters);
@@ -46,7 +43,7 @@ export function useServerTable({
 
   // Resetear paginación
   const resetPagination = () => {
-    setPagination(prev => ({ ...prev, pageIndex: 0 }));
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
   // Fetch data
@@ -55,9 +52,9 @@ export function useServerTable({
       isFirstRender.current = false;
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     const payload = {
       search: globalFilter || undefined,
       sort: serializeSort(sorting),
@@ -68,13 +65,13 @@ export function useServerTable({
     };
 
     const options = {
-      only: ['rows', 'meta', 'state'],
+      only: ['rows', 'meta', 'state', ...includeInReload],
       replace: true,
       preserveState: true,
       preserveScroll: true,
       onFinish: () => setIsLoading(false),
     };
-    
+
     router.get(route(routeName), payload, options);
   };
 
