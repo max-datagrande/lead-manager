@@ -55,6 +55,16 @@ class CdnController extends Controller
 
   private function getCdnAsset(string $entry)
   {
+    if (app()->isLocal()) {
+      $hotFilePath = public_path('catalyst.hot');
+      if (File::exists($hotFilePath)) {
+        $hotFileContent = File::get($hotFilePath);
+        $baseUrl = trim($hotFileContent);
+        $entryFile = "resources/js/catalyst/{$entry}.js";
+        return "{$baseUrl}/{$entryFile}";
+      }
+    }
+
     $manifest = $this->getCdnManifest();
     $key = "resources/js/catalyst/{$entry}.js";
     if (!isset($manifest[$key])) {
