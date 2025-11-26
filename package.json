@@ -6,6 +6,7 @@
     "build:catalyst": "vite build --config vite.catalyst.config.js && php artisan catalyst:clear-cache",
     "build:ssr": "vite build && vite build --ssr",
     "dev": "vite",
+    "dev:catalyst": "vite --config vite.catalyst.config.js",
     "lint": "eslint . --fix",
     "types": "tsc --noEmit",
     "format": "prettier --write resources/",
