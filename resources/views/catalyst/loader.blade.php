@@ -3,11 +3,18 @@
     return;
   }
   // Configuración inicial desde el backend de Laravel
-  const config = @json($catalystConfig);
+  const backendConfig = @json($catalystConfig);
+
+  // El JS es autosuficiente: detecta el modo debug desde la URL de la página
+  const pageUrl = new URL(window.location.href);
+  const isDebug = pageUrl.searchParams.get('catalyst_debug') === '1';
+
+  // Fusionar la configuración del backend con la detectada en el frontend
+  const finalConfig = { ...backendConfig, debug: isDebug };
 
   // Crear el placeholder del objeto Catalyst
   const placeholder = {
-    config: config,
+    config: finalConfig, // Usar la configuración final
     _q: [], // Cola de comandos
   };
 
