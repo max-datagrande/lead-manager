@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 
-class CdnController extends Controller
+class CatalystController extends Controller
 {
   public function loader(Request $request)
   {
