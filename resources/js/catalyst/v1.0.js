@@ -134,7 +134,7 @@ function init() {
 
   // PASO 6: El Chef anuncia que el restaurante está abierto.
   // Emite el evento 'ready' para que todos sepan que ya puede tomar pedidos en tiempo real.
-  catalystInstance.dispatch('ready');
+  catalystInstance.dispatch('ready', { catalyst: catalystInstance });
 }
 
 // ¡Que entre el Chef! Llamamos a la función para que todo el proceso comience.

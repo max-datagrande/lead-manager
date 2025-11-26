@@ -21,7 +21,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         'v1.0': resolve(__dirname, 'resources/js/catalyst/v1.0.js'),
-        'v1.1': resolve(__dirname, 'resources/js/catalyst/v1.1.js'),
       },
     },
   },

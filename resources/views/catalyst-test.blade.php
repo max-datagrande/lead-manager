@@ -15,9 +15,9 @@
   <script>
     // Ejemplo de cómo escuchar eventos del SDK.
     // El evento 'ready' se dispara cuando el SDK está completamente cargado e inicializado.
-    Catalyst.on('ready', function() {
+    Catalyst.on('ready', function(data) {
       console.log('****************************************');
-      console.log('CATALYST SDK EVENT: El SDK está listo!');
+      console.log('CATALYST SDK EVENT: El SDK está listo!', data);
       console.log('****************************************');
 
       // Ahora es seguro registrar eventos que dependen de que el SDK esté completamente funcional.
@@ -35,6 +35,14 @@
         delay: '2 seconds'
       });
     }, 2000);
+
+    // Ejemplo de uso con async/await
+    (async function() {
+      console.log('Esperando a que Catalyst esté listo usando async/await...');
+      const data = await Catalyst.ready();
+      console.log('¡Catalyst está listo! (obtenido con await)', data);
+      Catalyst.register('event_from_await', { source: 'async/await' });
+    })();
   </script>
 </body>
 

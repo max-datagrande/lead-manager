@@ -26,6 +26,19 @@
     };
   });
 
+  // Función de ayuda para usar con async/await
+  placeholder.ready = function() {
+    return new Promise(resolve => {
+      // Si el SDK real ya se cargó, resuelve de inmediato.
+      if (window.Catalyst && !window.Catalyst._q) {
+        resolve({ catalyst: window.Catalyst });
+      } else {
+        // Si no, espera al evento 'ready'.
+        placeholder.on('ready', resolve);
+      }
+    });
+  };
+
   // Exponer el placeholder globalmente
   window.Catalyst = placeholder;
 
