@@ -65,7 +65,16 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
           setGlobalFilter={table.setGlobalFilter}
           toolbarConfig={{
             searchPlaceholder: 'Search visitors...',
-            filters: [],
+            filters: [{
+              columnId: 'integration_id',
+              title: 'Integration',
+              options: data.integrations,
+            },
+            {
+              columnId: 'company_id',
+              title: 'Company',
+              options: data.companies,
+            }],
             dateRange: { column: 'created_at', label: 'Created At' },
           }}
         />
