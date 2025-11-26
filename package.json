@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "build:catalyst": "vite build --config vite.catalyst.config.js && php artisan catalyst:clear-cache",
     "build:ssr": "vite build && vite build --ssr",
     "dev": "vite",
     "lint": "eslint . --fix",
