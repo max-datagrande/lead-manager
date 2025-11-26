@@ -1,9 +1,8 @@
-class Catalyst {
+class CatalystCore {
   constructor(config) {
     this.config = config;
     this.listeners = {}; // Almacén para los listeners de eventos
     this.landingId = this.getLandingId();
-
     if (this.config.debug) {
       this.enableDebugMode();
     }
@@ -72,7 +71,7 @@ class Catalyst {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
     }
     if (this.listeners[eventName]) {
-      this.listeners[eventName].forEach(callback => {
+      this.listeners[eventName].forEach((callback) => {
         try {
           callback(data);
         } catch (e) {
@@ -100,6 +99,7 @@ class Catalyst {
  * Esta función `init()` es lo PRIMERO que hace el Chef cuando finalmente llega a la cocina.
  */
 function init() {
+  console.log('Catalyst SDK: Inicializando...');
   // PASO 1: El Chef busca al Recepcionista para pedirle la libreta de pedidos.
   // `window.Catalyst` en este punto es el objeto FALSO que creó el Recepcionista.
   const placeholder = window.Catalyst;
@@ -107,13 +107,13 @@ function init() {
   // PASO 2: El Chef comprueba si el Recepcionista hizo bien su trabajo.
   // Si no hay un `placeholder` o no tiene una libreta `_q`, algo salió muy mal.
   if (!placeholder || !placeholder._q) {
-    console.error("Catalyst SDK: El script de carga (el Recepcionista) no funcionó. No se encontraron pedidos pendientes.");
+    console.error('Catalyst SDK: El script de carga no funcionó. No se encontraron pedidos pendientes.');
     return;
   }
 
   // PASO 3: El Chef se prepara para cocinar.
   // Crea una instancia REAL de sí mismo, usando la configuración que el Recepcionista ya tenía guardada.
-  const catalystInstance = new Catalyst(placeholder.config);
+  const catalystInstance = new CatalystCore(placeholder.config);
 
   // PASO 4: El Chef revisa la libreta `_q` y cocina todos los pedidos pendientes, uno por uno.
   // `placeholder._q` es un array de pedidos, ej: [ ['register', 'arg1'], ['track', 'arg1', 'arg2'] ]
