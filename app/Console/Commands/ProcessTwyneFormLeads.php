@@ -109,8 +109,9 @@ class ProcessTwyneFormLeads extends Command
         if (is_null($addressInfo)) {
           throw new Exception("Geolocation failed for zipcode: {$cleanZipcode}.");
         }
-        $ipAddress = data_get($webhookLead->payload, 'ip_address') ?? $webhookLead->ip_origin;
-        $payload = [...$webhookLead->payload, 'city' => $addressInfo['city'],  'state' => $addressInfo['state'], 'ip_address' => $ipAddress];
+        $ipAddress = data_get($webhookLead->payload, 'ip_address', null) ?? $webhookLead->ip_origin;
+        $payload = [...$webhookLead->payload, 'city' => $addressInfo['city'],  'state' => $addressInfo['state'], 'ip_address' => $ipAddress, 'zipcode' => $cleanZipcode];
+
         // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
         $twyneRequest = new Twyne($payload, $twyneMapping);
 
@@ -185,7 +186,8 @@ class ProcessTwyneFormLeads extends Command
         TailLogger::saveLog('Twyne Lead Processing Failed', 'webhooks/leads/twyne', 'error', $errorContext);
 
         // Stop the command on error
-        return Command::FAILURE;
+        continue;
+        /* return Command::FAILURE; */
       }
     }
 
