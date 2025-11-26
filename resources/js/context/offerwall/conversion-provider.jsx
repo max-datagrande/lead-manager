@@ -13,7 +13,7 @@ export const OfferwallConversionsProvider = ({ children, initialState }) => {
   const isFirstRender = useRef(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  const inistialSorting = typeof initialState?.sort !== 'function' ? 'created_at:desc' : getSortState(initialState?.sort);
+  const inistialSorting = typeof initialState?.sort !== 'function' ? getSortState(initialState?.sort) : 'created_at:desc';
 
   const [globalFilter, setGlobalFilter] = useState(state?.search ?? '');
   const [sorting, setSorting] = useState(inistialSorting);
