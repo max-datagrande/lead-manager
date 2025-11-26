@@ -84,7 +84,7 @@ class Twyne
 
     // Add static and configured fields
     $this->formData = array_merge($builtData, [
-      'istest' => app()->environment('production') ? 'false' : 'true',
+      'istest' => app()->environment('production') ? false : true,
       'pid' => $this->pid,
       'sid' => $this->sid,
       'cid' => $this->cid,
