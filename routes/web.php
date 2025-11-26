@@ -52,8 +52,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
       ->parameters(['offerwall-mixes' => 'offerwallMixLog']);
   });
 });
+
+Route::prefix('catalyst')->group(function () {
+  // Catalyst Test Route
+  Route::get('/test', function () {
+    return view('catalyst-test');
+  })->name('catalyst.test');
+
+  // Catalyst Engine Route
+  Route::get('/engine.js', [CdnController::class, 'loader']);
+});
+
 //Catalyst
-Route::get('catalyst/engine.js', [CdnController::class, 'loader']);
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/admin.php';
