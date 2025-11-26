@@ -1,9 +1,11 @@
-import { MixLogsTable } from '@/components/logs/mixes/table';
+import { ServerTable } from '@/components/data-table/server-table';
 import PageHeader from '@/components/page-header';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { DatatablePageProps, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import { columns } from '@/components/logs/mixes/table'
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
@@ -35,7 +37,7 @@ interface PaginatedLogs {
   meta: any; // Adjust based on your pagination meta structure
 }
 
-interface IndexProps {
+interface IndexProps extends PaginatedLogs{
   rows: PaginatedLogs;
   state: {
     sort: string;
@@ -43,7 +45,13 @@ interface IndexProps {
   }
 }
 
-const Index = ({ rows }: IndexProps) => {
+const Index = ({ rows , meta, data, state }: IndexProps ) => {
+  const table = useServerTable({
+      routeName: 'logs.offerwall-mixes.index',
+      initialState: state,
+      defaultPageSize: 10,
+    });
+
   return (
     <>
       <Head title="Offerwall Mix Logs" />
@@ -52,7 +60,25 @@ const Index = ({ rows }: IndexProps) => {
           {/* Actions can go here, e.g., filters */}
         </PageHeader>
         <div className="-mx-4 overflow-x-auto px-4 py-4 sm:-mx-8 sm:px-8">
-          <MixLogsTable data={rows.data} />
+          <ServerTable
+            data={rows.data}
+            columns={columns}
+            meta={meta}
+            isLoading={table.isLoading}
+            pagination={table.pagination}
+            setPagination={table.setPagination}
+            sorting={table.sorting}
+            setSorting={table.setSorting}
+            columnFilters={table.columnFilters}
+            setColumnFilters={table.setColumnFilters}
+            globalFilter={table.globalFilter}
+            setGlobalFilter={table.setGlobalFilter}
+            toolbarConfig={{
+              searchPlaceholder: 'Search visitors...',
+              filters: [],
+              dateRange: { column: 'created_at', label: 'Created At' },
+            }}
+            />
         </div>
       </div>
     </>
