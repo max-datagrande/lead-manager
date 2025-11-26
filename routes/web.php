@@ -10,6 +10,7 @@ use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
+use App\Http\Controllers\CdnController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -51,6 +52,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
       ->parameters(['offerwall-mixes' => 'offerwallMixLog']);
   });
 });
+
+Route::prefix('catalyst')->group(function () {
+  // Catalyst Test Route
+  Route::get('/test', function () {
+    return view('catalyst-test');
+  })->name('catalyst.test');
+
+  // Catalyst Engine Route
+  Route::get('/engine.js', [CdnController::class, 'loader']);
+});
+
+//Catalyst
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/admin.php';

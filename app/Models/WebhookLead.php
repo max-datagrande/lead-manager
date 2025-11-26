@@ -12,6 +12,8 @@ class WebhookLead extends Model
     protected $fillable = [
         'source',
         'payload',
+        'headers',
+        'ip_origin',
         'status',
         'data',
         'response',
@@ -20,6 +22,8 @@ class WebhookLead extends Model
 
     protected $casts = [
         'payload' => 'array',
+        'headers' => 'array',
+        'ip_origin' => 'string',
         'status' => WebhookLeadStatus::class,
         'data' => 'array',
         'response' => 'array',
