@@ -19,11 +19,25 @@ class CdnController extends Controller
 
     $baseUrl = $this->getCdnAsset("v{$version}");
 
-    // Pasa los parámetros originales (excepto 'version') al script de la versión
-    $queryParams = http_build_query($request->except('version'));
-    $finalUrl = $baseUrl . '?' . $queryParams;
+    $isDebug = $request->query('catalyst_debug') === '1';
+    $sessionData = $isDebug ? $request->session()->all() : null;
 
-    $content = view('catalyst.loader', ['finalUrl' => $finalUrl])->render();
+    $catalystConfig = [
+      'debug' => $isDebug,
+      'session' => $sessionData,
+      'environment' => config('app.env', 'production'),
+      'api_url' => config('catalyst.api_url'),
+      'active' => config('catalyst.active', true),
+    ];
+
+    // Pasa los parámetros originales (excepto 'version' y 'catalyst_debug') al script de la versión
+    $queryParams = http_build_query($request->except('version', 'catalyst_debug'));
+    $finalUrl = $baseUrl . ($queryParams ? '?' . $queryParams : '');
+
+    $content = view('catalyst.loader', [
+      'finalUrl' => $finalUrl,
+      'catalystConfig' => $catalystConfig,
+    ])->render();
 
     return response($content)->header('Content-Type', 'application/javascript');
   }
