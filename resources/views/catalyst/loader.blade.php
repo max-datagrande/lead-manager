@@ -19,7 +19,7 @@
   };
 
   // Métodos que estarán disponibles de inmediato
-  const methods = ['register'];
+  const methods = ['register', 'on', 'dispatch'];
   methods.forEach(method => {
     placeholder[method] = function() {
       placeholder._q.push([method, ...arguments]);

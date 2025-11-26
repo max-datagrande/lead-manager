@@ -13,12 +13,23 @@
   <p>Open the developer console to see the output.</p>
 
   <script>
-    // This call will be queued by the placeholder
+    // Ejemplo de cómo escuchar eventos del SDK.
+    // El evento 'ready' se dispara cuando el SDK está completamente cargado e inicializado.
+    Catalyst.on('ready', function() {
+      console.log('****************************************');
+      console.log('CATALYST SDK EVENT: El SDK está listo!');
+      console.log('****************************************');
+
+      // Ahora es seguro registrar eventos que dependen de que el SDK esté completamente funcional.
+      Catalyst.register('post_ready_event', { message: 'Este evento se registró después de que el SDK estuviera listo.' });
+    });
+
+    // Esta llamada será encolada por el placeholder y procesada cuando el SDK esté listo.
     Catalyst.register('page_view', {
       url: window.location.pathname
     });
 
-    // You can also call it after a delay
+    // También puedes llamarlo con un retardo.
     setTimeout(() => {
       Catalyst.register('delayed_event', {
         delay: '2 seconds'

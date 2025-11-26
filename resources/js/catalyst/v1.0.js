@@ -1,6 +1,7 @@
 class Catalyst {
   constructor(config) {
     this.config = config;
+    this.listeners = {}; // Almacén para los listeners de eventos
     this.landingId = this.getLandingId();
 
     if (this.config.debug) {
@@ -48,11 +49,43 @@ class Catalyst {
     console.log(`Evento registrado: ${eventName}`, data);
     // Aquí iría la lógica para enviar el evento a un backend, por ejemplo.
   }
+
+  /**
+   * Registra un callback para un evento específico.
+   * @param {string} eventName - El nombre del evento a escuchar.
+   * @param {function} callback - La función a ejecutar cuando el evento es emitido.
+   */
+  on(eventName, callback) {
+    if (!this.listeners[eventName]) {
+      this.listeners[eventName] = [];
+    }
+    this.listeners[eventName].push(callback);
+  }
+
+  /**
+   * Emite un evento, notificando a todos los listeners registrados.
+   * @param {string} eventName - El nombre del evento a emitir.
+   * @param {object} [data={}] - Datos para pasar a los callbacks.
+   */
+  dispatch(eventName, data = {}) {
+    if (this.config.debug) {
+      console.log(`Catalyst Event Dispatched: ${eventName}`, data);
+    }
+    if (this.listeners[eventName]) {
+      this.listeners[eventName].forEach(callback => {
+        try {
+          callback(data);
+        } catch (e) {
+          console.error(`Catalyst SDK: Error en un listener del evento '${eventName}':`, e);
+        }
+      });
+    }
+  }
 }
 
 /**
  * ===================================================================================
- * FUNCIÓN DE INICIALIZACIÓN (LA MAGIA OCURRE AQUÍ)
+ * FUNCIÓN DE INICIALIZACIÓN
  * ===================================================================================
  *
  * Imagina que este archivo (`v1.0.js`) es un Chef famoso que tarda un poco en llegar a la cocina.
@@ -98,6 +131,10 @@ function init() {
   // A partir de ahora, cualquier llamada a `Catalyst.register(...)` será atendida
   // directamente por el Chef, sin pasar por la libreta.
   window.Catalyst = catalystInstance;
+
+  // PASO 6: El Chef anuncia que el restaurante está abierto.
+  // Emite el evento 'ready' para que todos sepan que ya puede tomar pedidos en tiempo real.
+  catalystInstance.dispatch('ready');
 }
 
 // ¡Que entre el Chef! Llamamos a la función para que todo el proceso comience.
