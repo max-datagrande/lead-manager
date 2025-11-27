@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use MatthiasMullie\Minify;
+
 
 class CatalystController extends Controller
 {
@@ -38,6 +40,9 @@ class CatalystController extends Controller
       'finalUrl' => $finalUrl,
       'catalystConfig' => $catalystConfig,
     ])->render();
+
+      $minifier = new Minify\JS($content);
+      $content = $minifier->minify();
 
     return response($content)->header('Content-Type', 'application/javascript');
   }
