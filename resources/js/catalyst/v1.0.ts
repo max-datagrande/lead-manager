@@ -1,8 +1,52 @@
+// ===================================================================================
+// INTERFACES Y TIPOS
+// ===================================================================================
+
+/**
+ * Define la estructura del objeto de configuración que recibe el SDK.
+ */
+interface CatalystConfig {
+  debug?: boolean;
+  session?: Record<string, any>;
+  environment?: 'local' | 'production' | string;
+  api_url?: string;
+  active?: boolean;
+}
+
+/**
+ * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
+ */
+interface CatalystPlaceholder {
+  _q: [string, ...any[]][];
+  config: CatalystConfig;
+}
+
+/**
+ * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
+ * Puede ser la instancia real (CatalystCore) o el placeholder.
+ */
+declare global {
+  interface Window {
+    Catalyst: CatalystCore | CatalystPlaceholder;
+  }
+}
+
+type EventCallback = (data: any) => void;
+
+// ===================================================================================
+// CLASE PRINCIPAL DEL SDK
+// ===================================================================================
+
 class CatalystCore {
-  constructor(config) {
+  config: CatalystConfig;
+  listeners: Record<string, EventCallback[]>;
+  landingId: string | null;
+
+  constructor(config: CatalystConfig) {
     this.config = config;
     this.listeners = {}; // Almacén para los listeners de eventos
     this.landingId = this.getLandingId();
+
     if (this.config.debug) {
       this.enableDebugMode();
     }
@@ -15,8 +59,8 @@ class CatalystCore {
     console.log(`Catalyst SDK v1.0 inicializado para Landing ID: ${this.landingId}`);
   }
 
-  getLandingId() {
-    const currentScript = document.currentScript;
+  getLandingId(): string | null {
+    const currentScript = document.currentScript as HTMLScriptElement | null;
     if (!currentScript) {
       console.error('Catalyst SDK: No se pudo determinar el script actual.');
       return null;
@@ -25,7 +69,7 @@ class CatalystCore {
     return scriptUrl.searchParams.get('landing_id');
   }
 
-  enableDebugMode() {
+  enableDebugMode(): void {
     console.group('Catalyst SDK [Debug Mode]');
     console.log('Configuración recibida:', this.config);
     if (this.config.session) {
@@ -39,7 +83,7 @@ class CatalystCore {
    * @param {string} eventName - El nombre del evento.
    * @param {object} [data={}] - Datos adicionales para el evento.
    */
-  register(eventName, data = {}) {
+  register(eventName: string, data: Record<string, any> = {}): void {
     if (!eventName) {
       console.error('Catalyst SDK: El nombre del evento es requerido para el método register.');
       return;
@@ -54,7 +98,7 @@ class CatalystCore {
    * @param {string} eventName - El nombre del evento a escuchar.
    * @param {function} callback - La función a ejecutar cuando el evento es emitido.
    */
-  on(eventName, callback) {
+  on(eventName: string, callback: EventCallback): void {
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
     }
@@ -66,7 +110,7 @@ class CatalystCore {
    * @param {string} eventName - El nombre del evento a emitir.
    * @param {object} [data={}] - Datos para pasar a los callbacks.
    */
-  dispatch(eventName, data = {}) {
+  dispatch(eventName: string, data: Record<string, any> = {}): void {
     if (this.config.debug) {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
     }
@@ -87,7 +131,6 @@ class CatalystCore {
  * FUNCIÓN DE INICIALIZACIÓN
  * ===================================================================================
  *
- * Imagina que este archivo (`v1.0.js`) es un Chef famoso que tarda un poco en llegar a la cocina.
  * El script que se carga primero (`catalyst/engine.js`) es el Recepcionista del restaurante.
  *
  * El Recepcionista es rápido y crea un objeto `window.Catalyst` falso (un "placeholder")
@@ -98,11 +141,12 @@ class CatalystCore {
  *
  * Esta función `init()` es lo PRIMERO que hace el Chef cuando finalmente llega a la cocina.
  */
-function init() {
+
+function init(): void {
   console.log('Catalyst SDK: Inicializando...');
   // PASO 1: El Chef busca al Recepcionista para pedirle la libreta de pedidos.
   // `window.Catalyst` en este punto es el objeto FALSO que creó el Recepcionista.
-  const placeholder = window.Catalyst;
+  const placeholder = window.Catalyst as CatalystPlaceholder;
 
   // PASO 2: El Chef comprueba si el Recepcionista hizo bien su trabajo.
   // Si no hay un `placeholder` o no tiene una libreta `_q`, algo salió muy mal.
@@ -139,3 +183,6 @@ function init() {
 
 // ¡Que entre el Chef! Llamamos a la función para que todo el proceso comience.
 init();
+
+// (Tratar este archivo como un módulo para permitir declaraciones globales).
+export {};

@@ -7,7 +7,7 @@ export default defineConfig({
 
   plugins: [
     laravel({
-      input: ['resources/js/catalyst/v1.0.js'],
+      input: ['resources/js/catalyst/v1.0.ts'],
       buildDirectory: 'cdn/catalyst',
       hotFile: 'public/catalyst.hot',
     }),
