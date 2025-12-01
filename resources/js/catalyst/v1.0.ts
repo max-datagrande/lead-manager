@@ -14,6 +14,27 @@ interface CatalystConfig {
 }
 
 /**
+ * Estructura de los datos del visitante almacenados.
+ */
+interface VisitorData {
+  fingerprint: string;
+  id?: string | number;
+  lead_registered?: boolean; // Flag para saber si ya es un lead
+  lead_data?: any; // Copia opcional de los datos del lead
+  [key: string]: any;
+}
+
+/**
+ * Estructura unificada para eventos de estado de leads.
+ */
+interface LeadStatusEvent {
+  type: 'register' | 'update';
+  success: boolean;
+  data?: any;
+  error?: any;
+}
+
+/**
  * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
  */
 interface CatalystPlaceholder {
@@ -41,6 +62,12 @@ class CatalystCore {
   config: CatalystConfig;
   listeners: Record<string, EventCallback[]>;
   landingId: string | null;
+  visitorData: VisitorData | null = null;
+
+  // Constantes para Storage y Cookies
+  private readonly STORAGE_KEY = 'catalyst_visitor_session';
+  private readonly THROTTLE_COOKIE = 'catalyst_throttle';
+  private readonly THROTTLE_MINUTES = 15;
 
   constructor(config: CatalystConfig) {
     this.config = config;
@@ -56,13 +83,241 @@ class CatalystCore {
       return;
     }
 
+    // Registrar escuchas de eventos internos para acciones de leads
+    this.on('lead:register', (data) => this.registerLead(data));
+    this.on('lead:update', (data) => this.updateLead(data));
+
     console.log(`Catalyst SDK v1.0 inicializado para Landing ID: ${this.landingId}`);
   }
+
+  // ===================================================================================
+  // LÓGICA DE VISITANTE (Visitor)
+  // ===================================================================================
+
+  /**
+   * Inicializa al visitante. Revisa si existe una sesión válida (cookie throttle).
+   * Si existe, carga de localStorage. Si no, registra una nueva visita en la API.
+   * Retorna una Promesa con los datos del visitante.
+   */
+  public async initVisitor(): Promise<VisitorData> {
+    const hasThrottle = this.getCookie(this.THROTTLE_COOKIE);
+    const storedData = localStorage.getItem(this.STORAGE_KEY);
+
+    if (hasThrottle && storedData) {
+      // CASO 1: Reingreso a corto plazo (dentro de los 15 mins). Usamos datos locales.
+      try {
+        this.visitorData = JSON.parse(storedData);
+        if (this.config.debug) console.log('Catalyst SDK: Visitante recuperado de caché (Throttle activo).', this.visitorData);
+        return this.visitorData;
+      } catch (e) {
+        console.error('Catalyst SDK: Error leyendo datos locales, reiniciando visitante.', e);
+        // Si falla la lectura local, continuamos al registro nuevo
+      }
+    }
+    // CASO 2: No hay throttle o no hay datos. Registramos nueva visita (o renovamos).
+    return await this.registerNewVisitor();
+  }
+
+  /**
+   * Realiza la petición a la API para registrar al visitante.
+   */
+  private async registerNewVisitor(): Promise<VisitorData> {
+    if (!this.config.api_url) {
+      throw new Error('Catalyst SDK: api_url has not been configured. The visitor cannot be registered.');
+    }
+
+    const payload = {
+      landing_id: this.landingId,
+      user_agent: navigator.userAgent,
+      referer: this.getReferer() ?? null,
+      current_page: window.location.pathname,
+      query_params: Object.fromEntries(new URLSearchParams(window.location.search)),
+    };
+
+    try {
+      const res = await fetch(`${this.config.api_url}/v1/visitor/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      const json: VisitorData = await res.json();
+
+      // Guardamos en memoria y persistencia
+      this.saveVisitorSession(json);
+
+      if (this.config.debug) console.log('Catalyst SDK: Visitante registrado en API.', json);
+
+      return json;
+    } catch (error) {
+      console.error('Catalyst SDK: Error registrando visitante:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Guarda la sesión del visitante y establece la cookie de throttle.
+   */
+  private saveVisitorSession(data: VisitorData) {
+    this.visitorData = data;
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+    this.setCookie(this.THROTTLE_COOKIE, '1', this.THROTTLE_MINUTES);
+  }
+
+  // ===================================================================================
+  // LÓGICA DE LEADS (Register & Update)
+  // ===================================================================================
+
+  /**
+   * Registra un lead asociado al visitante actual.
+   * Puede ser llamado directamente o vía evento 'lead:register'.
+   */
+  async registerLead(fields: Record<string, any> = {}) {
+    if (!this.visitorData?.fingerprint) {
+      console.warn('Catalyst SDK: No hay fingerprint de visitante. Esperando inicialización...');
+      this.dispatch('lead:status', {
+        type: 'register',
+        success: false,
+        error: 'No visitor fingerprint available',
+      } as LeadStatusEvent);
+      return;
+    }
+
+    // Si ya está registrado localmente, podríamos decidir si actualizar o ignorar.
+    // Aquí asumimos que siempre intentamos registrar si se pide.
+
+    const payload = {
+      fingerprint: this.visitorData.fingerprint,
+      fields,
+    };
+
+    try {
+      const res = await fetch(`${this.config.api_url}/v1/leads/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text(); // Intentar leer el cuerpo del error
+        throw new Error(`HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const json = await res.json();
+
+      // Actualizamos nuestro almacenamiento local para saber que este visitante ya es lead
+      if (this.visitorData) {
+        this.visitorData.lead_registered = true;
+        this.visitorData.lead_data = json;
+        this.saveVisitorSession(this.visitorData); // Actualiza storage
+      }
+
+      if (this.config.debug) console.log('Catalyst SDK: Lead registrado exitosamente.', json);
+
+      // Emitimos evento UNIFICADO de éxito
+      this.dispatch('lead:status', {
+        type: 'register',
+        success: true,
+        data: json,
+      } as LeadStatusEvent);
+    } catch (error) {
+      console.error('Catalyst SDK: Error registrando lead:', error);
+      // Emitimos evento UNIFICADO de error
+      this.dispatch('lead:status', {
+        type: 'register',
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as LeadStatusEvent);
+    }
+  }
+
+  /**
+   * Actualiza un lead existente.
+   * Puede ser llamado directamente o vía evento 'lead:update'.
+   */
+  async updateLead(fields: Record<string, any>) {
+    if (!this.visitorData?.fingerprint) {
+      console.warn('Catalyst SDK: No hay fingerprint para actualizar el lead.');
+      this.dispatch('lead:status', {
+        type: 'update',
+        success: false,
+        error: 'No visitor fingerprint available',
+      } as LeadStatusEvent);
+      return;
+    }
+
+    const payload = {
+      fingerprint: this.visitorData.fingerprint,
+      fields,
+    };
+
+    try {
+      const res = await fetch(`${this.config.api_url}/v1/leads/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const json = await res.json();
+
+      // Actualizamos datos locales si es necesario
+      if (this.visitorData) {
+        this.visitorData.lead_data = { ...this.visitorData.lead_data, ...json };
+        this.saveVisitorSession(this.visitorData);
+      }
+
+      if (this.config.debug) console.log('Catalyst SDK: Lead actualizado exitosamente.', json);
+
+      // Emitimos evento UNIFICADO de éxito
+      this.dispatch('lead:status', {
+        type: 'update',
+        success: true,
+        data: json,
+      } as LeadStatusEvent);
+    } catch (error) {
+      console.error('Catalyst SDK: Error actualizando lead:', error);
+      // Emitimos evento UNIFICADO de error
+      this.dispatch('lead:status', {
+        type: 'update',
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as LeadStatusEvent);
+    }
+  }
+
+  // ===================================================================================
+  // UTILIDADES Y MÉTODOS CORE
+  // ===================================================================================
 
   getLandingId(): string | null {
     const currentScript = document.currentScript as HTMLScriptElement | null;
     if (!currentScript) {
-      console.error('Catalyst SDK: No se pudo determinar el script actual.');
+      // Intento fallback por si se llama asíncronamente y currentScript se pierde
+      // Buscamos scripts que contengan 'catalyst/v1.0'
+      const scripts = document.querySelectorAll('script');
+      for (let i = 0; i < scripts.length; i++) {
+        if (scripts[i].src && scripts[i].src.includes('catalyst')) {
+          const url = new URL(scripts[i].src);
+          const id = url.searchParams.get('landing_id');
+          if (id) return id;
+        }
+      }
       return null;
     }
     const scriptUrl = new URL(currentScript.src);
@@ -71,32 +326,13 @@ class CatalystCore {
 
   enableDebugMode(): void {
     console.group('Catalyst SDK [Debug Mode]');
-    console.log('Configuración recibida:', this.config);
-    if (this.config.session) {
-      console.log('Datos de sesión:', this.config.session);
-    }
+    console.log('Configuración:', this.config);
+    console.log('API URL:', this.config.api_url);
     console.groupEnd();
   }
 
   /**
-   * Registra un nuevo evento.
-   * @param {string} eventName - El nombre del evento.
-   * @param {object} [data={}] - Datos adicionales para el evento.
-   */
-  register(eventName: string, data: Record<string, any> = {}): void {
-    if (!eventName) {
-      console.error('Catalyst SDK: El nombre del evento es requerido para el método register.');
-      return;
-    }
-
-    console.log(`Evento registrado: ${eventName}`, data);
-    // Aquí iría la lógica para enviar el evento a un backend, por ejemplo.
-  }
-
-  /**
-   * Registra un callback para un evento específico.
-   * @param {string} eventName - El nombre del evento a escuchar.
-   * @param {function} callback - La función a ejecutar cuando el evento es emitido.
+   * Sistema de eventos simple (Pub/Sub)
    */
   on(eventName: string, callback: EventCallback): void {
     if (!this.listeners[eventName]) {
@@ -105,11 +341,6 @@ class CatalystCore {
     this.listeners[eventName].push(callback);
   }
 
-  /**
-   * Emite un evento, notificando a todos los listeners registrados.
-   * @param {string} eventName - El nombre del evento a emitir.
-   * @param {object} [data={}] - Datos para pasar a los callbacks.
-   */
   dispatch(eventName: string, data: Record<string, any> = {}): void {
     if (this.config.debug) {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
@@ -119,70 +350,81 @@ class CatalystCore {
         try {
           callback(data);
         } catch (e) {
-          console.error(`Catalyst SDK: Error en un listener del evento '${eventName}':`, e);
+          console.error(`Catalyst SDK: Error en listener de '${eventName}':`, e);
         }
       });
     }
   }
+
+  // --- Helpers Privados ---
+
+  private getReferer(): string | null {
+    const referer = document.referrer;
+    const host = window.location.hostname;
+    if (referer && referer.includes(host)) {
+      return null; // Referrer interno, no nos interesa
+    }
+    return referer || null;
+  }
+
+  private setCookie(name: string, value: string, minutes: number) {
+    const date = new Date();
+    date.setTime(date.getTime() + minutes * 60 * 1000);
+    const expires = 'expires=' + date.toUTCString();
+    document.cookie = name + '=' + value + ';' + expires + ';path=/';
+  }
+
+  private getCookie(name: string): string | null {
+    const nameEQ = name + '=';
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  }
 }
 
-/**
- * ===================================================================================
- * FUNCIÓN DE INICIALIZACIÓN
- * ===================================================================================
- *
- * El script que se carga primero (`catalyst/engine.js`) es el Recepcionista del restaurante.
- *
- * El Recepcionista es rápido y crea un objeto `window.Catalyst` falso (un "placeholder")
- * con una libreta de pedidos llamada `_q` (la cola).
- *
- * Cuando un cliente (tu código) quiere hacer un pedido (ej: `Catalyst.register(...)`),
- * el Recepcionista lo anota en la libreta `_q` porque el Chef aún no ha llegado.
- *
- * Esta función `init()` es lo PRIMERO que hace el Chef cuando finalmente llega a la cocina.
- */
+// ===================================================================================
+// INICIALIZACIÓN (CHEF)
+// ===================================================================================
 
 function init(): void {
-  console.log('Catalyst SDK: Inicializando...');
-  // PASO 1: El Chef busca al Recepcionista para pedirle la libreta de pedidos.
-  // `window.Catalyst` en este punto es el objeto FALSO que creó el Recepcionista.
   const placeholder = window.Catalyst as CatalystPlaceholder;
 
-  // PASO 2: El Chef comprueba si el Recepcionista hizo bien su trabajo.
-  // Si no hay un `placeholder` o no tiene una libreta `_q`, algo salió muy mal.
   if (!placeholder || !placeholder._q) {
-    console.error('Catalyst SDK: El script de carga no funcionó. No se encontraron pedidos pendientes.');
+    console.error('Catalyst SDK: Error crítico. Loader no encontrado.');
     return;
   }
 
-  // PASO 3: El Chef se prepara para cocinar.
-  // Crea una instancia REAL de sí mismo, usando la configuración que el Recepcionista ya tenía guardada.
   const catalystInstance = new CatalystCore(placeholder.config);
 
-  // PASO 4: El Chef revisa la libreta `_q` y cocina todos los pedidos pendientes, uno por uno.
-  // `placeholder._q` es un array de pedidos, ej: [ ['register', 'arg1'], ['track', 'arg1', 'arg2'] ]
+  // Procesar cola de comandos previos
   placeholder._q.forEach(([method, ...args]) => {
-    // Para cada pedido, comprueba si es una receta que él conoce (si el método existe en la clase `Catalyst`).
-    if (typeof catalystInstance[method] === 'function') {
-      // Si la receta existe, la cocina usando los ingredientes (argumentos) que se anotaron.
-      // Esto es como hacer `catalystInstance.register('arg1')`
-      catalystInstance[method](...args);
+    // Si el método existe directamente en la clase (ej: 'on', 'dispatch')
+    if (typeof (catalystInstance as any)[method] === 'function') {
+      (catalystInstance as any)[method](...args);
     }
   });
 
-  // PASO 5: El Chef despide al Recepcionista y toma su lugar.
-  // Reemplaza el objeto `window.Catalyst` FALSO por la instancia REAL del Chef.
-  // A partir de ahora, cualquier llamada a `Catalyst.register(...)` será atendida
-  // directamente por el Chef, sin pasar por la libreta.
+  // Reemplazar global
   window.Catalyst = catalystInstance;
 
-  // PASO 6: El Chef anuncia que el restaurante está abierto.
-  // Emite el evento 'ready' para que todos sepan que ya puede tomar pedidos en tiempo real.
-  catalystInstance.dispatch('ready', { catalyst: catalystInstance });
+  // Inicializar el visitante y esperar a que esté listo
+  catalystInstance
+    .initVisitor()
+    .then((visitorData) => {
+      // ÚNICO punto de emisión del evento 'ready'
+      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitor: visitorData });
+    })
+    .catch((error) => {
+      console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
+      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitor: null });
+    });
 }
 
-// ¡Que entre el Chef! Llamamos a la función para que todo el proceso comience.
 init();
 
-// (Tratar este archivo como un módulo para permitir declaraciones globales).
+// Treat this file as a module to allow global declarations.
 export {};
