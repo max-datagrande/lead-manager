@@ -1,5 +1,12 @@
 import { API_ROUTES } from './routes';
-import { CatalystConfig, CatalystPlaceholder, EventCallback, LeadStatusEvent, VisitorData } from './types';
+import {
+  CatalystConfig,
+  CatalystPlaceholder,
+  EventCallback,
+  LeadStatusEvent,
+  VisitorData,
+  visitorRegisterResponse,
+} from './types';
 /**
  * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
  * Puede ser la instancia real (CatalystCore) o el placeholder.
@@ -102,14 +109,25 @@ class CatalystCore {
 
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-      const json: VisitorData = await res.json();
+      const json: visitorRegisterResponse = await res.json();
+
+      if (!json.success || !json.fingerprint) {
+        throw new Error(json.message || 'Error desconocido al registrar visitante');
+      }
+
+      // Mapeamos la respuesta de la API a nuestra estructura interna VisitorData
+      const visitorData: VisitorData = {
+        fingerprint: json.fingerprint,
+        ...json.data, // Incluimos device_type, is_bot, etc.
+        geolocation: json.geolocation, // Incluimos geolocalización si existe
+      };
 
       // Guardamos en memoria y persistencia
-      this.saveVisitorSession(json);
+      this.saveVisitorSession(visitorData);
 
-      if (this.config.debug) console.log('Catalyst SDK: Visitante registrado en API.', json);
+      if (this.config.debug) console.log('Catalyst SDK: Visitante registrado en API.', visitorData);
 
-      return json;
+      return visitorData;
     } catch (error) {
       console.error('Catalyst SDK: Error registrando visitante:', error);
       throw error;

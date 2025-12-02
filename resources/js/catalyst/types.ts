@@ -13,6 +13,66 @@ interface CatalystConfig {
   active?: boolean;
 }
 
+/*
+Bad Response
+{
+  "success": false,
+  "data": null,
+  "message": "Failed to create traffic log",
+  "errors": [
+    {
+      "message": "Failed to create traffic log",
+      "file": "TrafficLogService.php",
+      "line": 141
+    },
+    {
+      "message": "Origin host is empty or not valid",
+      "file": "FingerprintGeneratorService.php",
+      "line": 27
+    }
+  ]
+}
+Success response
+{
+  "success": true,
+  "data": {
+    "device_type": "desktop",
+    "is_bot": false
+  },
+  "message": "Traffic log created successfully",
+  "fingerprint": "71d7d3d9475986b6c2620674a8bfe6f1c940edf8da34cb43e3cb60586bea14a9",
+  "geolocation": {
+    "ip": "216.131.83.235",
+    "city": "New York City",
+    "region": "New York",
+    "region_code": "NY",
+    "country": "US",
+    "postal": "10013",
+    "timezone": "America\/New_York",
+    "currency": "USD"
+  }
+}
+*/
+
+type geolocationVisit = {
+  ip: string;
+  city: string;
+  region: string;
+  region_code: string;
+  country: string;
+  postal: string;
+  timezone: string;
+  currency: string;
+};
+interface visitorRegisterResponse {
+  success: boolean;
+  fingerprint?: string;
+  geolocation?: geolocationVisit | null;
+  data?: Record<string, any> | null;
+  message?: string;
+  errors?: { message: string; file: string; line: number }[];
+}
+
 /**
  * Estructura de los datos del visitante almacenados.
  */
@@ -46,4 +106,4 @@ interface EventCallback {
   (data: any): void;
 }
 
-export { type CatalystConfig, type CatalystPlaceholder, type EventCallback, type LeadStatusEvent, type VisitorData };
+export { type CatalystConfig, type CatalystPlaceholder, type EventCallback, type LeadStatusEvent, type VisitorData, type visitorRegisterResponse };
