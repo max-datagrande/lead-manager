@@ -13,17 +13,28 @@ Inserta el siguiente snippet en el `<head>` de tu HTML.
 > **Nota:** El parámetro `landing_id` en la URL es opcional. La configuración del SDK se carga automáticamente desde el servidor.
 
 ### Opción B: Carga Manual (Avanzado)
-Si prefieres tener control total y evitar el loader de Laravel, puedes usar este snippet. Este método carga directamente la versión compilada del SDK.
+Si prefieres tener control total y evitar el loader de Laravel (por ejemplo en frameworks como Astro, Next.js o sitios estáticos), puedes usar este snippet.
 
-> **Importante:** Al usar este método, debes configurar la URL de la API manualmente en el objeto `config`.
+> **Nota:** Si usas Astro, asegúrate de añadir el atributo `is:inline` a la etiqueta `<script>`.
 
 ```html
 <script>
 (function(w,d,s,u,c){
   w.Catalyst=w.Catalyst||{_q:[],config:c};
-  ['on','dispatch','registerLead','updateLead','getOfferwall','convertOfferwall'].forEach(function(m){
+  // Proxy para métodos que devuelven Promesas
+  ['registerLead','updateLead','getOfferwall','convertOfferwall'].forEach(function(m){
+    w.Catalyst[m]=function(){
+      var a=arguments;
+      return new Promise(function(resolve, reject){
+        w.Catalyst._q.push([m, a, resolve, reject]);
+      });
+    };
+  });
+  // Proxy para métodos void
+  ['on','dispatch'].forEach(function(m){
     w.Catalyst[m]=function(){w.Catalyst._q.push([m].concat([].slice.call(arguments)))};
   });
+  
   var j=d.createElement(s),f=d.getElementsByTagName(s)[0];
   j.async=1;j.type='module';j.src=u;f.parentNode.insertBefore(j,f);
 })(window,document,'script','https://tu-dominio.com/catalyst/v1.0.js',{

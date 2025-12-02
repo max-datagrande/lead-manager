@@ -318,7 +318,7 @@ class CatalystCore {
 
   enableDebugMode(): void {
     console.group('Catalyst SDK [Debug Mode]');
-    console.log('Configuración:', this.config);
+    console.log('Catalyst SDK Config:', this.config);
     console.log('API URL:', this.config.api_url);
     console.groupEnd();
   }
@@ -430,9 +430,9 @@ class CatalystCore {
    * Despacha un evento a los listeners registrados.
    */
   dispatch(eventName: string, data: Record<string, any> = {}): void {
-    if (this.config.debug) {
+    /* if (this.config.debug) {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
-    }
+    } */
     if (this.listeners[eventName]) {
       this.listeners[eventName].forEach((callback) => {
         try {
@@ -503,6 +503,7 @@ function init(): void {
   catalystInstance
     .initVisitor()
     .then((visitorData) => {
+      console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
       // ÚNICO punto de emisión del evento 'ready'
       catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitor: visitorData });
     })
