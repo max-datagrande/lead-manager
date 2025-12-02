@@ -59,8 +59,16 @@ Route::prefix('catalyst')->group(function () {
     return view('catalyst-test');
   })->name('catalyst.test');
 
+  // Catalyst Test Route (Manual Loader)
+  Route::get('/test-manual', function () {
+    return view('catalyst-test-manual');
+  })->name('catalyst.test-manual');
+
   // Catalyst Engine Route
   Route::get('/engine.js', [CatalystController::class, 'loader']);
+
+  // Catalyst Direct Asset Route (Proxy/Redirect)
+  Route::get('/{version}.js', [CatalystController::class, 'asset'])->where('version', 'v[0-9]+\.[0-9]+');
 });
 
 //Catalyst

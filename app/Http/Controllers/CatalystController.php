@@ -47,6 +47,26 @@ class CatalystController extends Controller
     return response($content)->header('Content-Type', 'application/javascript');
   }
 
+  /**
+   * Redirige a la versión compilada del SDK solicitada.
+   * Útil para cargar el script directamente desde landings externas.
+   */
+  public function asset(Request $request, string $version)
+  {
+    // Validación simple de formato de versión (v1.0, v1.1, etc)
+    // Permitimos pasar solo '1.0' o 'v1.0'
+    $versionKey = str_starts_with($version, 'v') ? $version : "v{$version}";
+    
+    $availableVersions = ['v1.0', 'v1.1'];
+    if (!in_array($versionKey, $availableVersions)) {
+      return response('Invalid version specified.', 400);
+    }
+
+    $assetUrl = $this->getCdnAsset($versionKey);
+    
+    return redirect($assetUrl);
+  }
+
   private function getCdnManifest()
   {
     return Cache::rememberForever('catalyst.manifest', function () {
