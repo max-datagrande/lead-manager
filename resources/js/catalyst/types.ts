@@ -95,6 +95,56 @@ interface LeadStatusEvent {
 }
 
 /**
+ * Estructura genérica de una oferta.
+ * Las claves dependen del mapeo de la integración, pero se sugieren campos comunes.
+ */
+interface Offer {
+  title?: string;
+  description?: string;
+  link?: string;
+  image?: string;
+  payout?: number;
+  currency?: string;
+  [key: string]: any;
+}
+
+/**
+ * Respuesta del endpoint de trigger de Offerwall.
+ */
+interface OfferwallResponse {
+  success: boolean;
+  message: string;
+  data: Offer[];
+  meta?: {
+    total_offers: number;
+    successful_integrations: number;
+    failed_integrations: number;
+    duration_ms: number;
+  };
+}
+
+/**
+ * Payload para el evento de conversión de Offerwall.
+ */
+interface OfferwallConversionRequest {
+  fingerprint: string;
+  offer_id?: string;
+  amount?: number;
+  currency?: string;
+  transaction_id?: string;
+  [key: string]: any;
+}
+
+/**
+ * Respuesta del evento de conversión.
+ */
+interface OfferwallConversionResponse {
+  status: string;
+  message: string;
+  data: any;
+}
+
+/**
  * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
  */
 interface CatalystPlaceholder {
@@ -106,4 +156,4 @@ interface EventCallback {
   (data: any): void;
 }
 
-export { type CatalystConfig, type CatalystPlaceholder, type EventCallback, type LeadStatusEvent, type VisitorData, type visitorRegisterResponse };
+export { type CatalystConfig, type CatalystPlaceholder, type EventCallback, type LeadStatusEvent, type VisitorData, type visitorRegisterResponse, type Offer, type OfferwallResponse, type OfferwallConversionRequest, type OfferwallConversionResponse };

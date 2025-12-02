@@ -6,6 +6,9 @@ import {
   LeadStatusEvent,
   VisitorData,
   visitorRegisterResponse,
+  OfferwallResponse,
+  OfferwallConversionRequest,
+  OfferwallConversionResponse,
 } from './types';
 /**
  * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
@@ -330,6 +333,102 @@ class CatalystCore {
     this.listeners[eventName].push(callback);
   }
 
+  // ===================================================================================
+  // OFFERWALL METHODS
+  // ===================================================================================
+
+  /**
+   * Obtiene las ofertas de un Offerwall Mix específico.
+   * @param mixId ID o UUID del Offerwall Mix
+   */
+  async getOfferwall(mixId: string): Promise<OfferwallResponse> {
+    if (!this.visitorData?.fingerprint) {
+      throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
+    }
+
+    const payload = {
+      fingerprint: this.visitorData.fingerprint,
+    };
+
+    try {
+      // Construir URL: /v1/offerwall/mix/{mixId}
+      // API_ROUTES.OFFERWALL.TRIGGER es '/v1/offerwall/mix/'
+      const baseUrl = this.getEndpoint('OFFERWALL.TRIGGER');
+      // Remove trailing slash if present to avoid double slash, though getEndpoint might handle it.
+      // But here we append ID.
+      const url = `${baseUrl}${mixId}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const json: OfferwallResponse = await res.json();
+
+      // Disparar evento para quienes escuchen
+      this.dispatch('offerwall:loaded', { mixId, count: json.data.length });
+
+      return json;
+    } catch (error) {
+      console.error(`Catalyst SDK: Error obteniendo offerwall ${mixId}:`, error);
+      this.dispatch('offerwall:error', { mixId, error });
+      throw error;
+    }
+  }
+
+  /**
+   * Registra una conversión de Offerwall.
+   * @param data Datos de la conversión
+   */
+  async convertOfferwall(data: Omit<OfferwallConversionRequest, 'fingerprint'>): Promise<OfferwallConversionResponse> {
+    if (!this.visitorData?.fingerprint) {
+      throw new Error('Catalyst SDK: No hay fingerprint de visitante.');
+    }
+
+    const payload: OfferwallConversionRequest = {
+      fingerprint: this.visitorData.fingerprint,
+      ...data,
+    };
+
+    try {
+      const res = await fetch(this.getEndpoint('OFFERWALL.CONVERSION'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorBody}`);
+      }
+
+      const json: OfferwallConversionResponse = await res.json();
+
+      this.dispatch('offerwall:conversion', { success: true, data: json });
+
+      return json;
+    } catch (error) {
+      console.error('Catalyst SDK: Error registrando conversión de offerwall:', error);
+      this.dispatch('offerwall:conversion', { success: false, error });
+      throw error;
+    }
+  }
+
+  /**
+   * Despacha un evento a los listeners registrados.
+   */
   dispatch(eventName: string, data: Record<string, any> = {}): void {
     if (this.config.debug) {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
