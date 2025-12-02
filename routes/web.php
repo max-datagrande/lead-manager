@@ -10,7 +10,7 @@ use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
-use App\Http\Controllers\CdnController;
+use App\Http\Controllers\CatalystController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', function () {
@@ -59,8 +59,16 @@ Route::prefix('catalyst')->group(function () {
     return view('catalyst-test');
   })->name('catalyst.test');
 
+  // Catalyst Test Route (Manual Loader)
+  Route::get('/test-manual', function () {
+    return view('catalyst-test-manual');
+  })->name('catalyst.test-manual');
+
   // Catalyst Engine Route
-  Route::get('/engine.js', [CdnController::class, 'loader']);
+  Route::get('/engine.js', [CatalystController::class, 'loader']);
+
+  // Catalyst Direct Asset Route (Proxy/Redirect)
+  Route::get('/{version}.js', [CatalystController::class, 'asset'])->where('version', 'v[0-9]+\.[0-9]+');
 });
 
 //Catalyst

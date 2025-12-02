@@ -31,9 +31,12 @@ class ProcessTwyneFormLeads extends Command
   /**
    * The specific form ID for Twyne leads to process.
    *
-   * @var string
+   * @var array<string>
    */
-  protected string $formId = '1981121326072730';
+  protected array $formIds = [
+    '1981121326072730',
+    '1184004799731431'
+  ];
 
   /**
    * Execute the console command.
@@ -69,7 +72,7 @@ class ProcessTwyneFormLeads extends Command
 
     $unprocessedLeads = WebhookLead::where('source', 'trusted')
       ->where('status', WebhookLeadStatus::PENDING)
-      ->whereJsonContains('payload->fb_form_id', $this->formId)
+      ->whereIn('payload->fb_form_id', $this->formIds)
       ->get();
 
     if ($unprocessedLeads->isEmpty()) {
