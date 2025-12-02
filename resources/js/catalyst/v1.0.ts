@@ -29,6 +29,7 @@ class CatalystCore {
   listeners: Record<string, EventCallback[]>;
   landingId: string | null;
   visitorData: VisitorData | null = null;
+  isReady: boolean = false;
 
   // Constantes para Storage y Cookies
   private readonly STORAGE_KEY = 'catalyst_visitor_session';
@@ -328,6 +329,16 @@ class CatalystCore {
    */
   on(eventName: string, callback: EventCallback): void {
     console.log('Catalyst SDK: Evento registrado:', eventName);
+
+    // Si el evento es 'ready' y ya estamos listos, ejecutamos inmediatamente
+    if (eventName === 'ready' && (this as any).isReady) {
+      try {
+        callback((this as any).visitorData);
+      } catch (e) {
+        console.error(`Catalyst SDK: Error en callback inmediato de 'ready':`, e);
+      }
+    }
+
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
     }
@@ -431,6 +442,10 @@ class CatalystCore {
    * Despacha un evento a los listeners registrados.
    */
   dispatch(eventName: string, data: Record<string, any> = {}): void {
+    // Capturamos el estado ready para futuros listeners
+    if (eventName === 'ready') {
+      this.isReady = true;
+    }
     /* if (this.config.debug) {
       console.log(`Catalyst Event Dispatched: ${eventName}`, data);
     } */
