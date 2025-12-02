@@ -48,7 +48,7 @@ class CatalystCore {
     this.on('lead:register', (data) => this.registerLead(data));
     this.on('lead:update', (data) => this.updateLead(data));
 
-    console.log(`Catalyst SDK v1.0 inicializado para Landing ID: ${this.landingId}`);
+    console.log(`Catalyst SDK v1.0 inicializado`);
   }
 
   // ===================================================================================

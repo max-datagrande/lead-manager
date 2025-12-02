@@ -23,8 +23,12 @@ class BlockWebOnApiSubdomain
     $isV1Route = str_starts_with($path, 'v1/') ||
       str_contains($request->fullUrl(), '/v1/') ||
       str_contains($request->getRequestUri(), '/v1/');
-    // Si es una ruta v1/*, permitir la petición INMEDIATAMENTE
-    if ($isV1Route) {
+
+    // Permitir rutas de Catalyst (loader, assets, tests)
+    $isCatalystRoute = str_starts_with($path, 'catalyst/');
+
+    // Si es una ruta v1/* o catalyst/*, permitir la petición INMEDIATAMENTE
+    if ($isV1Route || $isCatalystRoute) {
       return $next($request);
     }
 
