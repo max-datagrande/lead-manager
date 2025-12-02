@@ -10,7 +10,7 @@
   <script>
     (function(w,d,s,u,c){
       w.Catalyst=w.Catalyst||{_q:[],config:c};
-      ['on','dispatch','registerLead','updateLead'].forEach(function(m){
+      ['on','dispatch','registerLead','updateLead','getOfferwall','convertOfferwall'].forEach(function(m){
         w.Catalyst[m]=function(){w.Catalyst._q.push([m].concat([].slice.call(arguments)))};
       });
       var j=d.createElement(s),f=d.getElementsByTagName(s)[0];
@@ -93,7 +93,42 @@
         }
       }
     });
+
+    async function testOfferwall() {
+      log('Trying to fetch Offerwall Mix 4...', 'blue');
+      try {
+        // Wait for SDK if not ready (simple check)
+        if (window.Catalyst._q) {
+           log('SDK still loading (proxy active)... waiting 1s', 'orange');
+           await new Promise(r => setTimeout(r, 1000));
+        }
+
+        const offers = await Catalyst.getOfferwall('4');
+        log(`Offerwall Loaded: ${offers.data.length} offers`, 'green');
+        console.log(offers);
+
+        if (offers.data.length > 0) {
+          // Test conversion
+          log('Testing conversion...', 'purple');
+          const conv = await Catalyst.convertOfferwall({
+             offer_id: 'TEST-OFFER-1',
+             amount: 1.50,
+             currency: 'USD'
+          });
+          log(`Conversion registered: ${conv.status}`, 'green');
+        }
+
+      } catch (e) {
+        log(`Error: ${e.message}`, 'red');
+        console.error(e);
+      }
+    }
   </script>
+  <div style="margin-top: 20px;">
+    <button onclick="testOfferwall()" style="padding: 10px; background: #333; color: white; border: none; cursor: pointer;">
+      Test Offerwall Fetch
+    </button>
+  </div>
 </body>
 
 </html>
