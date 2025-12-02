@@ -7,18 +7,10 @@ Esta documentación detalla cómo integrar y utilizar el SDK de Catalyst en tus 
 Inserta el siguiente snippet en el `<head>` de tu HTML.
 
 ```html
-<!-- Catalyst SDK Loader -->
-<script>
-    (function(w,d,s,u,c){w.Catalyst=w.Catalyst||{_q:[],config:c};
-    var f=d.getElementsByTagName(s)[0],j=d.createElement(s);
-    j.async=true;j.src=u;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','https://tu-dominio.com/catalyst/engine.js?version=1.0',{
-        debug: true // Pon en false para producción
-    });
-</script>
+<script src="https://tu-dominio.com/catalyst/engine.js?version=1.0"></script>
 ```
 
-> **Nota:** El parámetro `landing_id` en la URL es opcional dependiendo de la configuración de tu backend.
+> **Nota:** El parámetro `landing_id` en la URL es opcional. La configuración del SDK se carga automáticamente desde el servidor.
 
 ---
 
