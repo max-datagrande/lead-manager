@@ -14,7 +14,6 @@ class CatalystController extends Controller
   {
     $version = $request->query('version', '1.0'); // v1.0 por defecto
     $availableVersions = ['1.0', '1.1'];
-
     if (!in_array($version, $availableVersions)) {
       return response('Invalid version specified.', 400);
     }
@@ -48,23 +47,55 @@ class CatalystController extends Controller
   }
 
   /**
-   * Redirige a la versión compilada del SDK solicitada.
-   * Útil para cargar el script directamente desde landings externas.
+   * Sirve la versión compilada del SDK solicitada.
+   * Útil para cargar el script directamente desde landings externas evitando problemas de CORS.
    */
   public function asset(Request $request, string $version)
   {
     // Validación simple de formato de versión (v1.0, v1.1, etc)
     // Permitimos pasar solo '1.0' o 'v1.0'
     $versionKey = str_starts_with($version, 'v') ? $version : "v{$version}";
-    
+
     $availableVersions = ['v1.0', 'v1.1'];
     if (!in_array($versionKey, $availableVersions)) {
       return response('Invalid version specified.', 400);
     }
 
-    $assetUrl = $this->getCdnAsset($versionKey);
-    
-    return redirect($assetUrl);
+    // En entorno local con hot reload, redirigimos al servidor de Vite
+    if (app()->isLocal()) {
+      $hotFilePath = public_path('catalyst.hot');
+      if (File::exists($hotFilePath)) {
+        $assetUrl = $this->getCdnAsset($versionKey);
+        return redirect($assetUrl);
+      }
+    }
+
+    // En producción o sin hot reload, servimos el archivo directamente
+    $manifest = $this->getCdnManifest();
+
+    $keyTs = "resources/js/catalyst/{$versionKey}.ts";
+    $keyJs = "resources/js/catalyst/{$versionKey}.js";
+    $fileInfo = null;
+
+    if (isset($manifest[$keyTs])) {
+        $fileInfo = $manifest[$keyTs];
+    } elseif (isset($manifest[$keyJs])) {
+        $fileInfo = $manifest[$keyJs];
+    }
+
+    if (!$fileInfo) {
+      abort(404, "CDN asset not found in manifest: {$versionKey}");
+    }
+
+    $path = public_path('cdn/catalyst/' . $fileInfo['file']);
+    if (!File::exists($path)) {
+        abort(404, 'File not found');
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'application/javascript',
+        'Access-Control-Allow-Origin' => '*', // Forzar header CORS explícitamente
+    ]);
   }
 
   private function getCdnManifest()
@@ -85,16 +116,23 @@ class CatalystController extends Controller
       if (File::exists($hotFilePath)) {
         $hotFileContent = File::get($hotFilePath);
         $baseUrl = trim($hotFileContent);
-        $entryFile = "resources/js/catalyst/{$entry}.js";
+        $entryFile = "resources/js/catalyst/{$entry}.ts"; // Asumimos TS en dev por defecto, pero podría fallar si es JS
+        // Mejor verificar si existe el archivo fuente o simplemente apuntar al TS ya que es lo que usamos
         return "{$baseUrl}/{$entryFile}";
       }
     }
 
     $manifest = $this->getCdnManifest();
-    $key = "resources/js/catalyst/{$entry}.js";
-    if (!isset($manifest[$key])) {
-      abort(404, "CDN asset not found in manifest: {$key}");
+    $keyTs = "resources/js/catalyst/{$entry}.ts";
+    $keyJs = "resources/js/catalyst/{$entry}.js";
+
+    if (isset($manifest[$keyTs])) {
+        return asset('cdn/catalyst/' . $manifest[$keyTs]['file']);
     }
-    return asset('cdn/catalyst/' . $manifest[$key]['file']);
+    if (isset($manifest[$keyJs])) {
+        return asset('cdn/catalyst/' . $manifest[$keyJs]['file']);
+    }
+
+    abort(404, "CDN asset not found in manifest: {$entry}");
   }
 }
