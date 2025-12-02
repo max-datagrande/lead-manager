@@ -327,6 +327,7 @@ class CatalystCore {
    * Sistema de eventos simple (Pub/Sub)
    */
   on(eventName: string, callback: EventCallback): void {
+    console.log('Catalyst SDK: Evento registrado:', eventName);
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
     }
@@ -505,11 +506,11 @@ function init(): void {
     .then((visitorData) => {
       console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
       // ÚNICO punto de emisión del evento 'ready'
-      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitor: visitorData });
+      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData: visitorData });
     })
     .catch((error) => {
       console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
-      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitor: null });
+      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData: null });
     });
 }
 
