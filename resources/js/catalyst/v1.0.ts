@@ -1,47 +1,5 @@
-// ===================================================================================
-// INTERFACES Y TIPOS
-// ===================================================================================
-
-/**
- * Define la estructura del objeto de configuración que recibe el SDK.
- */
-interface CatalystConfig {
-  debug?: boolean;
-  session?: Record<string, any>;
-  environment?: 'local' | 'production' | string;
-  api_url?: string;
-  active?: boolean;
-}
-
-/**
- * Estructura de los datos del visitante almacenados.
- */
-interface VisitorData {
-  fingerprint: string;
-  id?: string | number;
-  lead_registered?: boolean; // Flag para saber si ya es un lead
-  lead_data?: any; // Copia opcional de los datos del lead
-  [key: string]: any;
-}
-
-/**
- * Estructura unificada para eventos de estado de leads.
- */
-interface LeadStatusEvent {
-  type: 'register' | 'update';
-  success: boolean;
-  data?: any;
-  error?: any;
-}
-
-/**
- * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
- */
-interface CatalystPlaceholder {
-  _q: [string, ...any[]][];
-  config: CatalystConfig;
-}
-
+import { API_ROUTES } from './routes';
+import { CatalystConfig, CatalystPlaceholder, EventCallback, LeadStatusEvent, VisitorData } from './types';
 /**
  * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
  * Puede ser la instancia real (CatalystCore) o el placeholder.
@@ -51,10 +9,6 @@ declare global {
     Catalyst: CatalystCore | CatalystPlaceholder;
   }
 }
-
-import { API_ROUTES } from './routes';
-
-type EventCallback = (data: any) => void;
 
 // ===================================================================================
 // CLASE PRINCIPAL DEL SDK
