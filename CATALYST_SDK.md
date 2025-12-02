@@ -12,6 +12,34 @@ Inserta el siguiente snippet en el `<head>` de tu HTML.
 
 > **Nota:** El parámetro `landing_id` en la URL es opcional. La configuración del SDK se carga automáticamente desde el servidor.
 
+### Opción B: Carga Manual (Avanzado)
+Si prefieres tener control total y evitar el loader de Laravel, puedes usar este snippet. Este método carga directamente la versión compilada del SDK.
+
+> **Importante:** Al usar este método, debes configurar la URL de la API manualmente en el objeto `config`.
+
+```html
+<script>
+(function(w,d,s,u,c){
+  w.Catalyst=w.Catalyst||{_q:[],config:c};
+  ['on','dispatch','registerLead','updateLead'].forEach(function(m){
+    w.Catalyst[m]=function(){w.Catalyst._q.push([m].concat([].slice.call(arguments)))};
+  });
+  var j=d.createElement(s),f=d.getElementsByTagName(s)[0];
+  j.async=1;j.type='module';j.src=u;f.parentNode.insertBefore(j,f);
+})(window,document,'script','https://tu-dominio.com/catalyst/v1.0.js',{
+  api_url:'https://api.tu-dominio.com',debug:true
+});
+</script>
+```
+
+### Resumen de Diferencias
+
+| Característica | Opción A (Loader) | Opción B (Manual) |
+| :--- | :--- | :--- |
+| **Script** | `/engine.js` | `/v1.0.js` (Directo) |
+| **Configuración** | Automática (Inyectada por servidor) | Manual (En el HTML) |
+| **Uso Ideal** | Landings estándar, Laravel Blade | SPAs, WordPress, Estáticos |
+
 ---
 
 ## 2. Ciclo de Vida y Eventos
