@@ -1,6 +1,6 @@
+import laravel from 'laravel-vite-plugin';
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
   publicDir: false,

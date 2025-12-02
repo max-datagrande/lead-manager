@@ -52,6 +52,8 @@ declare global {
   }
 }
 
+import { API_ROUTES } from './routes';
+
 type EventCallback = (data: any) => void;
 
 // ===================================================================================
@@ -135,7 +137,7 @@ class CatalystCore {
     };
 
     try {
-      const res = await fetch(`${this.config.api_url}/v1/visitor/register`, {
+      const res = await fetch(this.getEndpoint('visitor.register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +199,7 @@ class CatalystCore {
     };
 
     try {
-      const res = await fetch(`${this.config.api_url}/v1/leads/register`, {
+      const res = await fetch(this.getEndpoint('leads.register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +262,7 @@ class CatalystCore {
     };
 
     try {
-      const res = await fetch(`${this.config.api_url}/v1/leads/update`, {
+      const res = await fetch(this.getEndpoint('leads.update'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -322,6 +324,26 @@ class CatalystCore {
     }
     const scriptUrl = new URL(currentScript.src);
     return scriptUrl.searchParams.get('landing_id');
+  }
+
+  /**
+   * Construye la URL completa para una ruta de la API usando dot notation.
+   * @param routeKey Clave de la ruta (ej: 'visitor.register' o 'leads.update')
+   */
+  private getEndpoint(routeKey: string): string {
+    const keys = routeKey.toUpperCase().split('.');
+    let path: any = API_ROUTES;
+
+    for (const key of keys) {
+      if (path[key] === undefined) {
+        console.error(`Catalyst SDK: Ruta API no encontrada para '${routeKey}'`);
+        return '';
+      }
+      path = path[key];
+    }
+
+    const baseUrl = this.config.api_url?.replace(/\/$/, '') || '';
+    return `${baseUrl}${path}`;
   }
 
   enableDebugMode(): void {
@@ -426,5 +448,4 @@ function init(): void {
 
 init();
 
-// Treat this file as a module to allow global declarations.
 export {};
