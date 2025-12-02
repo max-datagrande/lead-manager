@@ -41,11 +41,6 @@ class CatalystCore {
       this.enableDebugMode();
     }
 
-    if (!this.landingId) {
-      console.error("Catalyst SDK: El parámetro 'landing_id' es requerido.");
-      return;
-    }
-
     // Registrar escuchas de eventos internos para acciones de leads
     this.on('lead:register', (data) => this.registerLead(data));
     this.on('lead:update', (data) => this.updateLead(data));
