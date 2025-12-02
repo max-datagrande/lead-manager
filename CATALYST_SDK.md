@@ -21,7 +21,7 @@ Si prefieres tener control total y evitar el loader de Laravel, puedes usar este
 <script>
 (function(w,d,s,u,c){
   w.Catalyst=w.Catalyst||{_q:[],config:c};
-  ['on','dispatch','registerLead','updateLead'].forEach(function(m){
+  ['on','dispatch','registerLead','updateLead','getOfferwall','convertOfferwall'].forEach(function(m){
     w.Catalyst[m]=function(){w.Catalyst._q.push([m].concat([].slice.call(arguments)))};
   });
   var j=d.createElement(s),f=d.getElementsByTagName(s)[0];
@@ -119,11 +119,11 @@ Catalyst.on('ready', async () => {
             name: 'Test User'
         });
         console.log('Lead registrado con éxito (Async)');
-        
+
         // Ahora es seguro actualizar
         await Catalyst.updateLead({ role: 'Admin' });
         console.log('Lead actualizado con éxito (Async)');
-        
+
     } catch (error) {
         console.error('Hubo un error en el flujo async:', error);
     }
@@ -134,7 +134,48 @@ Este enfoque es ideal si necesitas realizar validaciones complejas o cadenas de 
 
 ---
 
-## 5. Preguntas Frecuentes (FAQ)
+## 5. Offerwall (NUEVO)
+
+El SDK incluye soporte para cargar Offerwalls y registrar conversiones directamente.
+
+### A. Obtener Offerwall (`getOfferwall`)
+
+Obtiene la lista de ofertas disponibles para el visitante actual en base a un Offerwall Mix ID.
+
+> **Nota:** Esta función devuelve una Promesa, por lo que puedes usar `await`. Asegúrate de que el SDK esté cargado (evento `ready`) antes de llamarla, o usa la sintaxis de promesa.
+
+```javascript
+// Dentro de una función async
+const mixId = '123'; // ID de tu Offerwall Mix
+try {
+  const response = await Catalyst.getOfferwall(mixId);
+  console.log('Ofertas:', response.data);
+} catch (error) {
+  console.error('Error cargando offerwall:', error);
+}
+```
+
+### B. Registrar Conversión (`convertOfferwall`)
+
+Registra que el usuario ha completado una oferta.
+
+```javascript
+try {
+  const conversion = await Catalyst.convertOfferwall({
+    offer_id: 'OFFER-001',
+    amount: 10.50,
+    currency: 'USD',
+    transaction_id: 'tx_999999'
+  });
+  console.log('Conversión registrada:', conversion);
+} catch (error) {
+  console.error('Error en conversión:', error);
+}
+```
+
+---
+
+## 6. Preguntas Frecuentes (FAQ)
 
 ### ¿Por qué mis cambios en el Lead no se guardan si llamo a `update` inmediatamente?
 El `lead:update` requiere que el visitante ya tenga un "Lead ID" asociado en el backend. Si disparas `lead:register` y `lead:update` simultáneamente (o muy rápido), el update podría llegar antes de que el registro termine.
