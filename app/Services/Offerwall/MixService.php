@@ -213,7 +213,7 @@ class MixService
     foreach ($offers as $offer) {
       $mappedOffer = [];
       foreach ($parserConfig['mapping'] as $key => $valuePath) {
-        $mappedOffer[$key] = data_get($offer, $valuePath);
+        $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
       }
       $mappedOffers[] = $mappedOffer;
     }
