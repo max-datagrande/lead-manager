@@ -103,6 +103,9 @@ class MixService
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
+
+        // Ordenar ofertas por CPC
+        $aggregatedOffers = $this->sortOffersByCpc($aggregatedOffers);
         $durationMs = (microtime(true) - $startTime) * 1000;
         $durationRounded = (int) round($durationMs);
         $mixLog->update([
@@ -215,9 +218,37 @@ class MixService
       foreach ($parserConfig['mapping'] as $key => $valuePath) {
         $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
       }
+      //Add integration id
+      $mappedOffer['integration_id'] = $integration->id;
       $mappedOffers[] = $mappedOffer;
     }
 
     return $mappedOffers;
+  }
+
+  /**
+   * Ordena las ofertas por CPC de mayor a menor.
+   * Los valores nulos o inválidos se mueven al final.
+   * Agrega un campo 'pos' indicando el ranking (empezando en 1).
+   */
+  private function sortOffersByCpc(array $offers): array
+  {
+    usort($offers, function ($a, $b) {
+      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float)$a['cpc'] : -1;
+      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float)$b['cpc'] : -1;
+
+      if ($cpcA == $cpcB) {
+        return 0;
+      }
+      // Orden descendente (mayor a menor)
+      return ($cpcA > $cpcB) ? -1 : 1;
+    });
+
+    // Asignar posición
+    foreach ($offers as $index => &$offer) {
+      $offer['pos'] = $index + 1;
+    }
+
+    return $offers;
   }
 }
