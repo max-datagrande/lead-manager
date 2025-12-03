@@ -11,6 +11,7 @@ interface CatalystConfig {
   environment?: 'local' | 'production' | string;
   api_url?: string;
   active?: boolean;
+  [key: string]: any;
 }
 
 /*

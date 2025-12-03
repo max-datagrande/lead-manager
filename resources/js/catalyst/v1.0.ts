@@ -4,11 +4,11 @@ import {
   CatalystPlaceholder,
   EventCallback,
   LeadStatusEvent,
-  VisitorData,
-  visitorRegisterResponse,
-  OfferwallResponse,
   OfferwallConversionRequest,
   OfferwallConversionResponse,
+  OfferwallResponse,
+  VisitorData,
+  visitorRegisterResponse,
 } from './types';
 /**
  * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
@@ -95,14 +95,17 @@ class CatalystCore {
       current_page: window.location.pathname,
       query_params: Object.fromEntries(new URLSearchParams(window.location.search)),
     };
-
+    let headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (this.config.debug && this.config?.dev_origin) {
+      headers['Dev-Origin'] = this.config.dev_origin;
+    }
     try {
       const res = await fetch(this.getEndpoint('visitor.register'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(payload),
       });
 
