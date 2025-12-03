@@ -99,7 +99,7 @@ class MixService
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
           if ($response->successful()) {
             $successfulCount++;
-            $offers = $this->parseOffers($response, $integration);
+            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
             $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
@@ -200,31 +200,6 @@ class MixService
       'response_headers' => $response->headers(),
       'response_body' => $response->json() ?? $response->body(),
     ]);
-  }
-
-  private function parseOffers(Response $response, $integration): array
-  {
-    $parserConfig = $integration->response_parser_config;
-    $jsonResponse = $response->json();
-    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
-    $offers = data_get($jsonResponse, $pathOfOffers);
-
-    if (!is_array($offers)) {
-      return [];
-    }
-
-    $mappedOffers = [];
-    foreach ($offers as $offer) {
-      $mappedOffer = [];
-      foreach ($parserConfig['mapping'] as $key => $valuePath) {
-        $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
-      }
-      //Add integration id
-      $mappedOffer['integration_id'] = $integration->id;
-      $mappedOffers[] = $mappedOffer;
-    }
-
-    return $mappedOffers;
   }
 
   /**
