@@ -100,6 +100,7 @@ class MixService
           if ($response->successful()) {
             $successfulCount++;
             $offers = $this->parseOffers($response, $integration);
+            $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
@@ -224,6 +225,21 @@ class MixService
     }
 
     return $mappedOffers;
+  }
+
+  /**
+   * Agrega un token único a cada oferta para rastrear su origen.
+   */
+  private function enrichOffersWithToken(array $offers, int $mixLogId, int $integrationId): array
+  {
+    foreach ($offers as $index => &$offer) {
+      // Formato: mix_log_id|integration_id|index_in_response
+      $rawToken = "{$mixLogId}|{$integrationId}|{$index}";
+      $offer['offer_token'] = \Illuminate\Support\Facades\Crypt::encryptString($rawToken);
+    }
+    unset($offer); // Romper referencia
+
+    return $offers;
   }
 
   /**
