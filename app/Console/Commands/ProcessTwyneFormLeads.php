@@ -35,7 +35,8 @@ class ProcessTwyneFormLeads extends Command
    */
   protected array $formIds = [
     '1981121326072730',
-    '1184004799731431'
+    '1184004799731431',
+    '872541831863812'
   ];
 
   /**

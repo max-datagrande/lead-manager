@@ -99,10 +99,14 @@ class MixService
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
           if ($response->successful()) {
             $successfulCount++;
-            $offers = $this->parseOffers($response, $integration);
+            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
+            $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
+
+        // Ordenar ofertas por CPC
+        $aggregatedOffers = $this->sortOffersByCpc($aggregatedOffers);
         $durationMs = (microtime(true) - $startTime) * 1000;
         $durationRounded = (int) round($durationMs);
         $mixLog->update([
@@ -198,26 +202,44 @@ class MixService
     ]);
   }
 
-  private function parseOffers(Response $response, $integration): array
+  /**
+   * Agrega un token único a cada oferta para rastrear su origen.
+   */
+  private function enrichOffersWithToken(array $offers, int $mixLogId, int $integrationId): array
   {
-    $parserConfig = $integration->response_parser_config;
-    $jsonResponse = $response->json();
-    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
-    $offers = data_get($jsonResponse, $pathOfOffers);
-
-    if (!is_array($offers)) {
-      return [];
+    foreach ($offers as $index => &$offer) {
+      // Formato: mix_log_id|integration_id|index_in_response
+      $rawToken = "{$mixLogId}|{$integrationId}|{$index}";
+      $offer['offer_token'] = \Illuminate\Support\Facades\Crypt::encryptString($rawToken);
     }
+    unset($offer); // Romper referencia
 
-    $mappedOffers = [];
-    foreach ($offers as $offer) {
-      $mappedOffer = [];
-      foreach ($parserConfig['mapping'] as $key => $valuePath) {
-        $mappedOffer[$key] = data_get($offer, $valuePath);
+    return $offers;
+  }
+
+  /**
+   * Ordena las ofertas por CPC de mayor a menor.
+   * Los valores nulos o inválidos se mueven al final.
+   * Agrega un campo 'pos' indicando el ranking (empezando en 1).
+   */
+  private function sortOffersByCpc(array $offers): array
+  {
+    usort($offers, function ($a, $b) {
+      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float)$a['cpc'] : -1;
+      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float)$b['cpc'] : -1;
+
+      if ($cpcA == $cpcB) {
+        return 0;
       }
-      $mappedOffers[] = $mappedOffer;
+      // Orden descendente (mayor a menor)
+      return ($cpcA > $cpcB) ? -1 : 1;
+    });
+
+    // Asignar posición
+    foreach ($offers as $index => &$offer) {
+      $offer['pos'] = $index + 1;
     }
 
-    return $mappedOffers;
+    return $offers;
   }
 }

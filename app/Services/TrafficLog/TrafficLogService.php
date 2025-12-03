@@ -146,14 +146,17 @@ class TrafficLogService
   {
     $isDev = app()->environment('local');
     $origin = $this->request->header('origin') ?? null;
-    if ($origin) {
+
+    if ($origin && !str_contains($origin, 'localhost')) {
       return $origin;
     }
-    //Origin null
+
+    // Origin is null or localhost
     if ($isDev) {
       return $this->request->header('dev-origin') ?? '';
     }
-    return '';
+
+    return $origin ?? '';
   }
   private function getReferer($data): ?string
   {
