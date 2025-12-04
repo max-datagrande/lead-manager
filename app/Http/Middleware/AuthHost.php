@@ -48,6 +48,7 @@ class AuthHost
     }
 
     $targetHost = parse_url($origin, PHP_URL_HOST);
+
     if (!$targetHost) {
       $message = 'Forbidden - Could not parse host from Origin header.';
       TailLogger::saveLog($message, 'middleware/auth-host', 'warning', ['origin' => $origin, 'ip' => $request->ip(), 'url' => $request->fullUrl()]);
@@ -59,6 +60,7 @@ class AuthHost
         ? implode('.', array_slice($parts, -2))
         : $targetHost;
     // Validar el host usando ambos métodos
+
     if (!$this->hostValidationService->validateFromJson($rootDomain)) {
       $message = 'AuthHost: Forbidden - Host not allowed.';
       TailLogger::saveLog($message, 'middleware/auth-host', 'warning', [

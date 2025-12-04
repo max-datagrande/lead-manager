@@ -4,45 +4,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catalyst Test Page</title>
+  <title>Catalyst SDK Test Flow</title>
+  <!-- Simulamos cargar el SDK con un Landing ID -->
   <script src="{{ url('/catalyst/engine.js?landing_id=123&version=1.0') }}"></script>
 </head>
 
 <body>
-  <h1>Catalyst Test Page</h1>
-  <p>Open the developer console to see the output.</p>
+  <div style="font-family: sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto;">
+    <h1>Catalyst SDK Integration Test</h1>
+    <p>Open Developer Console (F12) to see detailed logs.</p>
+
+    <div id="status-log" style="background: #f4f4f4; padding: 1rem; border-radius: 8px; font-family: monospace;">
+      <div>[WAITING] Waiting for SDK to be ready...</div>
+    </div>
+  </div>
 
   <script>
-    // Ejemplo de cómo escuchar eventos del SDK.
-    // El evento 'ready' se dispara cuando el SDK está completamente cargado e inicializado.
-    Catalyst.on('ready', function(data) {
-      console.log('****************************************');
-      console.log('CATALYST SDK EVENT: El SDK está listo!', data);
-      console.log('****************************************');
+    function log(message, color = 'black') {
+      const el = document.getElementById('status-log');
+      const div = document.createElement('div');
+      div.style.color = color;
+      div.style.marginTop = '5px';
+      div.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+      el.appendChild(div);
+      console.log(`%c${message}`, `color: ${color}`);
+    }
 
-      // Ahora es seguro registrar eventos que dependen de que el SDK esté completamente funcional.
-      Catalyst.register('post_ready_event', { message: 'Este evento se registró después de que el SDK estuviera listo.' });
+    // 1. Esperar a que el SDK y el Visitante estén listos
+    Catalyst.on('ready', (eventData) => {
+      log('✅ SDK READY: Visitor session confirmed.', 'green');
+      console.log('Visitor Data:', eventData.visitor);
+
+      // Simulamos una acción de usuario (ej: llenar formulario) después de 1 segundo
+      setTimeout(() => {
+        log('🚀 Iniciando registro de Lead (simulado)...', 'blue');
+
+        // 2. Disparar evento para registrar Lead
+        Catalyst.dispatch('lead:register', {
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '+1234567890'
+        });
+      }, 1000);
     });
 
-    // Esta llamada será encolada por el placeholder y procesada cuando el SDK esté listo.
-    Catalyst.register('page_view', {
-      url: window.location.pathname
+    // 3. Escuchar el estado de las operaciones de Lead (Register y Update)
+    Catalyst.on('lead:status', (status) => {
+      console.log('Lead Status Event:', status);
+
+      if (status.type === 'register') {
+        if (status.success) {
+          log('✅ LEAD REGISTERED SUCCESS', 'green');
+
+          // 4. Solo si el registro fue exitoso, intentamos un Update
+          setTimeout(() => {
+            log('🔄 Intentando actualizar Lead...', 'orange');
+            Catalyst.dispatch('lead:update', {
+              company: 'Datagrande Inc.',
+              role: 'Developer'
+            });
+          }, 1500);
+
+        } else {
+          log(`❌ LEAD REGISTER FAILED: ${status.error}`, 'red');
+        }
+      }
+
+      if (status.type === 'update') {
+        if (status.success) {
+          log('✅ LEAD UPDATED SUCCESS', 'green');
+          log('🎉 Flujo completo terminado exitosamente.', 'purple');
+        } else {
+          log(`❌ LEAD UPDATE FAILED: ${status.error}`, 'red');
+        }
+      }
     });
-
-    // También puedes llamarlo con un retardo.
-    setTimeout(() => {
-      Catalyst.register('delayed_event', {
-        delay: '2 seconds'
-      });
-    }, 2000);
-
-    // Ejemplo de uso con async/await
-    (async function() {
-      console.log('Esperando a que Catalyst esté listo usando async/await...');
-      const data = await Catalyst.ready();
-      console.log('¡Catalyst está listo! (obtenido con await)', data);
-      Catalyst.register('event_from_await', { source: 'async/await' });
-    })();
   </script>
 </body>
 

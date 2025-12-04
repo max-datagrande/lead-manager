@@ -17,11 +17,23 @@ class OfferwallConversion extends Model
     protected $fillable = [
         'integration_id',
         'company_id',
+        'offerwall_mix_log_id',
         'amount',
         'fingerprint',
         'click_id',
         'utm_source',
         'utm_medium',
+        'offer_data',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'offer_data' => 'array',
+        'amount' => 'decimal:2',
     ];
 
     /**

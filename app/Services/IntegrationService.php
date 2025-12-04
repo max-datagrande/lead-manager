@@ -236,6 +236,37 @@ class IntegrationService
 
     return str_replace(array_keys($replacements), array_values($replacements), $template);
   }
+
+  /**
+   * Parsea la respuesta de una integración de Offerwall para extraer las ofertas normalizadas.
+   *
+   * @param array $jsonResponse Respuesta decodificada (array) de la API externa
+   * @param Integration $integration Modelo de integración con su configuración de parseo
+   * @return array Lista de ofertas normalizadas
+   */
+  public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
+  {
+    $parserConfig = $integration->response_parser_config;
+    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $offers = data_get($jsonResponse, $pathOfOffers);
+
+    if (!is_array($offers)) {
+      return [];
+    }
+
+    $mappedOffers = [];
+    foreach ($offers as $offer) {
+      $mappedOffer = [];
+      foreach ($parserConfig['mapping'] as $key => $valuePath) {
+        $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
+      }
+      //Add integration id
+      $mappedOffer['integration_id'] = $integration->id;
+      $mappedOffers[] = $mappedOffer;
+    }
+
+    return $mappedOffers;
+  }
 }
 
 /**

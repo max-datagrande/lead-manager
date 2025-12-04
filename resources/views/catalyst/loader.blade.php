@@ -46,5 +46,6 @@
   const script = document.createElement('script');
   script.src = '{{ $finalUrl }}';
   script.async = true;
+  script.type = 'module';
   document.head.appendChild(script);
 })();
