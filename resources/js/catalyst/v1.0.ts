@@ -360,7 +360,7 @@ class CatalystCore {
    * Obtiene las ofertas de un Offerwall Mix específico.
    * @param mixId ID o UUID del Offerwall Mix
    */
-  async getOfferwall(mixId: string, fingerprint: string): Promise<OfferwallResponse> {
+  async getOfferwall(mixId: string, placement?: string, fingerprint?: string): Promise<OfferwallResponse> {
     if (!fingerprint) {
       fingerprint = this.visitorData?.fingerprint;
     }
@@ -370,6 +370,7 @@ class CatalystCore {
 
     const payload = {
       fingerprint,
+      placement,
     };
 
     try {
