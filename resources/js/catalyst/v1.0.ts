@@ -49,7 +49,9 @@ class CatalystCore {
     this.on('lead:register', (data) => this.registerLead(data));
     this.on('lead:update', (data) => this.updateLead(data));
 
-    console.log(`Catalyst SDK v1.0 inicializado`);
+    if (this.config.debug) {
+      console.log(`Catalyst SDK v1.0 inicializado`);
+    }
   }
 
   // ===================================================================================
@@ -331,7 +333,9 @@ class CatalystCore {
    * Sistema de eventos simple (Pub/Sub)
    */
   on(eventName: string, callback: EventCallback): void {
-    console.log('Catalyst SDK: Evento registrado:', eventName);
+    if (this.config.debug) {
+      console.log('Catalyst SDK: Evento registrado:', eventName);
+    }
 
     // Si el evento es 'ready' y ya estamos listos, ejecutamos inmediatamente
     if (eventName === 'ready' && (this as any).isReady) {
@@ -525,7 +529,9 @@ function init(): void {
   catalystInstance
     .initVisitor()
     .then((visitorData) => {
-      console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
+      if (catalystInstance.config.debug) {
+        console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
+      }
       // ÚNICO punto de emisión del evento 'ready'
       catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData: visitorData });
     })
