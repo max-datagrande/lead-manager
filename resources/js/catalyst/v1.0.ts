@@ -356,13 +356,16 @@ class CatalystCore {
    * Obtiene las ofertas de un Offerwall Mix específico.
    * @param mixId ID o UUID del Offerwall Mix
    */
-  async getOfferwall(mixId: string): Promise<OfferwallResponse> {
-    if (!this.visitorData?.fingerprint) {
+  async getOfferwall(mixId: string, fingerprint: string): Promise<OfferwallResponse> {
+    if (!fingerprint) {
+      fingerprint = this.visitorData?.fingerprint;
+    }
+    if (!fingerprint) {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
     }
 
     const payload = {
-      fingerprint: this.visitorData.fingerprint,
+      fingerprint,
     };
 
     try {
