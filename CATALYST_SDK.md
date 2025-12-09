@@ -14,7 +14,7 @@ Inserta el siguiente snippet en el `<head>` de tu HTML.
 
 ### Opción B: Carga Manual (Avanzado)
 Si prefieres tener control total y evitar el loader de Laravel (por ejemplo en frameworks como Astro, Next.js o sitios estáticos), puedes usar este snippet.
-
+> **Importante:** Al usar este método, debes configurar la URL de la API manualmente en el objeto `config`.
 > **Nota:** Si usas Astro, asegúrate de añadir el atributo `is:inline` a la etiqueta `<script>`.
 
 ```html
