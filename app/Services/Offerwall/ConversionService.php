@@ -30,7 +30,6 @@ class ConversionService
       $offerData = [];
       $mixLogId = null;
       $integrationId = $data['integration_id'] ?? null;
-      $companyId = $data['company_id'] ?? null;
 
       if ($offerToken) {
         try {
@@ -55,7 +54,6 @@ class ConversionService
               if ($integration) {
                 // Trust the token for integration and company
                 $integrationId = $integration->id;
-                $companyId = $integration->company_id;
 
                 // Re-parse to get the clean list exactly as it was presented
                 $parsedOffers = $this->integrationService->parseOfferwallResponse($callLog->response_body, $integration);
@@ -80,7 +78,6 @@ class ConversionService
       // Prepare data for creation
       $createData = [
         'integration_id' => $integrationId,
-        'company_id' => $companyId,
         'amount' => $data['amount'] ?? 0, // Assuming amount comes from postback or request
         'fingerprint' => $data['fingerprint'],
         'click_id' => $data['click_id'] ?? null,
