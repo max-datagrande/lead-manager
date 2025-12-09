@@ -23,7 +23,7 @@ class MixService
     $this->integrationService = $integrationService;
   }
 
-  public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
+  public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint, ?string $placement = null): array
   {
     $startTime = microtime(true);
     $lead = Lead::getLeadWithResponses($fingerprint);
@@ -41,11 +41,12 @@ class MixService
     $leadData = $this->prepareLeadData($lead);
     $mixLog = null;
     try {
-      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
+      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog, $placement) {
         $mixLog = OfferwallMixLog::create([
           'offerwall_mix_id' => $mix->id,
           'fingerprint' => $lead->fingerprint,
           'origin' => $lead->host,
+          'placement' => $placement,
           'total_integrations' => $integrations->count(),
         ]);
 

@@ -24,9 +24,14 @@ class MixController extends Controller
   {
     $validated = $request->validate([
       'fingerprint' => 'required|string',
+      'placement' => 'nullable|string|max:255',
     ]);
     
-    $result = $this->mixService->fetchAndAggregateOffers($offerwallMix, $validated['fingerprint']);
+    $result = $this->mixService->fetchAndAggregateOffers(
+      $offerwallMix, 
+      $validated['fingerprint'],
+      $validated['placement'] ?? null
+    );
     
     // Extraer información de la respuesta del servicio
     $success = $result['success'] ?? false;

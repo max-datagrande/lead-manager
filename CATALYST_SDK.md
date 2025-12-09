@@ -14,7 +14,7 @@ Inserta el siguiente snippet en el `<head>` de tu HTML.
 
 ### Opción B: Carga Manual (Avanzado)
 Si prefieres tener control total y evitar el loader de Laravel (por ejemplo en frameworks como Astro, Next.js o sitios estáticos), puedes usar este snippet.
-
+> **Importante:** Al usar este método, debes configurar la URL de la API manualmente en el objeto `config`.
 > **Nota:** Si usas Astro, asegúrate de añadir el atributo `is:inline` a la etiqueta `<script>`.
 
 ```html
@@ -151,15 +151,17 @@ El SDK incluye soporte para cargar Offerwalls y registrar conversiones directame
 
 ### A. Obtener Offerwall (`getOfferwall`)
 
-Obtiene la lista de ofertas disponibles para el visitante actual en base a un Offerwall Mix ID.
+Obtiene la lista de ofertas disponibles para el visitante actual en base a un Offerwall Mix ID. Puedes especificar opcionalmente un `placement` para indicar en qué parte de la página se muestra (útil para reportes).
 
 > **Nota:** Esta función devuelve una Promesa, por lo que puedes usar `await`. Asegúrate de que el SDK esté cargado (evento `ready`) antes de llamarla, o usa la sintaxis de promesa.
 
 ```javascript
 // Dentro de una función async
 const mixId = '123'; // ID de tu Offerwall Mix
+const placement = 'thank_you_page'; // Opcional: 'popup', 'sidebar', etc.
+
 try {
-  const response = await Catalyst.getOfferwall(mixId);
+  const response = await Catalyst.getOfferwall(mixId, placement);
   console.log('Ofertas:', response.data);
 } catch (error) {
   console.error('Error cargando offerwall:', error);
@@ -168,21 +170,27 @@ try {
 
 ### B. Registrar Conversión (`convertOfferwall`)
 
-Registra que el usuario ha completado una oferta.
+Registra que el usuario ha completado una oferta (conversión). Es crucial enviar el `offer_token` que recibiste al obtener las ofertas (`getOfferwall`), ya que contiene la información encriptada para validar la conversión.
 
 ```javascript
+// Supongamos que 'offer' es uno de los objetos recibidos en getOfferwall()
+const selectedOffer = offers[0]; 
+
 try {
   const conversion = await Catalyst.convertOfferwall({
-    offer_id: 'OFFER-001',
-    amount: 10.50,
-    currency: 'USD',
-    transaction_id: 'tx_999999'
+    offer_token: selectedOffer.offer_token, // OBLIGATORIO: Viene del objeto oferta
+    amount: 10.50,                          // Opcional: Valor de la conversión
+    click_id: 'click_12345',                // Opcional: ID externo si lo tienes
+    utm_source: 'facebook',                 // Opcional
+    utm_medium: 'cpc'                       // Opcional
   });
-  console.log('Conversión registrada:', conversion);
+  console.log('Conversión registrada exitosamente:', conversion);
 } catch (error) {
-  console.error('Error en conversión:', error);
+  console.error('Error al registrar conversión:', error);
 }
 ```
+
+> **Importante:** El `offer_token` es generado dinámicamente por el backend y es único para esa impresión de la oferta. No intentes modificarlo ni reutilizarlo entre sesiones.
 
 ---
 
