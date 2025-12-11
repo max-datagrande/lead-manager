@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Offerwall\EventController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\Form\FieldController as ApiFieldController;
+use App\Http\Controllers\Api\LeadController;
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -23,6 +24,8 @@ Route::prefix('fields')->group(function () {
   Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');
   Route::post('/import', [ApiFieldController::class, 'import'])->name('api.fields.import');
 });
+
+Route::get('/leads/{fingerprint}', [LeadController::class, 'getLeadDetails'])->name('api.leads.details');
 
 //Other file routes
 require __DIR__ . '/leads.php';

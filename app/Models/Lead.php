@@ -54,6 +54,7 @@ class Lead extends Model
     // Relación uno-a-muchos con LeadFieldResponses
     return $this->hasMany(LeadFieldResponse::class, 'lead_id');
   }
+
   public function fields()             // acceso directo a los Field
   {
     return $this->belongsToMany(Field::class, 'lead_field_responses')
