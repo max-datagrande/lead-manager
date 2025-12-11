@@ -30,7 +30,9 @@ interface ServerTableProps<TData> {
     }>;
     dateRange?: { column: string; label: string };
   };
-  additionalData?: Record<string, any>;
+  contextFunctions?: {
+    [key: string]: (value: any) => any;
+  };
 }
 
 export function ServerTable<TData>({
@@ -47,7 +49,7 @@ export function ServerTable<TData>({
   globalFilter,
   setGlobalFilter,
   toolbarConfig = {},
-  additionalData = {},
+  contextFunctions = {},
 }: ServerTableProps<TData>) {
   const { pageIndex, pageSize } = pagination;
 
@@ -87,7 +89,7 @@ export function ServerTable<TData>({
     manualFiltering: true,
     manualPagination: true,
     pageCount: meta.last_page,
-    meta: additionalData,
+    meta: contextFunctions,
   });
 
   return (

@@ -1,6 +1,8 @@
 import { ServerTable } from '@/components/data-table/server-table';
+import LeadDetailsModal from '@/components/lead/lead-details-modal';
 import PageHeader from '@/components/page-header';
 import { visitorColumns } from '@/components/visitors/list-columns';
+import { useModal } from '@/hooks/use-modal';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, DatatablePageProps } from '@/types';
@@ -11,7 +13,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Visitors',
     href: route('visitors.index'),
-  }
+  },
 ];
 /**
  * Index Page Component
@@ -48,6 +50,7 @@ interface IndexProps extends DatatablePageProps<Visitor> {
 }
 
 const Index = ({ rows, meta, state, data }: IndexProps) => {
+  const modal = useModal();
   const table = useServerTable({
     routeName: 'visitors.index',
     initialState: state,
@@ -55,6 +58,12 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
   });
 
   const { hosts = [], states = [] } = data;
+
+  const showLeadDataModal = (row: Visitor) => {
+    modal.open(<LeadDetailsModal fingerprint={row.fingerprint} />, {
+      className: 'sm:max-w-[1000px] flex flex-col w-full',
+    });
+  };
 
   return (
     <>
@@ -74,6 +83,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
           setColumnFilters={table.setColumnFilters}
           globalFilter={table.globalFilter}
           setGlobalFilter={table.setGlobalFilter}
+          contextFunctions={{ showLeadDataModal }}
           toolbarConfig={{
             searchPlaceholder: 'Search visitors...',
             filters: [
