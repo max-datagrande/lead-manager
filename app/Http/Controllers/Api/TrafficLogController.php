@@ -46,9 +46,7 @@ class TrafficLogController extends Controller
       // Crear el traffic log usando el servicio especializado
       $trafficLog = $this->trafficLogService->createTrafficLog($data);
       $fingerprint = $trafficLog->fingerprint;
-      $geolocation = collect($this->request->geoService()->getGeolocation())
-        ->only(['city', 'region', 'country', 'postal', 'timezone', 'currency', 'ip', 'region_code'])
-        ->toArray();
+      $geolocation = $this->request->geoService()->getGeolocation();
       //Loggin
       $this->successLog($trafficLog);
       // Usar el trait para respuesta exitosa
