@@ -165,9 +165,9 @@ class MixService
 
       // Registrar en logs en modo debug, no enviar a Slack
       if (app()->environment('local')) {
-        $slack->sendDebugLog('errors');
+        $slack->sendDebugLog('error');
       } else {
-        $slack->sendDirect();
+        $slack->sendDirect('error');
       }
 
       return [

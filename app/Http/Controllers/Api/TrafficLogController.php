@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTrafficLogRequest;
 use App\Services\TrafficLog\TrafficLogService;
-use App\Services\TrafficLog\TrafficLogCreationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Maxidev\Logger\TailLogger;
 use App\Http\Traits\ApiResponseTrait;
+use App\Support\SlackMessageBundler;
+
 
 /**
  * Controlador para manejo de traffic logs
@@ -64,9 +65,23 @@ class TrafficLogController extends Controller
       $isDev = app()->environment('local');
       $errors = get_error_stack($e, $isDev);
       $statusCode = str_contains($message, 'Duplicate') ? 409 : 500;
+      $this->notifySlack($message, $this->errorContext($e, $data));
       TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
       return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
     }
+  }
+  private function notifySlack(string $message, array $context): void
+  {
+    $slack = new SlackMessageBundler();
+    $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
+      ->addSection('The offerwall mix processing failed due to an unexpected error.')
+      ->addKeyValue('Ip', request()->ip(), true)
+      ->addDivider();
+
+
+    $slack->addKeyValue('Error Message', $message, true, '📄');
+    // Registrar en logs en modo debug, no enviar a Slack
+    app()->environment('local') ? $slack->sendDebugLog('error') : $slack->sendDirect('error');
   }
 
   public function successLog(): void
@@ -84,6 +99,14 @@ class TrafficLogController extends Controller
    */
   public function errorContext($e, $data): array
   {
-    return ['request_data' => $data, 'trace' => $e->getTrace()];
+    return [
+      'message' => $e->getMessage(),
+      'file' => $e->getFile(),
+      'line' => $e->getLine(),
+      'code' => $e->getCode(),
+      'type' => get_class($e),
+      'request_data' => $data,
+      'trace' => $e->getTrace()
+    ];
   }
 }
