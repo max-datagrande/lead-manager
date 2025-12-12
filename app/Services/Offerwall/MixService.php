@@ -98,7 +98,7 @@ class MixService
           $requestData = $requestsData[$integration->id];
 
           $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
-          if ($response->successful()) {
+          if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
             $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
             $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
@@ -186,20 +186,41 @@ class MixService
 
 
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response, string $method, array $headers, string $payload): void
+  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, string $payload): void
   {
-    $duration = $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
+    $isResponse = $response instanceof Response;
+    $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
+
+    $status = 'failed';
+    $statusCode = 500;
+    $responseBody = 'Unknown Error';
+    $requestUrl = 'unknown';
+
+    if ($isResponse) {
+      $status = $response->successful() ? 'success' : 'failed';
+      $statusCode = $response->status();
+      $responseBody = $response->json() ?? $response->body();
+      $requestUrl = (string) $response->effectiveUri();
+    } elseif ($response instanceof \Throwable) {
+      $responseBody = [
+        'error' => get_class($response),
+        'message' => $response->getMessage(),
+        'file' => $response->getFile(),
+        'line' => $response->getLine()
+      ];
+    }
+
     $mixLog->integrationCallLogs()->create([
       'integration_id' => $integration->id,
-      'status' => $response->successful() ? 'success' : 'failed',
-      'http_status_code' => $response->status(),
+      'status' => $status,
+      'http_status_code' => $statusCode,
       'duration_ms' => (int) round($duration),
-      'request_url' => (string) $response->effectiveUri(),
+      'request_url' => $requestUrl,
       'request_method' => strtoupper($method),
       'request_headers' => $headers,
       'request_payload' => json_decode($payload, true) ?? ['raw_body' => $payload],
-      'response_headers' => $response->headers(),
-      'response_body' => $response->json() ?? $response->body(),
+      'response_headers' => $isResponse ? $response->headers() : [],
+      'response_body' => $responseBody,
     ]);
   }
 
