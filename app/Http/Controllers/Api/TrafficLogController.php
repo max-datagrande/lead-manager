@@ -65,19 +65,20 @@ class TrafficLogController extends Controller
       $isDev = app()->environment('local');
       $errors = get_error_stack($e, $isDev);
       $statusCode = str_contains($message, 'Duplicate') ? 409 : 500;
-      $this->notifySlack($message, $this->errorContext($e, $data));
+      $this->notifySlack($message, $data);
       TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
       return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
     }
   }
-  private function notifySlack(string $message, array $context): void
+  private function notifySlack(string $message, array $data): void
   {
     $slack = new SlackMessageBundler();
-    $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
-      ->addSection('The offerwall mix processing failed due to an unexpected error.')
-      ->addKeyValue('Ip', request()->ip(), true)
+    $slack->addTitle('Critical Traffic Log Failure', '🚨')
+      ->addSection('The traffic log processing failed due to an unexpected error.')
+      ->addKeyValue('Ip', $this->request->ip(), true)
+      ->addKeyValue('Path', $data['current_page'])
+      ->addKeyValue('Landing', $this->request->header('origin'))
       ->addDivider();
-
 
     $slack->addKeyValue('Error Message', $message, true, '📄');
     // Registrar en logs en modo debug, no enviar a Slack
