@@ -71,11 +71,10 @@ class CatalystCore {
       // CASO 1: Reingreso a corto plazo (dentro de los 15 mins). Usamos datos locales.
       try {
         this.visitorData = JSON.parse(storedData);
-        if (this.config.debug) console.log('Catalyst SDK: Visitante recuperado de caché (Throttle activo).', this.visitorData);
+        if (this.config.debug) console.log('Catalyst SDK: Visitante recuperado de caché (Throttle activo).');
         return this.visitorData;
       } catch (e) {
         console.error('Catalyst SDK: Error leyendo datos locales, reiniciando visitante.', e);
-        // Si falla la lectura local, continuamos al registro nuevo
       }
     }
     // CASO 2: No hay throttle o no hay datos. Registramos nueva visita (o renovamos).
@@ -128,9 +127,6 @@ class CatalystCore {
 
       // Guardamos en memoria y persistencia
       this.saveVisitorSession(visitorData);
-
-      if (this.config.debug) console.log('Catalyst SDK: Visitante registrado en API.', visitorData);
-
       return visitorData;
     } catch (error) {
       console.error('Catalyst SDK: Error registrando visitante:', error);
@@ -505,7 +501,7 @@ class CatalystCore {
 // INICIALIZACIÓN (CHEF)
 // ===================================================================================
 
-function init(): void {
+async function init(): Promise<void> {
   const placeholder = window.Catalyst as CatalystPlaceholder;
 
   if (!placeholder || !placeholder._q) {
@@ -515,31 +511,62 @@ function init(): void {
 
   const catalystInstance = new CatalystCore(placeholder.config);
 
-  // Procesar cola de comandos previos
-  placeholder._q.forEach(([method, ...args]) => {
-    // Si el método existe directamente en la clase (ej: 'on', 'dispatch')
-    if (typeof (catalystInstance as any)[method] === 'function') {
-      (catalystInstance as any)[method](...args);
-    }
-  });
+  // Procesar cola de comandos previos (Lógica extraída para reutilizar)
+  const processQueue = async () => {
+    // Es posible que el array crezca mientras procesamos si no hemos hecho el swap aún,
+    // pero aquí ya deberíamos haber hecho el swap o congelado la referencia.
+    // Usamos un bucle for..of para asegurar secuencialidad en llamadas async.
+    for (const item of placeholder._q) {
+      const method = item[0] as string;
+      const fn = (catalystInstance as any)[method];
 
-  // Reemplazar global
-  window.Catalyst = catalystInstance;
+      if (typeof fn !== 'function') continue;
+
+      // Detectar proxy de promesa
+      const possibleResolve = item[2];
+      const possibleReject = item[3];
+      const isPromiseProxy =
+        item.length === 4 &&
+        typeof possibleResolve === 'function' &&
+        typeof possibleReject === 'function' &&
+        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall'].includes(method);
+
+      if (isPromiseProxy) {
+        const args = Array.from((item[1] as ArrayLike<any>) || []);
+        try {
+          // AWAIT aquí asegura que la siguiente instrucción en la cola no empiece
+          // hasta que esta termine. Crucial para dependencias register -> update.
+          const result = await fn.apply(catalystInstance, args);
+          possibleResolve(result);
+        } catch (error) {
+          possibleReject(error);
+        }
+      } else {
+        const [, ...args] = item;
+        fn.apply(catalystInstance, args);
+      }
+    }
+  };
 
   // Inicializar el visitante y esperar a que esté listo
-  catalystInstance
-    .initVisitor()
-    .then((visitorData) => {
-      if (catalystInstance.config.debug) {
-        console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
-      }
-      // ÚNICO punto de emisión del evento 'ready'
-      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData: visitorData });
-    })
-    .catch((error) => {
-      console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
-      catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData: null });
-    });
+  let visitorData: VisitorData | null = null;
+  try {
+    visitorData = await catalystInstance.initVisitor();
+    if (catalystInstance.config.debug) {
+      console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
+    }
+  } catch (error) {
+    console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
+  } finally {
+    // 1. Reemplazar global AHORA que la instancia está lista (con o sin datos)
+    window.Catalyst = catalystInstance;
+
+    // 2. Procesar la cola secuencialmente
+    await processQueue();
+
+    // 3. Emitir evento ready
+    catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData });
+  }
 }
 
 init();
