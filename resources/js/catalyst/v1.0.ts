@@ -334,11 +334,16 @@ class CatalystCore {
     }
 
     // Si el evento es 'ready' y ya estamos listos, ejecutamos inmediatamente
-    if (eventName === 'ready' && (this as any).isReady) {
+    if (eventName === 'ready' && this.isReady) {
       try {
-        callback((this as any).visitorData);
+        // CORRECCIÓN: Enviamos la misma estructura que en el dispatch original
+        callback({
+          catalyst: this,
+          visitorData: this.visitorData,
+        });
       } catch (e) {
         console.error(`Catalyst SDK: Error en callback inmediato de 'ready':`, e);
+        throw e; // Relanzamos para que el desarrollador vea su error
       }
     }
 
