@@ -109,6 +109,13 @@ interface Offer {
   [key: string]: any;
 }
 
+interface GetOfferwallOptions {
+  mixId: string;
+  placement?: string;
+  fingerprint?: string;
+  data?: object;
+}
+
 /**
  * Respuesta del endpoint de trigger de Offerwall.
  */
@@ -157,4 +164,16 @@ interface EventCallback {
   (data: any): void;
 }
 
-export { type CatalystConfig, type CatalystPlaceholder, type EventCallback, type LeadStatusEvent, type VisitorData, type visitorRegisterResponse, type Offer, type OfferwallResponse, type OfferwallConversionRequest, type OfferwallConversionResponse };
+export {
+  type CatalystConfig,
+  type CatalystPlaceholder,
+  type EventCallback,
+  type LeadStatusEvent,
+  type VisitorData,
+  type visitorRegisterResponse,
+  type Offer,
+  type OfferwallResponse,
+  type OfferwallConversionRequest,
+  type OfferwallConversionResponse,
+  type GetOfferwallOptions,
+};
