@@ -3,6 +3,7 @@ import {
   CatalystConfig,
   CatalystPlaceholder,
   EventCallback,
+  GetOfferwallOptions,
   LeadStatusEvent,
   OfferwallConversionRequest,
   OfferwallConversionResponse,
@@ -361,7 +362,8 @@ class CatalystCore {
    * Obtiene las ofertas de un Offerwall Mix específico.
    * @param mixId ID o UUID del Offerwall Mix
    */
-  async getOfferwall(mixId: string, placement?: string, fingerprint?: string, data: object = {}): Promise<OfferwallResponse> {
+
+  async getOfferwall({ mixId, placement, fingerprint, data = {} }: GetOfferwallOptions): Promise<OfferwallResponse> {
     if (!fingerprint) {
       fingerprint = this.visitorData?.fingerprint;
     }
