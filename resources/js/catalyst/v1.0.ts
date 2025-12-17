@@ -49,10 +49,6 @@ class CatalystCore {
     // Registrar escuchas de eventos internos para acciones de leads
     this.on('lead:register', (data) => this.registerLead(data));
     this.on('lead:update', (data) => this.updateLead(data));
-
-    if (this.config.debug) {
-      console.log(`Catalyst SDK v1.0 inicializado`);
-    }
   }
 
   // ===================================================================================
@@ -330,10 +326,6 @@ class CatalystCore {
    * Sistema de eventos simple (Pub/Sub)
    */
   on(eventName: string, callback: EventCallback): void {
-    if (this.config.debug) {
-      console.log('Catalyst SDK: Evento registrado:', eventName);
-    }
-
     // Si el evento es 'ready' y ya estamos listos, ejecutamos inmediatamente
     if (eventName === 'ready' && this.isReady) {
       try {
