@@ -52,6 +52,7 @@ class StoreTrafficLogRequest extends FormRequest
       's2' => 'nullable|string|max:255',
       's3' => 'nullable|string|max:255',
       's4' => 'nullable|string|max:255',
+      's10' => 'nullable|string|max:255',
     ];
   }
 
@@ -77,6 +78,7 @@ class StoreTrafficLogRequest extends FormRequest
       's2.max' => 'The s2 field must not exceed 255 characters',
       's3.max' => 'The s3 field must not exceed 255 characters',
       's4.max' => 'The s4 field must not exceed 255 characters',
+      's10.max' => 'The s10 field must not exceed 255 characters',
     ];
   }
 
@@ -112,6 +114,10 @@ class StoreTrafficLogRequest extends FormRequest
 
     if (!$this->has('s4') && isset($queryParams['s4'])) {
       $dataToMerge['s4'] = $queryParams['s4'];
+    }
+
+    if (!$this->has('s10') && isset($queryParams['s10'])) {
+      $dataToMerge['s10'] = $queryParams['s10'];
     }
 
     // Hacer merge de todos los datos de una vez
