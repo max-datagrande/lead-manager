@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\OfferwallConversion;
 use App\Models\Integration;
-use App\Models\Company;
 use App\Models\OfferwallMix;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -52,9 +51,6 @@ class OfferwallController extends Controller
           ->orWhere('fingerprint', 'like', '%' . $search . '%')
           ->orWhereHas('integration', function ($q2) use ($search) {
             $q2->where('name', 'like', '%' . $search . '%');
-          })
-          ->orWhereHas('company', function ($q2) use ($search) {
-            $q2->where('name', 'like', '%' . $search . '%');
           });
       });
     }
@@ -69,8 +65,6 @@ class OfferwallController extends Controller
           $query->whereDate('created_at', '<=', $filter['value']);
         } elseif ($filter['id'] === 'integration_id') {
           $query->whereIn('integration_id', (array) $filter['value']);
-        } elseif ($filter['id'] === 'company_id') {
-          $query->whereIn('company_id', (array) $filter['value']);
         }
         // Add more specific column filters here if needed
       }
@@ -92,9 +86,7 @@ class OfferwallController extends Controller
     $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
       return ['value' => (string) $integration->id, 'label' => $integration->name];
     });
-    $companies = Company::select('id', 'name')->get()->map(function ($company) {
-      return ['value' => (string) $company->id, 'label' => $company->name];
-    });
+
     $state =  [
       'filters' => $columnFilters,
       'sort' => $sort,
@@ -110,7 +102,6 @@ class OfferwallController extends Controller
         'last_page' => $conversions->lastPage(),
       ],
       'data' => [
-        'companies' => $companies,
         'integrations' => $integrations,
       ],
       'totalPayout' => $totalPayout,

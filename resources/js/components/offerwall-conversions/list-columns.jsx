@@ -1,11 +1,19 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FingerprintCell } from '@/components/visitors';
+
 export const columns = [
+  {
+    accessorKey: 'fingerprint',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
+    cell: ({ row }) => {
+      return <FingerprintCell fingerprint={row.original.fingerprint} />;
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
   {
     accessorKey: 'integration.name',
     header: 'Integration',
-  },
-  {
-    accessorKey: 'company.name',
-    header: 'Company',
   },
   {
     accessorKey: 'amount',
