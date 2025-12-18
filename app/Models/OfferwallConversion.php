@@ -16,13 +16,12 @@ class OfferwallConversion extends Model
      */
     protected $fillable = [
         'integration_id',
-        'company_id',
-        'offerwall_mix_log_id',
         'amount',
         'fingerprint',
         'click_id',
         'utm_source',
         'utm_medium',
+        'offerwall_mix_log_id',
         'offer_data',
     ];
 
