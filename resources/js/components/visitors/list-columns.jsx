@@ -34,6 +34,11 @@ export const visitorColumns = [
   {
     accessorKey: 'host',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
+    cell: ({ row }) => (
+      <div className="text-sm whitespace-nowrap">
+        <div className="font-normal">{row.original.host}</div>
+      </div>
+    ),
     enableSorting: true,
     enableHiding: true,
   },
@@ -135,6 +140,36 @@ export const visitorColumns = [
     accessorKey: 'click_id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Campaign Click ID" />,
     cell: ({ row }) => {
+      if (row.original.s10) {
+        //Clickflare id
+        return (
+          <p className="flex items-center justify-center gap-2">
+            <svg height="16" width="16" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14.8914 2.28802L6.4183 5.77749L10.649 8.58103L14.8797 11.3862L14.8914 2.28802Z" fill="#5F82FF"></path>
+              <path d="M23.3523 7.89832L14.8792 11.3861L19.1098 14.1913L23.3405 16.9965L23.3523 7.89832Z" fill="#5F82FF"></path>
+              <path d="M19.1216 5.09324L14.8909 2.28802L14.8792 11.3862L23.3523 7.89845L19.1216 5.09324Z" fill="#605BFF"></path>
+              <path
+                d="M19.9962 0.186614L14.8909 2.28761L19.1216 5.09283L23.3522 7.89804L23.3589 2.41747C23.3623 0.696048 21.5978 -0.472653 19.9962 0.186614Z"
+                fill="#605BFF"
+              ></path>
+              <path
+                d="M6.41789 5.77728L2.14021 7.53699C0.34721 8.27451 0.107136 10.6985 1.7205 11.769L2.17379 12.0703L6.40446 14.8755L6.41789 5.77728Z"
+                fill="#0AC4E2"
+              ></path>
+              <path d="M6.40659 14.8738L14.8797 11.386L10.649 8.58083L6.41834 5.77728L6.40659 14.8738Z" fill="#0AC4E2"></path>
+              <path
+                d="M23.3406 16.9964L23.3338 21.588C23.3305 23.5142 21.1648 24.6595 19.5514 23.5891L19.0981 23.2877L14.8674 20.4825L23.3406 16.9964Z"
+                fill="#0AC4E2"
+              ></path>
+              <path d="M14.8674 20.4843L14.8792 11.3861L19.1099 14.1913L23.3406 16.9965L14.8674 20.4843Z" fill="#0AC4E2"></path>
+              <path d="M6.39413 23.9721L14.8672 20.4843L10.6366 17.6791L6.40589 14.8738L6.39413 23.9721Z" fill="#48EEA8"></path>
+            </svg>
+            <span className="text-xs" title={row.original.s10}>
+              {row.original.s10}
+            </span>
+          </p>
+        );
+      }
       if (!row.original.click_id) {
         return null;
       }
@@ -202,7 +237,7 @@ export const visitorColumns = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
+        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
       </div>
     ),
     enableSorting: true,
@@ -214,7 +249,7 @@ export const visitorColumns = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
+        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
       </div>
     ),
     enableSorting: true,

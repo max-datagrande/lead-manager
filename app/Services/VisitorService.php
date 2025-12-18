@@ -35,6 +35,7 @@ class VisitorService
       's2',
       's3',
       's4',
+      's10',
       'click_id',
       'platform',
       'channel',
@@ -68,7 +69,8 @@ class VisitorService
       'postal_code',
       'click_id',
       'platform',
-      'channel'
+      'channel',
+      's10'
     ];
 
     // Configuración de filtros por columna
@@ -82,6 +84,7 @@ class VisitorService
       'host' => ['type' => 'like'],
       'state' => ['type' => 'like'],
       'city' => ['type' => 'like'],
+      's1' => ['type' => 'like'],
       'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
       'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
     ];
@@ -110,7 +113,8 @@ class VisitorService
       'postal_code',
       'click_id',
       'platform',
-      'channel'
+      'channel',
+      's10'
     ];
 
     return [

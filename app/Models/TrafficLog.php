@@ -34,6 +34,7 @@ class TrafficLog extends Model
         's2',
         's3',
         's4',
+        's10',
         'utm_source',
         'utm_medium',
         'campaign_code',
