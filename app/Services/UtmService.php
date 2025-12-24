@@ -28,6 +28,7 @@ class UtmService
     'sznclid' => 'Seznam/Sklik',
     'zanpid' => 'Awin',
     'vmcid' => 'Yahoo Ads',
+    'tblci' => 'Taboola Ads',
   ];
   /**
    * Extrae el click ID de los parámetros de URL basándose en plataformas publicitarias conocidas

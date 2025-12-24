@@ -52,7 +52,6 @@ export function TableIntegrations({ entries }) {
       });
     }
   };
-  console.log(columns);
 
   const table = useReactTable({
     data: entries,

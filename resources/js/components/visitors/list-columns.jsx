@@ -1,5 +1,7 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import ReactCountryFlag from 'react-country-flag';
@@ -13,8 +15,18 @@ export const visitorColumns = [
   {
     accessorKey: 'fingerprint',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
-    cell: ({ row }) => {
-      return <FingerprintCell fingerprint={row.original.fingerprint} />;
+    cell: ({ row, table }) => {
+      const { showLeadDataModal } = table.options.meta || {};
+      return (
+        <div className="flex items-center gap-2">
+          {showLeadDataModal && (
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => showLeadDataModal(row.original)} title="View Details">
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          <FingerprintCell fingerprint={row.original.fingerprint} />
+        </div>
+      );
     },
     enableSorting: false,
     enableHiding: true,
@@ -39,6 +51,12 @@ export const visitorColumns = [
       const path = row.original.path_visited.replace(/\/$/, '');
       return <div className="text-sm">{path}</div>;
     },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'ip_address',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="IP Address" />,
     enableSorting: true,
     enableHiding: true,
   },
@@ -153,7 +171,7 @@ export const visitorColumns = [
       }
       const utmSource = row.original.utm_source ?? '';
       const utmMedium = row.original.utm_medium ?? '';
-      return <TrafficSourceBadge source={utmSource} medium={utmMedium} />
+      return <TrafficSourceBadge source={utmSource} medium={utmMedium} />;
     },
     enableSorting: true,
     enableHiding: true,

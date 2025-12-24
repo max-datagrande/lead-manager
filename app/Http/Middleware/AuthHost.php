@@ -24,6 +24,11 @@ class AuthHost
    */
   public function handle(Request $request, Closure $next): Response
   {
+    $host = request()->host();
+    $isAdmin = $host ? str_contains($host, 'admin') : false;
+    if ($isAdmin) {
+      return $next($request);
+    }
     $origin = $request->header('Origin');
     $userAgent = $request->header('User-Agent');
     $isPostman = str_contains($userAgent, 'PostmanRuntime');
