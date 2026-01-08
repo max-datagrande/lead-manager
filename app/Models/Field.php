@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class Field extends Model
 {
@@ -43,7 +44,10 @@ class Field extends Model
       ->withPivot('value')
       ->withTimestamps();
   }
-
+  public static function truncate()
+  {
+    DB::statement('TRUNCATE TABLE fields RESTART IDENTITY CASCADE');
+  }
   public function forms()
   {
     return $this->belongsToMany(Form::class)
