@@ -7,6 +7,7 @@ use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class IntegrationController extends Controller
 {
@@ -57,7 +58,6 @@ class IntegrationController extends Controller
       }
 
       $data = $response->json();
-      dd($data);
       // Ensure we have a plain, numerically-indexed array for the 'insert' method.
       $integrationsToInsert = is_array($data['integrations']) ? array_values($data['integrations']) : [];
       $environmentsToInsert = is_array($data['environments']) ? array_values($data['environments']) : [];
@@ -65,14 +65,56 @@ class IntegrationController extends Controller
       if (empty($integrationsToInsert)) {
         return response()->json(['message' => 'No integrations to import from production.']);
       }
-
-      // Using PostgreSQL syntax from project context
-      //Truncate table
       Integration::truncate();
+      $migrations = [];
+      $errors = 0;
+      foreach ($integrationsToInsert as $integration) {
+        try {
+          DB::beginTransaction();
+          //Insert integration
+          $newIntegration = new Integration();
+          $newIntegration->fill($integration);
+          if (isset($integration['id'])) {
+            $newIntegration->id = $integration['id'];
+          }
+          $newIntegration->save();
+          $environments = collect($environmentsToInsert)
+            ->filter(fn($env) => $env['integration_id'] == $newIntegration->id);
+          //Insert environments
+          foreach ($environments as $environment) {
+            $data = [
+              ...$environment,
+              'integration_id' => $newIntegration->id,
+            ];
+            IntegrationEnvironment::create($data);
+          }
+          DB::commit();
+          $migrations[] = [
+            'integration' => $newIntegration->id,
+            'status' => 'success',
+          ];
+        } catch (\Throwable $th) {
+          $migrations[] = [
+            'integration' => $integration['id'] ?? null,
+            'status' => 'error',
+            'message' => $th->getMessage(),
+          ];
+          DB::rollBack();
+          $errors++;
+        }
+      }
+      $statusMessage = $errors > 0
+        ? 'Integrations synchronized successfully from production with errors.'
+        : 'Integrations synchronized successfully from production.';
 
-      return response()->json(['message' => 'Integrations synchronized successfully from production.']);
+      $response = [
+        'message' => $statusMessage,
+        'migrations' => $migrations,
+        'errors' => $errors,
+      ];
+      return response()->json($response);
     } catch (\Throwable $th) {
-      return response()->json(['error' => 'An unexpected error occurred: ' . $th->getMessage()], 500);
+      return response()->json(['error' => 'An unexpected error occurred: ' . $th->getMessage(), 'file' => $th->getFile(), 'line' => $th->getLine()], 500);
     }
   }
 }
