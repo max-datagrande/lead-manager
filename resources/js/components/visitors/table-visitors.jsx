@@ -97,9 +97,9 @@ export const TableVisitors = ({ entries, meta, data }) => {
       </div>
       <div className="relative overflow-hidden rounded-md border">
         {isLoading && (
-          <div className="absolute top-0 right-0 bottom-0 left-0 z-10 flex h-full w-full items-center justify-center bg-white">
+          <div className="absolute top-0 right-0 bottom-0 left-0 z-10 flex h-full w-full items-center justify-center bg-background">
             <div className="flex items-center justify-center space-x-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-gray-900"></div>
+              <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-foreground"></div>
               <span>Loading...</span>
             </div>
           </div>
@@ -111,9 +111,7 @@ export const TableVisitors = ({ entries, meta, data }) => {
           </TableBody>
         </Table>
       </div>
-      {!isLoading && (
-        <DataTablePagination table={table} />
-      )}
+      {!isLoading && <DataTablePagination table={table} />}
     </>
   );
 };

@@ -142,19 +142,20 @@ export function DateRangePicker({
 
   // LOG DE CAMBIOS EN FORMATO UTC
   useEffect(() => {
+    if (!range.from) {
+      console.log('--- Estado Inicial / Reset (Sin selección) ---');
+      return;
+    }
     if (range.from) {
       console.log('--- Cambio de Fecha (UTC) ---');
-      console.log('Desde:', range.from.toISOString());
-      if (range.to) {
-        console.log('Hasta:', range.to.toISOString());
-      } else {
-        console.log('Hasta: Selección pendiente...');
-      }
-    } else {
-        console.log('--- Estado Inicial / Reset (Sin selección) ---');
+      const fromMessage = formatDateLabel(range.from, locale);
+      const toMessage = range.to ? formatDateLabel(range.to, locale) : 'Selección pendiente...';
+      console.log(`Desde: ${fromMessage}`);
+      console.log(`Hasta: ${toMessage}`);
     }
   }, [range]);
 
+  /* use effect para detectar cambios en el tamaño de la pantalla */
   useEffect(() => {
     setIsSmallScreen(window.innerWidth < 960)
     const handleResize = (): void => { setIsSmallScreen(window.innerWidth < 960) }
@@ -162,6 +163,7 @@ export function DateRangePicker({
     return () => { window.removeEventListener('resize', handleResize) }
   }, [])
 
+  /* useEffect para resetear los valores cuando se activa el reset interna o externamente */
   useEffect(() => {
     if (isReset) {
       setIsPlaceholderActive(true);
@@ -350,7 +352,7 @@ export function DateRangePicker({
               </div>
               { isSmallScreen && (
                 <Select defaultValue={selectedPreset} onValueChange={(value) => { setPreset(value) }}>
-                  <SelectTrigger className="w-[180px] mx-auto mb-2">
+                  <SelectTrigger className="w-full mx-auto mb-2">
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -362,12 +364,13 @@ export function DateRangePicker({
                   </SelectContent>
                 </Select>
               )}
-              <div>
+              <div className={cn(isSmallScreen ? 'w-full mx-auto' : '')}>
                 <Calendar
                   mode="range"
                   onSelect={(value: any) => { if (value?.from != null) { setIsPlaceholderActive(false); setRange({ from: value.from, to: value?.to }) } }}
                   selected={range}
                   numberOfMonths={isSmallScreen ? 1 : 2}
+                  className={cn(isSmallScreen ? 'w-full' : '')}
                   defaultMonth={
                     new Date(
                       new Date().setMonth(
