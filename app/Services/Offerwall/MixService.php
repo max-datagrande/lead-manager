@@ -238,7 +238,7 @@ class MixService
     return $payloadArray;
   }
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, string $payload): void
+  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, array $payload): void
   {
     $isResponse = $response instanceof Response;
     $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
@@ -270,7 +270,7 @@ class MixService
       'request_url' => $requestUrl,
       'request_method' => strtoupper($method),
       'request_headers' => $headers,
-      'request_payload' => json_decode($payload, true) ?? ['raw_body' => $payload],
+      'request_payload' => $payload,
       'response_headers' => $isResponse ? $response->headers() : [],
       'response_body' => $responseBody,
     ]);
