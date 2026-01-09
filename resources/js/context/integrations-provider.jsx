@@ -76,6 +76,8 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
       },
     },
     request_mapping_config: integration?.request_mapping_config ?? {},
+    payload_transformer: integration?.payload_transformer ?? '',
+    use_custom_transformer: integration?.use_custom_transformer ?? false,
   });
 
   const handleEnvironmentChange = (env, field, value) => {
