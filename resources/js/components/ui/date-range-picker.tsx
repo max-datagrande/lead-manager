@@ -115,6 +115,13 @@ export function DateRangePicker({
     ? getDateAdjustedForTimezone(initialDateTo)
     : undefined;
 
+  const handleUpdate = (): void => {
+    setIsOpen(false);
+    if (!areRangesEqual(range, openedRangeRef.current ) || !areRangesEqual(rangeCompare, openedRangeCompareRef.current)) {
+      range.from && range.to ? setIsPlaceholderActive(false) : setIsPlaceholderActive(true);
+      onUpdate?.({ range, rangeCompare })
+    }
+  }
   const [isOpen, setIsOpen] = useState(false)
   const [range, setRange] = useState<DateRange>({
     from: getInitialFrom(),
@@ -134,7 +141,6 @@ export function DateRangePicker({
 
   const openedRangeRef = useRef<DateRange | undefined>(undefined)
   const openedRangeCompareRef = useRef<DateRange | undefined>(undefined)
-
   // Ahora el placeholder es activo si no hay fechas iniciales explícitas
   const [isPlaceholderActive, setIsPlaceholderActive] = useState(!hasInitialDates);
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(undefined)
@@ -286,7 +292,6 @@ export function DateRangePicker({
       modal={true}
       open={isOpen}
       onOpenChange={(open: boolean) => {
-        console.log('onOpenChange', open)
         /* if (!open) restoreToOpenedState() */
         setIsOpen(open)
       }}
@@ -402,7 +407,7 @@ export function DateRangePicker({
             </Button>
           )}
           <Button onClick={() => {/*  restoreToOpenedState(); */ setIsOpen(false); }} variant="ghost">Cancel</Button>
-          <Button onClick={() => { setIsOpen(false); if (!areRangesEqual(range, openedRangeRef.current) || !areRangesEqual(rangeCompare, openedRangeCompareRef.current)) { setIsPlaceholderActive(false); onUpdate?.({ range, rangeCompare }) } }}>Update</Button>
+          <Button onClick={handleUpdate}>Update</Button>
         </div>
       </PopoverContent>
     </Popover>
