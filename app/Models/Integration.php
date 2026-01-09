@@ -14,6 +14,8 @@ class Integration extends Model
     'is_active',
     'response_parser_config',
     'request_mapping_config',
+    'payload_transformer',
+    'use_custom_transformer',
     'user_id',
     'updated_user_id',
   ];
@@ -26,6 +28,7 @@ class Integration extends Model
   protected $casts = [
     'response_parser_config' => 'array',
     'request_mapping_config' => 'array',
+    'use_custom_transformer' => 'boolean',
   ];
 
   /**

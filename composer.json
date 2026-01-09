@@ -20,7 +20,8 @@
     "matthiasmullie/minify": "^1.3",
     "maxidev/tail-logger": "^1.0",
     "spatie/laravel-slack-alerts": "^1.7",
-    "tightenco/ziggy": "^2.4"
+    "tightenco/ziggy": "^2.4",
+    "twig/twig": "^3.22"
   },
   "require-dev": {
     "barryvdh/laravel-debugbar": "^3.16",
