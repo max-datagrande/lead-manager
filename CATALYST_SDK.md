@@ -5,15 +5,6 @@ Esta documentación detalla cómo integrar y utilizar el SDK de Catalyst en tus 
 ## 1. Instalación
 
 Inserta el siguiente snippet en el `<head>` de tu HTML.
-
-```html
-<script src="https://tu-dominio.com/catalyst/engine.js?version=1.0"></script>
-```
-
-> **Nota:** El parámetro `landing_id` en la URL es opcional. La configuración del SDK se carga automáticamente desde el servidor.
-
-### Opción B: Carga Manual (Avanzado)
-Si prefieres tener control total y evitar el loader de Laravel (por ejemplo en frameworks como Astro, Next.js o sitios estáticos), puedes usar este snippet.
 > **Importante:** Al usar este método, debes configurar la URL de la API manualmente en el objeto `config`.
 > **Nota:** Si usas Astro, asegúrate de añadir el atributo `is:inline` a la etiqueta `<script>`.
 
@@ -27,7 +18,7 @@ Si prefieres tener control total y evitar el loader de Laravel (por ejemplo en f
       var a=arguments;
       return new Promise(function(resolve, reject){
         w.Catalyst._q.push([m, a, resolve, reject]);
-      });
+      })
     };
   });
   // Proxy para métodos void
@@ -210,3 +201,11 @@ El SDK capturará el error internamente y lo mostrará en la consola si `debug: 
 
 ### ¿Dónde veo los logs de depuración?
 Asegúrate de pasar `{ debug: true }` en el segundo argumento de la configuración inicial del loader. Esto imprimirá en la consola del navegador cada evento disparado y cada respuesta de la API.
+
+### ¿La visita se registra inmediatamente?
+**Sí.** Tan pronto como el snippet se carga en el navegador, el SDK contacta a la API para registrar la visita (o recuperar la sesión existente) e inicializar el seguimiento. Esto sucede automáticamente antes de que se dispare el evento `ready`.
+
+### ¿Debo registrar el lead automáticamente al cargar la página?
+Por lo general, **NO**. El registro de un lead debe ser una acción voluntaria del usuario, como hacer clic en un botón de "Enviar" o "Registrarme".
+
+**Excepción:** En Landing Pages "All-in-One" o flujos donde el objetivo es mostrar un Offerwall inmediatamente, puedes registrar el lead al inicio (dentro del evento `ready`) para desbloquear las ofertas de inmediato.
