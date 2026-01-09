@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
 use App\Services\IntegrationService;
 use Throwable;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\TwigFunction;
 
 class MixService
 {
@@ -66,21 +69,21 @@ class MixService
             continue;
           }
 
-          $template = $prodEnv->request_body ?? '';
-          $mappingConfig = $integration->request_mapping_config ?? [];
-          $payload = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
+          $payloadArray = $this->preparePayload($integration, $leadData, $prodEnv);
           $method = strtolower($prodEnv->method ?? 'post');
+
+          $mappingConfig = $integration->request_mapping_config ?? [];
           $headersParsed = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
           $headers = json_decode($headersParsed, true) ?? [];
           $url = $prodEnv->url;
-          $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
+          $requestsData[$integration->id] = compact('integration', 'url', 'payloadArray', 'method', 'headers');
         }
 
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
             $headers = $data['headers'];
-            $payloadArray = json_decode($data['payload'], true) ?? [];
+            $payloadArray = $data['payloadArray'];
             $method = $data['method'];
             $request = $pool->as($integrationId)->withHeaders($headers);
             $request->{$method}($url, $payloadArray);
@@ -97,7 +100,7 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
+          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payloadArray']);
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
             $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
@@ -184,7 +187,56 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
+  private function preparePayload($integration, array $leadData, $prodEnv): array
+  {
+    $template = $prodEnv->request_body ?? '';
+    $mappingConfig = $integration->request_mapping_config ?? [];
 
+    // 1. Initial replacement using IntegrationService
+    $payloadString = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
+    $payloadArray = json_decode($payloadString, true) ?? [];
+
+    // 2. Custom transformation using Twig
+    if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
+      try {
+        $loader = new ArrayLoader([
+          'index.html' => $integration->payload_transformer,
+        ]);
+        $twig = new Environment($loader);
+
+        // Add helper function to output JSON easily
+        $twig->addFunction(new TwigFunction('output_json', function ($data) {
+            return json_encode($data);
+        }, ['is_safe' => ['html']]));
+
+        // Pass the already processed payload as 'data'
+        $rendered = $twig->render('index.html', ['data' => $payloadArray]);
+
+        // Attempt to decode the result
+        $transformed = json_decode($rendered, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+          return $transformed;
+        }
+
+        // If the result is not a JSON, we might have an issue if the HTTP client expects an array.
+        // For now, if decoding fails, we assume it might be because the user wants to return an array structure directly
+        // (which Twig can't easily output as PHP array, it outputs string).
+        // So we assume the user's Twig template outputs JSON string.
+
+        // Log warning?
+      } catch (Throwable $e) {
+        // Log the error but return the original payload so the flow doesn't break completely
+        // Or maybe we should break? The user expects transformation.
+        // Let's log it.
+        TailLogger::saveLog('Twit payload transformation failed', 'offerwall/mix-service', 'error', [
+          'integration_id' => $integration->id,
+          'error' => $e->getMessage()
+        ]);
+      }
+    }
+
+    return $payloadArray;
+  }
 
   private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, string $payload): void
   {

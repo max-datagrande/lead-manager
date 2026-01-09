@@ -52,7 +52,6 @@ class MixController extends Controller
         }
 
         $this->leadService->processLeadFields($lead, $fields);
-
         if ($lead->wasRecentlyCreated) {
           $this->leadService->logLeadSuccess($lead);
         } else {

@@ -10,6 +10,7 @@ import { EnvironmentTab } from './enviroments-tab';
 import { MappingConfigurator } from './mapping-configurator';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { TokenInserter } from './token-inserter';
+import PayloadEditor from '@/components/forms/payload-editor';
 
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();
@@ -117,6 +118,29 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Custom Payload Transformer */}
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div className="space-y-1">
+            <CardTitle>Custom Payload Transformer</CardTitle>
+            <CardDescription>Use a Twig template to transform the payload before sending it.</CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Label htmlFor="use_custom_transformer">Enable</Label>
+            <Switch
+              id="use_custom_transformer"
+              checked={data.use_custom_transformer}
+              onCheckedChange={(checked: boolean) => setData('use_custom_transformer', checked)}
+            />
+          </div>
+        </CardHeader>
+        {data.use_custom_transformer && (
+          <CardContent>
+            <PayloadEditor code={data.payload_transformer} onChange={(value:string) => setData('payload_transformer', value)} />
+          </CardContent>
+        )}
+      </Card>
 
       {/* Production Payload Mapping - ONLY IN EDIT MODE */}
       {isEdit && (

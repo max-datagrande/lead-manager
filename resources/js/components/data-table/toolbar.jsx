@@ -71,19 +71,12 @@ export function DataTableToolbar({
             onUpdate={({ range: { from, to } }) => {
               const currentFilters = table.getState().columnFilters;
               const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
-              // Si es el mismo día, ajustar 'to' al final del día
-              const adjustedTo =
-                from.toDateString() === to.toDateString()
-                  ? new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1) // Agregar 24 horas menos 1ms
-                  : to;
-
-              const newFilters = [
-                ...otherFilters,
-                { id: 'from_date', value: from.toISOString() },
-                { id: 'to_date', value: adjustedTo.toISOString() },
-              ];
-              setReset(false);
-              table.setColumnFilters(newFilters);
+              const hasValidValues = from && to;
+              table.setColumnFilters(
+                !hasValidValues
+                  ? otherFilters
+                  : [...otherFilters, { id: 'from_date', value: from.toISOString() }, { id: 'to_date', value: to.toISOString() }],
+              );
             }}
             isReset={reset}
             align="end"

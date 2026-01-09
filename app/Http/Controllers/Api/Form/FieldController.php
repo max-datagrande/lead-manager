@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Form;
 use App\Http\Controllers\Controller;
 use App\Models\Field;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class FieldController extends Controller
@@ -71,9 +70,8 @@ class FieldController extends Controller
         return $field;
       }, $fieldsToInsert);
 
-      // Using PostgreSQL syntax from project context
-      DB::statement('TRUNCATE TABLE fields RESTART IDENTITY CASCADE');
-
+      //Truncate table
+      Field::truncate();
       Field::insert($processedFields);
 
       return response()->json(['message' => 'Fields synchronized successfully from production.']);

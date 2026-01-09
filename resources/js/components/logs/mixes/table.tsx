@@ -28,14 +28,14 @@ export const columns: ColumnDef<OfferwallMixLog>[] = [
     header: 'ID',
   },
   {
-      accessorKey: 'fingerprint',
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
-      cell: ({ row }) => {
-        return <FingerprintCell fingerprint={row.original.fingerprint} />;
-      },
-      enableSorting: false,
-      enableHiding: true,
+    accessorKey: 'fingerprint',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Short Fingerprint" />,
+    cell: ({ row }) => {
+      return <FingerprintCell fingerprint={row.original.fingerprint} />;
     },
+    enableSorting: false,
+    enableHiding: true,
+  },
   {
     accessorKey: 'offerwall_mix.name',
     header: 'Mix Name',
