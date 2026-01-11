@@ -227,14 +227,17 @@ class IntegrationService
         $value = json_encode($value);
       }
 
-      $replacements['{' . $tokenName . '}'] = (string) $value;
+      $replacements[$tokenName] = (string) $value;
     }
 
     if (empty($replacements)) {
       return $template;
     }
+    $processor = new \App\Services\PayloadProcessorService();
+    //$oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
 
-    return str_replace(array_keys($replacements), array_values($replacements), $template);
+    $processedTemplate = $processor->process($template, $replacements);
+    return $processedTemplate;
   }
 
   /**
