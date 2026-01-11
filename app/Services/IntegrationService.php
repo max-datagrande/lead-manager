@@ -281,8 +281,8 @@ class IntegrationService
     }
     $processor = new \App\Services\PayloadProcessorService();
     //$oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
-
     $processedTemplate = $processor->process($template, $replacements);
+
     return $processedTemplate;
   }
 
