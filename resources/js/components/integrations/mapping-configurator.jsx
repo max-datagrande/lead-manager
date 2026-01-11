@@ -4,9 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowRightLeft, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { ValueMappingModal } from './value-mapping-modal';
-import { Fragment } from 'react';
 
 export function MappingConfigurator({ parsers = {}, onParserChange, fields = [], onRemoveToken }) {
   const tokens = Object.keys(parsers);
@@ -39,7 +38,7 @@ export function MappingConfigurator({ parsers = {}, onParserChange, fields = [],
   };
 
   return (
-    <div className="grid grid-cols-[auto_auto_1fr] items-end gap-4">
+    <div className="grid grid-cols-[auto_auto_1fr] items-start gap-4">
       {tokens.map((token) => {
         const field = fields.find((f) => f.name === token);
         const hasPossibleValues = field && field.possible_values && field.possible_values.length > 0;

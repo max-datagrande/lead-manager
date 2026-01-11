@@ -150,7 +150,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
             <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
             <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
           </CardHeader>
-          <CardContent className="max-h-[400px] overflow-auto">
+          <CardContent>
             <MappingConfigurator
               parsers={data.request_mapping_config}
               onParserChange={handleMappingChange}

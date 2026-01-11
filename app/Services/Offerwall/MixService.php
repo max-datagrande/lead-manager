@@ -211,9 +211,9 @@ class MixService
 
         // Pass the already processed payload as 'data'
         $rendered = $twig->render('index.html', ['data' => $payloadArray]);
-
         // Attempt to decode the result
         $transformed = json_decode($rendered, true);
+
         if (json_last_error() === JSON_ERROR_NONE) {
           return $transformed;
         }
@@ -234,7 +234,6 @@ class MixService
         ]);
       }
     }
-
     return $payloadArray;
   }
 
