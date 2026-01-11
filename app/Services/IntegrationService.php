@@ -37,6 +37,8 @@ class IntegrationService
       'environments' => 'required|array|size:2',
       'environments.development.url' => 'required|url',
       'environments.production.url' => 'required|url',
+      'payload_transformer' => 'nullable|string',
+      'use_custom_transformer' => 'nullable|boolean',
     ]);
 
     if ($validator->fails()) {
@@ -54,6 +56,8 @@ class IntegrationService
         'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
+        'payload_transformer' => $data['payload_transformer'] ?? null,
+        'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {
@@ -67,7 +71,6 @@ class IntegrationService
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
       }
-
       return $integration;
     });
   }
@@ -96,6 +99,8 @@ class IntegrationService
       'environments' => 'required|array|size:2',
       'environments.development.url' => 'required|url',
       'environments.production.url' => 'required|url',
+      'payload_transformer' => 'nullable|string',
+      'use_custom_transformer' => 'nullable|boolean',
     ]);
 
     if ($validator->fails()) {
@@ -113,6 +118,8 @@ class IntegrationService
         'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
+        'payload_transformer' => $data['payload_transformer'] ?? null,
+        'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {

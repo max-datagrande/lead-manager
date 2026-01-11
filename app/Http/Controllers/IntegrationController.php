@@ -58,7 +58,8 @@ class IntegrationController extends Controller
   public function store(Request $request)
   {
     try {
-      $this->integrationService->createIntegration($request->all());
+      $data = $request->all();
+      $this->integrationService->createIntegration($data);
       add_flash_message(type: "success", message: "Integration created successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
@@ -95,7 +96,8 @@ class IntegrationController extends Controller
   public function update(Request $request, Integration $integration)
   {
     try {
-      $this->integrationService->updateIntegration($integration, $request->all());
+      $data = $request->all();
+      $this->integrationService->updateIntegration($integration, $data);
       add_flash_message(type: "success", message: "Integration updated successfully.");
       return back();
     } catch (IntegrationServiceException $e) {
