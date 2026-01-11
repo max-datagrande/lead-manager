@@ -213,7 +213,6 @@ class MixService
         $rendered = $twig->render('index.html', ['data' => $payloadArray]);
         // Attempt to decode the result
         $transformed = json_decode($rendered, true);
-        dd($transformed);
 
         if (json_last_error() === JSON_ERROR_NONE) {
           return $transformed;
