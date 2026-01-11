@@ -156,6 +156,45 @@ class IntegrationService
   }
 
   /**
+   * Duplicate an integration.
+   */
+  public function duplicateIntegration(Integration $integration)
+  {
+    $integration->load('environments');
+
+    $data = [
+      'name' => $integration->name . ' (Copy)',
+      'type' => $integration->type,
+      'is_active' => false, // Set to inactive by default for safety
+      'company_id' => $integration->company_id,
+      'response_parser_config' => $integration->response_parser_config,
+      'request_mapping_config' => $integration->request_mapping_config,
+      'payload_transformer' => $integration->payload_transformer,
+      'use_custom_transformer' => $integration->use_custom_transformer,
+      'environments' => [],
+    ];
+
+    foreach ($integration->environments as $env) {
+      $headers = json_decode($env->request_headers, true) ?? [];
+      $formattedHeaders = [];
+      foreach ($headers as $key => $value) {
+        $formattedHeaders[] = ['key' => $key, 'value' => $value];
+      }
+
+      $data['environments'][$env->environment] = [
+        'url' => $env->url,
+        'method' => $env->method,
+        'request_headers' => $formattedHeaders,
+        'request_body' => $env->request_body,
+        'content_type' => $env->content_type,
+        'authentication_type' => $env->authentication_type,
+      ];
+    }
+
+    return $this->createIntegration($data);
+  }
+
+  /**
    * Test an integration environment connection.
    */
   public function testIntegrationEnvironment(IntegrationEnvironment $environment)
