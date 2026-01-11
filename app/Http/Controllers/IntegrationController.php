@@ -124,10 +124,11 @@ class IntegrationController extends Controller
   /**
    * Duplicate the specified resource.
    */
-  public function duplicate(Integration $integration)
+  public function duplicate(Request $request, Integration $integration)
   {
     try {
-      $this->integrationService->duplicateIntegration($integration);
+      $newName = $request->input('name');
+      $this->integrationService->duplicateIntegration($integration, $newName);
       add_flash_message(type: "success", message: "Integration duplicated successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {

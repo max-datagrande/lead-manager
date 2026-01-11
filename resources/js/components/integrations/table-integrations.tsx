@@ -22,7 +22,7 @@ export function TableIntegrations({ entries }) {
   const {
     props: { state },
   } = usePage<IntegrationsPageData>();
-  const { confirm } = useModal();
+  const { confirm, prompt } = useModal();
   const { sort } = state;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -54,16 +54,18 @@ export function TableIntegrations({ entries }) {
   };
 
   const confirmDuplicate = async (integrationToDuplicate: any) => {
-    const confirmed = await confirm({
+    const newName = await prompt({
       title: 'Duplicate Integration',
-      description: `Are you sure you want to duplicate "${integrationToDuplicate.name}"? This action will create a new integration with the same configuration.`,
+      description: `Enter a name for the duplicated integration.`,
+      defaultValue: `${integrationToDuplicate.name} (Copy)`,
       confirmText: 'Duplicate',
       cancelText: 'Cancel',
-      destructive: false,
     });
 
-    if (confirmed) {
+    if (newName) {
       router.post(route('integrations.duplicate', integrationToDuplicate.id), {
+        name: newName,
+      }, {
         preserveState: true,
         preserveScroll: true,
       });

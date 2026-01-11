@@ -158,12 +158,12 @@ class IntegrationService
   /**
    * Duplicate an integration.
    */
-  public function duplicateIntegration(Integration $integration)
+  public function duplicateIntegration(Integration $integration, ?string $newName = null)
   {
     $integration->load('environments');
 
     $data = [
-      'name' => $integration->name . ' (Copy)',
+      'name' => $newName ?? ($integration->name . ' (Copy)'),
       'type' => $integration->type,
       'is_active' => false, // Set to inactive by default for safety
       'company_id' => $integration->company_id,
