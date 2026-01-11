@@ -12,7 +12,7 @@ const ShowIntegration = ({ integration }: Props) => {
   return (
     <>
       <Head title={`Integration | ${integration.id}`} />
-      <div className="relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div className="relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader
           smallText={`Integration ID: ${integration.id} - Type: ${integration.type}`}
           title={integration.name}

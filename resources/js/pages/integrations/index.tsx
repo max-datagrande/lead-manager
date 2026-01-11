@@ -33,7 +33,7 @@ const Index = ({ rows }: IndexProps) => {
   return (
     <>
       <Head title="Integrations" />
-      <div id="holasdf" className="relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div id="holasdf" className="relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Integrations" description="Manage integrations and their environments.">
           <IntegrationPrimaryButtons />
         </PageHeader>
