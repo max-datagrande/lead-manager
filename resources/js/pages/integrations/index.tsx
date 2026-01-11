@@ -82,12 +82,6 @@ const IntegrationPrimaryButtons = () => {
   return (
     <div className="flex justify-end gap-2">
       {/* Create */}
-      <Link href={route('integrations.create')}>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Integration
-        </Button>
-      </Link>
       {isLocalEnv && (
         <>
           <Button onClick={confirmSync} variant="outline" className="flex items-center gap-2">
@@ -96,6 +90,12 @@ const IntegrationPrimaryButtons = () => {
           </Button>
         </>
       )}
+      <Link href={route('integrations.create')}>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add Integration
+        </Button>
+      </Link>
     </div>
   );
 };
