@@ -122,6 +122,21 @@ class IntegrationController extends Controller
   }
 
   /**
+   * Duplicate the specified resource.
+   */
+  public function duplicate(Integration $integration)
+  {
+    try {
+      $this->integrationService->duplicateIntegration($integration);
+      add_flash_message(type: "success", message: "Integration duplicated successfully.");
+      return redirect()->route('integrations.index');
+    } catch (IntegrationServiceException $e) {
+      add_flash_message(type: "error", message: $e->getMessage());
+      return back();
+    }
+  }
+
+  /**
    * Test an integration environment connection.
    */
   public function test(Integration $integration, IntegrationEnvironment $environment)
