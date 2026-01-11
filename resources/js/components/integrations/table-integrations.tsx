@@ -22,7 +22,7 @@ export function TableIntegrations({ entries }) {
   const {
     props: { state },
   } = usePage<IntegrationsPageData>();
-  const modal = useModal();
+  const { confirm } = useModal();
   const { sort } = state;
   const [sorting, setSorting] = useState(sort ? getSortState(sort) : []);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -38,7 +38,7 @@ export function TableIntegrations({ entries }) {
   ).map((name) => ({ label: name, value: name }));
 
   const showDeleteModal = async (integrationToDelete: any) => {
-    const confirmed = await modal.confirm({
+    const confirmed = await confirm({
       title: 'Delete Integration',
       description: `Are you sure you want to delete "${integrationToDelete.name}"? This action cannot be undone.`,
       confirmText: 'Delete',
@@ -47,6 +47,23 @@ export function TableIntegrations({ entries }) {
     });
     if (confirmed) {
       router.delete(route('integrations.destroy', integrationToDelete.id), {
+        preserveState: true,
+        preserveScroll: true,
+      });
+    }
+  };
+
+  const confirmDuplicate = async (integrationToDuplicate: any) => {
+    const confirmed = await confirm({
+      title: 'Duplicate Integration',
+      description: `Are you sure you want to duplicate "${integrationToDuplicate.name}"? This action will create a new integration with the same configuration.`,
+      confirmText: 'Duplicate',
+      cancelText: 'Cancel',
+      destructive: false,
+    });
+
+    if (confirmed) {
+      router.post(route('integrations.duplicate', integrationToDuplicate.id), {
         preserveState: true,
         preserveScroll: true,
       });
@@ -74,6 +91,7 @@ export function TableIntegrations({ entries }) {
     globalFilterFn: 'includesString',
     meta: {
       showDeleteModal,
+      confirmDuplicate,
     },
   });
 
