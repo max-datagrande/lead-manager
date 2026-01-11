@@ -2,7 +2,16 @@ import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
-import { Edit, Eye, Trash2 } from 'lucide-react';
+import { BookCopy, Cog, Edit, Eye, Trash2 } from 'lucide-react';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
@@ -29,9 +38,9 @@ const TypeBadge = ({ type }: { type: Integration['type'] }) => {
   return <Badge className={`${typeClasses[type]} text-white`}>{type}</Badge>;
 };
 
-const ActionsCell = ({ row, table }: { row: { original: Integration }, table: any }) => {
+const ActionsCell = ({ row, table }: { row: { original: Integration }; table: any }) => {
   const integration = row.original;
-  const { showDeleteModal } = table.options.meta;
+  const { showDeleteModal, confirmDuplicate } = table.options.meta;
 
   return (
     <div className="flex items-center gap-2">
@@ -45,14 +54,27 @@ const ActionsCell = ({ row, table }: { row: { original: Integration }, table: an
           <Edit className="h-4 w-4" />
         </Button>
       </Link>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(integration)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      {/* Collapse */}
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" aria-label="Open menu" size="sm">
+            <Cog className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-40" align="end">
+          <DropdownMenuLabel>Other Actions</DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuItem className="cursor-pointer" onSelect={() => confirmDuplicate(integration)}>
+              <BookCopy className="h-4" />
+              <span className="leading-none">Duplicate</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" className="cursor-pointer" onSelect={() => showDeleteModal(integration)}>
+              <Trash2 className="h-4 mb-[1px]" />
+              <span className="leading-none">Delete</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
@@ -74,11 +96,7 @@ export const columns = [
     id: 'company',
     accessorKey: 'company.name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
-    cell: ({ row }) => (
-      <div className="px-2 whitespace-nowrap">
-        {row.original.company?.name || 'N/A'}
-      </div>
-    ),
+    cell: ({ row }) => <div className="px-2 whitespace-nowrap">{row.original.company?.name || 'N/A'}</div>,
     filterFn: (row, id, value) => {
       const companyName = row.original.company?.name || '';
       return value.includes(companyName);

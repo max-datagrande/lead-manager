@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   //Integrations
   Route::post('integrations/{integration}/environments/{environment}/test', [IntegrationController::class, 'test'])->name('integrations.test');
+  Route::post('integrations/{integration}/duplicate', [IntegrationController::class, 'duplicate'])->name('integrations.duplicate');
   Route::resource('integrations', IntegrationController::class);
 
   //Offerwalls

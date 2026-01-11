@@ -58,7 +58,8 @@ class IntegrationController extends Controller
   public function store(Request $request)
   {
     try {
-      $this->integrationService->createIntegration($request->all());
+      $data = $request->all();
+      $this->integrationService->createIntegration($data);
       add_flash_message(type: "success", message: "Integration created successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
@@ -95,7 +96,8 @@ class IntegrationController extends Controller
   public function update(Request $request, Integration $integration)
   {
     try {
-      $this->integrationService->updateIntegration($integration, $request->all());
+      $data = $request->all();
+      $this->integrationService->updateIntegration($integration, $data);
       add_flash_message(type: "success", message: "Integration updated successfully.");
       return back();
     } catch (IntegrationServiceException $e) {
@@ -112,6 +114,22 @@ class IntegrationController extends Controller
     try {
       $this->integrationService->deleteIntegration($integration);
       add_flash_message(type: "success", message: "Integration deleted successfully.");
+      return redirect()->route('integrations.index');
+    } catch (IntegrationServiceException $e) {
+      add_flash_message(type: "error", message: $e->getMessage());
+      return back();
+    }
+  }
+
+  /**
+   * Duplicate the specified resource.
+   */
+  public function duplicate(Request $request, Integration $integration)
+  {
+    try {
+      $newName = $request->input('name');
+      $this->integrationService->duplicateIntegration($integration, $newName);
+      add_flash_message(type: "success", message: "Integration duplicated successfully.");
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
       add_flash_message(type: "error", message: $e->getMessage());

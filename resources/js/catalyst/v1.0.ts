@@ -363,7 +363,7 @@ class CatalystCore {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
     }
 
-    const payload = {
+    const payload : Record<string, any> = {
       fingerprint,
       placement,
       ...data,

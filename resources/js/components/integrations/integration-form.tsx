@@ -137,7 +137,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         </CardHeader>
         {data.use_custom_transformer && (
           <CardContent>
-            <PayloadEditor code={data.payload_transformer} onChange={(value:string) => setData('payload_transformer', value)} />
+            <PayloadEditor code={data.payload_transformer} onChange={(value: string) => setData('payload_transformer', value)} />
           </CardContent>
         )}
       </Card>
@@ -150,7 +150,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
             <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
             <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
           </CardHeader>
-          <CardContent>
+          <CardContent className="max-h-[400px] overflow-auto">
             <MappingConfigurator
               parsers={data.request_mapping_config}
               onParserChange={handleMappingChange}
