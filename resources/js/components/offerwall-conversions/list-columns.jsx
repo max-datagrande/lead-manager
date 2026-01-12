@@ -1,5 +1,6 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { FingerprintCell } from '@/components/visitors';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
 export const columns = [
   {
@@ -14,10 +15,9 @@ export const columns = [
   {
     accessorKey: 'integration.id',
     id: 'integration.id',
-    header: 'Integration',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Integration" />,
     cell: ({ row }) => {
-      console.log(row.original);
-      return <div className="text-right font-medium">{row.original.integration.name}</div>;
+      return <div className="font-medium">{row.original.integration.name}</div>;
     },
     enableSorting: true,
     enableHiding: true,
@@ -25,43 +25,42 @@ export const columns = [
   {
     accessorKey: 'integration.company.id',
     id: 'integration.company.id',
-    header: 'Company',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
     cell: ({ row }) => {
-      console.log(row.original);
-      return <div className="text-right font-medium">{row.original.integration.company.name}</div>;
+      return <div className="font-medium">{row.original.integration.company.name}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'pathname',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Pathname" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.pathname}</div>;
     },
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'amount',
-    header: () => <div className="text-right">Payout</div>,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue('amount'));
       const formatted = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
       }).format(amount);
-      return <div className="text-right font-medium">{formatted}</div>;
+      return <div className="font-medium">{formatted}</div>;
     },
   },
   {
-    accessorKey: 'click_id',
-    header: 'Click ID',
-  },
-  {
     accessorKey: 'created_at',
-    header: 'Date',
-    cell: ({ row }) => new Date(row.getValue('created_at')).toLocaleDateString(),
-  },
-  // Example for an actions column, can be implemented later
-  // {
-  //     id: 'actions',
-  //     cell: ({ row }) => {
-  //         const conversion = row.original;
-  //         return (
-  //             <button onClick={() => handleViewDetails(conversion.id)}>View</button>
-  //         );
-  //     },
-  // },
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
+    cell: ({ row }) => (
+      <div className="text-sm">
+        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
+        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
+      </div>
+    ),
+  }
 ];

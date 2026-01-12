@@ -60,9 +60,9 @@ class OfferwallController extends Controller
     foreach ($columnFilters as $filter) {
       if (isset($filter['id']) && isset($filter['value'])) {
         if ($filter['id'] === 'from_date') {
-          $query->whereDate('created_at', '>=', $filter['value']);
+          $query->where('created_at', '>=', $filter['value']);
         } elseif ($filter['id'] === 'to_date') {
-          $query->whereDate('created_at', '<=', $filter['value']);
+          $query->where('created_at', '<=', $filter['value']);
         } elseif ($filter['id'] === 'integration.id') {
           $query->whereIn('integration_id', (array) $filter['value']);
         } elseif ($filter['id'] === 'integration.company.id') {
@@ -70,13 +70,11 @@ class OfferwallController extends Controller
             $q->whereIn('company_id', (array) $filter['value']);
           });
         }
-        // Add more specific column filters here if needed
       }
     }
 
     // Calculate total payout on the filtered query
     $totalPayout = $query->sum('amount');
-
     // Apply sorting
     $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
@@ -100,6 +98,15 @@ class OfferwallController extends Controller
         return ['value' => (string) $integration->company_id, 'label' => $integration->company->name];
       })
       ->values();
+    //Paths
+    $paths = OfferwallConversion::select('pathname')
+      ->distinct()
+      ->whereNotNull('pathname')
+      ->orderBy('pathname')
+      ->pluck('pathname')
+      ->map(function ($pathname) {
+        return ['value' => $pathname, 'label' => $pathname];
+      });
 
     $state =  [
       'filters' => $columnFilters,
@@ -118,6 +125,7 @@ class OfferwallController extends Controller
       'data' => [
         'integrations' => $integrations,
         'companies' => $companies,
+        'paths' => $paths,
       ],
       'totalPayout' => $totalPayout,
     ]);
