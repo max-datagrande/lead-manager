@@ -415,6 +415,7 @@ class CatalystCore {
 
     const payload: OfferwallConversionRequest = {
       fingerprint: this.visitorData.fingerprint,
+      pathname: window.location.pathname,
       ...data,
     };
 

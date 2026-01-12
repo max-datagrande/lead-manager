@@ -34,7 +34,14 @@ class EventController extends Controller
   public function handleOfferwallConversion(Request $request): JsonResponse
   {
     try {
-      $conversion = $this->conversionService->createConversion($request->all());
+      $data = $request->validate([
+        'offer_token' => 'required|string',
+        'integration_id' => 'required|integer|exists:integrations,id',
+        'amount' => 'required|numeric|min:0',
+        'fingerprint' => 'required|string',
+        'pathname' => 'nullable|string',
+      ]);
+      $conversion = $this->conversionService->createConversion($data);
 
       return new JsonResponse([
         'status' => 'success',

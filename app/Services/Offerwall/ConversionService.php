@@ -54,7 +54,11 @@ class ConversionService
               if ($integration) {
                 // Trust the token for integration and company
                 $integrationId = $integration->id;
-
+                $parserConfig = $integration->response_parser_config;
+                $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+                $offers = data_get($callLog->response_body, $pathOfOffers);
+                /*
+                Deprecated because we need the raw original response, not parsed.
                 // Re-parse to get the clean list exactly as it was presented
                 $parsedOffers = $this->integrationService->parseOfferwallResponse($callLog->response_body, $integration);
 
@@ -62,10 +66,10 @@ class ConversionService
                 // BUT WAIT: In MixService, we generate tokens BEFORE sorting or AFTER?
                 // MixService: parse -> enrich (tokens generated here with index 0,1,2...) -> merge -> sort.
                 // The token contains the index relative to THAT INTEGRATION'S response list (before merge/sort).
-                // So $parsedOffers[index] is correct regardless of global sorting.
+                // So $parsedOffers[index] is correct regardless of global sorting. */
 
-                if (isset($parsedOffers[$offerIndex])) {
-                  $offerData = $parsedOffers[$offerIndex];
+                if (isset($offers[$offerIndex])) {
+                  $offerData = $offers[$offerIndex];
                 }
               }
             }
@@ -85,6 +89,7 @@ class ConversionService
         'utm_medium' => $data['utm_medium'] ?? null,
         'offerwall_mix_log_id' => $mixLogId,
         'offer_data' => $offerData ?: null,
+        'pathname' => $data['pathname'] ?? null,
       ];
 
       $conversion = OfferwallConversion::create($createData);

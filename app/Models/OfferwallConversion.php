@@ -23,6 +23,7 @@ class OfferwallConversion extends Model
         'utm_medium',
         'offerwall_mix_log_id',
         'offer_data',
+        'pathname',
     ];
 
     /**
