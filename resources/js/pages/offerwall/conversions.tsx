@@ -75,7 +75,16 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
           toolbarConfig={{
             searchPlaceholder: 'Search visitors...',
             filters: [
-
+              {
+                columnId: 'integration.id',
+                title: 'Integration',
+                options: data.integrations,
+              },
+              {
+                columnId: 'integration.company.id',
+                title: 'Company',
+                options: data.companies,
+              },
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
           }}

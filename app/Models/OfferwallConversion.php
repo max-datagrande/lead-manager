@@ -43,12 +43,4 @@ class OfferwallConversion extends Model
     {
         return $this->belongsTo(Integration::class);
     }
-
-    /**
-     * Get the company that owns the conversion.
-     */
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
 }

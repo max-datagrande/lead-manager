@@ -40,7 +40,7 @@ class OfferwallController extends Controller
    */
   public function conversions(Request $request)
   {
-    $query = OfferwallConversion::with(['integration', 'company']);
+    $query = OfferwallConversion::with(['integration.company']);
 
     // Apply global search filter
     if ($search = $request->input('search')) {
@@ -63,8 +63,12 @@ class OfferwallController extends Controller
           $query->whereDate('created_at', '>=', $filter['value']);
         } elseif ($filter['id'] === 'to_date') {
           $query->whereDate('created_at', '<=', $filter['value']);
-        } elseif ($filter['id'] === 'integration_id') {
+        } elseif ($filter['id'] === 'integration.id') {
           $query->whereIn('integration_id', (array) $filter['value']);
+        } elseif ($filter['id'] === 'integration.company.id') {
+          $query->whereHas('integration', function ($q) use ($filter) {
+            $q->whereIn('company_id', (array) $filter['value']);
+          });
         }
         // Add more specific column filters here if needed
       }
@@ -86,6 +90,16 @@ class OfferwallController extends Controller
     $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
       return ['value' => (string) $integration->id, 'label' => $integration->name];
     });
+    //Company
+    $companies = Integration::with('company')
+      ->where('type', 'offerwall')
+      ->whereNotNull('company_id')
+      ->get()
+      ->unique('company_id')
+      ->map(function ($integration) {
+        return ['value' => (string) $integration->company_id, 'label' => $integration->company->name];
+      })
+      ->values();
 
     $state =  [
       'filters' => $columnFilters,
@@ -103,6 +117,7 @@ class OfferwallController extends Controller
       ],
       'data' => [
         'integrations' => $integrations,
+        'companies' => $companies,
       ],
       'totalPayout' => $totalPayout,
     ]);

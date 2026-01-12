@@ -12,8 +12,26 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'integration.name',
+    accessorKey: 'integration.id',
+    id: 'integration.id',
     header: 'Integration',
+    cell: ({ row }) => {
+      console.log(row.original);
+      return <div className="text-right font-medium">{row.original.integration.name}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'integration.company.id',
+    id: 'integration.company.id',
+    header: 'Company',
+    cell: ({ row }) => {
+      console.log(row.original);
+      return <div className="text-right font-medium">{row.original.integration.company.name}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
   },
   {
     accessorKey: 'amount',
