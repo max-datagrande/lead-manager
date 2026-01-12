@@ -7,7 +7,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { DatatablePageProps, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { route } from 'ziggy-js';
+import { router } from '@inertiajs/react';
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
@@ -42,12 +42,21 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
   });
   const { isLoading } = table;
 
+  const handleExport = () => {
+    /* table.setGlobalFilter('export', true);
+    table.reload(); */
+  };
+
+  const handleRefresh = () => {
+    router.reload();
+  };
+
   return (
     <OfferwallConversionsProvider initialState={state}>
       <Head title="Offerwall Conversions" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">
-          <OfferwallConversionsActions />
+          <OfferwallConversionsActions actions={{ export: handleExport, refresh: handleRefresh }} />
         </PageHeader>
         <OfferwallConversionsWidgets totalPayout={totalPayout} isLoading={isLoading} />
         <ServerTable
