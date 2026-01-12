@@ -45,10 +45,18 @@ class OfferwallConversion extends Model
     }
 
     /**
-     * Get the company that owns the conversion.
+     * Get the latest traffic log for the conversion fingerprint.
      */
-    public function company()
+    public function latestTrafficLog()
     {
-        return $this->belongsTo(Company::class);
+        return $this->hasOne(TrafficLog::class, 'fingerprint', 'fingerprint')->orderBy('visit_date', 'desc');
+    }
+
+    /**
+     * Get the lead associated with the conversion fingerprint.
+     */
+    public function lead()
+    {
+        return $this->hasOne(Lead::class, 'fingerprint', 'fingerprint');
     }
 }

@@ -13,8 +13,9 @@ return new class extends Migration
   {
     Schema::table('offerwall_conversions', function (Blueprint $table) {
       // Se usa string para permitir cualquier ruta, incluyendo '/'
-      $table->string('pathname')->nullable()->after('offer_data');
+      $table->string('pathname')->nullable()->after('offer_data')->index();
     });
+
   }
 
   /**

@@ -7,7 +7,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { DatatablePageProps, type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { route } from 'ziggy-js';
+import { router } from '@inertiajs/react';
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
@@ -30,6 +30,9 @@ interface IndexProps extends DatatablePageProps<Conversions> {
   data: {
     companies: Array<{ value: string; label: string }>;
     integrations: Array<{ value: string; label: string }>;
+    paths: Array<{ value: string; label: string }>;
+    hosts: Array<{ value: string; label: string }>;
+    cptypes: Array<{ value: string; label: string }>;
   };
 }
 
@@ -42,12 +45,21 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
   });
   const { isLoading } = table;
 
+  const handleExport = () => {
+    /* table.setGlobalFilter('export', true);
+    table.reload(); */
+  };
+
+  const handleRefresh = () => {
+    router.reload();
+  };
+
   return (
     <OfferwallConversionsProvider initialState={state}>
       <Head title="Offerwall Conversions" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">
-          <OfferwallConversionsActions />
+          <OfferwallConversionsActions actions={{ export: handleExport, refresh: handleRefresh }} />
         </PageHeader>
         <OfferwallConversionsWidgets totalPayout={totalPayout} isLoading={isLoading} />
         <ServerTable
@@ -66,7 +78,31 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
           toolbarConfig={{
             searchPlaceholder: 'Search visitors...',
             filters: [
-
+              {
+                columnId: 'integration',
+                title: 'Integration',
+                options: data.integrations,
+              },
+              {
+                columnId: 'company',
+                title: 'Company',
+                options: data.companies,
+              },
+              {
+                columnId: 'pathname',
+                title: 'Pathname',
+                options: data.paths,
+              },
+              {
+                columnId: 'host',
+                title: 'Host',
+                options: data.hosts,
+              },
+              {
+                columnId: 'cptype',
+                title: 'CPType',
+                options: data.cptypes,
+              }
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
           }}
