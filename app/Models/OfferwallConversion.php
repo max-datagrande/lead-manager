@@ -43,4 +43,20 @@ class OfferwallConversion extends Model
     {
         return $this->belongsTo(Integration::class);
     }
+
+    /**
+     * Get the latest traffic log for the conversion fingerprint.
+     */
+    public function latestTrafficLog()
+    {
+        return $this->hasOne(TrafficLog::class, 'fingerprint', 'fingerprint')->orderBy('visit_date', 'desc');
+    }
+
+    /**
+     * Get the lead associated with the conversion fingerprint.
+     */
+    public function lead()
+    {
+        return $this->hasOne(Lead::class, 'fingerprint', 'fingerprint');
+    }
 }

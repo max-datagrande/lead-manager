@@ -42,6 +42,24 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'host',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Host" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.host || '-'}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'cptype',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="CPType" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.cptype || '-'}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'amount',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row }) => {

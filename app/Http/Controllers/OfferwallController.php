@@ -40,7 +40,11 @@ class OfferwallController extends Controller
    */
   public function conversions(Request $request)
   {
-    $query = OfferwallConversion::with(['integration.company']);
+    $query = OfferwallConversion::with([
+      'integration.company',
+      'latestTrafficLog',
+      'lead.fields'
+    ]);
 
     // Apply global search filter
     if ($search = $request->input('search')) {
@@ -69,6 +73,17 @@ class OfferwallController extends Controller
           $query->whereHas('integration', function ($q) use ($filter) {
             $q->whereIn('company_id', (array) $filter['value']);
           });
+        } elseif ($filter['id'] === 'pathname') {
+          $query->whereIn('pathname', (array) $filter['value']);
+        } elseif ($filter['id'] === 'host') {
+          $query->whereHas('latestTrafficLog', function ($q) use ($filter) {
+            $q->whereIn('host', (array) $filter['value']);
+          });
+        } elseif ($filter['id'] === 'cptype') {
+          $query->whereHas('lead.fields', function ($q) use ($filter) {
+            $q->where('name', 'cptype')
+              ->whereIn('lead_field_responses.value', (array) $filter['value']);
+          });
         }
       }
     }
@@ -83,6 +98,18 @@ class OfferwallController extends Controller
     //Apply pagination
     $perPage = $request->input('per_page', 15);
     $conversions = $query->paginate($perPage)->withQueryString();
+
+    // Transform the collection to include host and cptype
+    $conversions->getCollection()->transform(function ($conversion) {
+      $conversion->host = $conversion->latestTrafficLog?->host;
+      $conversion->cptype = $conversion->lead?->fields->firstWhere('name', 'cptype')?->pivot?->value;
+
+      // Clean up relationships to keep response light
+      unset($conversion->latestTrafficLog);
+      unset($conversion->lead);
+
+      return $conversion;
+    });
 
     // Fetch data for faceted filters
     $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
@@ -108,6 +135,35 @@ class OfferwallController extends Controller
         return ['value' => $pathname, 'label' => $pathname];
       });
 
+    // Hosts - Obtener hosts únicos a través de traffic logs
+    $hosts = \App\Models\TrafficLog::select('host')
+      ->whereIn('fingerprint', function($query) {
+        $query->select('fingerprint')->from('offerwall_conversions');
+      })
+      ->distinct()
+      ->whereNotNull('host')
+      ->orderBy('host')
+      ->pluck('host')
+      ->map(function ($host) {
+        return ['value' => $host, 'label' => $host];
+      });
+
+    // CPType - Obtener valores únicos del campo cptype
+    $cptypes = \App\Models\LeadFieldResponse::select('value')
+      ->whereHas('field', function($query) {
+        $query->where('name', 'cptype');
+      })
+      ->whereIn('fingerprint', function($query) {
+        $query->select('fingerprint')->from('offerwall_conversions');
+      })
+      ->distinct()
+      ->whereNotNull('value')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map(function ($value) {
+        return ['value' => $value, 'label' => $value];
+      });
+
     $state =  [
       'filters' => $columnFilters,
       'sort' => $sort,
@@ -126,6 +182,8 @@ class OfferwallController extends Controller
         'integrations' => $integrations,
         'companies' => $companies,
         'paths' => $paths,
+        'hosts' => $hosts,
+        'cptypes' => $cptypes,
       ],
       'totalPayout' => $totalPayout,
     ]);

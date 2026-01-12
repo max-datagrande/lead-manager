@@ -31,6 +31,8 @@ interface IndexProps extends DatatablePageProps<Conversions> {
     companies: Array<{ value: string; label: string }>;
     integrations: Array<{ value: string; label: string }>;
     paths: Array<{ value: string; label: string }>;
+    hosts: Array<{ value: string; label: string }>;
+    cptypes: Array<{ value: string; label: string }>;
   };
 }
 
@@ -90,6 +92,16 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
                 columnId: 'pathname',
                 title: 'Pathname',
                 options: data.paths,
+              },
+              {
+                columnId: 'host',
+                title: 'Host',
+                options: data.hosts,
+              },
+              {
+                columnId: 'cptype',
+                title: 'CPType',
+                options: data.cptypes,
               }
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
