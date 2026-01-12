@@ -89,6 +89,7 @@ class ConversionService
         'utm_medium' => $data['utm_medium'] ?? null,
         'offerwall_mix_log_id' => $mixLogId,
         'offer_data' => $offerData ?: null,
+        'pathname' => $data['pathname'] ?? null,
       ];
 
       $conversion = OfferwallConversion::create($createData);
