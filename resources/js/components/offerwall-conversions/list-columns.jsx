@@ -14,7 +14,7 @@ export const columns = [
   },
   {
     accessorKey: 'integration.id',
-    id: 'integration.id',
+    id: 'integration',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Integration" />,
     cell: ({ row }) => {
       return <div className="font-medium">{row.original.integration.name}</div>;
@@ -24,7 +24,7 @@ export const columns = [
   },
   {
     accessorKey: 'integration.company.id',
-    id: 'integration.company.id',
+    id: 'company',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
     cell: ({ row }) => {
       return <div className="font-medium">{row.original.integration.company.name}</div>;
@@ -80,5 +80,5 @@ export const columns = [
         <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
       </div>
     ),
-  }
+  },
 ];

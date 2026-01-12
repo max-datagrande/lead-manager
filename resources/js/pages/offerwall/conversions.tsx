@@ -79,12 +79,12 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
             searchPlaceholder: 'Search visitors...',
             filters: [
               {
-                columnId: 'integration.id',
+                columnId: 'integration',
                 title: 'Integration',
                 options: data.integrations,
               },
               {
-                columnId: 'integration.company.id',
+                columnId: 'company',
                 title: 'Company',
                 options: data.companies,
               },
