@@ -30,6 +30,7 @@ class ConversionService
       $offerData = [];
       $mixLogId = null;
       $integrationId = $data['integration_id'] ?? null;
+      $trackedFields = [];
 
       if ($offerToken) {
         try {
@@ -49,27 +50,35 @@ class ConversionService
               ->where('integration_id', $parsedIntegrationId)
               ->first();
 
-            if ($callLog && !empty($callLog->response_body)) {
-              $integration = \App\Models\Integration::find($parsedIntegrationId);
-              if ($integration) {
-                // Trust the token for integration and company
-                $integrationId = $integration->id;
-                $parserConfig = $integration->response_parser_config;
-                $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
-                $offers = data_get($callLog->response_body, $pathOfOffers);
-                /*
-                Deprecated because we need the raw original response, not parsed.
-                // Re-parse to get the clean list exactly as it was presented
-                $parsedOffers = $this->integrationService->parseOfferwallResponse($callLog->response_body, $integration);
+            if ($callLog) {
+              // Extract tracked fields from the log's context arrays
+              $trackedFields = [
+                'cptype' => $callLog->original_field_values['cptype'] ?? null,
+                'placement_id' => $callLog->mapped_field_values['cptype'] ?? null,
+              ];
 
-                // Sort by CPC to replicate the exact order/index if sorting was applied BEFORE token generation.
-                // BUT WAIT: In MixService, we generate tokens BEFORE sorting or AFTER?
-                // MixService: parse -> enrich (tokens generated here with index 0,1,2...) -> merge -> sort.
-                // The token contains the index relative to THAT INTEGRATION'S response list (before merge/sort).
-                // So $parsedOffers[index] is correct regardless of global sorting. */
+              if(!empty($callLog->response_body)) {
+                $integration = \App\Models\Integration::find($parsedIntegrationId);
+                if ($integration) {
+                  // Trust the token for integration and company
+                  $integrationId = $integration->id;
+                  $parserConfig = $integration->response_parser_config;
+                  $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+                  $offers = data_get($callLog->response_body, $pathOfOffers);
+                  /*
+                  Deprecated because we need the raw original response, not parsed.
+                  // Re-parse to get the clean list exactly as it was presented
+                  $parsedOffers = $this->integrationService->parseOfferwallResponse($callLog->response_body, $integration);
 
-                if (isset($offers[$offerIndex])) {
-                  $offerData = $offers[$offerIndex];
+                  // Sort by CPC to replicate the exact order/index if sorting was applied BEFORE token generation.
+                  // BUT WAIT: In MixService, we generate tokens BEFORE sorting or AFTER?
+                  // MixService: parse -> enrich (tokens generated here with index 0,1,2...) -> merge -> sort.
+                  // The token contains the index relative to THAT INTEGRATION'S response list (before merge/sort).
+                  // So $parsedOffers[index] is correct regardless of global sorting. */
+
+                  if (isset($offers[$offerIndex])) {
+                    $offerData = $offers[$offerIndex];
+                  }
                 }
               }
             }
@@ -90,6 +99,7 @@ class ConversionService
         'offerwall_mix_log_id' => $mixLogId,
         'offer_data' => $offerData ?: null,
         'pathname' => $data['pathname'] ?? null,
+        'tracked_fields' => $trackedFields ?: null,
       ];
 
       $conversion = OfferwallConversion::create($createData);
