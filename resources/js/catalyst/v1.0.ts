@@ -404,6 +404,10 @@ class CatalystCore {
     }
   }
 
+  getFingerprint(): string | null {
+    return this.visitorData?.fingerprint || null;
+  }
+
   /**
    * Registra una conversión de Offerwall.
    * @param data Datos de la conversión
