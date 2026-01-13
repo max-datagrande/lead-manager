@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class WhitelistEntry extends Model
 {
@@ -14,7 +15,41 @@ class WhitelistEntry extends Model
     'name',
     'value',
     'is_active',
+    'user_id',
+    'updated_user_id',
   ];
+
+  protected static function booted()
+  {
+    static::creating(function ($whitelistEntry) {
+      if (Auth::check()) {
+        $whitelistEntry->user_id = Auth::id();
+        $whitelistEntry->updated_user_id = Auth::id();
+      }
+    });
+
+    static::updating(function ($whitelistEntry) {
+      if (Auth::check()) {
+        $whitelistEntry->updated_user_id = Auth::id();
+      }
+    });
+  }
+
+  /**
+   * Get the user that created the entry.
+   */
+  public function user()
+  {
+    return $this->belongsTo(User::class);
+  }
+
+  /**
+   * Get the user that last updated the entry.
+   */
+  public function updatedByUser()
+  {
+    return $this->belongsTo(User::class, 'updated_user_id');
+  }
 
   protected $casts = [
     'is_active' => 'integer',
