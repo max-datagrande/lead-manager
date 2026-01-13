@@ -60,6 +60,15 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'placement_id',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Placement ID" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.placement_id || '-'}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'amount',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Payout" />,
     cell: ({ row }) => {

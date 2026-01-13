@@ -43,7 +43,6 @@ class OfferwallController extends Controller
     $query = OfferwallConversion::with([
       'integration.company',
       'latestTrafficLog',
-      'lead.fields'
     ]);
 
     // Apply global search filter
@@ -53,6 +52,7 @@ class OfferwallController extends Controller
           ->orWhere('utm_source', 'like', '%' . $search . '%')
           ->orWhere('utm_medium', 'like', '%' . $search . '%')
           ->orWhere('fingerprint', 'like', '%' . $search . '%')
+          ->orWhereJsonContains('tracked_fields->cptype', $search) // New: search in tracked_fields->cptype
           ->orWhereHas('integration', function ($q2) use ($search) {
             $q2->where('name', 'like', '%' . $search . '%');
           });
@@ -80,10 +80,7 @@ class OfferwallController extends Controller
             $q->whereIn('host', (array) $filter['value']);
           });
         } elseif ($filter['id'] === 'cptype') {
-          $query->whereHas('lead.fields', function ($q) use ($filter) {
-            $q->where('name', 'cptype')
-              ->whereIn('lead_field_responses.value', (array) $filter['value']);
-          });
+          $query->whereJsonContains('tracked_fields->cptype', (array) $filter['value']); // New: filter using tracked_fields
         }
       }
     }
@@ -102,12 +99,12 @@ class OfferwallController extends Controller
     // Transform the collection to include host and cptype
     $conversions->getCollection()->transform(function ($conversion) {
       $conversion->host = $conversion->latestTrafficLog?->host;
-      $conversion->cptype = $conversion->lead?->fields->firstWhere('name', 'cptype')?->pivot?->value;
+      $conversion->cptype = $conversion->tracked_fields['cptype'] ?? null; // New: get cptype from tracked_fields
+      $conversion->placement_id = $conversion->tracked_fields['placement_id'] ?? null;
 
       // Clean up relationships to keep response light
       unset($conversion->latestTrafficLog);
-      unset($conversion->lead);
-
+      // Removed: unset($conversion->lead);
       return $conversion;
     });
 
@@ -149,15 +146,21 @@ class OfferwallController extends Controller
       });
 
     // CPType - Obtener valores únicos del campo cptype
-    $cptypes = \App\Models\LeadFieldResponse::select('value')
-      ->whereHas('field', function($query) {
-        $query->where('name', 'cptype');
-      })
-      ->whereIn('fingerprint', function($query) {
-        $query->select('fingerprint')->from('offerwall_conversions');
-      })
+    $cptypes = OfferwallConversion::query()
+      ->select('tracked_fields->cptype as value')
       ->distinct()
-      ->whereNotNull('value')
+      ->whereNotNull('tracked_fields->cptype')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map(function ($value) {
+        return ['value' => $value, 'label' => $value];
+      });
+
+    // Placements - Obtener valores únicos del campo placement_id
+    $placements = OfferwallConversion::query()
+      ->select('tracked_fields->placement_id as value')
+      ->distinct()
+      ->whereNotNull('tracked_fields->placement_id')
       ->orderBy('value')
       ->pluck('value')
       ->map(function ($value) {
@@ -184,6 +187,7 @@ class OfferwallController extends Controller
         'paths' => $paths,
         'hosts' => $hosts,
         'cptypes' => $cptypes,
+        'placements' => $placements,
       ],
       'totalPayout' => $totalPayout,
     ]);

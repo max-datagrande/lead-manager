@@ -24,6 +24,7 @@ type Conversions = {
   utm_medium: string;
   created_at: string;
   updated_at: string;
+  placement_id: string;
 };
 interface IndexProps extends DatatablePageProps<Conversions> {
   totalPayout: number;
@@ -33,6 +34,7 @@ interface IndexProps extends DatatablePageProps<Conversions> {
     paths: Array<{ value: string; label: string }>;
     hosts: Array<{ value: string; label: string }>;
     cptypes: Array<{ value: string; label: string }>;
+    placements: Array<{ value: string; label: string }>;
   };
 }
 
@@ -102,6 +104,11 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
                 columnId: 'cptype',
                 title: 'CPType',
                 options: data.cptypes,
+              },
+              {
+                columnId: 'placement_id',
+                title: 'Placement ID',
+                options: data.placements,
               }
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
