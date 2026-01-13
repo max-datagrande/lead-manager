@@ -12,8 +12,8 @@ return new class extends Migration
   public function up(): void
   {
     Schema::table('integration_call_logs', function (Blueprint $table) {
-      $table->json('original_field_values')->nullable()->after('response_body');
-      $table->json('mapped_field_values')->nullable()->after('original_field_values');
+      $table->json('original_field_values')->nullable();
+      $table->json('mapped_field_values')->nullable();
     });
   }
 
