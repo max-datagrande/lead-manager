@@ -52,7 +52,8 @@ class OfferwallController extends Controller
           ->orWhere('utm_source', 'like', '%' . $search . '%')
           ->orWhere('utm_medium', 'like', '%' . $search . '%')
           ->orWhere('fingerprint', 'like', '%' . $search . '%')
-          ->orWhereJsonContains('tracked_fields->cptype', $search) // New: search in tracked_fields->cptype
+          ->orWhere('tracked_fields->cptype', 'like', '%' . $search . '%')
+          ->orWhere('tracked_fields->placement_id', 'like', '%' . $search . '%')
           ->orWhereHas('integration', function ($q2) use ($search) {
             $q2->where('name', 'like', '%' . $search . '%');
           });
@@ -80,7 +81,9 @@ class OfferwallController extends Controller
             $q->whereIn('host', (array) $filter['value']);
           });
         } elseif ($filter['id'] === 'cptype') {
-          $query->whereJsonContains('tracked_fields->cptype', (array) $filter['value']); // New: filter using tracked_fields
+          $query->whereIn('tracked_fields->cptype', (array) $filter['value']); // Corrected: Use whereIn for JSON key
+        } elseif ($filter['id'] === 'placement_id') {
+          $query->whereIn('tracked_fields->placement_id', (array) $filter['value']); // Corrected: Use whereIn for JSON key
         }
       }
     }
@@ -190,6 +193,90 @@ class OfferwallController extends Controller
         'placements' => $placements,
       ],
       'totalPayout' => $totalPayout,
+    ]);
+  }
+
+  public function conversionReport(Request $request)
+  {
+    return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
+      // Set delimiter based on client OS for Excel compatibility
+      $delimiter = $request->input('os') === 'windows' ? ';' : ',';
+
+      $query = OfferwallConversion::with([
+        'integration:id,name',
+        'integration.company:id,name',
+      ]);
+
+      // Apply global search filter
+      if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+          $q->where('click_id', 'like', '%' . $search . '%')
+            ->orWhere('utm_source', 'like', '%' . $search . '%')
+            ->orWhere('utm_medium', 'like', '%' . $search . '%')
+            ->orWhere('fingerprint', 'like', '%' . $search . '%')
+            ->orWhereJsonContains('tracked_fields->cptype', $search)
+            ->orWhereHas('integration', function ($q2) use ($search) {
+              $q2->where('name', 'like', '%' . $search . '%');
+            });
+        });
+      }
+
+      // Apply column filters
+      $columnFilters = json_decode($request->input('filters', '[]'), true);
+      foreach ($columnFilters as $filter) {
+        if (isset($filter['id']) && isset($filter['value'])) {
+            if ($filter['id'] === 'from_date') {
+                $query->where('created_at', '>=', $filter['value']);
+            } elseif ($filter['id'] === 'to_date') {
+                $query->where('created_at', '<=', $filter['value']);
+            } elseif ($filter['id'] === 'integration.id') {
+                $query->whereIn('integration_id', (array) $filter['value']);
+            } elseif ($filter['id'] === 'integration.company.id') {
+                $query->whereHas('integration', function ($q) use ($filter) {
+                    $q->whereIn('company_id', (array) $filter['value']);
+                });
+            } elseif ($filter['id'] === 'pathname') {
+                $query->whereIn('pathname', (array) $filter['value']);
+            } elseif ($filter['id'] === 'cptype') {
+                $query->whereJsonContains('tracked_fields->cptype', (array) $filter['value']);
+            }
+        }
+      }
+
+      // Apply sorting
+      $sort = $request->input('sort', 'created_at:desc');
+      [$sortColumn, $sortDirection] = get_sort_data($sort);
+      $query->orderBy($sortColumn, $sortDirection);
+
+      $handle = fopen('php://output', 'w');
+      // Add CSV headers
+      fputcsv($handle, [
+        'ID', 'Fingerprint', 'Integration', 'Company', 'Payout',
+        'CPType', 'Placement ID', 'Pathname', 'Click ID', 'UTM Source',
+        'UTM Medium', 'Converted At',
+      ], $delimiter);
+
+      foreach ($query->cursor() as $conversion) {
+        fputcsv($handle, [
+          $conversion->id,
+          $conversion->fingerprint,
+          $conversion->integration->name,
+          $conversion->integration->company->name,
+          $conversion->amount,
+          $conversion->tracked_fields['cptype'] ?? '',
+          $conversion->tracked_fields['placement_id'] ?? '',
+          $conversion->pathname,
+          $conversion->click_id,
+          $conversion->utm_source,
+          $conversion->utm_medium,
+          $conversion->created_at->toDateTimeString(),
+        ], $delimiter);
+      }
+
+      fclose($handle);
+    }, 200, [
+      'Content-Type' => 'text/csv',
+      'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
     ]);
   }
 

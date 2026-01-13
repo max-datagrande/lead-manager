@@ -6,8 +6,7 @@ import { OfferwallConversionsProvider } from '@/context/offerwall/conversion-pro
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { DatatablePageProps, type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Offerwalls', href: route('offerwall.index') },
   { title: 'Conversions', href: route('offerwall.conversions') },
@@ -48,10 +47,48 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
   const { isLoading } = table;
 
   const handleExport = () => {
-    /* table.setGlobalFilter('export', true);
-    table.reload(); */
-  };
+    // Correct way: Access state directly from the hook's return object
+    const { columnFilters, globalFilter, sorting } = table;
 
+    const params = new URLSearchParams();
+
+    // Handle global filter (search)
+    if (globalFilter) {
+      params.append('search', globalFilter);
+    }
+
+    // Handle sorting
+    if (sorting.length > 0) {
+      // Assuming single column sort
+      params.append('sort', `${sorting[0].id}:${sorting[0].desc ? 'desc' : 'asc'}`);
+    }
+
+    // Handle column filters
+    const filterParams: { id: string; value: unknown }[] = [];
+    columnFilters.forEach((filter) => {
+      if (filter.id && filter.value) {
+        filterParams.push({ id: filter.id, value: filter.value });
+      }
+    });
+
+    if (filterParams.length > 0) {
+      params.append('filters', JSON.stringify(filterParams));
+    }
+
+    // Detect OS to set the correct CSV delimiter for Excel
+    const os = navigator.platform.toUpperCase().indexOf('WIN') > -1 ? 'windows' : 'default';
+    params.append('os', os);
+
+    const url = route('offerwall.conversions.report') + '?' + params.toString();
+
+    // Using the dynamic link method for robustness
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const handleRefresh = () => {
     router.reload();
   };
@@ -109,7 +146,7 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
                 columnId: 'placement_id',
                 title: 'Placement ID',
                 options: data.placements,
-              }
+              },
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
           }}

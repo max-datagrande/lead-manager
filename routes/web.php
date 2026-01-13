@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   //Offerwalls
   Route::prefix('offerwall')->group(function () {
     Route::get('conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
+    Route::get('conversions/report', [OfferwallController::class, 'conversionReport'])->name('offerwall.conversions.report');
   });
   Route::resource('offerwall', OfferwallController::class)->parameters(['offerwall' => 'offerwallMix']);
 
