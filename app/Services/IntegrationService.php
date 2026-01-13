@@ -295,11 +295,38 @@ class IntegrationService
    */
   public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
   {
+    TailLogger::saveLog(
+      "Parsing offerwall response for Integration ID: {$integration->id}",
+      'integrations/parsing',
+      'info',
+      ['integration_id' => $integration->id]
+    );
+
     $parserConfig = $integration->response_parser_config;
     $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
     $offers = data_get($jsonResponse, $pathOfOffers);
-
+    TailLogger::saveLog(
+      "Offers found at path: {$pathOfOffers}",
+      'integrations/parsing',
+      'info',
+      [
+        'raw_response' => $jsonResponse,
+        'integration_id' => $integration->id,
+        'path_of_offers' => $pathOfOffers,
+        'number_of_offers' => count($offers)
+      ]
+    );
     if (!is_array($offers)) {
+      TailLogger::saveLog(
+        "Offers not found or not an array at path: {$pathOfOffers}",
+        'integrations/parsing',
+        'warning',
+        [
+          'integration_id' => $integration->id,
+          'path_of_offers' => $pathOfOffers,
+          'number_of_offers' => count($offers)
+        ]
+      );
       return [];
     }
 
@@ -313,6 +340,16 @@ class IntegrationService
       $mappedOffer['integration_id'] = $integration->id;
       $mappedOffers[] = $mappedOffer;
     }
+
+    TailLogger::saveLog(
+      "Parsed " . count($mappedOffers) . " offers.",
+      'integrations/parsing',
+      'info',
+      [
+        'integration_id' => $integration->id,
+        'offers_count' => count($mappedOffers)
+      ]
+    );
 
     return $mappedOffers;
   }
