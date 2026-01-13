@@ -29,8 +29,8 @@ class ConversionService
       $offerToken = $data['offer_token'] ?? null;
       $offerData = [];
       $mixLogId = null;
-      $integrationId = $data['integration_id'] ?? null;
       $trackedFields = [];
+      $integrationId = null;
 
       if ($offerToken) {
         try {

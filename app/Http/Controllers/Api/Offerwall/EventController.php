@@ -36,7 +36,6 @@ class EventController extends Controller
     try {
       $data = $request->validate([
         'offer_token' => 'required|string',
-        'integration_id' => 'required|integer|exists:integrations,id',
         'amount' => 'required|numeric|min:0',
         'fingerprint' => 'required|string',
         'pathname' => 'nullable|string',
