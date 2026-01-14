@@ -34,7 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::resource('integrations', IntegrationController::class);
 
   //Offerwalls
-  Route::prefix('offerwall')->group(function () {
+  Route::prefix('offerwall')->middleware(['role:admin,manager'])->group(function () {
     Route::get('conversions', [OfferwallController::class, 'conversions'])->name('offerwall.conversions');
     Route::get('conversions/report', [OfferwallController::class, 'conversionReport'])->name('offerwall.conversions.report');
   });
