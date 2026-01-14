@@ -84,6 +84,8 @@ class OfferwallController extends Controller
           $query->whereIn('tracked_fields->cptype', (array) $filter['value']); // Corrected: Use whereIn for JSON key
         } elseif ($filter['id'] === 'placement_id') {
           $query->whereIn('tracked_fields->placement_id', (array) $filter['value']); // Corrected: Use whereIn for JSON key
+        } elseif ($filter['id'] === 'state') {
+          $query->whereIn('tracked_fields->state', (array) $filter['value']); // Corrected: Use whereIn for JSON key
         }
       }
     }
@@ -104,6 +106,7 @@ class OfferwallController extends Controller
       $conversion->host = $conversion->latestTrafficLog?->host;
       $conversion->cptype = $conversion->tracked_fields['cptype'] ?? null; // New: get cptype from tracked_fields
       $conversion->placement_id = $conversion->tracked_fields['placement_id'] ?? null;
+      $conversion->state = $conversion->tracked_fields['state'] ?? null;
 
       // Clean up relationships to keep response light
       unset($conversion->latestTrafficLog);
@@ -170,6 +173,17 @@ class OfferwallController extends Controller
         return ['value' => $value, 'label' => $value];
       });
 
+    // State - Obtener valores únicos del campo state
+    $states = OfferwallConversion::query()
+      ->select('tracked_fields->state as value')
+      ->distinct()
+      ->whereNotNull('tracked_fields->state')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map(function ($value) {
+        return ['value' => $value, 'label' => $value];
+      });
+
     $state =  [
       'filters' => $columnFilters,
       'sort' => $sort,
@@ -191,6 +205,7 @@ class OfferwallController extends Controller
         'hosts' => $hosts,
         'cptypes' => $cptypes,
         'placements' => $placements,
+        'states' => $states,
       ],
       'totalPayout' => $totalPayout,
     ]);
