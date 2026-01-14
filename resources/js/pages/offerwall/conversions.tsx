@@ -34,6 +34,7 @@ interface IndexProps extends DatatablePageProps<Conversions> {
     hosts: Array<{ value: string; label: string }>;
     cptypes: Array<{ value: string; label: string }>;
     placements: Array<{ value: string; label: string }>;
+    states: Array<{ value: string; label: string }>;
   };
 }
 
@@ -146,6 +147,11 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
                 columnId: 'placement_id',
                 title: 'Placement ID',
                 options: data.placements,
+              },
+              {
+                columnId: 'state',
+                title: 'State',
+                options: data.states,
               },
             ],
             dateRange: { column: 'created_at', label: 'Created At' },
