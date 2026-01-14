@@ -302,7 +302,7 @@ class IntegrationService
         'raw_response' => $jsonResponse,
         'integration_id' => $integration->id,
         'path_of_offers' => $pathOfOffers,
-        'number_of_offers' => count($offers)
+        'number_of_offers' => $offers ? count($offers) : 0
       ]
     );
     if (!is_array($offers)) {
@@ -313,7 +313,7 @@ class IntegrationService
         [
           'integration_id' => $integration->id,
           'path_of_offers' => $pathOfOffers,
-          'number_of_offers' => count($offers)
+          'number_of_offers' => $offers ? count($offers) : 0
         ]
       );
       return [];
