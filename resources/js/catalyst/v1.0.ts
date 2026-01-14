@@ -417,10 +417,19 @@ class CatalystCore {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante.');
     }
 
+    if (!data.offer_token) {
+      throw new Error('Catalyst SDK: offer_token is required.');
+    }
+
+    if (data.amount === undefined || data.amount === null) {
+      throw new Error('Catalyst SDK: amount is required.');
+    }
+
     const payload: OfferwallConversionRequest = {
       fingerprint: this.visitorData.fingerprint,
       pathname: window.location.pathname,
-      ...data,
+      amount: Number(data.amount),
+      offer_token: data.offer_token
     };
 
     try {
