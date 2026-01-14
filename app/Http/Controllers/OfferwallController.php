@@ -95,7 +95,13 @@ class OfferwallController extends Controller
     // Apply sorting
     $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
-    $query->orderBy($sortColumn, $sortDirection);
+
+    // Handle sorting for JSON fields
+    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+      $query->orderBy("tracked_fields->$sortColumn", $sortDirection);
+    } else {
+      $query->orderBy($sortColumn, $sortDirection);
+    }
 
     //Apply pagination
     $perPage = $request->input('per_page', 15);
@@ -261,7 +267,11 @@ class OfferwallController extends Controller
       // Apply sorting
       $sort = $request->input('sort', 'created_at:desc');
       [$sortColumn, $sortDirection] = get_sort_data($sort);
-      $query->orderBy($sortColumn, $sortDirection);
+      if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+        $query->orderBy("tracked_fields->$sortColumn", $sortDirection);
+      } else {
+        $query->orderBy($sortColumn, $sortDirection);
+      }
 
       $handle = fopen('php://output', 'w');
       // Add CSV headers
