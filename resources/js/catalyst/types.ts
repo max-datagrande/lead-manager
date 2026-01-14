@@ -136,8 +136,9 @@ interface OfferwallResponse {
  */
 interface OfferwallConversionRequest {
   fingerprint: string;
+  offer_token: string;
+  amount: number;
   offer_id?: string;
-  amount?: number;
   currency?: string;
   transaction_id?: string;
   [key: string]: any;
