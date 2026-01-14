@@ -69,14 +69,31 @@ class MixService
             continue;
           }
 
-          $payloadArray = $this->preparePayload($integration, $leadData, $prodEnv);
-          $method = strtolower($prodEnv->method ?? 'post');
-
           $mappingConfig = $integration->request_mapping_config ?? [];
-          $headersParsed = $this->integrationService->parseParams($leadData, $prodEnv->request_headers ?? '[]', $mappingConfig);
+
+          // Prepare Body
+          $payloadResult = $this->preparePayload($integration, $leadData, $prodEnv);
+          $payloadArray = $payloadResult['payloadArray'];
+
+          // Prepare Headers
+          $headersTemplate = $prodEnv->request_headers ?? '[]';
+          $headersReplacements = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+          $processor = new \App\Services\PayloadProcessorService();
+          $headersParsed = $processor->process($headersTemplate, $headersReplacements['finalReplacements']);
           $headers = json_decode($headersParsed, true) ?? [];
+          
+          $method = strtolower($prodEnv->method ?? 'post');
           $url = $prodEnv->url;
-          $requestsData[$integration->id] = compact('integration', 'url', 'payloadArray', 'method', 'headers');
+
+          $requestsData[$integration->id] = [
+            'integration' => $integration,
+            'url' => $url,
+            'payloadArray' => $payloadArray,
+            'method' => $method,
+            'headers' => $headers,
+            'originalValues' => $payloadResult['originalValues'],
+            'mappedValues' => $payloadResult['mappedValues'],
+          ];
         }
 
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
@@ -100,7 +117,17 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payloadArray']);
+          $this->logIntegrationCall(
+            $mixLog,
+            $integration,
+            $response,
+            $requestData['method'],
+            $requestData['headers'],
+            $requestData['payloadArray'],
+            $requestData['originalValues'],
+            $requestData['mappedValues']
+          );
+
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
             $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
@@ -192,8 +219,10 @@ class MixService
     $template = $prodEnv->request_body ?? '';
     $mappingConfig = $integration->request_mapping_config ?? [];
 
-    // 1. Initial replacement using IntegrationService
-    $payloadString = $this->integrationService->parseParams($leadData, $template, $mappingConfig);
+    $replacementsResult = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+    
+    $processor = new \App\Services\PayloadProcessorService();
+    $payloadString = $processor->process($template, $replacementsResult['finalReplacements']);
     $payloadArray = json_decode($payloadString, true) ?? [];
 
     // 2. Custom transformation using Twig
@@ -204,41 +233,41 @@ class MixService
         ]);
         $twig = new Environment($loader);
 
-        // Add helper function to output JSON easily
         $twig->addFunction(new TwigFunction('output_json', function ($data) {
             return json_encode($data);
         }, ['is_safe' => ['html']]));
 
-        // Pass the already processed payload as 'data'
         $rendered = $twig->render('index.html', ['data' => $payloadArray]);
-        // Attempt to decode the result
         $transformed = json_decode($rendered, true);
 
         if (json_last_error() === JSON_ERROR_NONE) {
-          return $transformed;
+          $payloadArray = $transformed;
         }
-
-        // If the result is not a JSON, we might have an issue if the HTTP client expects an array.
-        // For now, if decoding fails, we assume it might be because the user wants to return an array structure directly
-        // (which Twig can't easily output as PHP array, it outputs string).
-        // So we assume the user's Twig template outputs JSON string.
-
-        // Log warning?
       } catch (Throwable $e) {
-        // Log the error but return the original payload so the flow doesn't break completely
-        // Or maybe we should break? The user expects transformation.
-        // Let's log it.
-        TailLogger::saveLog('Twit payload transformation failed', 'offerwall/mix-service', 'error', [
+        TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
           'integration_id' => $integration->id,
           'error' => $e->getMessage()
         ]);
       }
     }
-    return $payloadArray;
+    
+    return [
+        'payloadArray' => $payloadArray,
+        'originalValues' => $replacementsResult['originalValues'],
+        'mappedValues' => $replacementsResult['mappedValues'],
+    ];
   }
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, array $payload): void
-  {
+  private function logIntegrationCall(
+    OfferwallMixLog $mixLog,
+    $integration,
+    $response,
+    string $method,
+    array $headers,
+    array $payload,
+    ?array $originalValues = null,
+    ?array $mappedValues = null
+  ): void {
     $isResponse = $response instanceof Response;
     $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
 
@@ -272,6 +301,8 @@ class MixService
       'request_payload' => $payload,
       'response_headers' => $isResponse ? $response->headers() : [],
       'response_body' => $responseBody,
+      'original_field_values' => $originalValues,
+      'mapped_field_values' => $mappedValues,
     ]);
   }
 

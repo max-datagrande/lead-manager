@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
       'admin' => AdminMiddleware::class,
       'auth.host' => AuthHost::class,
       'domain.whitelist' => DomainWhitelistMiddleware::class,
+      'role' => \App\Http\Middleware\CheckRole::class,
     ]);
   })
   ->withExceptions(function (Exceptions $exceptions) {

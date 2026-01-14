@@ -24,6 +24,7 @@ class OfferwallConversion extends Model
         'offerwall_mix_log_id',
         'offer_data',
         'pathname',
+        'tracked_fields',
     ];
 
     /**
@@ -34,6 +35,7 @@ class OfferwallConversion extends Model
     protected $casts = [
         'offer_data' => 'array',
         'amount' => 'decimal:2',
+        'tracked_fields' => 'array',
     ];
 
     /**

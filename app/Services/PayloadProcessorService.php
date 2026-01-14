@@ -34,6 +34,37 @@ class PayloadProcessorService
     return json_encode($arrayData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
   }
 
+  public static function generateReplacements(array $leadData, array $mappingConfig): array
+  {
+    $originalValues = [];
+    $mappedValues = [];
+    $finalReplacements = [];
+
+    foreach ($mappingConfig as $tokenName => $config) {
+      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+
+      $originalValues[$tokenName] = $value;
+
+      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
+        $value = $config['value_mapping'][$value];
+      }
+
+      $mappedValues[$tokenName] = $value;
+
+      if (is_array($value) || is_object($value)) {
+        $value = json_encode($value);
+      }
+
+      $finalReplacements[$tokenName] = (string) $value;
+    }
+
+    return [
+      'originalValues' => $originalValues,
+      'mappedValues' => $mappedValues,
+      'finalReplacements' => $finalReplacements,
+    ];
+  }
+
   /**
    * Inyecta los valores en el string usando marcas de agua para tipos específicos.
    */

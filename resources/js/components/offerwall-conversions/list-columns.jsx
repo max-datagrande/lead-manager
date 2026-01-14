@@ -13,6 +13,15 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'state',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.state}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'integration.id',
     id: 'integration',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Integration" />,
@@ -55,6 +64,15 @@ export const columns = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="CPType" />,
     cell: ({ row }) => {
       return <div className="font-medium">{row.original.cptype || '-'}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'placement_id',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Placement ID" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.placement_id || '-'}</div>;
     },
     enableSorting: true,
     enableHiding: true,
