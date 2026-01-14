@@ -39,12 +39,14 @@ interface IndexProps extends DatatablePageProps<Conversions> {
 }
 
 const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
+
   const table = useServerTable({
     routeName: 'offerwall.conversions',
     initialState: state,
     defaultPageSize: 10,
-    includeInReload: ['totalPayout'],
+    includeInReload: ['totalPayout', 'totalConversions'],
   });
+  const totalConversions = meta.total;
   const { isLoading } = table;
 
   const handleExport = () => {
@@ -101,7 +103,7 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
         <PageHeader title="Offerwall Conversions" description="Review offerwall conversions.">
           <OfferwallConversionsActions actions={{ export: handleExport, refresh: handleRefresh }} />
         </PageHeader>
-        <OfferwallConversionsWidgets totalPayout={totalPayout} isLoading={isLoading} />
+        <OfferwallConversionsWidgets totalPayout={totalPayout} totalConversions={totalConversions} isLoading={isLoading} />
         <ServerTable
           data={rows.data}
           columns={columns}

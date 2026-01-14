@@ -68,9 +68,9 @@ class OfferwallController extends Controller
           $query->where('created_at', '>=', $filter['value']);
         } elseif ($filter['id'] === 'to_date') {
           $query->where('created_at', '<=', $filter['value']);
-        } elseif ($filter['id'] === 'integration.id') {
+        } elseif ($filter['id'] === 'integration') {
           $query->whereIn('integration_id', (array) $filter['value']);
-        } elseif ($filter['id'] === 'integration.company.id') {
+        } elseif ($filter['id'] === 'company') {
           $query->whereHas('integration', function ($q) use ($filter) {
             $q->whereIn('company_id', (array) $filter['value']);
           });
@@ -95,7 +95,13 @@ class OfferwallController extends Controller
     // Apply sorting
     $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
-    $query->orderBy($sortColumn, $sortDirection);
+
+    // Handle sorting for JSON fields
+    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+      $query->orderBy("tracked_fields->$sortColumn", $sortDirection);
+    } else {
+      $query->orderBy($sortColumn, $sortDirection);
+    }
 
     //Apply pagination
     $perPage = $request->input('per_page', 15);
@@ -140,7 +146,7 @@ class OfferwallController extends Controller
 
     // Hosts - Obtener hosts únicos a través de traffic logs
     $hosts = \App\Models\TrafficLog::select('host')
-      ->whereIn('fingerprint', function($query) {
+      ->whereIn('fingerprint', function ($query) {
         $query->select('fingerprint')->from('offerwall_conversions');
       })
       ->distinct()
@@ -240,35 +246,48 @@ class OfferwallController extends Controller
       $columnFilters = json_decode($request->input('filters', '[]'), true);
       foreach ($columnFilters as $filter) {
         if (isset($filter['id']) && isset($filter['value'])) {
-            if ($filter['id'] === 'from_date') {
-                $query->where('created_at', '>=', $filter['value']);
-            } elseif ($filter['id'] === 'to_date') {
-                $query->where('created_at', '<=', $filter['value']);
-            } elseif ($filter['id'] === 'integration.id') {
-                $query->whereIn('integration_id', (array) $filter['value']);
-            } elseif ($filter['id'] === 'integration.company.id') {
-                $query->whereHas('integration', function ($q) use ($filter) {
-                    $q->whereIn('company_id', (array) $filter['value']);
-                });
-            } elseif ($filter['id'] === 'pathname') {
-                $query->whereIn('pathname', (array) $filter['value']);
-            } elseif ($filter['id'] === 'cptype') {
-                $query->whereJsonContains('tracked_fields->cptype', (array) $filter['value']);
-            }
+          if ($filter['id'] === 'from_date') {
+            $query->where('created_at', '>=', $filter['value']);
+          } elseif ($filter['id'] === 'to_date') {
+            $query->where('created_at', '<=', $filter['value']);
+          } elseif ($filter['id'] === 'integration') {
+            $query->whereIn('integration_id', (array) $filter['value']);
+          } elseif ($filter['id'] === 'company') {
+            $query->whereHas('integration', function ($q) use ($filter) {
+              $q->whereIn('company_id', (array) $filter['value']);
+            });
+          } elseif ($filter['id'] === 'pathname') {
+            $query->whereIn('pathname', (array) $filter['value']);
+          } elseif ($filter['id'] === 'cptype') {
+            $query->whereJsonContains('tracked_fields->cptype', (array) $filter['value']);
+          }
         }
       }
 
       // Apply sorting
       $sort = $request->input('sort', 'created_at:desc');
       [$sortColumn, $sortDirection] = get_sort_data($sort);
-      $query->orderBy($sortColumn, $sortDirection);
+      if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+        $query->orderBy("tracked_fields->$sortColumn", $sortDirection);
+      } else {
+        $query->orderBy($sortColumn, $sortDirection);
+      }
 
       $handle = fopen('php://output', 'w');
       // Add CSV headers
       fputcsv($handle, [
-        'ID', 'Fingerprint', 'Integration', 'Company', 'Payout',
-        'CPType', 'Placement ID', 'Pathname', 'Click ID', 'UTM Source',
-        'UTM Medium', 'Converted At',
+        'ID',
+        'Fingerprint',
+        'Integration',
+        'Company',
+        'Payout',
+        'CPType',
+        'Placement ID',
+        'Pathname',
+        'Click ID',
+        'UTM Source',
+        'UTM Medium',
+        'Converted At',
       ], $delimiter);
 
       foreach ($query->cursor() as $conversion) {
