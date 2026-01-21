@@ -42,6 +42,15 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'buyer',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Buyer" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.buyer || '-'}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'pathname',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Pathname" />,
     cell: ({ row }) => {

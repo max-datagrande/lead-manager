@@ -28,16 +28,11 @@ class OfferwallController extends Controller
    */
   public function getOfferwallIntegrations()
   {
-    $integrations = Integration::with('company:id,name')
-      ->where('type', 'offerwall')
-      ->get();
+    $integrations = Integration::with('company:id,name')->where('type', 'offerwall')->get();
 
     return response()->json($integrations);
   }
 
-  /**
-   * Display a listing of the offerwall conversions.
-   */
   /**
    * Display a listing of the offerwall conversions.
    */
@@ -51,9 +46,7 @@ class OfferwallController extends Controller
 
     // Paginación con agrupamiento para evitar duplicados por el join
     $perPage = $request->input('per_page', 15);
-    $conversions = $query->groupBy('offerwall_conversions.id', 'integrations.company_id', 'traffic_logs.host')
-      ->paginate($perPage)
-      ->withQueryString();
+    $conversions = $query->groupBy('offerwall_conversions.id', 'integrations.company_id', 'traffic_logs.host')->paginate($perPage)->withQueryString();
 
     // Transformación de la colección para normalizar los campos virtuales
     $conversions->getCollection()->transform(function ($conversion) {
@@ -61,12 +54,15 @@ class OfferwallController extends Controller
       $conversion->cptype = $conversion->tracked_fields['cptype'] ?? null;
       $conversion->placement_id = $conversion->tracked_fields['placement_id'] ?? null;
       $conversion->state = $conversion->tracked_fields['state'] ?? null;
+      $conversion->buyer = $conversion->offer_company_name; // Add buyer company name for frontend
       return $conversion;
     });
 
-    $integrations = Integration::select('id', 'name')->get()->map(function ($integration) {
-      return ['value' => (string) $integration->id, 'label' => $integration->name];
-    });
+    $integrations = Integration::select('id', 'name')
+      ->get()
+      ->map(function ($integration) {
+        return ['value' => (string) $integration->id, 'label' => $integration->name];
+      });
 
     $companies = \App\Models\Integration::with('company')
       ->where('type', 'offerwall')
@@ -127,7 +123,15 @@ class OfferwallController extends Controller
         return ['value' => $value, 'label' => $value];
       });
 
-    $state =  [
+    // Buyer Companies - Obtener valores únicos del campo offer_company_name
+    $buyerCompanies = OfferwallConversion::select('offer_company_name as value')
+      ->distinct()
+      ->whereNotNull('offer_company_name')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map(fn($name) => ['value' => $name, 'label' => $name]);
+
+    $state = [
       'filters' => json_decode($request->input('filters', '[]'), true),
       'sort' => $request->input('sort', 'created_at:desc'),
       'search' => $request->input('search'),
@@ -150,6 +154,7 @@ class OfferwallController extends Controller
         'cptypes' => $cptypes,
         'placements' => $placements,
         'states' => $states,
+        'buyerCompanies' => $buyerCompanies,
       ],
       'totalPayout' => $totalPayout,
     ]);
@@ -157,39 +162,73 @@ class OfferwallController extends Controller
 
   public function conversionReport(Request $request)
   {
-    return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
-      $query = $this->buildConversionsQuery($request);
-      $delimiter = $request->input('os') === 'windows' ? ';' : ',';
+    try {
+      return new \Symfony\Component\HttpFoundation\StreamedResponse(
+        function () use ($request) {
+          $query = $this->buildConversionsQuery($request);
+          $delimiter = $request->input('os') === 'windows' ? ';' : ',';
 
-      $handle = fopen('php://output', 'w');
-      fputcsv($handle, [
-        'ID', 'Fingerprint', 'Integration', 'Company', 'Payout', 'CPType',
-        'Placement ID', 'Pathname', 'Click ID', 'UTM Source', 'UTM Medium', 'Converted At',
-      ], $delimiter);
+          $handle = fopen('php://output', 'w');
+          fputcsv(
+            $handle,
+            [
+              'ID',
+              'Fingerprint',
+              'Integration',
+              'Company',
+              'Buyer', // New Buyer column
+              'Payout',
+              'CPType',
+              'Placement ID',
+              'Pathname',
+              'Click ID',
+              'UTM Source',
+              'UTM Medium',
+              'Converted At',
+            ],
+            $delimiter,
+          );
 
-      // Usamos groupBy en el cursor para evitar duplicados del join
-      foreach ($query->groupBy('offerwall_conversions.id')->cursor() as $conversion) {
-        fputcsv($handle, [
-          $conversion->id,
-          $conversion->fingerprint,
-          $conversion->integration->name,
-          $conversion->integration->company->name,
-          $conversion->amount,
-          $conversion->tracked_fields['cptype'] ?? '',
-          $conversion->tracked_fields['placement_id'] ?? '',
-          $conversion->pathname,
-          $conversion->click_id,
-          $conversion->utm_source,
-          $conversion->utm_medium,
-          $conversion->created_at->toDateTimeString(),
-        ], $delimiter);
-      }
-
-      fclose($handle);
-    }, 200, [
-      'Content-Type' => 'text/csv',
-      'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
-    ]);
+          // Usamos groupBy en el cursor para evitar duplicados del join
+          foreach ($query->groupBy('offerwall_conversions.id')->cursor() as $conversion) {
+            // Add companies.name to groupBy
+            fputcsv(
+              $handle,
+              [
+                $conversion->id,
+                $conversion->fingerprint,
+                $conversion->integration->name,
+                $conversion->company_name, // Use company_name from join
+                $conversion->integration->company->name,
+                $conversion->amount,
+                $conversion->tracked_fields['cptype'] ?? '',
+                $conversion->tracked_fields['placement_id'] ?? '',
+                $conversion->pathname,
+                $conversion->click_id,
+                $conversion->utm_source,
+                $conversion->utm_medium,
+                $conversion->created_at->toDateTimeString(),
+              ],
+              $delimiter,
+            );
+          }
+          fclose($handle);
+        },
+        200,
+        [
+          'Content-Type' => 'text/csv',
+          'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
+        ],
+      );
+    } catch (\Throwable $th) {
+      return response()->json(
+        [
+          'error' => $th->getMessage(),
+          'trace' => $th->getTraceAsString(),
+        ],
+        500,
+      );
+    }
   }
 
   /**
@@ -201,10 +240,7 @@ class OfferwallController extends Controller
   private function buildConversionsQuery(Request $request)
   {
     $query = OfferwallConversion::with(['integration.company'])
-      ->select([
-        'offerwall_conversions.*',
-        'traffic_logs.host as host_name'
-      ])
+      ->select(['offerwall_conversions.*', 'traffic_logs.host as host_name'])
       ->join('integrations', 'offerwall_conversions.integration_id', '=', 'integrations.id')
       ->leftJoin('traffic_logs', 'offerwall_conversions.fingerprint', '=', 'traffic_logs.fingerprint');
 
@@ -217,7 +253,8 @@ class OfferwallController extends Controller
           ->orWhere('offerwall_conversions.fingerprint', 'like', '%' . $search . '%')
           ->orWhere('offerwall_conversions.tracked_fields->cptype', 'like', '%' . $search . '%')
           ->orWhere('offerwall_conversions.tracked_fields->placement_id', 'like', '%' . $search . '%')
-          ->orWhere('integrations.name', 'like', '%' . $search . '%');
+          ->orWhere('integrations.name', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.offer_company_name', 'like', '%' . $search . '%'); // Search by buyer company name
       });
     }
 
@@ -227,15 +264,36 @@ class OfferwallController extends Controller
       if (isset($filter['id']) && isset($filter['value'])) {
         $val = (array) $filter['value'];
         switch ($filter['id']) {
-          case 'from_date': $query->where('offerwall_conversions.created_at', '>=', $filter['value']); break;
-          case 'to_date': $query->where('offerwall_conversions.created_at', '<=', $filter['value']); break;
-          case 'integration': $query->whereIn('offerwall_conversions.integration_id', $val); break;
-          case 'company': $query->whereIn('integrations.company_id', $val); break;
-          case 'host': $query->whereIn('traffic_logs.host', $val); break;
-          case 'pathname': $query->whereIn('offerwall_conversions.pathname', $val); break;
-          case 'cptype': $query->whereIn('offerwall_conversions.tracked_fields->cptype', $val); break;
-          case 'placement_id': $query->whereIn('offerwall_conversions.tracked_fields->placement_id', $val); break;
-          case 'state': $query->whereIn('offerwall_conversions.tracked_fields->state', $val); break;
+          case 'from_date':
+            $query->where('offerwall_conversions.created_at', '>=', $filter['value']);
+            break;
+          case 'to_date':
+            $query->where('offerwall_conversions.created_at', '<=', $filter['value']);
+            break;
+          case 'integration':
+            $query->whereIn('offerwall_conversions.integration_id', $val);
+            break;
+          case 'company':
+            $query->whereIn('integrations.company_id', $val);
+            break;
+          case 'host':
+            $query->whereIn('traffic_logs.host', $val);
+            break;
+          case 'pathname':
+            $query->whereIn('offerwall_conversions.pathname', $val);
+            break;
+          case 'cptype':
+            $query->whereIn('offerwall_conversions.tracked_fields->cptype', $val);
+            break;
+          case 'placement_id':
+            $query->whereIn('offerwall_conversions.tracked_fields->placement_id', $val);
+            break;
+          case 'state':
+            $query->whereIn('offerwall_conversions.tracked_fields->state', $val);
+            break;
+          case 'buyer':
+            $query->whereIn('offerwall_conversions.offer_company_name', $val);
+            break; // Filter by buyer company name
         }
       }
     }
@@ -247,13 +305,13 @@ class OfferwallController extends Controller
     if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
       $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
     } elseif ($sortColumn === 'company') {
-      // Assuming sorting by company name, which would require another join or denormalized column.
-      // For now, sorting by company_id as a proxy.
       $query->orderBy('integrations.company_id', $sortDirection);
     } elseif ($sortColumn === 'host') {
       $query->orderBy('traffic_logs.host', $sortDirection);
     } elseif ($sortColumn === 'integration') {
       $query->orderBy('integrations.name', $sortDirection);
+    } elseif ($sortColumn === 'buyer') {
+      $query->orderBy('offerwall_conversions.offer_company_name', $sortDirection); // Sort by buyer company name
     } else {
       $query->orderBy("offerwall_conversions.$sortColumn", $sortDirection);
     }
@@ -278,7 +336,7 @@ class OfferwallController extends Controller
       'name' => 'required|string|max:255',
       'description' => 'nullable|string',
       'integration_ids' => 'required|array|min:1',
-      'integration_ids.*' => 'exists:integrations,id'
+      'integration_ids.*' => 'exists:integrations,id',
     ]);
     try {
       $offerwallMix = OfferwallMix::create([
@@ -290,16 +348,22 @@ class OfferwallController extends Controller
       // Attach integrations to the mix
       $offerwallMix->integrations()->attach($request->integration_ids);
 
-      return response()->json([
-        'success' => true,
-        'message' => 'Offerwall mix created successfully',
-        'data' => $offerwallMix->load('integrations')
-      ], 201);
+      return response()->json(
+        [
+          'success' => true,
+          'message' => 'Offerwall mix created successfully',
+          'data' => $offerwallMix->load('integrations'),
+        ],
+        201,
+      );
     } catch (\Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Error creating offerwall mix: ' . $e->getMessage()
-      ], 500);
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Error creating offerwall mix: ' . $e->getMessage(),
+        ],
+        500,
+      );
     }
   }
 
@@ -312,7 +376,7 @@ class OfferwallController extends Controller
 
     return response()->json([
       'success' => true,
-      'data' => $offerwallMix
+      'data' => $offerwallMix,
     ]);
   }
 
@@ -325,7 +389,7 @@ class OfferwallController extends Controller
 
     return response()->json([
       'success' => true,
-      'data' => $offerwallMix
+      'data' => $offerwallMix,
     ]);
   }
 
@@ -338,7 +402,7 @@ class OfferwallController extends Controller
       'name' => 'required|string|max:255',
       'description' => 'nullable|string',
       'integration_ids' => 'required|array|min:1',
-      'integration_ids.*' => 'exists:integrations,id'
+      'integration_ids.*' => 'exists:integrations,id',
     ]);
 
     try {
@@ -350,16 +414,22 @@ class OfferwallController extends Controller
       // Sync integrations (this will remove old ones and add new ones)
       $offerwallMix->integrations()->sync($request->integration_ids);
 
-      return response()->json([
-        'success' => true,
-        'message' => 'Offerwall mix updated successfully',
-        'data' => $offerwallMix->load('integrations')
-      ], 200);
+      return response()->json(
+        [
+          'success' => true,
+          'message' => 'Offerwall mix updated successfully',
+          'data' => $offerwallMix->load('integrations'),
+        ],
+        200,
+      );
     } catch (\Exception $e) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Error updating offerwall mix: ' . $e->getMessage()
-      ], 500);
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Error updating offerwall mix: ' . $e->getMessage(),
+        ],
+        500,
+      );
     }
   }
 
@@ -369,7 +439,7 @@ class OfferwallController extends Controller
   public function destroy(OfferwallMix $offerwallMix)
   {
     $offerwallMix->delete();
-    add_flash_message(type: "success", message: "Offerwall mix deleted successfully.");
-    return  back();
+    add_flash_message(type: 'success', message: 'Offerwall mix deleted successfully.');
+    return back();
   }
 }
