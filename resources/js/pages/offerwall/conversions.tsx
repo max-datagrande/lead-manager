@@ -24,6 +24,8 @@ type Conversions = {
   created_at: string;
   updated_at: string;
   placement_id: string;
+  company: string; // Add company name for frontend
+  buyer: string; // Add buyer company name for frontend
 };
 interface IndexProps extends DatatablePageProps<Conversions> {
   totalPayout: number;
@@ -35,6 +37,7 @@ interface IndexProps extends DatatablePageProps<Conversions> {
     cptypes: Array<{ value: string; label: string }>;
     placements: Array<{ value: string; label: string }>;
     states: Array<{ value: string; label: string }>;
+    buyerCompanies: Array<{ value: string; label: string }>; // Add buyerCompanies for faceted filter
   };
 }
 
@@ -154,6 +157,11 @@ const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
                 columnId: 'state',
                 title: 'State',
                 options: data.states,
+              },
+              {
+                columnId: 'buyer', // New Buyer filter
+                title: 'Buyer',
+                options: data.buyerCompanies,
               },
             ],
             dateRange: { column: 'created_at', label: 'Created At' },

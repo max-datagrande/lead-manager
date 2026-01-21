@@ -86,6 +86,7 @@ class ConversionService
         'placement_id' => $callLog->mapped_field_values['cptype'] ?? null,
       ];
 
+      $offerCompanyName = null;
       // Extract original offer data
       if (!empty($callLog->response_body)) {
         $parserConfig = $integration->response_parser_config;
@@ -94,6 +95,11 @@ class ConversionService
 
         if (isset($offers[$offerIndex])) {
           $offerData = $offers[$offerIndex];
+          // Get company name from the offer data using the mapping
+          $companyMappingPath = $parserConfig['mapping']['company'] ?? null;
+          if ($companyMappingPath) {
+            $offerCompanyName = data_get($offerData, $companyMappingPath);
+          }
         }
       }
     } else {
@@ -118,6 +124,7 @@ class ConversionService
       'offer_data' => $offerData ?: null,
       'pathname' => $data['pathname'] ?? null,
       'tracked_fields' => $trackedFields ?: null,
+      'offer_company_name' => $offerCompanyName,
     ];
 
     try {

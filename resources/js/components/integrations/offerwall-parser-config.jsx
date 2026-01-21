@@ -12,6 +12,7 @@ const MAPPING_FIELDS = [
   { key: 'impression_url', label: 'Impression URL' },
   { key: 'cpc', label: 'CPC' },
   { key: 'display_name', label: 'Display Name' },
+  { key: 'company', label: 'Company' },
 ];
 
 export function OfferwallParserConfig() {
