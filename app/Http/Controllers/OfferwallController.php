@@ -38,91 +38,16 @@ class OfferwallController extends Controller
   /**
    * Display a listing of the offerwall conversions.
    */
+  /**
+   * Display a listing of the offerwall conversions.
+   */
   public function conversions(Request $request)
   {
-    // Iniciamos la query usando Joins para máxima eficiencia
-    // Eliminamos 'latestTrafficLog' del eager loading ya que usamos el join directo
-    $query = OfferwallConversion::with(['integration.company'])
-      ->select([
-        'offerwall_conversions.*',
-        'integrations.company_id as company_id',
-        'traffic_logs.host as host_name'
-      ])
-      // INNER JOIN con integrations para obtener la empresa
-      ->join('integrations', 'offerwall_conversions.integration_id', '=', 'integrations.id')
-      // LEFT JOIN con traffic_logs para obtener el host
-      ->leftJoin('traffic_logs', function ($join) {
-        $join->on('offerwall_conversions.fingerprint', '=', 'traffic_logs.fingerprint');
-      });
-
-    // Filtro de búsqueda global
-    if ($search = $request->input('search')) {
-      $query->where(function ($q) use ($search) {
-        $q->where('offerwall_conversions.click_id', 'like', '%' . $search . '%')
-          ->orWhere('offerwall_conversions.utm_source', 'like', '%' . $search . '%')
-          ->orWhere('offerwall_conversions.utm_medium', 'like', '%' . $search . '%')
-          ->orWhere('offerwall_conversions.fingerprint', 'like', '%' . $search . '%')
-          ->orWhere('offerwall_conversions.tracked_fields->cptype', 'like', '%' . $search . '%')
-          ->orWhere('offerwall_conversions.tracked_fields->placement_id', 'like', '%' . $search . '%')
-          ->orWhere('integrations.name', 'like', '%' . $search . '%');
-      });
-    }
-
-    // Aplicar filtros por columna
-    $columnFilters = json_decode($request->input('filters', '[]'), true);
-    foreach ($columnFilters as $filter) {
-      if (isset($filter['id']) && isset($filter['value'])) {
-        $val = (array) $filter['value'];
-        switch ($filter['id']) {
-          case 'from_date':
-            $query->where('offerwall_conversions.created_at', '>=', $filter['value']);
-            break;
-          case 'to_date':
-            $query->where('offerwall_conversions.created_at', '<=', $filter['value']);
-            break;
-          case 'integration':
-            $query->whereIn('offerwall_conversions.integration_id', $val);
-            break;
-          case 'company':
-            $query->whereIn('integrations.company_id', $val);
-            break;
-          case 'host':
-            $query->whereIn('traffic_logs.host', $val);
-            break;
-          case 'pathname':
-            $query->whereIn('offerwall_conversions.pathname', $val);
-            break;
-          case 'cptype':
-            $query->whereIn('offerwall_conversions.tracked_fields->cptype', $val);
-            break;
-          case 'placement_id':
-            $query->whereIn('offerwall_conversions.tracked_fields->placement_id', $val);
-            break;
-          case 'state':
-            $query->whereIn('offerwall_conversions.tracked_fields->state', $val);
-            break;
-        }
-      }
-    }
+    $query = $this->buildConversionsQuery($request);
 
     // Cálculo del payout total antes de la paginación
-    $totalPayout = $query->sum('offerwall_conversions.amount');
-
-    // Aplicar ordenamiento
-    $sort = $request->input('sort', 'created_at:desc');
-    [$sortColumn, $sortDirection] = get_sort_data($sort);
-
-    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
-      $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
-    } elseif ($sortColumn === 'company') {
-      $query->orderBy('integrations.company_id', $sortDirection);
-    } elseif ($sortColumn === 'host') {
-      $query->orderBy('traffic_logs.host', $sortDirection);
-    } elseif ($sortColumn === 'integration') {
-      $query->orderBy('offerwall_conversions.integration_id', $sortDirection);
-    } else {
-      $query->orderBy("offerwall_conversions.$sortColumn", $sortDirection);
-    }
+    // Clonamos la query para no afectar la paginación con el sum
+    $totalPayout = (clone $query)->sum('offerwall_conversions.amount');
 
     // Paginación con agrupamiento para evitar duplicados por el join
     $perPage = $request->input('per_page', 15);
@@ -160,27 +85,6 @@ class OfferwallController extends Controller
       ->pluck('pathname')
       ->map(fn($p) => ['value' => $p, 'label' => $p]);
 
-    //Company
-    $companies = Integration::with('company')
-      ->where('type', 'offerwall')
-      ->whereNotNull('company_id')
-      ->get()
-      ->unique('company_id')
-      ->map(function ($integration) {
-        return ['value' => (string) $integration->company_id, 'label' => $integration->company->name];
-      })
-      ->values();
-    //Paths
-    $paths = OfferwallConversion::select('pathname')
-      ->distinct()
-      ->whereNotNull('pathname')
-      ->orderBy('pathname')
-      ->pluck('pathname')
-      ->map(function ($pathname) {
-        return ['value' => $pathname, 'label' => $pathname];
-      });
-
-    // Hosts - Obtener hosts únicos a través de traffic logs
     $hosts = \App\Models\TrafficLog::select('host')
       ->whereIn('fingerprint', function ($query) {
         $query->select('fingerprint')->from('offerwall_conversions');
@@ -193,7 +97,6 @@ class OfferwallController extends Controller
         return ['value' => $host, 'label' => $host];
       });
 
-    // CPType - Obtener valores únicos del campo cptype
     $cptypes = OfferwallConversion::query()
       ->select('tracked_fields->cptype as value')
       ->distinct()
@@ -204,7 +107,6 @@ class OfferwallController extends Controller
         return ['value' => $value, 'label' => $value];
       });
 
-    // Placements - Obtener valores únicos del campo placement_id
     $placements = OfferwallConversion::query()
       ->select('tracked_fields->placement_id as value')
       ->distinct()
@@ -215,7 +117,6 @@ class OfferwallController extends Controller
         return ['value' => $value, 'label' => $value];
       });
 
-    // State - Obtener valores únicos del campo state
     $states = OfferwallConversion::query()
       ->select('tracked_fields->state as value')
       ->distinct()
@@ -227,9 +128,9 @@ class OfferwallController extends Controller
       });
 
     $state =  [
-      'filters' => $columnFilters,
-      'sort' => $sort,
-      'search' => $search,
+      'filters' => json_decode($request->input('filters', '[]'), true),
+      'sort' => $request->input('sort', 'created_at:desc'),
+      'search' => $request->input('search'),
     ];
 
     return Inertia::render('offerwall/conversions', [
@@ -257,105 +158,17 @@ class OfferwallController extends Controller
   public function conversionReport(Request $request)
   {
     return new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
-      // Set delimiter based on client OS for Excel compatibility
+      $query = $this->buildConversionsQuery($request);
       $delimiter = $request->input('os') === 'windows' ? ';' : ',';
 
-      // Iniciamos la query usando Joins para máxima eficiencia (igual que en conversions)
-      $query = OfferwallConversion::with(['integration.company'])
-        ->select([
-          'offerwall_conversions.*',
-          'integrations.company_id as company_id',
-          'traffic_logs.host as host_name'
-        ])
-        ->join('integrations', 'offerwall_conversions.integration_id', '=', 'integrations.id')
-        ->leftJoin('traffic_logs', function ($join) {
-          $join->on('offerwall_conversions.fingerprint', '=', 'traffic_logs.fingerprint');
-        });
-
-      // Filtro de búsqueda global
-      if ($search = $request->input('search')) {
-        $query->where(function ($q) use ($search) {
-          $q->where('offerwall_conversions.click_id', 'like', '%' . $search . '%')
-            ->orWhere('offerwall_conversions.utm_source', 'like', '%' . $search . '%')
-            ->orWhere('offerwall_conversions.utm_medium', 'like', '%' . $search . '%')
-            ->orWhere('offerwall_conversions.fingerprint', 'like', '%' . $search . '%')
-            ->orWhere('offerwall_conversions.tracked_fields->cptype', 'like', '%' . $search . '%')
-            ->orWhere('offerwall_conversions.tracked_fields->placement_id', 'like', '%' . $search . '%')
-            ->orWhere('integrations.name', 'like', '%' . $search . '%');
-        });
-      }
-
-      // Aplicar filtros por columna
-      $columnFilters = json_decode($request->input('filters', '[]'), true);
-      foreach ($columnFilters as $filter) {
-        if (isset($filter['id']) && isset($filter['value'])) {
-          $val = (array) $filter['value'];
-          switch ($filter['id']) {
-            case 'from_date':
-              $query->where('offerwall_conversions.created_at', '>=', $filter['value']);
-              break;
-            case 'to_date':
-              $query->where('offerwall_conversions.created_at', '<=', $filter['value']);
-              break;
-            case 'integration':
-              $query->whereIn('offerwall_conversions.integration_id', $val);
-              break;
-            case 'company':
-              $query->whereIn('integrations.company_id', $val);
-              break;
-            case 'host':
-              $query->whereIn('traffic_logs.host', $val);
-              break;
-            case 'pathname':
-              $query->whereIn('offerwall_conversions.pathname', $val);
-              break;
-            case 'cptype':
-              $query->whereIn('offerwall_conversions.tracked_fields->cptype', $val);
-              break;
-            case 'placement_id':
-              $query->whereIn('offerwall_conversions.tracked_fields->placement_id', $val);
-              break;
-            case 'state':
-              $query->whereIn('offerwall_conversions.tracked_fields->state', $val);
-              break;
-          }
-        }
-      }
-
-      // Aplicar ordenamiento
-      $sort = $request->input('sort', 'created_at:desc');
-      [$sortColumn, $sortDirection] = get_sort_data($sort);
-
-      if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
-        $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
-      } elseif ($sortColumn === 'company') {
-        $query->orderBy('integrations.company_id', $sortDirection);
-      } elseif ($sortColumn === 'host') {
-        $query->orderBy('traffic_logs.host', $sortDirection);
-      } elseif ($sortColumn === 'integration') {
-        $query->orderBy('offerwall_conversions.integration_id', $sortDirection);
-      } else {
-        $query->orderBy("offerwall_conversions.$sortColumn", $sortDirection);
-      }
-
       $handle = fopen('php://output', 'w');
-      // Add CSV headers
       fputcsv($handle, [
-        'ID',
-        'Fingerprint',
-        'Integration',
-        'Company',
-        'Payout',
-        'CPType',
-        'Placement ID',
-        'Pathname',
-        'Click ID',
-        'UTM Source',
-        'UTM Medium',
-        'Converted At',
+        'ID', 'Fingerprint', 'Integration', 'Company', 'Payout', 'CPType',
+        'Placement ID', 'Pathname', 'Click ID', 'UTM Source', 'UTM Medium', 'Converted At',
       ], $delimiter);
 
-      foreach ($query->cursor() as $conversion) {
+      // Usamos groupBy en el cursor para evitar duplicados del join
+      foreach ($query->groupBy('offerwall_conversions.id')->cursor() as $conversion) {
         fputcsv($handle, [
           $conversion->id,
           $conversion->fingerprint,
@@ -377,6 +190,75 @@ class OfferwallController extends Controller
       'Content-Type' => 'text/csv',
       'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
     ]);
+  }
+
+  /**
+   * Builds the base query for offerwall conversions with all filters and sorting.
+   *
+   * @param Request $request
+   * @return \Illuminate\Database\Eloquent\Builder
+   */
+  private function buildConversionsQuery(Request $request)
+  {
+    $query = OfferwallConversion::with(['integration.company'])
+      ->select([
+        'offerwall_conversions.*',
+        'traffic_logs.host as host_name'
+      ])
+      ->join('integrations', 'offerwall_conversions.integration_id', '=', 'integrations.id')
+      ->leftJoin('traffic_logs', 'offerwall_conversions.fingerprint', '=', 'traffic_logs.fingerprint');
+
+    // Global search
+    if ($search = $request->input('search')) {
+      $query->where(function ($q) use ($search) {
+        $q->where('offerwall_conversions.click_id', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.utm_source', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.utm_medium', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.fingerprint', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.tracked_fields->cptype', 'like', '%' . $search . '%')
+          ->orWhere('offerwall_conversions.tracked_fields->placement_id', 'like', '%' . $search . '%')
+          ->orWhere('integrations.name', 'like', '%' . $search . '%');
+      });
+    }
+
+    // Column filters
+    $columnFilters = json_decode($request->input('filters', '[]'), true);
+    foreach ($columnFilters as $filter) {
+      if (isset($filter['id']) && isset($filter['value'])) {
+        $val = (array) $filter['value'];
+        switch ($filter['id']) {
+          case 'from_date': $query->where('offerwall_conversions.created_at', '>=', $filter['value']); break;
+          case 'to_date': $query->where('offerwall_conversions.created_at', '<=', $filter['value']); break;
+          case 'integration': $query->whereIn('offerwall_conversions.integration_id', $val); break;
+          case 'company': $query->whereIn('integrations.company_id', $val); break;
+          case 'host': $query->whereIn('traffic_logs.host', $val); break;
+          case 'pathname': $query->whereIn('offerwall_conversions.pathname', $val); break;
+          case 'cptype': $query->whereIn('offerwall_conversions.tracked_fields->cptype', $val); break;
+          case 'placement_id': $query->whereIn('offerwall_conversions.tracked_fields->placement_id', $val); break;
+          case 'state': $query->whereIn('offerwall_conversions.tracked_fields->state', $val); break;
+        }
+      }
+    }
+
+    // Sorting
+    $sort = $request->input('sort', 'created_at:desc');
+    [$sortColumn, $sortDirection] = get_sort_data($sort);
+
+    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+      $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
+    } elseif ($sortColumn === 'company') {
+      // Assuming sorting by company name, which would require another join or denormalized column.
+      // For now, sorting by company_id as a proxy.
+      $query->orderBy('integrations.company_id', $sortDirection);
+    } elseif ($sortColumn === 'host') {
+      $query->orderBy('traffic_logs.host', $sortDirection);
+    } elseif ($sortColumn === 'integration') {
+      $query->orderBy('integrations.name', $sortDirection);
+    } else {
+      $query->orderBy("offerwall_conversions.$sortColumn", $sortDirection);
+    }
+
+    return $query;
   }
 
   /**
