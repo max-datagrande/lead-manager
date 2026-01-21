@@ -25,6 +25,7 @@ class OfferwallConversion extends Model
         'offer_data',
         'pathname',
         'tracked_fields',
+        'offer_company_name',
     ];
 
     /**
