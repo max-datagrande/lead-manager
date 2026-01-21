@@ -162,73 +162,64 @@ class OfferwallController extends Controller
 
   public function conversionReport(Request $request)
   {
-    try {
-      return new \Symfony\Component\HttpFoundation\StreamedResponse(
-        function () use ($request) {
-          $query = $this->buildConversionsQuery($request);
-          $delimiter = $request->input('os') === 'windows' ? ';' : ',';
+    return new \Symfony\Component\HttpFoundation\StreamedResponse(
+      function () use ($request) {
+        $query = $this->buildConversionsQuery($request);
 
-          $handle = fopen('php://output', 'w');
+        $delimiter = $request->input('os') === 'windows' ? ';' : ',';
+
+        $handle = fopen('php://output', 'w');
+
+        fputcsv(
+          $handle,
+          [
+            'ID',
+            'Fingerprint',
+            'Integration',
+            'Company',
+            'Buyer',
+            'Payout',
+            'CPType',
+            'Placement ID',
+            'Pathname',
+            'Click ID',
+            'UTM Source',
+            'UTM Medium',
+            'Converted At',
+          ],
+          $delimiter,
+        );
+
+        // Usamos groupBy en el cursor para evitar duplicados del join
+        foreach ($query->groupBy('offerwall_conversions.id', 'integrations.company_id', 'traffic_logs.host')->limit(1000)->get() as $conversion) {
           fputcsv(
             $handle,
             [
-              'ID',
-              'Fingerprint',
-              'Integration',
-              'Company',
-              'Buyer', // New Buyer column
-              'Payout',
-              'CPType',
-              'Placement ID',
-              'Pathname',
-              'Click ID',
-              'UTM Source',
-              'UTM Medium',
-              'Converted At',
+              $conversion->id,
+              $conversion->fingerprint,
+              $conversion->integration->name,
+              $conversion->integration->company->name,
+              $conversion->offer_company_name,
+              $conversion->amount,
+              $conversion->tracked_fields['cptype'] ?? '',
+              $conversion->tracked_fields['placement_id'] ?? '',
+              $conversion->pathname,
+              $conversion->click_id,
+              $conversion->utm_source,
+              $conversion->utm_medium,
+              $conversion->created_at->toDateTimeString(),
             ],
             $delimiter,
           );
-
-          // Usamos groupBy en el cursor para evitar duplicados del join
-          foreach ($query->groupBy('offerwall_conversions.id')->cursor() as $conversion) {
-            // Add companies.name to groupBy
-            fputcsv(
-              $handle,
-              [
-                $conversion->id,
-                $conversion->fingerprint,
-                $conversion->integration->name,
-                $conversion->company_name, // Use company_name from join
-                $conversion->integration->company->name,
-                $conversion->amount,
-                $conversion->tracked_fields['cptype'] ?? '',
-                $conversion->tracked_fields['placement_id'] ?? '',
-                $conversion->pathname,
-                $conversion->click_id,
-                $conversion->utm_source,
-                $conversion->utm_medium,
-                $conversion->created_at->toDateTimeString(),
-              ],
-              $delimiter,
-            );
-          }
-          fclose($handle);
-        },
-        200,
-        [
-          'Content-Type' => 'text/csv',
-          'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
-        ],
-      );
-    } catch (\Throwable $th) {
-      return response()->json(
-        [
-          'error' => $th->getMessage(),
-          'trace' => $th->getTraceAsString(),
-        ],
-        500,
-      );
-    }
+        }
+        fclose($handle);
+      },
+      200,
+      [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
+      ],
+    );
   }
 
   /**
