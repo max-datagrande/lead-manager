@@ -191,7 +191,7 @@ class OfferwallController extends Controller
         );
 
         // Usamos groupBy en el cursor para evitar duplicados del join
-        foreach ($query->groupBy('offerwall_conversions.id', 'integrations.company_id', 'traffic_logs.host')->limit(1000)->get() as $conversion) {
+        foreach ($query->groupBy('offerwall_conversions.id', 'integrations.company_id', 'traffic_logs.host')->cursor() as $conversion) {
           fputcsv(
             $handle,
             [
