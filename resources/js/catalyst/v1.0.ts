@@ -363,7 +363,7 @@ class CatalystCore {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
     }
 
-    const payload = {
+    const payload : Record<string, any> = {
       fingerprint,
       placement,
       ...data,
@@ -404,6 +404,10 @@ class CatalystCore {
     }
   }
 
+  getFingerprint(): string | null {
+    return this.visitorData?.fingerprint || null;
+  }
+
   /**
    * Registra una conversión de Offerwall.
    * @param data Datos de la conversión
@@ -413,9 +417,19 @@ class CatalystCore {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante.');
     }
 
+    if (!data.offer_token) {
+      throw new Error('Catalyst SDK: offer_token is required.');
+    }
+
+    if (data.amount === undefined || data.amount === null) {
+      throw new Error('Catalyst SDK: amount is required.');
+    }
+
     const payload: OfferwallConversionRequest = {
       fingerprint: this.visitorData.fingerprint,
-      ...data,
+      pathname: window.location.pathname,
+      amount: Number(data.amount),
+      offer_token: data.offer_token
     };
 
     try {

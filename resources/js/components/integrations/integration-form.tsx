@@ -137,7 +137,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         </CardHeader>
         {data.use_custom_transformer && (
           <CardContent>
-            <PayloadEditor code={data.payload_transformer} onChange={(value:string) => setData('payload_transformer', value)} />
+            <PayloadEditor code={data.payload_transformer} onChange={(value: string) => setData('payload_transformer', value)} />
           </CardContent>
         )}
       </Card>

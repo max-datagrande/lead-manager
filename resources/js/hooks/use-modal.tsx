@@ -1,4 +1,5 @@
 import ConfirmDialog from '@/components/confirm-dialog';
+import PromptDialog from '@/components/prompt-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 /* import { router } from '@inertiajs/react'; */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -34,12 +35,25 @@ type ConfirmOptions = {
 };
 
 /**
+ * Options for the prompt dialog
+ */
+type PromptOptions = {
+  title?: string;
+  description?: string;
+  defaultValue?: string;
+  placeholder?: string;
+  confirmText?: string;
+  cancelText?: string;
+};
+
+/**
  * Modal context type that exposes the entire API
  */
 type ModalContextType = {
   open: (node: React.ReactNode, options?: ModalOptions) => number;
   openAsync: <T = unknown>(node: React.ReactNode, options?: ModalOptions) => Promise<T>;
   confirm: (opts: ConfirmOptions) => Promise<boolean>;
+  prompt: (opts: PromptOptions) => Promise<string | null>;
   close: (id?: number) => void;
   closeAll: () => void;
   resolve: <T = unknown>(id: number, value: T) => void;
@@ -139,6 +153,21 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
     });
   }, []);
 
+  /**
+   * Opens a standard prompt dialog
+   */
+  const prompt = useCallback((opts: PromptOptions) => {
+    return new Promise<string | null>((resolve) => {
+      const id = ++_id;
+      const node = (
+        <ModalScope id={id}>
+          <PromptDialog id={id} {...opts} />
+        </ModalScope>
+      );
+      setStack((s) => [...s, { id, node, resolve }]);
+    });
+  }, []);
+
   // Auto-close when navigating with Inertia (optional)
   /* useEffect(() => {
     if (!autoCloseOnNavigate) return;
@@ -153,13 +182,14 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
       open,
       openAsync,
       confirm,
+      prompt,
       close,
       closeAll,
       resolve,
       reject,
       topId: stack.at(-1)?.id ?? null,
     }),
-    [open, openAsync, confirm, close, closeAll, resolve, reject, stack],
+    [open, openAsync, confirm, prompt, close, closeAll, resolve, reject, stack],
   );
 
   return (

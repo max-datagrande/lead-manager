@@ -1,4 +1,4 @@
-import { DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -66,6 +66,7 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
     <>
       <DialogHeader>
         <DialogTitle>Lead Details</DialogTitle>
+        <DialogDescription>View detailed information about this lead.</DialogDescription>
       </DialogHeader>
 
       <div className="flex-1 pr-2">

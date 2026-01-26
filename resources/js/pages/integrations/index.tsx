@@ -33,7 +33,7 @@ const Index = ({ rows }: IndexProps) => {
   return (
     <>
       <Head title="Integrations" />
-      <div id="holasdf" className="relative flex-1 space-y-6 overflow-auto p-6 md:p-8">
+      <div id="holasdf" className="relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Integrations" description="Manage integrations and their environments.">
           <IntegrationPrimaryButtons />
         </PageHeader>
@@ -82,12 +82,6 @@ const IntegrationPrimaryButtons = () => {
   return (
     <div className="flex justify-end gap-2">
       {/* Create */}
-      <Link href={route('integrations.create')}>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Integration
-        </Button>
-      </Link>
       {isLocalEnv && (
         <>
           <Button onClick={confirmSync} variant="outline" className="flex items-center gap-2">
@@ -96,6 +90,12 @@ const IntegrationPrimaryButtons = () => {
           </Button>
         </>
       )}
+      <Link href={route('integrations.create')}>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add Integration
+        </Button>
+      </Link>
     </div>
   );
 };

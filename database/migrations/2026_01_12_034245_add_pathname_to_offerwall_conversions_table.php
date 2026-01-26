@@ -11,9 +11,11 @@ return new class extends Migration
    */
   public function up(): void
   {
-    Schema::table('users', function (Blueprint $table) {
-      $table->enum('role', ['admin', 'manager', 'user'])->default('user');
+    Schema::table('offerwall_conversions', function (Blueprint $table) {
+      // Se usa string para permitir cualquier ruta, incluyendo '/'
+      $table->string('pathname')->nullable()->after('offer_data')->index();
     });
+
   }
 
   /**
@@ -21,8 +23,8 @@ return new class extends Migration
    */
   public function down(): void
   {
-    Schema::table('users', function (Blueprint $table) {
-      $table->dropColumn('role');
+    Schema::table('offerwall_conversions', function (Blueprint $table) {
+      $table->dropColumn('pathname');
     });
   }
 };

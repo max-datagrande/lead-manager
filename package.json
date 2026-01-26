@@ -19,6 +19,7 @@
     "@prettier/plugin-php": "^0.24.0",
     "@types/node": "^22.13.5",
     "@typescript-eslint/parser": "^8.39.0",
+    "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.3",

@@ -13,6 +13,8 @@ class IntegrationCallLog extends Model
         'request_payload' => 'array',
         'response_headers' => 'array',
         'response_body' => 'array',
+        'original_field_values' => 'array',
+        'mapped_field_values' => 'array',
     ];
 
     public function loggable()
