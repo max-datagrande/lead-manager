@@ -8,12 +8,14 @@ import CopyToClipboard from '@/components/copy-to-clipboard';
  * @returns {JSX.Element} Fingerprint truncado con tooltip y botón de copia
  */
 const FingerprintCell = ({ fingerprint }) => {
-  const truncated = fingerprint ? fingerprint.substring(0, 8) + '...' : 'N/A';
+  /* const truncated = fingerprint ? fingerprint.substring(0, 20) + '...' : 'N/A'; */
+  //Show the last 10 characters of the fingerprint
+  const truncated = fingerprint ? fingerprint.substring(fingerprint.length - 20) : 'N/A';
   const textToCopy = fingerprint || 'N/A';
 
   return (
     <CopyToClipboard textToCopy={textToCopy}>
-      <span className="cursor-help font-mono text-xs" title={fingerprint}>
+      <span className="font-mono text-xs" title={fingerprint}>
         {truncated}
       </span>
     </CopyToClipboard>

@@ -11,11 +11,22 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
+use App\Services\IntegrationService;
 use Throwable;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
+use Twig\TwigFunction;
 
 class MixService
 {
-  public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint): array
+  private IntegrationService $integrationService;
+
+  public function __construct(IntegrationService $integrationService)
+  {
+    $this->integrationService = $integrationService;
+  }
+
+  public function fetchAndAggregateOffers(OfferwallMix $mix, string $fingerprint, ?string $placement = null): array
   {
     $startTime = microtime(true);
     $lead = Lead::getLeadWithResponses($fingerprint);
@@ -31,14 +42,14 @@ class MixService
 
     $integrations = $mix->integrations()->where('is_active', true)->get();
     $leadData = $this->prepareLeadData($lead);
-
     $mixLog = null;
     try {
-      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog) {
+      $result = DB::transaction(function () use ($mix, $lead, $integrations, $leadData, $startTime, &$mixLog, $placement) {
         $mixLog = OfferwallMixLog::create([
           'offerwall_mix_id' => $mix->id,
           'fingerprint' => $lead->fingerprint,
           'origin' => $lead->host,
+          'placement' => $placement,
           'total_integrations' => $integrations->count(),
         ]);
 
@@ -58,20 +69,38 @@ class MixService
             continue;
           }
 
-          $template = $prodEnv->request_body ?? '';
           $mappingConfig = $integration->request_mapping_config ?? [];
-          $payload = $this->buildPayload($leadData, $template, $mappingConfig);
+
+          // Prepare Body
+          $payloadResult = $this->preparePayload($integration, $leadData, $prodEnv);
+          $payloadArray = $payloadResult['payloadArray'];
+
+          // Prepare Headers
+          $headersTemplate = $prodEnv->request_headers ?? '[]';
+          $headersReplacements = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+          $processor = new \App\Services\PayloadProcessorService();
+          $headersParsed = $processor->process($headersTemplate, $headersReplacements['finalReplacements']);
+          $headers = json_decode($headersParsed, true) ?? [];
+          
           $method = strtolower($prodEnv->method ?? 'post');
-          $headers = json_decode($prodEnv->request_headers ?? '[]', true);
           $url = $prodEnv->url;
-          $requestsData[$integration->id] = compact('integration', 'url', 'payload', 'method', 'headers');
+
+          $requestsData[$integration->id] = [
+            'integration' => $integration,
+            'url' => $url,
+            'payloadArray' => $payloadArray,
+            'method' => $method,
+            'headers' => $headers,
+            'originalValues' => $payloadResult['originalValues'],
+            'mappedValues' => $payloadResult['mappedValues'],
+          ];
         }
 
         $responses = Http::pool(function (Pool $pool) use ($requestsData) {
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
             $headers = $data['headers'];
-            $payloadArray = json_decode($data['payload'], true) ?? [];
+            $payloadArray = $data['payloadArray'];
             $method = $data['method'];
             $request = $pool->as($integrationId)->withHeaders($headers);
             $request->{$method}($url, $payloadArray);
@@ -88,13 +117,27 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
-          if ($response->successful()) {
+          $this->logIntegrationCall(
+            $mixLog,
+            $integration,
+            $response,
+            $requestData['method'],
+            $requestData['headers'],
+            $requestData['payloadArray'],
+            $requestData['originalValues'],
+            $requestData['mappedValues']
+          );
+
+          if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
-            $offers = $this->parseOffers($response, $integration);
+            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
+            $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
         }
+
+        // Ordenar ofertas por CPC
+        $aggregatedOffers = $this->sortOffersByCpc($aggregatedOffers);
         $durationMs = (microtime(true) - $startTime) * 1000;
         $durationRounded = (int) round($durationMs);
         $mixLog->update([
@@ -137,7 +180,6 @@ class MixService
       return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
-
       $slack = new SlackMessageBundler();
       $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
@@ -153,9 +195,9 @@ class MixService
 
       // Registrar en logs en modo debug, no enviar a Slack
       if (app()->environment('local')) {
-        $slack->sendDebugLog('errors');
+        $slack->sendDebugLog('error');
       } else {
-        $slack->sendDirect();
+        $slack->sendDirect('error');
       }
 
       return [
@@ -172,71 +214,136 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function buildPayload(array $leadData, string $template, array $mappingConfig): string
+  private function preparePayload($integration, array $leadData, $prodEnv): array
   {
-    if (empty($template)) {
-      return '';
-    }
+    $template = $prodEnv->request_body ?? '';
+    $mappingConfig = $integration->request_mapping_config ?? [];
 
-    $replacements = [];
-    foreach ($mappingConfig as $tokenName => $config) {
-      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+    $replacementsResult = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+    
+    $processor = new \App\Services\PayloadProcessorService();
+    $payloadString = $processor->process($template, $replacementsResult['finalReplacements']);
+    $payloadArray = json_decode($payloadString, true) ?? [];
 
-      if (isset($config['value_mapping']) && array_key_exists($value, $config['value_mapping'])) {
-        $value = $config['value_mapping'][$value];
+    // 2. Custom transformation using Twig
+    if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
+      try {
+        $loader = new ArrayLoader([
+          'index.html' => $integration->payload_transformer,
+        ]);
+        $twig = new Environment($loader);
+
+        $twig->addFunction(new TwigFunction('output_json', function ($data) {
+            return json_encode($data);
+        }, ['is_safe' => ['html']]));
+
+        $rendered = $twig->render('index.html', ['data' => $payloadArray]);
+        $transformed = json_decode($rendered, true);
+
+        if (json_last_error() === JSON_ERROR_NONE) {
+          $payloadArray = $transformed;
+        }
+      } catch (Throwable $e) {
+        TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
+          'integration_id' => $integration->id,
+          'error' => $e->getMessage()
+        ]);
       }
-
-      if (is_array($value) || is_object($value)) {
-        $value = json_encode($value);
-      }
-
-      $replacements['{' . $tokenName . '}'] = (string) $value;
     }
-
-    if (empty($replacements)) {
-      return $template;
-    }
-
-    return str_replace(array_keys($replacements), array_values($replacements), $template);
+    
+    return [
+        'payloadArray' => $payloadArray,
+        'originalValues' => $replacementsResult['originalValues'],
+        'mappedValues' => $replacementsResult['mappedValues'],
+    ];
   }
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, Response $response, string $method, array $headers, string $payload): void
-  {
-    $duration = $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
+  private function logIntegrationCall(
+    OfferwallMixLog $mixLog,
+    $integration,
+    $response,
+    string $method,
+    array $headers,
+    array $payload,
+    ?array $originalValues = null,
+    ?array $mappedValues = null
+  ): void {
+    $isResponse = $response instanceof Response;
+    $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
+
+    $status = 'failed';
+    $statusCode = 500;
+    $responseBody = 'Unknown Error';
+    $requestUrl = 'unknown';
+
+    if ($isResponse) {
+      $status = $response->successful() ? 'success' : 'failed';
+      $statusCode = $response->status();
+      $responseBody = $response->json() ?? $response->body();
+      $requestUrl = (string) $response->effectiveUri();
+    } elseif ($response instanceof \Throwable) {
+      $responseBody = [
+        'error' => get_class($response),
+        'message' => $response->getMessage(),
+        'file' => $response->getFile(),
+        'line' => $response->getLine()
+      ];
+    }
+
     $mixLog->integrationCallLogs()->create([
       'integration_id' => $integration->id,
-      'status' => $response->successful() ? 'success' : 'failed',
-      'http_status_code' => $response->status(),
+      'status' => $status,
+      'http_status_code' => $statusCode,
       'duration_ms' => (int) round($duration),
-      'request_url' => (string) $response->effectiveUri(),
+      'request_url' => $requestUrl,
       'request_method' => strtoupper($method),
       'request_headers' => $headers,
-      'request_payload' => json_decode($payload, true) ?? ['raw_body' => $payload],
-      'response_headers' => $response->headers(),
-      'response_body' => $response->json() ?? $response->body(),
+      'request_payload' => $payload,
+      'response_headers' => $isResponse ? $response->headers() : [],
+      'response_body' => $responseBody,
+      'original_field_values' => $originalValues,
+      'mapped_field_values' => $mappedValues,
     ]);
   }
 
-  private function parseOffers(Response $response, $integration): array
+  /**
+   * Agrega un token único a cada oferta para rastrear su origen.
+   */
+  private function enrichOffersWithToken(array $offers, int $mixLogId, int $integrationId): array
   {
-    $parserConfig = $integration->response_parser_config;
-    $jsonResponse = $response->json();
-    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
-    $offers = data_get($jsonResponse, $pathOfOffers);
-
-    if (!is_array($offers)) {
-      return [];
+    foreach ($offers as $index => &$offer) {
+      // Formato: mix_log_id|integration_id|index_in_response
+      $rawToken = "{$mixLogId}|{$integrationId}|{$index}";
+      $offer['offer_token'] = \Illuminate\Support\Facades\Crypt::encryptString($rawToken);
     }
+    unset($offer); // Romper referencia
 
-    $mappedOffers = [];
-    foreach ($offers as $offer) {
-      $mappedOffer = [];
-      foreach ($parserConfig['mapping'] as $key => $valuePath) {
-        $mappedOffer[$key] = data_get($offer, $valuePath);
+    return $offers;
+  }
+
+  /**
+   * Ordena las ofertas por CPC de mayor a menor.
+   * Los valores nulos o inválidos se mueven al final.
+   * Agrega un campo 'pos' indicando el ranking (empezando en 1).
+   */
+  private function sortOffersByCpc(array $offers): array
+  {
+    usort($offers, function ($a, $b) {
+      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float)$a['cpc'] : -1;
+      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float)$b['cpc'] : -1;
+
+      if ($cpcA == $cpcB) {
+        return 0;
       }
-      $mappedOffers[] = $mappedOffer;
+      // Orden descendente (mayor a menor)
+      return ($cpcA > $cpcB) ? -1 : 1;
+    });
+
+    // Asignar posición
+    foreach ($offers as $index => &$offer) {
+      $offer['pos'] = $index + 1;
     }
 
-    return $mappedOffers;
+    return $offers;
   }
 }

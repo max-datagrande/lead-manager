@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+  static $roles = ['admin', 'user', 'manager'];
   /** @use HasFactory<\Database\Factories\UserFactory> */
   use HasFactory, Notifiable;
 

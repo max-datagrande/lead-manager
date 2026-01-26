@@ -50,17 +50,20 @@ export default function TablePostbacks({ entries, meta, data }) {
       const newFilters = typeof filtersUpdate === 'function' ? filtersUpdate(columnFilters) : filtersUpdate;
       setColumnFilters(newFilters);
     },
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: (filterUpdate) => {
+      const newFilter = typeof filterUpdate === 'function' ? filterUpdate(globalFilter) : filterUpdate;
+      setGlobalFilter(newFilter);
+    },
+    getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualFiltering: true,
     manualPagination: true,
     pageCount: meta.last_page,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   useEffect(() => {
     getPostbacks({ page: pageIndex + 1, per_page: pageSize });
-  }, [sorting, columnFilters, globalFilter, pagination]);
+  }, [sorting, columnFilters, globalFilter]);
 
   return (
     <>
@@ -70,7 +73,6 @@ export default function TablePostbacks({ entries, meta, data }) {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            filterByColumn="created_at"
             config={{
               filters: [
                 {

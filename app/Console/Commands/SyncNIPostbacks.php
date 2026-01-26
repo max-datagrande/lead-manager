@@ -41,8 +41,8 @@ class SyncNIPostbacks extends Command
    */
   public function handle()
   {
-    $this->info('Starting NI Postback Synchronization for date: ' . now()->format('Y-m-d') . ' ...');
-    TailLogger::saveLog('SyncNIPostbacks: Starting job.', 'cron/sync-ni', 'info', []);
+    TailLogger::saveLog('Starting NI Postback Synchronization for date: ' . now()->format('Y-m-d'), 'cron/sync-ni');
+    TailLogger::saveLog('SyncNIPostbacks: Starting job.', 'cron/sync-ni');
 
     // 1. Fetch NI Report
     $this->line('Fetching recent conversions report from Natural Intelligence...');
@@ -114,6 +114,8 @@ class SyncNIPostbacks extends Command
         $notFoundCount++;
         TailLogger::saveLog('SyncNIPostbacks: Click ID not found in NI report.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId]);
       }
+      $this->line("Processed postback {$postback->id} for click ID {$clickId}");
+      sleep(2);
     });
 
     $this->newLine(2);

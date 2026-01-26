@@ -48,7 +48,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, ...pr
         {...props}
         id="json-editor"
         value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-        height="200px" // Ajusta la altura según sea necesario
+        height="450px" // Ajusta la altura según sea necesario
         extensions={[json(), linter(jsonParseLinter()), lintGutter()]}
         onChange={handleEditorChange}
         theme={theme === 'dark' ? 'dark' : 'light'} // O "dark", según tu preferencia

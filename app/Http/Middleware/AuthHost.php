@@ -24,6 +24,11 @@ class AuthHost
    */
   public function handle(Request $request, Closure $next): Response
   {
+    $host = request()->host();
+    $isAdmin = $host ? str_contains($host, 'admin') : false;
+    if ($isAdmin) {
+      return $next($request);
+    }
     $origin = $request->header('Origin');
     $userAgent = $request->header('User-Agent');
     $isPostman = str_contains($userAgent, 'PostmanRuntime');
@@ -48,6 +53,7 @@ class AuthHost
     }
 
     $targetHost = parse_url($origin, PHP_URL_HOST);
+
     if (!$targetHost) {
       $message = 'Forbidden - Could not parse host from Origin header.';
       TailLogger::saveLog($message, 'middleware/auth-host', 'warning', ['origin' => $origin, 'ip' => $request->ip(), 'url' => $request->fullUrl()]);
@@ -59,6 +65,7 @@ class AuthHost
         ? implode('.', array_slice($parts, -2))
         : $targetHost;
     // Validar el host usando ambos métodos
+
     if (!$this->hostValidationService->validateFromJson($rootDomain)) {
       $message = 'AuthHost: Forbidden - Host not allowed.';
       TailLogger::saveLog($message, 'middleware/auth-host', 'warning', [

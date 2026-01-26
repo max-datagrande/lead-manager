@@ -37,6 +37,8 @@ class IntegrationService
       'environments' => 'required|array|size:2',
       'environments.development.url' => 'required|url',
       'environments.production.url' => 'required|url',
+      'payload_transformer' => 'nullable|string',
+      'use_custom_transformer' => 'nullable|boolean',
     ]);
 
     if ($validator->fails()) {
@@ -54,6 +56,8 @@ class IntegrationService
         'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
+        'payload_transformer' => $data['payload_transformer'] ?? null,
+        'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {
@@ -67,7 +71,6 @@ class IntegrationService
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
       }
-
       return $integration;
     });
   }
@@ -96,6 +99,8 @@ class IntegrationService
       'environments' => 'required|array|size:2',
       'environments.development.url' => 'required|url',
       'environments.production.url' => 'required|url',
+      'payload_transformer' => 'nullable|string',
+      'use_custom_transformer' => 'nullable|boolean',
     ]);
 
     if ($validator->fails()) {
@@ -113,6 +118,8 @@ class IntegrationService
         'company_id' => $data['company_id'],
         'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
+        'payload_transformer' => $data['payload_transformer'] ?? null,
+        'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
       foreach ($data['environments'] as $envName => $envData) {
@@ -146,6 +153,45 @@ class IntegrationService
         ['integration_id' => $integration->id]
       );
     }
+  }
+
+  /**
+   * Duplicate an integration.
+   */
+  public function duplicateIntegration(Integration $integration, ?string $newName = null)
+  {
+    $integration->load('environments');
+
+    $data = [
+      'name' => $newName ?? ($integration->name . ' (Copy)'),
+      'type' => $integration->type,
+      'is_active' => false, // Set to inactive by default for safety
+      'company_id' => $integration->company_id,
+      'response_parser_config' => $integration->response_parser_config,
+      'request_mapping_config' => $integration->request_mapping_config,
+      'payload_transformer' => $integration->payload_transformer,
+      'use_custom_transformer' => $integration->use_custom_transformer,
+      'environments' => [],
+    ];
+
+    foreach ($integration->environments as $env) {
+      $headers = json_decode($env->request_headers, true) ?? [];
+      $formattedHeaders = [];
+      foreach ($headers as $key => $value) {
+        $formattedHeaders[] = ['key' => $key, 'value' => $value];
+      }
+
+      $data['environments'][$env->environment] = [
+        'url' => $env->url,
+        'method' => $env->method,
+        'request_headers' => $formattedHeaders,
+        'request_body' => $env->request_body,
+        'content_type' => $env->content_type,
+        'authentication_type' => $env->authentication_type,
+      ];
+    }
+
+    return $this->createIntegration($data);
   }
 
   /**
@@ -208,6 +254,93 @@ class IntegrationService
       }
     }
     return json_encode($mappedHeaders);
+  }
+
+  public function parseParams(array $leadData, string $template, array $mappingConfig): string
+  {
+    if (empty($template)) {
+      return '';
+    }
+
+    $replacementsResult = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+    $finalReplacements = $replacementsResult['finalReplacements'];
+
+    if (empty($finalReplacements)) {
+      return $template;
+    }
+
+    $processor = new \App\Services\PayloadProcessorService();
+    //$oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
+    $processedTemplate = $processor->process($template, $finalReplacements);
+    return $processedTemplate;
+  }
+
+  /**
+   * Parsea la respuesta de una integración de Offerwall para extraer las ofertas normalizadas.
+   *
+   * @param array $jsonResponse Respuesta decodificada (array) de la API externa
+   * @param Integration $integration Modelo de integración con su configuración de parseo
+   * @return array Lista de ofertas normalizadas
+   */
+  public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
+  {
+    TailLogger::saveLog(
+      "Parsing offerwall response for Integration ID: {$integration->id}",
+      'integrations/parsing',
+      'info',
+      ['integration_id' => $integration->id]
+    );
+
+    $parserConfig = $integration->response_parser_config;
+    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $offers = data_get($jsonResponse, $pathOfOffers);
+    TailLogger::saveLog(
+      "Offers found at path: {$pathOfOffers}",
+      'integrations/parsing',
+      'info',
+      [
+        'raw_response' => $jsonResponse,
+        'integration_id' => $integration->id,
+        'path_of_offers' => $pathOfOffers,
+        'number_of_offers' => $offers ? count($offers) : 0
+      ]
+    );
+    if (!is_array($offers)) {
+      TailLogger::saveLog(
+        "Offers not found or not an array at path: {$pathOfOffers}",
+        'integrations/parsing',
+        'warning',
+        [
+          'integration_id' => $integration->id,
+          'path_of_offers' => $pathOfOffers,
+          'number_of_offers' => $offers ? count($offers) : 0
+        ]
+      );
+      return [];
+    }
+
+    $mappedOffers = [];
+    foreach ($offers as $offer) {
+      $mappedOffer = [];
+      foreach ($parserConfig['mapping'] as $key => $valuePath) {
+        $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
+      }
+      //Add integration id
+      $mappedOffer['integration_id'] = $integration->id;
+      $mappedOffers[] = $mappedOffer;
+    }
+
+    TailLogger::saveLog(
+      "Parsed " . count($mappedOffers) . " offers.",
+      'integrations/parsing',
+      'info',
+      [
+        'integration_id' => $integration->id,
+        'offers_count' => count($mappedOffers)
+      ]
+    );
+
+    return $mappedOffers;
   }
 }
 

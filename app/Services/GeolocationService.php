@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Maxidev\Logger\TailLogger;
 use Illuminate\Support\Facades\Cache;
 use App\Libraries\IpApi;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Servicio de geolocalización con cache por IP
@@ -35,9 +36,7 @@ class GeolocationService
   // TTL del cache en minutos (24 horas)
   private int $cacheMinutes = 1440;
 
-  public function __construct(protected Request $request, protected IpApi $ipApi)
-  {
-  }
+  public function __construct(protected Request $request, protected IpApi $ipApi) {}
   /**
    * Obtiene la IP del request actual con cache interno
    * Como este servicio es singleton, la IP se calcula una sola vez por request
@@ -96,7 +95,6 @@ class GeolocationService
 
       $this->saveGeolocationServiceLog("API call successful and cached for IP: {$ip}");
       return $response;
-
     } catch (\Exception $e) {
       $this->saveGeolocationServiceLog("API call failed for IP: {$ip}. Error: " . $e->getMessage());
 
@@ -159,5 +157,42 @@ class GeolocationService
   private function saveGeolocationServiceLog(string $message): void
   {
     TailLogger::saveLog($message, "api/geolocation/", 'info');
+  }
+
+  /**
+   * Fetches city and state from a given zipcode using an external API, with caching.
+   *
+   * @param string $zipcode
+   * @return array|null An array with 'city' and 'state' keys, or null on failure.
+   */
+  public function getCityAndStateFromZipcode(string $zipcode): ?array
+  {
+    if (empty($zipcode)) {
+      return null;
+    }
+
+    $cacheKey = "geolocation:zip:{$zipcode}";
+
+    // Try to get from cache first
+    return Cache::remember($cacheKey, now()->addDays(30), function () use ($zipcode) {
+      try {
+        $response = Http::get("https://api.zippopotam.us/us/{$zipcode}");
+
+        if ($response->failed() || !isset($response->json()['places'][0])) {
+          $this->saveGeolocationServiceLog("Zippopotam API call failed for zipcode: {$zipcode}");
+          return null;
+        }
+
+        $place = $response->json()['places'][0];
+
+        return [
+          'city' => $place['place name'],
+          'state' => $place['state abbreviation'],
+        ];
+      } catch (\Exception $e) {
+        $this->saveGeolocationServiceLog("Exception in getCityAndStateFromZipcode for zipcode: {$zipcode}. Error: " . $e->getMessage());
+        return null;
+      }
+    });
   }
 }

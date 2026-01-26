@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
 import { useIntegrations } from '@/hooks/use-integrations';
 
-export function EnvironmentTab({ env}) {
+export function EnvironmentTab({ env, fields = []}) {
   const { data, handleEnvironmentChange } = useIntegrations();
+  const headerFields = fields.map((field) => `{${field.name}}`);
+  const headerValues = [...HEADER_VALUES, ...headerFields];
   return (
     <div className="space-y-4">
       <div className="flex w-full gap-4">
@@ -42,12 +44,13 @@ export function EnvironmentTab({ env}) {
           label="Request Headers"
           initialValues={data.environments[env]?.request_headers ?? []}
           onChange={(values) => handleEnvironmentChange(env, 'request_headers', values)}
+          fields={fields}
           keyPlaceholder="Header Name"
           valuePlaceholder="Header Value"
           addButtonText="Add Header"
           textOnTooltip={true}
           keyDatalist={HEADER_KEYS}
-          valueDatalist={HEADER_VALUES}
+          valueDatalist={headerValues}
         />
       </div>
       <div className="space-y-2">

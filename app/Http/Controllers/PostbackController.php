@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\DatatableTrait;
+use App\Traits\DatatableTrait;
 use App\Models\Postback;
 use App\Models\PostbackApiRequests;
 use App\Enums\PostbackVendor;
@@ -48,9 +48,7 @@ class PostbackController extends Controller
         'created_at',
         'updated_at'
       ],
-      defaultSort: 'created_at:desc',
-      defaultPerPage: 10,
-      maxPerPage: 100
+      defaultSort: 'created_at:desc'
     );
 
     // Datos adicionales para filtros

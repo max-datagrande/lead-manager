@@ -9,6 +9,7 @@ use App\Services\UtmService;
 use Illuminate\Http\Request;
 use Maxidev\Logger\TailLogger;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Exception personalizada para errores en creación de traffic logs
@@ -21,15 +22,15 @@ class TrafficLogCreationException extends \Exception {}
  * Coordina todos los servicios especializados para crear registros de tráfico
  * completos con detección de bots, geolocalización, análisis de fuentes y fingerprinting
  */
+/* private BotDetectorService $botDetectorService, */
+
 class TrafficLogService
 {
   private ?TrafficLog $currentVisitor = null;
 
   public function __construct(
-    private TrafficSourceAnalyzerService $trafficSourceAnalyzer,
     private DeviceDetectionService $deviceDetectionService,
     private FingerprintGeneratorService $fingerprintGenerator,
-    private BotDetectorService $botDetectorService,
     private GeolocationService $geolocationService,
     private UtmService $utmService,
     protected Request $request,
@@ -45,98 +46,101 @@ class TrafficLogService
   public function createTrafficLog(array $data): TrafficLog
   {
     try {
-      $isDev = app()->environment('local');
-      $originParam = $isDev ? 'local-origin' : 'origin';
+
       // Generar fingerprint único
       $userAgent = $data['user_agent'];
       $ip = $this->request->geoService()->getIpAddress();
-      $landingOrigin = $this->request->header($originParam) ?? '';
+      $landingOrigin = $this->getOrigin();
       $landingHost = parse_url($landingOrigin, PHP_URL_HOST) ?? "";
-      $currentPagePath = $data['current_page'];
       $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
-      TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
 
-      $existingTraffic = $this->getExistingTraffic($fingerprint);
-      if ($existingTraffic) {
-        $this->currentVisitor = $existingTraffic;
-        // Incrementar visit_count para tráfico duplicado
-        $existingTraffic->increment('visit_count');
+      // Usar Atomic Lock para prevenir condiciones de carrera
+      // Lock: 5s (tiempo de vida si muere el proceso)
+      // Block: 10s (tiempo de espera en cola, mayor que el lock para garantizar entrada si el anterior expira)
+      return Cache::lock("traffic_log_creation_{$fingerprint}", 5)->block(10, function () use ($fingerprint, $data, $userAgent, $ip, $landingHost) {
+        TailLogger::saveLog('Iniciando creación de traffic log', 'traffic-log/store', 'info', ['fingerprint' => $fingerprint]);
 
-        TailLogger::saveLog("Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}", 'traffic-log/store', 'info', [
-          'fingerprint' => $fingerprint,
-          'visit_count' => $existingTraffic->visit_count,
-          'id' => $existingTraffic->id
+        $existingTraffic = $this->getExistingTraffic($fingerprint);
+        if ($existingTraffic) {
+          TailLogger::saveLog("Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}", 'traffic-log/store', 'info', [
+            'fingerprint' => $fingerprint,
+            'visit_count' => $existingTraffic->visit_count,
+            'id' => $existingTraffic->id
+          ]);
+          $this->currentVisitor = $existingTraffic;
+          return $this->incrementVisitCount($existingTraffic);
+        }
+
+        //Creating new visitor
+        $newTraffic = new TrafficLog();
+        $newTraffic->id = (string) Str::uuid(); //Id unico generado
+        $newTraffic->fingerprint = $fingerprint;
+        $newTraffic->user_agent = $userAgent;
+        $newTraffic->ip_address = $ip;
+        $newTraffic->visit_date = date('Y-m-d');
+        $newTraffic->visit_count = 1;
+        $newTraffic->is_bot = $data['is_bot'] ?? false;
+        // $newTraffic->is_bot = $data['is_bot'] ?? $this->botDetectorService->detectBot($userAgent);
+
+        //Device detection
+        $deviceInfo = $this->deviceDetectionService->detectDevice($userAgent);
+        $newTraffic->device_type = $deviceInfo['deviceType'];
+        $newTraffic->browser = $deviceInfo['browser'];
+        $newTraffic->os = $deviceInfo['os'];
+        //Referer
+        $referer = $this->getReferer($data);
+        $newTraffic->referrer = $referer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
+        //Host origin
+        $newTraffic->host = $landingHost;
+        //Page visited
+        $newTraffic->path_visited = $data['current_page'];
+        //Query Params on page
+        $queryParams = $data['query_params'] ?? null;
+        $newTraffic->query_params = $queryParams;
+        // S1-S4
+        $newTraffic->s1 = $data['s1'] ?? $queryParams['s1'] ?? null;
+        $newTraffic->s2 = $data['s2'] ?? $queryParams['s2'] ?? null;
+        $newTraffic->s3 = $data['s3'] ?? $queryParams['s3'] ?? null;
+        $newTraffic->s4 = $data['s4'] ?? $queryParams['s4'] ?? null;
+        $newTraffic->s10 = $data['s10'] ?? $queryParams['s10'] ?? null;
+
+        //Campaign Code
+        $newTraffic->campaign_code = $queryParams['cptype'] ?? null;
+
+        // Analizar fuente de tráfico usando UtmService para extracción integral
+        $trafficData = $this->utmService->analyzeTrafficData(referrer: $referer, queryParams: $queryParams);
+
+        // Asignar datos UTM y de tráfico de manera limpia
+        // Los valores pueden ser null si no están presentes en los parámetros UTM
+        $newTraffic->utm_source = $trafficData['utm_source'];
+        $newTraffic->utm_medium = $trafficData['utm_medium']; // Canal de marketing (cpc, email, etc.)
+        $newTraffic->utm_campaign_id = $trafficData['utm_campaign_id'];
+        $newTraffic->utm_campaign_name = $trafficData['utm_campaign_name'];
+        $newTraffic->utm_term = $trafficData['utm_term'];
+        $newTraffic->utm_content = $trafficData['utm_content'];
+        $newTraffic->click_id = $trafficData['click_id'];
+        $newTraffic->platform = $trafficData['platform'];
+        $newTraffic->channel = $trafficData['channel'];
+
+        // Obtener geolocalización
+        $geolocation = $this->geolocationService->getGeolocation();
+        $newTraffic->country_code = $geolocation['country'] ?? null;
+        $newTraffic->state = $geolocation['region'] ?? null;
+        $newTraffic->city = $geolocation['city'] ?? null;
+        $newTraffic->postal_code = $geolocation['postal'] ?? null;
+
+        // Crear el registro en la base de datos
+        $newTraffic->save();
+        TailLogger::saveLog('Traffic log creado exitosamente', 'traffic-log/store', 'info', [
+          'id' => $newTraffic->id,
+          'fingerprint' => $newTraffic->fingerprint,
+          'utm_source' => $newTraffic->utm_source,
+          'is_bot' => $newTraffic->is_bot,
         ]);
-        return $existingTraffic;
-      }
-      //Creating new visitor
-      $newTraffic = new TrafficLog();
-      $newTraffic->id = (string) Str::uuid(); //Id unico generado
-      $newTraffic->fingerprint = $fingerprint;
-      $newTraffic->user_agent = $userAgent;
-      $newTraffic->ip_address = $ip;
-      $newTraffic->visit_date = date('Y-m-d');
-      $newTraffic->visit_count = 1;
-      $newTraffic->is_bot = $data['is_bot'] ?? false;
-      // $newTraffic->is_bot = $data['is_bot'] ?? $this->botDetectorService->detectBot($userAgent);
+        $this->currentVisitor = $newTraffic;
 
-      //Device detection
-      $deviceInfo = $this->deviceDetectionService->detectDevice($userAgent);
-      $newTraffic->device_type = $deviceInfo['deviceType'];
-      $newTraffic->browser = $deviceInfo['browser'];
-      $newTraffic->os = $deviceInfo['os'];
-
-      //Referer
-      $referer = $data['referer'] ?? null;
-      $newTraffic->referrer = $referer; //INFO: Este es el origen del trafico que aterrizo nuestra landing page
-      //Host origin
-      $newTraffic->host = $landingHost;
-      //Page visited
-      $newTraffic->path_visited = $currentPagePath;
-      //Query Params on page
-      $queryParams = $data['query_params'] ?? null;
-      $newTraffic->query_params = $queryParams;
-      // S1-S4
-      $newTraffic->s1 = $data['s1'] ?? $queryParams['s1'] ?? null;
-      $newTraffic->s2 = $data['s2'] ?? $queryParams['s2'] ?? null;
-      $newTraffic->s3 = $data['s3'] ?? $queryParams['s3'] ?? null;
-      $newTraffic->s4 = $data['s4'] ?? $queryParams['s4'] ?? null;
-
-      //Campaign Code
-      $newTraffic->campaign_code = $queryParams['cptype'] ?? null;
-
-      // Analizar fuente de tráfico usando UtmService para extracción integral
-      $trafficData = $this->utmService->analyzeTrafficData(referrer: $referer, queryParams: $queryParams);
-
-      // Asignar datos UTM y de tráfico de manera limpia
-      // Los valores pueden ser null si no están presentes en los parámetros UTM
-      $newTraffic->utm_source = $trafficData['utm_source'];
-      $newTraffic->utm_medium = $trafficData['utm_medium']; // Canal de marketing (cpc, email, etc.)
-      $newTraffic->utm_campaign_id = $trafficData['utm_campaign_id'];
-      $newTraffic->utm_campaign_name = $trafficData['utm_campaign_name'];
-      $newTraffic->utm_term = $trafficData['utm_term'];
-      $newTraffic->utm_content = $trafficData['utm_content'];
-      $newTraffic->click_id = $trafficData['click_id'];
-      $newTraffic->platform = $trafficData['platform'];
-      $newTraffic->channel = $trafficData['channel'];
-
-      // Obtener geolocalización
-      $geolocation = $this->geolocationService->getGeolocation();
-      $newTraffic->country_code = $geolocation['country'] ?? null;
-      $newTraffic->state = $geolocation['region'] ?? null;
-      $newTraffic->city = $geolocation['city'] ?? null;
-      $newTraffic->postal_code = $geolocation['postal'] ?? null;
-
-      // Crear el registro en la base de datos
-      $newTraffic->save();
-      TailLogger::saveLog('Traffic log creado exitosamente', 'traffic-log/store', 'info', [
-        'id' => $newTraffic->id,
-        'fingerprint' => $newTraffic->fingerprint,
-        'utm_source' => $newTraffic->utm_source,
-        'is_bot' => $newTraffic->is_bot,
-      ]);
-      $this->currentVisitor = $newTraffic;
-      return $newTraffic;
+        return $newTraffic;
+      });
     } catch (\Exception $e) {
       TailLogger::saveLog('Error inesperado en creación de traffic log: ' . $e->getMessage(), 'traffic-log/store', 'error', [
         'data' => $data,
@@ -144,6 +148,39 @@ class TrafficLogService
       ]);
       throw new TrafficLogCreationException('Failed to create traffic log', 0, $e);
     }
+  }
+
+  private function getOrigin(): string
+  {
+    $isDev = app()->environment('local');
+    $origin = $this->request->header('origin') ?? null;
+
+    if ($origin && !str_contains($origin, 'localhost')) {
+      return $origin;
+    }
+
+    // Origin is null or localhost
+    if ($isDev) {
+      return $this->request->header('dev-origin') ?? '';
+    }
+
+    return $origin ?? '';
+  }
+  private function getReferer($data): ?string
+  {
+    $origin = $this->getOrigin();
+    $originHost = parse_url($origin, PHP_URL_HOST) ?? "";
+    $referer = $data['referer'] ?? null;
+    if ($referer && strpos($referer, $originHost) !== false) {
+      $referer = null;
+    }
+    return $referer;
+  }
+  private function incrementVisitCount(TrafficLog $trafficLog): TrafficLog
+  {
+    // Incrementar visit_count para tráfico duplicado
+    $trafficLog->increment('visit_count');
+    return $trafficLog;
   }
 
   /**

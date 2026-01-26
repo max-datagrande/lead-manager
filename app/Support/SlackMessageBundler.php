@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use Maxidev\Logger\TailLogger as LoggerTailLogger;
+use Maxidev\Logger\TailLogger as Logger;
 use Spatie\SlackAlerts\Facades\SlackAlert;
 
 /**
@@ -239,7 +239,7 @@ class SlackMessageBundler
     $enabledChannels = config('slack-alerts.webhook_urls');
     $url = $enabledChannels[$channel] ?? null;
     if (empty($url)) {
-      LoggerTailLogger::saveLog("No se encontró URL de webhook para el canal '{$channel}'. Configura slack-alerts.webhook_urls.{$channel}", 'notifications', 'error');
+      Logger::saveLog("No se encontró URL de webhook para el canal '{$channel}'. Configura slack-alerts.webhook_urls.{$channel}", 'notifications', 'error');
       return false;
     }
 
@@ -281,7 +281,7 @@ class SlackMessageBundler
 
     // Verificar si el envío fue exitoso
     if ($error) {
-      LoggerTailLogger::saveLog("Error de cURL: {$error}", 'notifications', 'error', [
+      Logger::saveLog("Error de cURL: {$error}", 'notifications', 'error', [
         'payload' => $payload,
         'response' => $response,
         'http_code' => $httpCode,
@@ -289,7 +289,7 @@ class SlackMessageBundler
     }
 
     if ($httpCode !== 200) {
-      LoggerTailLogger::saveLog("Error HTTP {$httpCode}: {$response}", 'notifications', 'error', [
+      Logger::saveLog("Error HTTP {$httpCode}: {$response}", 'notifications', 'error', [
         'payload' => $payload,
         'response' => $response,
         'http_code' => $httpCode,
@@ -320,7 +320,7 @@ class SlackMessageBundler
     ];
 
     // Registrar en logs
-    LoggerTailLogger::saveLog(
+    Logger::saveLog(
       'Slack bundler debug output',
       'notifications',
       'info',

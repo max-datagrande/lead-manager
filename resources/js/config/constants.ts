@@ -27,8 +27,6 @@ export const CONTENT_HEADERS = [
 // Headers de usuario y cliente
 export const CLIENT_HEADERS = [
   { key: 'User-Agent', value: 'LeadManager/1.0' },
-  { key: 'X-Forwarded-For', value: '{client_ip}' },
-  { key: 'X-Real-IP', value: '{client_ip}' },
   { key: 'X-Client-ID', value: '{client_id}' },
   { key: 'X-Request-ID', value: '{request_id}' },
 ];

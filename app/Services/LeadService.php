@@ -108,6 +108,10 @@ class LeadService
         if (is_null($fieldValue)) {
           continue; // Omitir valores nulos
         }
+        //If is array
+        if (is_array($fieldValue)) {
+          $fieldValue = json_encode($fieldValue);
+        }
 
         // Buscar el field por name (como en el controlador original)
         $field = Field::where('name', $fieldName)->first();

@@ -22,6 +22,32 @@ class LeadController extends Controller
   {
     $this->leadService = $leadService;
   }
+
+  public function getLeadDetails($fingerprint)
+  {
+    $lead = \App\Models\Lead::where('fingerprint', $fingerprint)->first();
+
+    if (!$lead) {
+      return response()->json(['message' => 'Lead not found'], 404);
+    }
+
+    $lead->load(['leadFieldResponses.field']);
+
+    // Format the response
+    $fields = $lead->leadFieldResponses->map(function ($response) {
+      return [
+        'id' => $response->field->id ?? null,
+        'name' => $response->field->name ?? 'Unknown',
+        'label' => $response->field->label ?? $response->field->name ?? 'Unknown',
+        'value' => $response->value,
+      ];
+    });
+
+    return response()->json([
+      'lead' => $lead,
+      'fields' => $fields,
+    ]);
+  }
   /**
    * Store a newly created lead and its field responses in storage.
    *
