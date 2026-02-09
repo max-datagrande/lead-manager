@@ -24,6 +24,8 @@ type Conversions = {
   created_at: string;
   updated_at: string;
   placement_id: string;
+  state: string;
+  zip_code: string;
   company: string; // Add company name for frontend
   buyer: string; // Add buyer company name for frontend
 };
@@ -42,7 +44,6 @@ interface IndexProps extends DatatablePageProps<Conversions> {
 }
 
 const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
-
   const table = useServerTable({
     routeName: 'offerwall.conversions',
     initialState: state,
