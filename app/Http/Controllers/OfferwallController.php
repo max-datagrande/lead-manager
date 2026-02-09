@@ -181,6 +181,7 @@ class OfferwallController extends Controller
             'Payout',
             'CPType',
             'Placement ID',
+            'State',
             'Pathname',
             'Click ID',
             'UTM Source',
@@ -203,6 +204,8 @@ class OfferwallController extends Controller
               $conversion->amount,
               $conversion->tracked_fields['cptype'] ?? '',
               $conversion->tracked_fields['placement_id'] ?? '',
+              $conversion->tracked_fields['state'] ?? '',
+
               $conversion->pathname,
               $conversion->click_id,
               $conversion->utm_source,
