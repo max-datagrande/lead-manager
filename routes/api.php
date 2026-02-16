@@ -8,6 +8,8 @@ use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\TrafficLogController;
+use App\Http\Controllers\Api\ProxyController;
+
 
 Route::any('/health', function () {
   return new JsonResponse(['status' => 'ok']);
@@ -24,6 +26,8 @@ Route::middleware(['auth.host'])->group(function () {
     Route::post('/submit', [LeadController::class, 'submit'])->name('api.leads.submit');
     Route::get('/{fingerprint}', [LeadController::class, 'getLeadDetails'])->name('api.leads.details');
   });
+  Route::post('/proxy/slack', [ProxyController::class, 'forward'])
+    ->name('api.proxy.slack');
 });
 
 
