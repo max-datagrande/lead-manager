@@ -53,7 +53,7 @@ class OfferwallMixLogController extends Controller
     $offerwallMixLog->load([
       'offerwallMix:id,name',
       'integrationCallLogs' => function ($query) {
-        $query->with('integration:id,name')->orderBy('created_at', 'asc');
+        $query->with(['integration:id,name,company_id', 'integration.company:id,name'])->orderBy('created_at', 'asc');
       }
     ]);
     return Inertia::render('logs/mixes/show', [
