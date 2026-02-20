@@ -31,6 +31,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Integration {
   id: number;
   name: string;
+  company: {
+    id?: number;
+    name?: string;
+  };
 }
 
 interface IntegrationCallLog {
@@ -69,10 +73,7 @@ const Show = ({ log }: ShowProps) => {
     <>
       <Head title={`Log #${log.id} - ${log.offerwall_mix.name}`} />
       <div className="flex-1 space-y-6 p-6 md:p-8">
-        <PageHeader
-          smallText={`Offerwall ${log.offerwall_mix.name}`}
-          title={`Log #${log.id}`}
-        />
+        <PageHeader smallText={`Offerwall ${log.offerwall_mix.name}`} title={`Log #${log.id}`} />
         <Card>
           <CardHeader>
             <CardTitle>Execution Summary</CardTitle>
@@ -105,7 +106,10 @@ const Show = ({ log }: ShowProps) => {
                           {call.status === 'success' ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-semibold">{call.integration.name}</span>
+                      <div className="flex flex-col items-start">
+                        <span className="font-semibold">{call.integration.name}</span>
+                        <span className="block text-sm text-muted-foreground">{call.integration.company?.name || 'Unnamed Company'}</span>
+                      </div>
                       <div className="ml-auto flex items-center gap-2">
                         <Badge variant="outline">{call.http_status_code}</Badge>
                         <Badge variant="secondary">{`${call.duration_ms}ms`}</Badge>
