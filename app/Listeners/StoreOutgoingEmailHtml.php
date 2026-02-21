@@ -5,6 +5,7 @@ namespace App\Listeners;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Symfony\Component\Mime\Address;
 
 class StoreOutgoingEmailHtml
 {
@@ -25,8 +26,15 @@ class StoreOutgoingEmailHtml
             $htmlBody = '<html><body><pre>'.e((string) $textBody).'</pre></body></html>';
         }
 
-        $toAddresses = array_keys($message->getTo() ?? []);
-        $to = $toAddresses[0] ?? 'unknown';
+        $toAddresses = array_values($message->getTo() ?? []);
+        $firstRecipient = $toAddresses[0] ?? null;
+
+        $to = 'unknown';
+        if ($firstRecipient instanceof Address) {
+            $to = $firstRecipient->getAddress();
+        } elseif (is_string($firstRecipient) && $firstRecipient !== '') {
+            $to = $firstRecipient;
+        }
 
         $subject = (string) $message->getSubject();
         if ($subject === '') {
