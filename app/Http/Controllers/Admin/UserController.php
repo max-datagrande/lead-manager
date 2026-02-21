@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,99 +20,69 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('Admin/Users/Index', [
-            'users' => User::all(),
+        return Inertia::render('admin/users/index', [
+            'users' => User::query()->orderByDesc('created_at')->get(),
+            'roles' => User::$roles,
         ]);
-    }
-
-    /**
-     * Mostrar el formulario para crear un nuevo usuario.
-     */
-    public function create(): Response
-    {
-        return Inertia::render('Admin/Users/Create');
     }
 
     /**
      * Almacenar un nuevo usuario.
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,manager,user',
-            'is_approved' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => Str::random(64),
             'role' => $validated['role'],
-            'is_approved' => $validated['is_approved'] ?? false,
+            'is_active' => $request->boolean('is_active', true),
+            'is_approved' => true,
         ]);
 
-        addFlashMessage('success', 'User created correctly.');
+        Password::sendResetLink(['email' => $user->email]);
 
-        return redirect()->route('admin.users.index');
-    }
+        add_flash_message(type: 'success', message: 'User created and invitation email sent successfully.');
 
-    /**
-     * Mostrar el formulario para editar un usuario.
-     */
-    public function edit(User $user): Response
-    {
-        return Inertia::render('Admin/Users/Edit', [
-            'user' => $user,
-        ]);
+        return to_route('admin.users.index');
     }
 
     /**
      * Actualizar un usuario existente.
      */
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'password' => 'nullable|string|min:8',
-            'role' => 'required|in:admin,manager,user',
-            'is_approved' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'is_approved' => $validated['is_approved'] ?? false,
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
-        if (isset($validated['password']) && $validated['password']) {
-            $user->update(['password' => Hash::make($validated['password'])]);
-        }
-        addFlashMessage('success', 'User updated correctly.');
+        add_flash_message(type: 'success', message: 'User updated successfully.');
 
-        return redirect()->route('admin.users.index');
+        return to_route('admin.users.index');
     }
 
     /**
-     * Eliminar un usuario.
+     * Desactivar usuario.
      */
-    public function destroy(Request $request, User $user)
+    public function destroy(Request $request, User $user): RedirectResponse
     {
-        // Evitar que un usuario se elimine a sí mismo
-        if ($user->id === $request->user()->id()) {
-            addFlashMessage('error', 'You cannot delete your own user.');
+        if ($user->is($request->user())) {
+            add_flash_message(type: 'error', message: 'You cannot deactivate your own user.');
 
-            return redirect()->route('admin.users.index');
+            return to_route('admin.users.index');
         }
 
-        $user->delete();
+        $user->update(['is_active' => false]);
 
-        addFlashMessage('success', 'User successfully deleted.');
+        add_flash_message(type: 'success', message: 'User deactivated successfully.');
 
-        return redirect()->route('admin.users.index');
+        return to_route('admin.users.index');
     }
 }
