@@ -22,6 +22,15 @@ export const columns = [
     enableHiding: true,
   },
   {
+    accessorKey: 'zip_code',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Zip Code" />,
+    cell: ({ row }) => {
+      return <div className="font-medium">{row.original.zip_code}</div>;
+    },
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
     accessorKey: 'integration.id',
     id: 'integration',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Integration" />,

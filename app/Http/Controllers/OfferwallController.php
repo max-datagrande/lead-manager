@@ -54,6 +54,7 @@ class OfferwallController extends Controller
       $conversion->cptype = $conversion->tracked_fields['cptype'] ?? null;
       $conversion->placement_id = $conversion->tracked_fields['placement_id'] ?? null;
       $conversion->state = $conversion->tracked_fields['state'] ?? null;
+      $conversion->zip_code = $conversion->tracked_fields['zip_code'] ?? null;
       $conversion->buyer = $conversion->offer_company_name; // Add buyer company name for frontend
       return $conversion;
     });
@@ -181,6 +182,9 @@ class OfferwallController extends Controller
             'Payout',
             'CPType',
             'Placement ID',
+            'State',
+            'Zip Code',
+            'Host',
             'Pathname',
             'Click ID',
             'UTM Source',
@@ -203,6 +207,9 @@ class OfferwallController extends Controller
               $conversion->amount,
               $conversion->tracked_fields['cptype'] ?? '',
               $conversion->tracked_fields['placement_id'] ?? '',
+              $conversion->tracked_fields['state'] ?? '',
+              $conversion->tracked_fields['zip_code'] ?? '',
+              $conversion->host_name,
               $conversion->pathname,
               $conversion->click_id,
               $conversion->utm_source,
@@ -293,7 +300,7 @@ class OfferwallController extends Controller
     $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
 
-    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+    if (in_array($sortColumn, ['cptype', 'placement_id', 'state', 'zip_code'])) {
       $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
     } elseif ($sortColumn === 'company') {
       $query->orderBy('integrations.company_id', $sortDirection);

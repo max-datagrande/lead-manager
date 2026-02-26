@@ -12,9 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('traffic_logs', function (Blueprint $table) {
-            DB::statement('ALTER TABLE traffic_logs DROP CONSTRAINT traffic_logs_traffic_source_check');
-        });
+        if (! Schema::hasTable('traffic_logs')) {
+            return;
+        }
+
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('ALTER TABLE traffic_logs DROP CONSTRAINT IF EXISTS traffic_logs_traffic_source_check');
+        }
+
         Schema::table('traffic_logs', function (Blueprint $table) {
             $table->string('traffic_source', 50)->nullable()->change();
         });

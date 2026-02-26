@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Factory, FileText, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook, Coins, Bug } from 'lucide-react';
+import { Bug, Coins, Factory, FileText, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -97,7 +97,7 @@ const AdminGroup: NavGroupType = {
   items: [
     {
       title: 'Users',
-      href: '/users',
+      href: route('admin.users.index'),
       icon: Users,
     },
     {

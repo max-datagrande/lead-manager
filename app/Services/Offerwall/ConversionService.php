@@ -81,9 +81,10 @@ class ConversionService
 
       // Extract tracked fields from the log's context arrays
       $trackedFields = [
-        'state' => $callLog->original_field_values['state'] ?? null,
         'cptype' => $callLog->original_field_values['cptype'] ?? null,
         'placement_id' => $callLog->mapped_field_values['cptype'] ?? null,
+        'state' => $callLog->original_field_values['state'] ?? null,
+        'zip_code' => $callLog->mapped_field_values['zip_code'] ?? null,
       ];
 
       $offerCompanyName = null;
