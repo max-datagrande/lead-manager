@@ -76,7 +76,6 @@ export const TableVisitors = ({ entries, meta, data }) => {
           <DataTableToolbar
             table={table}
             searchPlaceholder="Search..."
-            filterByColumn="created_at"
             config={{
               filters: [
                 {
