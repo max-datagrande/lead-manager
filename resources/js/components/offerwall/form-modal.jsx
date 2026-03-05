@@ -157,7 +157,7 @@ export function FormModal({ entry = null, isEdit, ...props }) {
               <p className="py-4 text-center">Loading integrations...</p>
             ) : (
               filteredIntegrations.map((integration) => (
-                <div key={integration.id} className="flex items-center rounded-md py-2 px-3 hover:bg-muted">
+                <div key={integration.id} className="flex items-center rounded-md px-3 py-2 hover:bg-muted">
                   <Checkbox
                     id={`integration-${integration.id}`}
                     checked={selectedIntegrations.has(integration.id)}

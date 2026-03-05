@@ -1,12 +1,12 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
+import { FingerprintCell } from '@/components/visitors';
 import { Link } from '@inertiajs/react';
 import { type ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { ArrowRight } from 'lucide-react';
-import { FingerprintCell } from '@/components/visitors';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
 
 // Define the shape of our data
 interface OfferwallMixLog {

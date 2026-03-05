@@ -1,7 +1,7 @@
-export { EnvironmentTab } from './enviroments-tab';
-export { IntegrationForm } from './integration-form';
-export { TableIntegrations } from './table-integrations';
-export { EnvironmentDetails } from './environment-details';
+export { createBreadcrumbs, editBreadcrumbs, indexBreadcrumbs, showBreadcrumbs } from './breadcrumbs';
 export { DescriptionListItem } from './description-list-item';
+export { EnvironmentTab } from './enviroments-tab';
+export { EnvironmentDetails } from './environment-details';
+export { IntegrationForm } from './integration-form';
 export { OfferwallParserConfig } from './offerwall-parser-config';
-export { indexBreadcrumbs, createBreadcrumbs, editBreadcrumbs , showBreadcrumbs } from './breadcrumbs';
+export { TableIntegrations } from './table-integrations';

@@ -1,16 +1,16 @@
 import { ServerTable } from '@/components/data-table/server-table';
+import { columns } from '@/components/logs/mixes/table';
 import PageHeader from '@/components/page-header';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
-import { DatatablePageProps, type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { route } from 'ziggy-js';
-import { columns } from '@/components/logs/mixes/table'
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
     title: 'Logs',
-    href: "/",
+    href: '/',
   },
   {
     title: 'Offerwall Mixes',
@@ -37,20 +37,20 @@ interface PaginatedLogs {
   meta: any; // Adjust based on your pagination meta structure
 }
 
-interface IndexProps extends PaginatedLogs{
+interface IndexProps extends PaginatedLogs {
   rows: PaginatedLogs;
   state: {
     sort: string;
     filters: { [key: string]: string };
-  }
+  };
 }
 
-const Index = ({ rows , meta, data, state }: IndexProps ) => {
+const Index = ({ rows, meta, data, state }: IndexProps) => {
   const table = useServerTable({
-      routeName: 'logs.offerwall-mixes.index',
-      initialState: state,
-      defaultPageSize: 10,
-    });
+    routeName: 'logs.offerwall-mixes.index',
+    initialState: state,
+    defaultPageSize: 10,
+  });
 
   return (
     <>
@@ -78,7 +78,7 @@ const Index = ({ rows , meta, data, state }: IndexProps ) => {
               filters: [],
               dateRange: { column: 'created_at', label: 'Created At' },
             }}
-            />
+          />
         </div>
       </div>
     </>

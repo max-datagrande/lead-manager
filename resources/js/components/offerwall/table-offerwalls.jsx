@@ -1,10 +1,10 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
 import { useOfferwall } from '@/hooks/use-offerwall';
 import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { columns } from './list-columns';
 
 export function TableOfferwalls({ entries }) {
@@ -15,7 +15,7 @@ export function TableOfferwalls({ entries }) {
     state: {
       sorting,
       globalFilter,
-      pagination
+      pagination,
     },
     onPaginationChange: setPagination,
     onPageSizeChange: setPagination,

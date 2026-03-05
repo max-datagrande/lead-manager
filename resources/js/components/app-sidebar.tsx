@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, Coins, Factory, FileText, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
+import { Bug, Coins, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -70,6 +70,11 @@ const OfferwallGroup: NavGroupType = {
       title: 'Logs',
       href: route('logs.offerwall-mixes.index'),
       icon: Bug,
+    },
+    {
+      title: 'Tester',
+      href: route('offerwall.tester.index'),
+      icon: FlaskConical,
     },
   ],
 };

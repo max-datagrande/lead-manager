@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 
 /**
  * Componente para mostrar fuente de tráfico
- * 
+ *
  * @param {Object} props - Propiedades del componente
  * @param {string} props.source - Fuente de tráfico (organic, paid, social, direct)
  * @param {string} props.medium - Medio de tráfico

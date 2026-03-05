@@ -2,14 +2,7 @@ import { SVGAttributes } from 'react';
 
 export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      version="1.1"
-      width="192"
-      height="192"
-      viewBox="0 0 192 192"
-    >
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" version="1.1" width="192" height="192" viewBox="0 0 192 192">
       <image
         width="192"
         height="192"

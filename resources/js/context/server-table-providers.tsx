@@ -5,7 +5,7 @@ export const { Provider: UsersProvider, useTable: useUsersTable } = createServer
 
 // Crear otro provider con configuración personalizada
 export const { Provider: ProductsProvider, useTable: useProductsTable } = createServerTableProvider('products.index', {
-  defaultPageSize: 25
+  defaultPageSize: 25,
 });
 
 // Crear provider para visitantes (más limpio que el original)

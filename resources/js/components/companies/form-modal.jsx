@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
-import { Switch } from '@/components/ui/switch';
 
 /**
  * Modal component for creating and editing company entries
@@ -78,13 +78,7 @@ export default function FormModal({ entry, isEdit = false }) {
         {/* Name */}
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            type="text"
-            value={data.name}
-            onChange={(e) => setData('name', e.target.value)}
-            placeholder="Company Name"
-          />
+          <Input id="name" type="text" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Company Name" />
           {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
         </div>
 
@@ -129,11 +123,7 @@ export default function FormModal({ entry, isEdit = false }) {
 
         {/* Active Switch */}
         <div className="flex items-center space-x-2">
-          <Switch
-            id="active"
-            checked={data.active}
-            onCheckedChange={(checked) => setData('active', checked)}
-          />
+          <Switch id="active" checked={data.active} onCheckedChange={(checked) => setData('active', checked)} />
           <Label htmlFor="active">Active</Label>
         </div>
 

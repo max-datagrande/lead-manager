@@ -30,15 +30,15 @@ import { usuarioColumns } from './columns'; // tus columnas
 export default function UsuariosIndex({ rows, meta, state, data }) {
   // ✅ Hook mágico que maneja TODO
   const table = useServerTable({
-    routeName: 'usuarios.index',  // Nombre de tu ruta Inertia
-    initialState: state,          // Datos iniciales del servidor
-    defaultPageSize: 10           // Opcional
+    routeName: 'usuarios.index', // Nombre de tu ruta Inertia
+    initialState: state, // Datos iniciales del servidor
+    defaultPageSize: 10, // Opcional
   });
 
   return (
     <>
       <h1>Lista de Usuarios</h1>
-      
+
       {/* ✅ Tabla completa con un solo componente */}
       <ServerTable
         data={rows.data}
@@ -51,9 +51,9 @@ export default function UsuariosIndex({ rows, meta, state, data }) {
             {
               columnId: 'rol',
               title: 'Rol',
-              options: data.roles // viene del backend
-            }
-          ]
+              options: data.roles, // viene del backend
+            },
+          ],
         }}
       />
     </>
@@ -63,13 +63,13 @@ export default function UsuariosIndex({ rows, meta, state, data }) {
 
 ### Paso 2: ¿Qué hace cada cosa?
 
-| Prop | Para qué sirve |
-|------|----------------|
-| `data` | Los datos de la página actual |
-| `columns` | Definición de columnas (ver ejemplo abajo) |
-| `meta` | Información de paginación (total de páginas) |
-| `table` | **TODO** el estado y funciones del hook |
-| `toolbarConfig` | Configuración del buscador y filtros |
+| Prop            | Para qué sirve                               |
+| --------------- | -------------------------------------------- |
+| `data`          | Los datos de la página actual                |
+| `columns`       | Definición de columnas (ver ejemplo abajo)   |
+| `meta`          | Información de paginación (total de páginas) |
+| `table`         | **TODO** el estado y funciones del hook      |
+| `toolbarConfig` | Configuración del buscador y filtros         |
 
 ### Paso 3: Crea tus columnas
 
@@ -77,7 +77,7 @@ export default function UsuariosIndex({ rows, meta, state, data }) {
 // resources/js/pages/usuarios/columns.tsx
 export const usuarioColumns = [
   {
-    accessorKey: 'nombre',      // Nombre del campo en tu BD
+    accessorKey: 'nombre', // Nombre del campo en tu BD
     header: 'Nombre Completo', // Título que aparece en la tabla
   },
   {
@@ -91,7 +91,7 @@ export const usuarioColumns = [
   {
     accessorKey: 'fecha_registro',
     header: 'Fecha de Registro',
-  }
+  },
 ];
 ```
 
@@ -106,8 +106,7 @@ export const usuarioColumns = [
 import { createServerTableProvider } from '@/utils/create-server-table-provider';
 
 // ¡Una línea y listo!
-export const { Provider: UsuariosProvider, useTable: useUsuariosTable } = 
-  createServerTableProvider('usuarios.index');
+export const { Provider: UsuariosProvider, useTable: useUsuariosTable } = createServerTableProvider('usuarios.index');
 ```
 
 ### Paso 2: Usa en tu página
@@ -127,7 +126,7 @@ export default function UsuariosIndex({ rows, meta, state, data }) {
 
 function Contenido({ rows, meta, data }) {
   const table = useUsuariosTable(); // 🎯 Mismo poder, diferente nombre
-  
+
   return (
     <ServerTable
       data={rows.data}
@@ -136,7 +135,9 @@ function Contenido({ rows, meta, data }) {
       {...table}
       toolbarConfig={{
         searchPlaceholder: 'Buscar...',
-        filters: [/* tus filtros */]
+        filters: [
+          /* tus filtros */
+        ],
       }}
     />
   );
@@ -160,11 +161,11 @@ public function index(Request $request)
 
     // Query con filtros
     $query = Usuario::query();
-    
+
     if ($search) {
         $query->where('nombre', 'like', "%{$search}%");
     }
-    
+
     if ($sort) {
         $query->orderBy($sort['id'], $sort['desc'] ? 'desc' : 'asc');
     }
@@ -198,7 +199,7 @@ public function index(Request $request)
 ✅ **Filtros por columna** (selects en cada columna)  
 ✅ **Ordenamiento** (click en headers)  
 ✅ **Loading states** (spinner mientras carga)  
-✅ **Reset automático** a página 1 cuando filtras  
+✅ **Reset automático** a página 1 cuando filtras
 
 ## 🔧 Personalización
 
@@ -208,7 +209,7 @@ public function index(Request $request)
 const table = useServerTable({
   routeName: 'usuarios.index',
   initialState: state,
-  defaultPageSize: 25,        // Más filas por página
+  defaultPageSize: 25, // Más filas por página
 });
 ```
 
@@ -242,9 +243,9 @@ toolbarConfig={{
       options: data.paises
     }
   ],
-  dateRange: { 
-    column: 'created_at', 
-    label: 'Fecha de creación' 
+  dateRange: {
+    column: 'created_at',
+    label: 'Fecha de creación'
   }
 }}
 ```
@@ -252,18 +253,21 @@ toolbarConfig={{
 ## 🚨 Errores Comunes
 
 ### "useTable debe usarse dentro de Provider"
+
 → Estás usando un hook de provider sin el Provider. Usa el **Método 1** directo.
 
 ### "Cannot read property of undefined"
+
 → Asegúrate de pasar `initialState` al hook o provider.
 
 ### La tabla no actualiza datos
+
 → Verifica que tu backend esté recibiendo los parámetros correctos.
 
 ## 📊 Flujo de Datos
 
 ```
-Usuario hace clic → Hook detecta cambio → Petición al backend → 
+Usuario hace clic → Hook detecta cambio → Petición al backend →
 Backend filtra/pagina → Devuelve datos → Tabla se actualiza
 ```
 

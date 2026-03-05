@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
+import { DialogClose, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +51,7 @@ export function UpdateStatusModal({ postback }) {
         <DialogTitle>Update Postback Status</DialogTitle>
         <DialogDescription>Select a new status and provide a message if necessary.</DialogDescription>
       </DialogHeader>
-      <form onSubmit={handleSubmit} className="grid gap-4 py-4" id='update-status-modal'>
+      <form onSubmit={handleSubmit} className="grid gap-4 py-4" id="update-status-modal">
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="status" className="text-right">
             Status
@@ -94,7 +94,7 @@ export function UpdateStatusModal({ postback }) {
             Cancel
           </Button>
         </DialogClose>
-        <Button type="submit" disabled={processing} form='update-status-modal'>
+        <Button type="submit" disabled={processing} form="update-status-modal">
           {processing ? 'Updating...' : 'Update Status'}
         </Button>
       </DialogFooter>

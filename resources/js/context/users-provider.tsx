@@ -9,11 +9,7 @@ export const UsersContext = createContext<any>(null);
 
 export function UsersProvider({ children }: { children: React.ReactNode }) {
   const {
-    props: {
-      auth,
-      state = { sort: 'created_at:desc' },
-      roles = [],
-    },
+    props: { auth, state = { sort: 'created_at:desc' }, roles = [] },
   } = usePage<any>();
 
   const modal = useModal();
