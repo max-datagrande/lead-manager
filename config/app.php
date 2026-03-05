@@ -84,6 +84,8 @@ return [
 
   'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+  'fake_ip' => env('APP_FAKE_IP', '127.0.0.1'),
+
   /*
     |--------------------------------------------------------------------------
     | Encryption Key
