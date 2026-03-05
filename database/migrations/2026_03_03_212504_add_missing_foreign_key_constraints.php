@@ -1,256 +1,170 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Add missing foreign key constraints across all tables.
-     * Cleans orphaned data before creating constraints.
+     * Add missing foreign key constraints using NOT VALID + VALIDATE CONSTRAINT
+     * to avoid ACCESS EXCLUSIVE locks that would block production traffic.
+     *
+     * Strategy:
+     *   1. Clean orphaned rows in small chunks (avoids long-held row locks).
+     *   2. ADD CONSTRAINT ... NOT VALID  → brief lock, no table scan.
+     *   3. VALIDATE CONSTRAINT           → ShareUpdateExclusiveLock, allows
+     *      concurrent reads and writes while scanning existing rows.
      */
     public function up(): void
     {
         // ---------------------------------------------------------------
-        // STEP 1: Clean orphaned records that would block FK creation
+        // STEP 1: Clean orphaned records in chunks
         // ---------------------------------------------------------------
 
-        // lead_field_responses → leads (CASCADE): delete orphans
-        DB::table('lead_field_responses')
-            ->whereNotIn('lead_id', DB::table('leads')->select('id'))
-            ->delete();
+        $this->deleteOrphansInChunks('lead_field_responses', 'lead_id', 'leads');
+        $this->deleteOrphansInChunks('lead_field_responses', 'field_id', 'fields');
+        $this->deleteOrphansInChunks('postback_api_requests', 'postback_id', 'postbacks', nullable: true);
 
-        // lead_field_responses → fields (CASCADE): delete orphans
-        DB::table('lead_field_responses')
-            ->whereNotIn('field_id', DB::table('fields')->select('id'))
-            ->delete();
-
-        // postback_api_requests → postbacks (CASCADE): delete orphans
-        DB::table('postback_api_requests')
-            ->whereNotNull('postback_id')
-            ->whereNotIn('postback_id', DB::table('postbacks')->select('id'))
-            ->delete();
-
-        // fields.user_id → users (SET NULL): nullify orphans
-        DB::table('fields')
-            ->whereNotNull('user_id')
-            ->whereNotIn('user_id', DB::table('users')->select('id'))
-            ->update(['user_id' => null]);
-
-        DB::table('fields')
-            ->whereNotNull('updated_user_id')
-            ->whereNotIn('updated_user_id', DB::table('users')->select('id'))
-            ->update(['updated_user_id' => null]);
+        $this->nullifyOrphansInChunks('fields', 'user_id', 'users');
+        $this->nullifyOrphansInChunks('fields', 'updated_user_id', 'users');
 
         // ---------------------------------------------------------------
-        // STEP 2: Create FK constraints — Leads & Fields domain
+        // STEP 2: ADD CONSTRAINT ... NOT VALID
+        // Only takes a brief lock — does NOT scan existing rows.
+        // New writes will be validated immediately from this point on.
         // ---------------------------------------------------------------
 
-        // lead_field_responses.lead_id → leads.id (CASCADE)
-        Schema::table('lead_field_responses', function (Blueprint $table) {
-            $table->foreign('lead_id')
-                ->references('id')->on('leads')
-                ->onDelete('cascade');
-        });
-
-        // lead_field_responses.field_id → fields.id (CASCADE)
-        Schema::table('lead_field_responses', function (Blueprint $table) {
-            $table->foreign('field_id')
-                ->references('id')->on('fields')
-                ->onDelete('cascade');
-        });
+        foreach ($this->constraintDefinitions() as [$table, $name, $column, $refTable, $action]) {
+            DB::statement(sprintf(
+                'ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(id) ON DELETE %s NOT VALID',
+                $table, $name, $column, $refTable, $action,
+            ));
+        }
 
         // ---------------------------------------------------------------
-        // STEP 3: Create FK constraints — Forms domain (CASCADE)
+        // STEP 3: VALIDATE CONSTRAINT
+        // Acquires ShareUpdateExclusiveLock — allows concurrent reads and
+        // writes while scanning existing rows. Safe to run in production.
         // ---------------------------------------------------------------
 
-        Schema::table('field_form', function (Blueprint $table) {
-            $table->foreign('field_id')
-                ->references('id')->on('fields')
-                ->onDelete('cascade');
-            $table->foreign('form_id')
-                ->references('id')->on('forms')
-                ->onDelete('cascade');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 4: Create FK constraints — Field Mappings (RESTRICT)
-        // ---------------------------------------------------------------
-
-        Schema::table('field_mappings', function (Blueprint $table) {
-            $table->foreign('integration_id')
-                ->references('id')->on('integrations')
-                ->onDelete('restrict');
-            $table->foreign('field_id')
-                ->references('id')->on('fields')
-                ->onDelete('restrict');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 5: Create FK constraints — Postbacks domain (CASCADE)
-        // ---------------------------------------------------------------
-
-        Schema::table('postback_api_requests', function (Blueprint $table) {
-            $table->foreign('postback_id')
-                ->references('id')->on('postbacks')
-                ->onDelete('cascade');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 6: Create FK constraints — Sales domain
-        // ---------------------------------------------------------------
-
-        // transactions.sale_id → sales.id (CASCADE)
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->foreign('sale_id')
-                ->references('id')->on('sales')
-                ->onDelete('cascade');
-        });
-
-        // sales.integration_id → integrations.id (SET NULL)
-        Schema::table('sales', function (Blueprint $table) {
-            $table->foreign('integration_id')
-                ->references('id')->on('integrations')
-                ->onDelete('set null');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 7: Create FK constraints — Integrations → Companies (SET NULL)
-        // ---------------------------------------------------------------
-
-        Schema::table('integrations', function (Blueprint $table) {
-            $table->foreign('company_id')
-                ->references('id')->on('companies')
-                ->onDelete('set null');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 8: Create FK constraints — User tracking (SET NULL)
-        // All user_id / updated_user_id columns → users.id
-        // ---------------------------------------------------------------
-
-        Schema::table('companies', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-            $table->foreign('updated_user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        Schema::table('integrations', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-            $table->foreign('updated_user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        Schema::table('fields', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-            $table->foreign('updated_user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        Schema::table('forms', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-            $table->foreign('updated_user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        Schema::table('field_mappings', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-            $table->foreign('updated_user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        Schema::table('sales', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('set null');
-        });
-
-        // ---------------------------------------------------------------
-        // STEP 9: Create FK constraint — Sessions (CASCADE)
-        // ---------------------------------------------------------------
-
-        Schema::table('sessions', function (Blueprint $table) {
-            $table->foreign('user_id')
-                ->references('id')->on('users')
-                ->onDelete('cascade');
-        });
+        foreach ($this->constraintDefinitions() as [$table, $name]) {
+            DB::statement(sprintf('ALTER TABLE %s VALIDATE CONSTRAINT %s', $table, $name));
+        }
     }
 
     /**
-     * Remove all foreign key constraints added by this migration.
+     * Drop all foreign key constraints added by this migration.
      */
     public function down(): void
     {
-        Schema::table('lead_field_responses', function (Blueprint $table) {
-            $table->dropForeign(['lead_id']);
-            $table->dropForeign(['field_id']);
-        });
+        foreach ($this->constraintDefinitions() as [$table, $name]) {
+            DB::statement(sprintf('ALTER TABLE %s DROP CONSTRAINT IF EXISTS %s', $table, $name));
+        }
+    }
 
-        Schema::table('field_form', function (Blueprint $table) {
-            $table->dropForeign(['field_id']);
-            $table->dropForeign(['form_id']);
-        });
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
 
-        Schema::table('field_mappings', function (Blueprint $table) {
-            $table->dropForeign(['integration_id']);
-            $table->dropForeign(['field_id']);
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['updated_user_id']);
-        });
+    /**
+     * Delete orphaned rows in chunks to avoid long-held table locks.
+     */
+    private function deleteOrphansInChunks(
+        string $table,
+        string $column,
+        string $referencedTable,
+        bool $nullable = false,
+        int $chunkSize = 500,
+    ): void {
+        do {
+            $query = DB::table($table)
+                ->whereNotExists(function ($q) use ($table, $column, $referencedTable): void {
+                    $q->select(DB::raw(1))
+                        ->from($referencedTable)
+                        ->whereColumn("{$referencedTable}.id", "{$table}.{$column}");
+                });
 
-        Schema::table('postback_api_requests', function (Blueprint $table) {
-            $table->dropForeign(['postback_id']);
-        });
+            if ($nullable) {
+                $query->whereNotNull($column);
+            }
 
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropForeign(['sale_id']);
-        });
+            $deleted = $query->limit($chunkSize)->delete();
+        } while ($deleted > 0);
+    }
 
-        Schema::table('sales', function (Blueprint $table) {
-            $table->dropForeign(['integration_id']);
-            $table->dropForeign(['user_id']);
-        });
+    /**
+     * Nullify orphaned foreign key values in chunks.
+     */
+    private function nullifyOrphansInChunks(
+        string $table,
+        string $column,
+        string $referencedTable,
+        int $chunkSize = 500,
+    ): void {
+        do {
+            $updated = DB::table($table)
+                ->whereNotNull($column)
+                ->whereNotExists(function ($q) use ($table, $column, $referencedTable): void {
+                    $q->select(DB::raw(1))
+                        ->from($referencedTable)
+                        ->whereColumn("{$referencedTable}.id", "{$table}.{$column}");
+                })
+                ->limit($chunkSize)
+                ->update([$column => null]);
+        } while ($updated > 0);
+    }
 
-        Schema::table('integrations', function (Blueprint $table) {
-            $table->dropForeign(['company_id']);
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['updated_user_id']);
-        });
+    /**
+     * All FK constraint definitions.
+     *
+     * Format: [table, constraint_name, column, references_table, on_delete_action]
+     *
+     * @return array<int, array{string, string, string, string, string}>
+     */
+    private function constraintDefinitions(): array
+    {
+        return [
+            // lead_field_responses
+            ['lead_field_responses', 'lead_field_responses_lead_id_foreign',  'lead_id',  'leads',  'CASCADE'],
+            ['lead_field_responses', 'lead_field_responses_field_id_foreign', 'field_id', 'fields', 'CASCADE'],
 
-        Schema::table('companies', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['updated_user_id']);
-        });
+            // field_form pivot
+            ['field_form', 'field_form_field_id_foreign', 'field_id', 'fields', 'CASCADE'],
+            ['field_form', 'field_form_form_id_foreign',  'form_id',  'forms',  'CASCADE'],
 
-        Schema::table('fields', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['updated_user_id']);
-        });
+            // field_mappings
+            ['field_mappings', 'field_mappings_integration_id_foreign',  'integration_id',  'integrations', 'RESTRICT'],
+            ['field_mappings', 'field_mappings_field_id_foreign',         'field_id',        'fields',       'RESTRICT'],
+            ['field_mappings', 'field_mappings_user_id_foreign',          'user_id',         'users',        'SET NULL'],
+            ['field_mappings', 'field_mappings_updated_user_id_foreign',  'updated_user_id', 'users',        'SET NULL'],
 
-        Schema::table('forms', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['updated_user_id']);
-        });
+            // postback_api_requests
+            ['postback_api_requests', 'postback_api_requests_postback_id_foreign', 'postback_id', 'postbacks', 'CASCADE'],
 
-        Schema::table('sessions', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-        });
+            // transactions / sales
+            ['transactions', 'transactions_sale_id_foreign',       'sale_id',        'sales',        'CASCADE'],
+            ['sales',        'sales_integration_id_foreign',       'integration_id', 'integrations', 'SET NULL'],
+            ['sales',        'sales_user_id_foreign',              'user_id',        'users',        'SET NULL'],
+
+            // integrations
+            ['integrations', 'integrations_company_id_foreign',      'company_id',      'companies', 'SET NULL'],
+            ['integrations', 'integrations_user_id_foreign',         'user_id',         'users',     'SET NULL'],
+            ['integrations', 'integrations_updated_user_id_foreign', 'updated_user_id', 'users',     'SET NULL'],
+
+            // companies
+            ['companies', 'companies_user_id_foreign',         'user_id',         'users', 'SET NULL'],
+            ['companies', 'companies_updated_user_id_foreign', 'updated_user_id', 'users', 'SET NULL'],
+
+            // fields
+            ['fields', 'fields_user_id_foreign',         'user_id',         'users', 'SET NULL'],
+            ['fields', 'fields_updated_user_id_foreign', 'updated_user_id', 'users', 'SET NULL'],
+
+            // forms
+            ['forms', 'forms_user_id_foreign',         'user_id',         'users', 'SET NULL'],
+            ['forms', 'forms_updated_user_id_foreign', 'updated_user_id', 'users', 'SET NULL'],
+
+            // sessions
+            ['sessions', 'sessions_user_id_foreign', 'user_id', 'users', 'CASCADE'],
+        ];
     }
 };
