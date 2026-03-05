@@ -48,6 +48,22 @@ class Integration extends Model
   }
 
   /**
+   * Get the field mappings for the integration.
+   */
+  public function fieldMappings()
+  {
+    return $this->hasMany(FieldMapping::class);
+  }
+
+  /**
+   * Scope to filter active offerwall integrations.
+   */
+  public function scopeActiveOfferwalls($query)
+  {
+    return $query->where('type', 'offerwall')->where('is_active', true);
+  }
+
+  /**
    * Truncate the table.
    */
   public static function truncate()
