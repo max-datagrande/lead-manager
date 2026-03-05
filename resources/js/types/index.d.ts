@@ -51,7 +51,7 @@ export interface PageLink {
   label: string;
   page: number | null;
   active: boolean;
-};
+}
 
 export interface User {
   id: number;

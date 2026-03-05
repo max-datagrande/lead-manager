@@ -13,10 +13,7 @@ const ShowIntegration = ({ integration }: Props) => {
     <>
       <Head title={`Integration | ${integration.id}`} />
       <div className="relative flex-1 space-y-6 p-6 md:p-8">
-        <PageHeader
-          smallText={`Integration ID: ${integration.id} - Type: ${integration.type}`}
-          title={integration.name}
-        >
+        <PageHeader smallText={`Integration ID: ${integration.id} - Type: ${integration.type}`} title={integration.name}>
           <Link href={route('integrations.edit', integration.id)}>
             <Button>Edit</Button>
           </Link>

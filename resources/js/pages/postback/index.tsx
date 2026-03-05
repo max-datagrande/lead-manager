@@ -2,12 +2,12 @@ import { ServerTable } from '@/components/data-table/server-table';
 import PageHeader from '@/components/page-header';
 import { type Postback } from '@/components/postback/index';
 import { createPostbackColumns } from '@/components/postback/list-columns';
+import { PostbackProvider } from '@/context/postback-provider';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { PageLink } from '@/types';
 import { Head } from '@inertiajs/react';
 import { type ReactNode } from 'react';
-import { PostbackProvider } from '@/context/postback-provider';
 
 const postbackColumns = createPostbackColumns();
 const breadcrumbs = [

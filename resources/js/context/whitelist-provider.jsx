@@ -1,10 +1,10 @@
 import WhitelistDeleteModal from '@/components/whitelist/whitelist-delete-modal';
 import WhitelistFormModal from '@/components/whitelist/whitelist-form-modal';
 import { useModal } from '@/hooks/use-modal';
+import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
 import { usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 
 export const WhitelistContext = createContext(null);
 

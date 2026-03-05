@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ChevronsUpDown } from 'lucide-react';
+import { useState } from 'react';
 
 export function TokenInserter({ fields = [], onTokenSelect }) {
   const fieldsSorted = fields.slice().sort((a, b) => a.name.localeCompare(b.name));
@@ -14,12 +13,7 @@ export function TokenInserter({ fields = [], onTokenSelect }) {
     <div className="flex w-full justify-end">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="mt-1 w-full justify-between"
-          >
+          <Button variant="outline" role="combobox" aria-expanded={open} className="mt-1 w-full justify-between">
             {value ? fieldsSorted.find((f) => f.name === value)?.name : 'Insert field as token...'}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>

@@ -3,22 +3,14 @@ import { DataTableHeader } from '@/components/data-table/table-header';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
-import { getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { columns } from './list-columns';
 import { useOfferwallConversions } from '@/hooks/offerwall/use-conversions';
+import { getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useEffect } from 'react';
+import { columns } from './list-columns';
 
 export function TableConversions({ entries, integrations, companies }) {
-  const {
-    getConversions,
-    columnFilters,
-    setColumnFilters,
-    sorting,
-    setSorting,
-    globalFilter,
-    setGlobalFilter,
-    isLoading,
-  } = useOfferwallConversions();
+  const { getConversions, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, isLoading } =
+    useOfferwallConversions();
 
   const table = useReactTable({
     data: entries,

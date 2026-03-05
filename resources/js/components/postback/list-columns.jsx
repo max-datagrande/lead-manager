@@ -52,7 +52,7 @@ export const createPostbackColumns = () => [
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Postback ID" />,
     cell: ({ row }) => (
-      <div className="w-[80px] flex items-center gap-2">
+      <div className="flex w-[80px] items-center gap-2">
         <ActionsCell row={row} />
         {row.getValue('id')}
       </div>

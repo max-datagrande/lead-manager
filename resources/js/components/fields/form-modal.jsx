@@ -96,11 +96,7 @@ export default function FormModal({ entry, isEdit = false }) {
         {/* Possible Values */}
         <div className="space-y-2">
           <Label htmlFor="possible_values">Possible Values</Label>
-          <TagInput
-            id="possible_values"
-            value={data.possible_values}
-            onChange={(values) => setData('possible_values', values)}
-          />
+          <TagInput id="possible_values" value={data.possible_values} onChange={(values) => setData('possible_values', values)} />
           {errors.possible_values && <p className="text-sm text-destructive">{errors.possible_values}</p>}
         </div>
 

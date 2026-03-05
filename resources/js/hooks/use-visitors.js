@@ -1,5 +1,5 @@
-import { useContext } from 'react';
 import { VisitorsContext } from '@/context/visitors-provider';
+import { useContext } from 'react';
 
 function useVisitors() {
   const context = useContext(VisitorsContext);

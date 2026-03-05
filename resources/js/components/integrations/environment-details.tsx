@@ -4,11 +4,10 @@ import JsonViewer from '@/components/ui/json-viewer';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { getCookie } from '@/utils/navigator';
-import { PlayCircle } from 'lucide-react';
+import { Clock, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
 import { DescriptionList, DescriptionListItem } from './description-list-item';
-import { Clock } from 'lucide-react';
 
 export function EnvironmentDetails({ integrationId, env }) {
   const [testResult, setTestResult] = useState(null);
@@ -76,12 +75,12 @@ export function EnvironmentDetails({ integrationId, env }) {
           </DescriptionList>
         </CardContent>
       </Card>
-      <SheetContent className="w-[400px] sm:w-[540px] gap-0">
+      <SheetContent className="w-[400px] gap-0 sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Test Result</SheetTitle>
           <SheetDescription>Result of the API request test.</SheetDescription>
         </SheetHeader>
-        <div className="flex-1 gap-6 px-4 flex flex-col overflow-auto">
+        <div className="flex flex-1 flex-col gap-6 overflow-auto px-4">
           {isTesting && (
             <div className="flex items-center justify-center p-8">
               <div className="flex items-center gap-2">
@@ -93,7 +92,7 @@ export function EnvironmentDetails({ integrationId, env }) {
           {testResult && (
             <JsonViewer
               data={JSON.stringify(testResult, null, 2)}
-              className='flex-1'
+              className="flex-1"
               title={
                 <div className="flex items-center gap-2">
                   <span>Response Data</span>

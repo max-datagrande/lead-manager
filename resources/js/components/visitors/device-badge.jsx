@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 
 /**
  * Componente para mostrar badge de dispositivo con color apropiado
- * 
+ *
  * @param {Object} props - Propiedades del componente
  * @param {string} props.deviceType - Tipo de dispositivo (mobile, desktop, tablet)
  * @returns {JSX.Element} Badge con color según el tipo de dispositivo

@@ -2,7 +2,7 @@ import TableRowEmpty from '@/components/data-table/table-row-empty';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { flexRender } from '@tanstack/react-table';
 
-export function DataTableContent({ table, data}) {
+export function DataTableContent({ table, data }) {
   if (data.length === 0) {
     return <TableRowEmpty colSpan={table.getAllColumns().length}>No data found.</TableRowEmpty>;
   }

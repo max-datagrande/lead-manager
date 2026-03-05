@@ -22,6 +22,7 @@ const CardStats = ({ className }) => {
       }
       const data = await response.json();
       const availableTokens = data.available;
+      addMessage('Successfully fetched IP API quota', 'success');
       setRemainingTokens(availableTokens);
     } catch (error) {
       addMessage('Failed to fetch IP API quota', 'error');

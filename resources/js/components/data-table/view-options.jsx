@@ -1,5 +1,12 @@
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { capitalize } from '@/utils/string';
 import { Eye, EyeOff } from 'lucide-react';
@@ -18,15 +25,8 @@ export function DataTableViewOptions({ columns }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant={hasHiddenColumns ? "secondary" : "outline"}
-                className="ms-auto flex"
-              >
-                {hasHiddenColumns ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
+              <Button variant={hasHiddenColumns ? 'secondary' : 'outline'} className="ms-auto flex">
+                {hasHiddenColumns ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
@@ -44,7 +44,7 @@ export function DataTableViewOptions({ columns }) {
               return (
                 <DropdownMenuCheckboxItem
                   key={column.id}
-                  className="capitalize cursor-pointer"
+                  className="cursor-pointer capitalize"
                   checked={column.getIsVisible()}
                   onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   onSelect={(event) => {
