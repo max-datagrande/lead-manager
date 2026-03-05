@@ -121,7 +121,7 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
                         </span>
                         {field.id && <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50">#{field.id}</span>}
                       </div>
-                      <span className="text-sm font-medium break-words">{field.value}</span>
+                      <span className="text-sm font-medium wrap-break-word">{field.value}</span>
                     </div>
                   ))}
                 </div>
