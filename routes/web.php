@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\CatalystController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\IntegrationController;
@@ -14,9 +16,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
-  Route::get('/', function () {
-    return Inertia::render('dashboard');
-  })->name('home');
+  Route::get('/', [DashboardController::class, 'index'])->name('home');
+  // Performance metrics
+  Route::get('performance', [PerformanceController::class, 'index'])->name('performance.index');
   // Visitors
   Route::get('visitors', [VisitorController::class, 'index'])->name('visitors.index');
   // Postbacks
