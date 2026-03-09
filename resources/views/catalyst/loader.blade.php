@@ -39,6 +39,9 @@
     });
   };
 
+  // Registrar timestamp para medir tiempo de carga del SDK + fingerprint
+  placeholder._startTime = performance.now();
+
   // Exponer el placeholder globalmente
   window.Catalyst = placeholder;
 

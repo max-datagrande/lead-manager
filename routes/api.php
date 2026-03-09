@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\Offerwall\EventController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
+use App\Http\Controllers\Api\PerformanceMetricController;
 use App\Http\Controllers\Api\ProxyController;
 use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\OfferwallController;
@@ -33,6 +34,9 @@ Route::middleware(['auth.host'])->group(function () {
   // Forwards Slack payloads through the host-authenticated proxy.
   Route::post('/proxy/slack', [ProxyController::class, 'forward'])
     ->name('api.proxy.slack');
+  // Receives SDK performance timing metrics (fire-and-forget from client).
+  Route::post('/metrics/performance', [PerformanceMetricController::class, 'store'])
+    ->name('api.metrics.performance');
 });
 
 // Offerwall management endpoints that run inside the lead manager.
