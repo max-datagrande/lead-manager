@@ -1,4 +1,4 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
@@ -31,20 +31,20 @@ export function DashboardLoadTimeCard({ data, className }: Props) {
   const totalRequests = data && data.length > 0 ? data.reduce((sum, d) => sum + Number(d.total_requests), 0) : 0;
 
   return (
-    <Link href={route('performance.index')} className="block md:col-span-2 md:row-span-2 lg:col-span-3">
-      <Card className={cn('justify-between transition-colors hover:bg-accent/50', className)}>
+    <Link href={route('performance.index')} className="flex cursor-pointer md:col-span-2 md:row-span-2 lg:col-span-3">
+      <Card className={cn('w-full justify-between transition-colors hover:bg-accent/50', className)}>
         <CardHeader>
-          <CardTitle className="text-base">SDK Load Time</CardTitle>
-          <CardDescription>Avg. fingerprint registration</CardDescription>
-          <CardAction>
+          <CardTitle className="flex items-center gap-2 text-base">
             <Timer className="h-4 w-4 text-muted-foreground" />
-          </CardAction>
+            SDK Load Time
+          </CardTitle>
+          <CardDescription>Avg. fingerprint registration</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           {isLoading ? (
             <div className="space-y-3">
               <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-[180px] w-full" />
+              <Skeleton className="h-50 w-full" />
             </div>
           ) : data.length === 0 ? (
             <p className="text-sm text-muted-foreground">No data yet</p>
@@ -57,7 +57,7 @@ export function DashboardLoadTimeCard({ data, className }: Props) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">Latest: {currentAvg !== null ? `${Math.round(currentAvg)}ms` : 'N/A'}</p>
-              <div className="mt-4 h-[180px]">
+              <div className="mt-4 h-70">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data}>
                     <defs>
