@@ -1,4 +1,4 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { usePage } from '@inertiajs/react';
@@ -40,11 +40,11 @@ const CardStats = ({ className }) => {
   return (
     <Card className={cn(className, 'justify-between')}>
       <CardHeader>
-        <CardTitle>IP API</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          IP API
+        </CardTitle>
         <CardDescription>Pending Requests</CardDescription>
-        <CardAction>
-          <Activity className="text-xl" />
-        </CardAction>
       </CardHeader>
       <CardContent>
         <ContentStats remaininTokens={remaininTokens} isLoading={isLoading} />
