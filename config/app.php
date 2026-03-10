@@ -120,4 +120,11 @@ return [
     'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
     'store' => env('APP_MAINTENANCE_STORE', 'database'),
   ],
+
+  'vps' => [
+    'admin' => [
+      'id'           => env('HOSTINGER_VPS_ADMIN_ID', '652988'),
+      'bearer_token' => env('HOSTINGER_VPS_ADMIN_BEARER_TOKEN'),
+    ],
+  ],
 ];
