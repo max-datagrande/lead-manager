@@ -33,7 +33,7 @@ export function ValueMappingModal({ isOpen, onOpenChange, tokenData, onSave }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 sm:max-w-[625px] gap-0">
+      <DialogContent className="gap-0 p-0 sm:max-w-[625px]">
         <DialogHeader className="p-4">
           <DialogTitle>Map Values for {`{${token}}`}</DialogTitle>
           <DialogDescription>Map the internal values from your system to the corresponding values expected by the external API.</DialogDescription>

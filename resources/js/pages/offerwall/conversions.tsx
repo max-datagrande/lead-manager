@@ -29,21 +29,36 @@ type Conversions = {
   company: string; // Add company name for frontend
   buyer: string; // Add buyer company name for frontend
 };
+type FilterOption = { value: string; label: string };
+type FilterData = {
+  companies: FilterOption[];
+  integrations: FilterOption[];
+  paths: FilterOption[];
+  hosts: FilterOption[];
+  cptypes: FilterOption[];
+  placements: FilterOption[];
+  states: FilterOption[];
+  buyerCompanies: FilterOption[];
+};
+
+const emptyFilters: FilterData = {
+  companies: [],
+  integrations: [],
+  paths: [],
+  hosts: [],
+  cptypes: [],
+  placements: [],
+  states: [],
+  buyerCompanies: [],
+};
+
 interface IndexProps extends DatatablePageProps<Conversions> {
   totalPayout: number;
-  data: {
-    companies: Array<{ value: string; label: string }>;
-    integrations: Array<{ value: string; label: string }>;
-    paths: Array<{ value: string; label: string }>;
-    hosts: Array<{ value: string; label: string }>;
-    cptypes: Array<{ value: string; label: string }>;
-    placements: Array<{ value: string; label: string }>;
-    states: Array<{ value: string; label: string }>;
-    buyerCompanies: Array<{ value: string; label: string }>; // Add buyerCompanies for faceted filter
-  };
+  data: FilterData;
 }
 
-const Index = ({ rows, state, meta, data, totalPayout }: IndexProps) => {
+const Index = ({ rows, state, meta, data: rawData, totalPayout }: IndexProps) => {
+  const data = rawData ?? emptyFilters;
   const table = useServerTable({
     routeName: 'offerwall.conversions',
     initialState: state,

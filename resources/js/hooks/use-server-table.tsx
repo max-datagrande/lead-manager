@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { router } from '@inertiajs/react';
-import { route } from 'ziggy-js';
 import { getSortState, serializeSort } from '@/utils/table';
+import { router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import { route } from 'ziggy-js';
 
 interface ServerTableOptions {
   routeName: string;

@@ -12,7 +12,7 @@ const PageHeader = ({ className = '', title, description, children, smallText = 
   return (
     <div className={cn(`page-header ${childrenClassName}`, className)}>
       <div className="flex flex-col space-y-2">
-        {smallText && <p className="text-sm text-muted-foreground mb-0">{smallText}</p>}
+        {smallText && <p className="mb-0 text-sm text-muted-foreground">{smallText}</p>}
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>

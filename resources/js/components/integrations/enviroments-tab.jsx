@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
 import { useIntegrations } from '@/hooks/use-integrations';
 
-export function EnvironmentTab({ env, fields = []}) {
+export function EnvironmentTab({ env, fields = [] }) {
   const { data, handleEnvironmentChange } = useIntegrations();
   const headerFields = fields.map((field) => `{${field.name}}`);
   const headerValues = [...HEADER_VALUES, ...headerFields];

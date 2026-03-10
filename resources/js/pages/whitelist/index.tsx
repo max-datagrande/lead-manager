@@ -39,7 +39,11 @@ const Index = ({ rows }: IndexProps) => {
     <WhitelistProvider>
       <Head title="Whitelist Management" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
-        <PageHeader title="Whitelist Management" description="Manage allowed domains and IP addresses for API access control." className='flex flex-row justify-between gap-4 items-center'>
+        <PageHeader
+          title="Whitelist Management"
+          description="Manage allowed domains and IP addresses for API access control."
+          className="flex flex-row items-center justify-between gap-4"
+        >
           <WhitelistActions />
         </PageHeader>
         <TableWhitelist entries={rows} />

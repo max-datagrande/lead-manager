@@ -2,8 +2,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import PromptDialog from '@/components/prompt-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 /* import { router } from '@inertiajs/react'; */
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 /**
  * Options for opening a modal

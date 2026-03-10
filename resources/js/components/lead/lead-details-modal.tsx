@@ -1,4 +1,4 @@
-import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -72,25 +72,25 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
       <div className="flex-1 pr-2">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
           <div className="flex h-40 flex-col items-center justify-center space-y-2 text-center">
-            <p className="text-destructive font-medium">{error}</p>
+            <p className="font-medium text-destructive">{error}</p>
           </div>
         ) : data ? (
           <div className="space-y-6">
             {/* Basic Info */}
-            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <div className="space-y-2 rounded-lg bg-muted/50 p-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground block text-xs">Fingerprint</span>
-                  <p className="font-mono truncate font-medium" title={data.lead.fingerprint}>
+                  <span className="block text-xs text-muted-foreground">Fingerprint</span>
+                  <p className="truncate font-mono font-medium" title={data.lead.fingerprint}>
                     {data.lead.fingerprint}
                   </p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-xs">Created At</span>
+                  <span className="block text-xs text-muted-foreground">Created At</span>
                   <p className="font-medium">{new Date(data.lead.created_at).toLocaleString()}</p>
                 </div>
               </div>
@@ -99,46 +99,29 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
             {/* Fields Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                  Form Data ({filteredFields.length})
-                </h4>
+                <h4 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Form Data ({filteredFields.length})</h4>
               </div>
 
               <div className="relative">
-                <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                <Input
-                  placeholder="Search fields..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search fields..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
 
               {filteredFields.length === 0 ? (
-                <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
+                <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
                   {searchTerm ? 'No matching fields found.' : 'No field data recorded for this lead.'}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {filteredFields.map((field: any, index: number) => (
-                    <div
-                      key={index}
-                      className="hover:bg-muted/30 flex flex-col space-y-1 rounded-md border p-3 transition-colors"
-                    >
+                    <div key={index} className="flex flex-col space-y-1 rounded-md border p-3 transition-colors hover:bg-muted/30">
                       <div className="flex items-center justify-between gap-2">
-                        <span
-                          className="text-muted-foreground truncate text-xs font-medium uppercase"
-                          title={field.label}
-                        >
+                        <span className="truncate text-xs font-medium text-muted-foreground uppercase" title={field.label}>
                           {field.label || field.name}
                         </span>
-                        {field.id && (
-                          <span className="text-muted-foreground/50 shrink-0 font-mono text-[10px]">
-                            #{field.id}
-                          </span>
-                        )}
+                        {field.id && <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50">#{field.id}</span>}
                       </div>
-                      <span className="break-words text-sm font-medium">{field.value}</span>
+                      <span className="text-sm font-medium wrap-break-word">{field.value}</span>
                     </div>
                   ))}
                 </div>

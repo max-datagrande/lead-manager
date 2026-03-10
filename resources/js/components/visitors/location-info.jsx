@@ -1,6 +1,6 @@
 /**
  * Componente para mostrar información de ubicación
- * 
+ *
  * @param {Object} props - Propiedades del componente
  * @param {string} props.city - Ciudad del visitante
  * @param {string} props.state - Estado/provincia del visitante

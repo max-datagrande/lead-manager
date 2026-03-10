@@ -5,25 +5,25 @@
 function getLocaleFromEnv() {
   // Obtener locale desde variable de entorno
   const envLocale = import.meta.env.VITE_APP_LOCALE;
-  
+
   if (envLocale) {
     return envLocale;
   }
-  
+
   // Fallback: detección automática si no está configurado en .env
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const browserLanguage = navigator.language || navigator.languages[0];
-  
+
   // Colombia
   if (timeZone === 'America/Bogota' || browserLanguage === 'es-CO') {
     return 'es-CO';
   }
-  
+
   // Otros países de habla hispana
   if (browserLanguage.startsWith('es')) {
     return 'es-ES';
   }
-  
+
   return 'en-US';
 }
 

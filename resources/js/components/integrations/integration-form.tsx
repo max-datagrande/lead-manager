@@ -1,3 +1,4 @@
+import PayloadEditor from '@/components/forms/payload-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,6 @@ import { EnvironmentTab } from './enviroments-tab';
 import { MappingConfigurator } from './mapping-configurator';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { TokenInserter } from './token-inserter';
-import PayloadEditor from '@/components/forms/payload-editor';
 
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();

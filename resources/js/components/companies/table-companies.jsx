@@ -1,11 +1,11 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
-import { DataTablePagination } from '../data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
-import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
-import { columns } from './list-columns';
 import { useCompanies } from '@/hooks/use-companies';
+import { getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { DataTablePagination } from '../data-table/table-pagination';
+import { columns } from './list-columns';
 
 export function TableCompanies({ entries }) {
   const { resetTrigger, setResetTrigger, sorting, setSorting, globalFilter, setGlobalFilter, pagination, setPagination } = useCompanies();
@@ -34,12 +34,7 @@ export function TableCompanies({ entries }) {
       {/* Filtros */}
       <div className="mb-4">
         <div className="mb-4 flex justify-between gap-2">
-          <DataTableToolbar
-            table={table}
-            searchPlaceholder="Search..."
-            resetTrigger={resetTrigger}
-            setResetTrigger={setResetTrigger}
-          />
+          <DataTableToolbar table={table} searchPlaceholder="Search..." resetTrigger={resetTrigger} setResetTrigger={setResetTrigger} />
         </div>
       </div>
       <div className="rounded-md border">

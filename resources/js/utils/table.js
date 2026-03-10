@@ -69,5 +69,4 @@ function toggleColumnSorting(currentSorting, columnId) {
   return [];
 }
 
-
-export { formatDateTime, formatDateTimeUTC, formatVisitDate, getSortState, serializeSort, formatOnlyDate, formatOnlyDateUTC, toggleColumnSorting };
+export { formatDateTime, formatDateTimeUTC, formatOnlyDate, formatOnlyDateUTC, formatVisitDate, getSortState, serializeSort, toggleColumnSorting };

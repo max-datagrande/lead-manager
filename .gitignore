@@ -32,3 +32,6 @@ yarn-error.log
 /.gemini
 /.cursor
 GEMINI.*
+.mcp.json
+CLAUDE.md
+AGENTS.md

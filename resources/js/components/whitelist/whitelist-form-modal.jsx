@@ -9,7 +9,6 @@ import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
 import { isIPv4 } from 'is-ip';
 import { AlertCircle } from 'lucide-react';
-import { useEffect } from 'react';
 
 /**
  * Modal component for creating and editing whitelist entries

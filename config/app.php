@@ -84,6 +84,8 @@ return [
 
   'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+  'fake_ip' => env('APP_FAKE_IP', '127.0.0.1'),
+
   /*
     |--------------------------------------------------------------------------
     | Encryption Key
@@ -117,5 +119,12 @@ return [
   'maintenance' => [
     'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
     'store' => env('APP_MAINTENANCE_STORE', 'database'),
+  ],
+
+  'vps' => [
+    'admin' => [
+      'id'           => env('HOSTINGER_VPS_ADMIN_ID', '652988'),
+      'bearer_token' => env('HOSTINGER_VPS_ADMIN_BEARER_TOKEN'),
+    ],
   ],
 ];
