@@ -81,7 +81,7 @@ class MixService
           $processor = new \App\Services\PayloadProcessorService();
           $headersParsed = $processor->process($headersTemplate, $headersReplacements['finalReplacements']);
           $headers = json_decode($headersParsed, true) ?? [];
-          
+
           $method = strtolower($prodEnv->method ?? 'post');
           $url = $prodEnv->url;
 
@@ -163,13 +163,30 @@ class MixService
           ];
         }
 
+        $totalOffers = count($aggregatedOffers);
+
+        // Si hay más de 5 ofertas, exigir mínimo 1 centavo.
+        $minimumCpc = $totalOffers > 5 ? 0.01 : 0.00;
+
+        $filteredOffers = array_filter($aggregatedOffers, function ($offer) use ($minimumCpc) {
+          $cpc = (float) ($offer['cpc'] ?? 0);
+
+          if ($minimumCpc > 0) {
+            return $cpc >= $minimumCpc;
+          }
+
+          return $cpc > 0;
+        });
+
+        $finalOffers = !empty($filteredOffers) ? array_values($filteredOffers) : array_values($aggregatedOffers);
+
         return [
           'success' => true,
           'message' => 'Offers aggregated successfully',
           'status_code' => 200,
-          'data' => $aggregatedOffers,
+          'data' => $finalOffers,
           'meta' => [
-            'total_offers' => count($aggregatedOffers),
+            'total_offers' => count($finalOffers),
             'successful_integrations' => $successfulCount,
             'failed_integrations' => $integrations->count() - $successfulCount,
             'duration_ms' => $durationRounded
@@ -220,7 +237,7 @@ class MixService
     $mappingConfig = $integration->request_mapping_config ?? [];
 
     $replacementsResult = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-    
+
     $processor = new \App\Services\PayloadProcessorService();
     $payloadString = $processor->process($template, $replacementsResult['finalReplacements']);
     $payloadArray = json_decode($payloadString, true) ?? [];
@@ -250,7 +267,7 @@ class MixService
         ]);
       }
     }
-    
+
     return [
         'payloadArray' => $payloadArray,
         'originalValues' => $replacementsResult['originalValues'],
