@@ -1,4 +1,4 @@
-import { type Company } from '@/components/companies';
+import { type Company } from '@/types/models/company';
 
 interface Platform {
   id: number;
