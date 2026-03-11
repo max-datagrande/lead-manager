@@ -163,6 +163,38 @@ class LeadService
   }
 
   /**
+   * Remove specific fields from a lead by field names.
+   *
+   * @param Lead $lead
+   * @param array<int, string> $fieldNames
+   * @return int Number of fields removed
+   */
+  public function removeLeadFields(Lead $lead, array $fieldNames): int
+  {
+    $fieldIds = Field::whereIn('name', $fieldNames)->pluck('id');
+
+    if ($fieldIds->isEmpty()) {
+      TailLogger::saveLog('No matching fields found to remove', 'leads/service', 'info', [
+        'lead_id' => $lead->id,
+        'requested_fields' => $fieldNames,
+      ]);
+      return 0;
+    }
+
+    $deletedCount = LeadFieldResponse::where('lead_id', $lead->id)
+      ->whereIn('field_id', $fieldIds)
+      ->delete();
+
+    TailLogger::saveLog('Lead fields removed', 'leads/service', 'info', [
+      'lead_id' => $lead->id,
+      'fields' => $fieldNames,
+      'deleted_count' => $deletedCount,
+    ]);
+
+    return $deletedCount;
+  }
+
+  /**
    * Log successful lead creation.
    *
    * @param Lead $lead
