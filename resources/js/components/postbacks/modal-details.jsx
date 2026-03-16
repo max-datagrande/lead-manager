@@ -1,0 +1,68 @@
+import { Button } from '@/components/ui/button';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useCurrentModalId, useModal } from '@/hooks/use-modal';
+import { useToast } from '@/hooks/use-toast';
+import { Copy } from 'lucide-react';
+
+export default function ModalDetails({ postback }) {
+  const modal = useModal();
+  const modalId = useCurrentModalId();
+  const { addMessage } = useToast();
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(postback.generated_url);
+    addMessage('URL copied to clipboard', 'success');
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{postback.name}</DialogTitle>
+        <DialogDescription>
+          Platform: <span className="font-medium">{postback.platform?.name ?? '—'}</span>
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Generated URL</Label>
+          <div className="flex gap-2">
+            <Input readOnly value={postback.generated_url} className="font-mono text-xs" onClick={(e) => e.target.select()} />
+            <Button type="button" variant="outline" size="icon" onClick={copyUrl}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">Share this URL with your platform to receive postback notifications.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Base URL</Label>
+          <Input readOnly value={postback.base_url} className="text-xs" />
+        </div>
+
+        {postback.param_mappings && Object.keys(postback.param_mappings).length > 0 && (
+          <div className="space-y-2">
+            <Label>Parameter Mappings</Label>
+            <div className="divide-y rounded-md border text-sm">
+              {Object.entries(postback.param_mappings).map(([param, token]) => (
+                <div key={param} className="flex items-center justify-between px-3 py-2">
+                  <span className="font-mono text-xs text-muted-foreground">{param}</span>
+                  <span className="text-xs">→</span>
+                  <span className="font-mono text-xs font-medium">{token || '—'}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2">
+          <Button variant="outline" onClick={() => modal.resolve(modalId, false)}>
+            Close
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}

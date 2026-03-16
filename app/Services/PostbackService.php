@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\PostbackApiRequests;
 use Illuminate\Database\Eloquent\Collection;
 use App\Events\PostbackProcessed;
-use App\Models\Postback;
+use App\Models\PostbackQueue;
 /* use App\Enums\PostbackVendor; */
 use Maxidev\Logger\TailLogger;
 use App\Services\MaxconvService;
@@ -19,14 +19,17 @@ class PostbackService
 {
   protected ?PostbackApiRequests $lastPostbackApiRequest = null;
 
-  public function __construct(
-    protected VendorServiceResolver $vendorResolver,
-    protected MaxconvService $maxconvService
-  ) {}
+  public function __construct(protected VendorServiceResolver $vendorResolver, protected MaxconvService $maxconvService) {}
 
-  public function searchPayout(string $clickId, string $vendor, ?string $fromDate, ?string $toDate, bool $returnConversionObject = false): float|array|null
-  {
+  public function searchPayout(
+    string $clickId,
+    string $vendor,
+    ?string $fromDate,
+    ?string $toDate,
+    bool $returnConversionObject = false,
+  ): float|array|null {
     $vendorService = $this->vendorResolver->make($vendor);
+
     return $vendorService->getPayoutForClickId($clickId, $fromDate, $toDate, $returnConversionObject);
   }
 
@@ -38,10 +41,10 @@ class PostbackService
   /**
    * Force sync a single postback against the vendor report.
    *
-   * @param Postback $postback
+   * @param  Postback  $postback
    * @return array
    */
-  public function forceSyncPostback(Postback $postback): void
+  public function forceSyncPostback(PostbackQueue $postback): void
   {
     // 1. Calculate Date Range
     $createdAt = $postback->created_at;
@@ -55,8 +58,8 @@ class PostbackService
     // 3b. Failure: Payout not found (searchPayout returned null)
     if (!is_array($conversionData)) {
       $postback->update([
-        'status' => Postback::statusFailed(),
-        'message' => "Payout not found in vendor report during force sync on " . now()->toDateTimeString(),
+        'status' => PostbackQueue::statusFailed(),
+        'message' => 'Payout not found in vendor report during force sync on ' . now()->toDateTimeString(),
         'processed_at' => now(),
         'response_data' => ['error' => 'Payout not found in vendor report.'],
       ]);
@@ -67,7 +70,8 @@ class PostbackService
         'searched_to' => $toDate,
       ]);
 
-      add_flash_message(type: "error", message: "Payout not found in the vendor report for the specified period.");
+      add_flash_message(type: 'error', message: 'Payout not found in the vendor report for the specified period.');
+
       return;
     }
 
@@ -77,7 +81,7 @@ class PostbackService
     if ($payout <= 0) {
       $postback->update([
         'payout' => 0,
-        'status' => Postback::statusSkipped(),
+        'status' => PostbackQueue::statusSkipped(),
         'message' => 'Payout was 0 or null, postback skipped during force sync on ' . now()->toDateTimeString(),
         'processed_at' => now(),
         'response_data' => $conversionData,
@@ -87,7 +91,8 @@ class PostbackService
         'postback_id' => $postback->id,
       ]);
 
-      add_flash_message(type: "info", message: "Sync complete. Payout was 0 or null, so postback was skipped.");
+      add_flash_message(type: 'info', message: 'Sync complete. Payout was 0 or null, so postback was skipped.');
+
       return;
     }
 
@@ -107,34 +112,32 @@ class PostbackService
       'payout' => $payout,
     ]);
 
-    add_flash_message(type: "success", message: "Sync successful. Payout found: {$payout}");
-    return;
+    add_flash_message(type: 'success', message: "Sync successful. Payout found: {$payout}");
   }
-
 
   /**
    * Redirige un postback procesado al vendor correspondiente.
    *
-   * @param Postback $postback El postback a redirigir.
-   * @return void
+   * @param  Postback  $postback  El postback a redirigir.
    */
-  public function redirectPostback(Postback $postback): void
+  public function redirectPostback(PostbackQueue $postback): void
   {
-    TailLogger::saveLog("Initiating processed postback redirection", 'services/postback-redirect', 'info', [
+    TailLogger::saveLog('Initiating processed postback redirection', 'services/postback-redirect', 'info', [
       'postback_id' => $postback->id,
       'click_id' => $postback->click_id,
       'payout' => $postback->payout,
       'vendor' => $postback->vendor,
-      'offer_id' => $postback->offer_id
+      'offer_id' => $postback->offer_id,
     ]);
 
     // Validar que la oferta existe antes de proceder
     if (!$this->maxconvService->offerExists($postback->offer_id)) {
-      TailLogger::saveLog("Offer not found", 'services/postback-redirect', 'warning', [
+      TailLogger::saveLog('Offer not found', 'services/postback-redirect', 'warning', [
         'postback_id' => $postback->id,
         'vendor' => $postback->vendor,
-        'offer_id' => $postback->offer_id
+        'offer_id' => $postback->offer_id,
       ]);
+
       return;
     }
     $postbackUrl = $this->maxconvService->buildPostbackUrl($postback);
@@ -165,11 +168,11 @@ class PostbackService
       $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
       $newPostbackApiRequest->update();
 
-      //Update postback
+      // Update postback
       $json = $result['response']->json();
-      $body =  $result['response']->body();
+      $body = $result['response']->body();
       $postback->update([
-        'status' => Postback::statusProcessed(),
+        'status' => PostbackQueue::statusProcessed(),
         'processed_at' => now(),
         'response_data' => $json ?? $body,
         'message' => 'Postback processed successfully',
@@ -179,9 +182,12 @@ class PostbackService
         'error' => $e->getMessage(),
         'file' => $e->getFile(),
         'line' => $e->getLine(),
-        'trace' => $e->getTraceAsString()
+        'trace' => $e->getTraceAsString(),
       ];
-      TailLogger::saveLog("Excepción al redirigir postback", 'services/postback-redirect', 'error', [...$errorContext, 'postback_id' => $postback->id]);
+      TailLogger::saveLog('Excepción al redirigir postback', 'services/postback-redirect', 'error', [
+        ...$errorContext,
+        'postback_id' => $postback->id,
+      ]);
 
       // Actualizar el registro con el error
       $newPostbackApiRequest->endpoint = 'error';
@@ -191,9 +197,9 @@ class PostbackService
       $newPostbackApiRequest->response_time_ms = (int) ((microtime(true) - $startTime) * 1000);
       $newPostbackApiRequest->update();
 
-      //Actualizar postback
+      // Actualizar postback
       $postback->update([
-        'status' => Postback::statusFailed(),
+        'status' => PostbackQueue::statusFailed(),
         'message' => $e->getMessage(),
         'response_data' => $errorContext,
       ]);
@@ -204,10 +210,11 @@ class PostbackService
   {
     return collect(config('offers.maxconv'));
   }
+
   /**
    * Añade un postback a la cola de procesamiento.
    *
-   * @param array $validatedData Los datos validados del postback
+   * @param  array  $validatedData  Los datos validados del postback
    * @return JsonResponse Resultado de la operación con el postback creado o error
    */
   public function queueForProcessing(array $validatedData): JsonResponse
@@ -215,7 +222,7 @@ class PostbackService
     try {
       $postback = DB::transaction(function () use ($validatedData) {
         // Crear postback con estado pending
-        $postback = Postback::create([
+        $postback = PostbackQueue::create([
           'offer_id' => $validatedData['offer_id'],
           'click_id' => $validatedData['clid'],
           'payout' => $validatedData['payout'] ?? null,
@@ -223,7 +230,7 @@ class PostbackService
           'currency' => $validatedData['currency'],
           'event' => $validatedData['event'],
           'vendor' => $validatedData['vendor'],
-          'status' => Postback::statusPending(),
+          'status' => PostbackQueue::statusPending(),
           'message' => 'Pending verification',
         ]);
 
@@ -234,14 +241,13 @@ class PostbackService
         'postback_id' => $postback->id,
         'vendor' => $validatedData['vendor'],
         'offer_id' => $validatedData['offer_id'],
-        'click_id' => $validatedData['clid']
+        'click_id' => $validatedData['clid'],
       ]);
 
-      //ProcessPostbackJob::dispatch($postback->id, $validated['clid']);
       return response()->json([
         'success' => true,
         'postback' => $postback,
-        'message' => 'Postback received and queued for processing'
+        'message' => 'Postback received and queued for processing',
       ]);
     } catch (\Throwable $e) {
       // Verificar si es una QueryException con duplicado
@@ -249,11 +255,14 @@ class PostbackService
       if ($e instanceof QueryException) {
         $isDuplicateEntry = str_contains($errorMessage, 'duplicate key value violates unique constraint');
         if ($isDuplicateEntry) {
-          return response()->json([
-            'success' => false,
-            'error' => 'duplicate',
-            'message' => 'Duplicate transaction ID (transaction_id) for this vendor.'
-          ], 422);
+          return response()->json(
+            [
+              'success' => false,
+              'error' => 'duplicate',
+              'message' => 'Duplicate transaction ID (transaction_id) for this vendor.',
+            ],
+            422,
+          );
         }
       }
 
@@ -262,14 +271,17 @@ class PostbackService
         'error' => $e->getMessage(),
         'file' => $e->getFile(),
         'line' => $e->getLine(),
-        'trace' => $e->getTraceAsString()
+        'trace' => $e->getTraceAsString(),
       ]);
 
-      return response()->json([
-        'success' => false,
-        'error' => 'general',
-        'message' => 'Error processing postback',
-      ], 500);
+      return response()->json(
+        [
+          'success' => false,
+          'error' => 'general',
+          'message' => 'Error processing postback',
+        ],
+        500,
+      );
     }
   }
 }
@@ -277,18 +289,18 @@ class PostbackService
 class PostbackServiceException extends \Exception
 {
   protected array $context = [];
+
   public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
     $this->context = $context;
   }
+
   public function getContext(): array
   {
     return $this->context;
   }
 }
-
-
 
 /*
 /*
@@ -372,7 +384,7 @@ class PostbackServiceException extends \Exception
           'payout' => $conversion['payout'] ?? 0.0,
           'currency' => 'USD',
           'vendor' => PostbackVendor::NI->value(), // Asumimos 'ni' ya que usamos NaturalIntelligenceService
-          'status' => Postback::statusPending(), // Marcar como pendiente
+          'status' => PostbackQueue::statusPending(), // Marcar como pendiente
           'message' => 'Pending verification',
         ]);
         // Deshabilitar timestamps automáticos temporalmente para esta instancia
@@ -428,7 +440,7 @@ class PostbackServiceException extends \Exception
       ]);
     }
     //Verificar si esta procesado
-    if ($postback->status === Postback::statusProcessed()) {
+    if ($postback->status === PostbackQueue::statusProcessed()) {
       throw new PostbackServiceException("Postback already marked as processed", [
         'postback_id' => $postbackId,
         'exists' => $postback ? 'sí' : 'no',
@@ -436,7 +448,7 @@ class PostbackServiceException extends \Exception
       ]);
     }
     // Verificar si no está fallido
-    if ($postback->status === Postback::statusFailed()) {
+    if ($postback->status === PostbackQueue::statusFailed()) {
       throw new PostbackServiceException("Postback already marked as failed", [
         'postback_id' => $postbackId,
         'exists' => $postback ? 'sí' : 'no',

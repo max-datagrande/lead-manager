@@ -3,25 +3,37 @@ import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/di
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SearchableSelect } from '@/components/ui/searchable-select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentModalId, useModal } from '@/hooks/use-modal'
 import { useForm } from '@inertiajs/react'
 import { Plus, Trash2 } from 'lucide-react'
 
-export default function FormModal({ entry, companies = [], isEdit = false }) {
+export default function FormModal({ entry, companies = [], internalTokens = [], isEdit = false }) {
   const modal = useModal()
   const modalId = useCurrentModalId()
 
-  const { data, setData, post, put, processing, errors, reset } = useForm({
+  const initialMappings = entry?.token_mappings && Object.keys(entry.token_mappings).length
+    ? Object.entries(entry.token_mappings).map(([external, internal]) => ({ external, internal }))
+    : [{ external: '', internal: '' }]
+
+  const { data, setData, post, put, processing, errors, reset, transform } = useForm({
     name: entry?.name ?? '',
     company_id: entry?.company_id ?? '',
-    tokens: entry?.tokens?.length ? entry.tokens : [''],
+    token_mappings: initialMappings,
+  })
+
+  transform((formData) => {
+    const mappingsObj = {}
+    formData.token_mappings.forEach(({ external, internal }) => {
+      if (external.trim() && internal) {
+        mappingsObj[external.trim()] = internal
+      }
+    })
+    return { ...formData, token_mappings: mappingsObj }
   })
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    const tokens = data.tokens.filter((t) => t.trim() !== '')
-    const payload = { ...data, tokens }
-
     const url = isEdit ? route('platforms.update', entry.id) : route('platforms.store')
     const options = {
       preserveState: true,
@@ -33,20 +45,20 @@ export default function FormModal({ entry, companies = [], isEdit = false }) {
     }
 
     if (isEdit) {
-      put(url, { ...options, data: payload })
+      put(url, options)
     } else {
-      post(url, { ...options, data: payload })
+      post(url, options)
     }
   }
 
-  const addToken = () => setData('tokens', [...data.tokens, ''])
+  const addMapping = () => setData('token_mappings', [...data.token_mappings, { external: '', internal: '' }])
 
-  const removeToken = (index) => setData('tokens', data.tokens.filter((_, i) => i !== index))
+  const removeMapping = (index) => setData('token_mappings', data.token_mappings.filter((_, i) => i !== index))
 
-  const updateToken = (index, value) =>
+  const updateMapping = (index, field, value) =>
     setData(
-      'tokens',
-      data.tokens.map((t, i) => (i === index ? value : t)),
+      'token_mappings',
+      data.token_mappings.map((m, i) => (i === index ? { ...m, [field]: value } : m)),
     )
 
   return (
@@ -76,36 +88,56 @@ export default function FormModal({ entry, companies = [], isEdit = false }) {
           {errors.company_id && <p className="text-sm text-destructive">{errors.company_id}</p>}
         </div>
 
-        {/* Tokens */}
+        {/* Token Mappings */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Tokens</Label>
-            <Button type="button" variant="outline" size="sm" onClick={addToken}>
+            <Label>Token Mappings</Label>
+            <Button type="button" variant="outline" size="sm" onClick={addMapping}>
               <Plus className="mr-1 h-3 w-3" />
-              Add Token
+              Add Mapping
             </Button>
           </div>
-          {data.tokens.map((token, index) => (
-            <div key={index} className="flex gap-2">
+          {data.token_mappings.length > 0 && (
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-x-2 gap-y-1 pb-1">
+              <span className="text-xs font-medium text-muted-foreground">External Token</span>
+              <span className="text-xs font-medium text-muted-foreground">Internal Token</span>
+              <span className="w-9" />
+            </div>
+          )}
+          {data.token_mappings.map((mapping, index) => (
+            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2">
               <Input
-                value={token}
-                onChange={(e) => updateToken(index, e.target.value)}
-                placeholder="e.g. cost, lead_id, click_id"
+                value={mapping.external}
+                onChange={(e) => updateMapping(index, 'external', e.target.value)}
+                placeholder="e.g. Cost, Callid"
+                className="font-mono text-xs"
               />
-              {data.tokens.length > 1 && (
+              <Select value={mapping.internal} onValueChange={(val) => updateMapping(index, 'internal', val)}>
+                <SelectTrigger className="text-xs">
+                  <SelectValue placeholder="Select token" />
+                </SelectTrigger>
+                <SelectContent>
+                  {internalTokens.map((token) => (
+                    <SelectItem key={token.value} value={token.value}>
+                      {token.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {data.token_mappings.length > 1 && (
                 <Button
                   type="button"
                   variant="secondary"
                   size="sm"
                   className="shrink-0 text-gray-400 hover:bg-destructive hover:text-white"
-                  onClick={() => removeToken(index)}
+                  onClick={() => removeMapping(index)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
             </div>
           ))}
-          {errors.tokens && <p className="text-sm text-destructive">{errors.tokens}</p>}
+          {errors.token_mappings && <p className="text-sm text-destructive">{errors.token_mappings}</p>}
         </div>
 
         <div className="flex justify-end gap-2 pt-4">

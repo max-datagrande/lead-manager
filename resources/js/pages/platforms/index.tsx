@@ -7,9 +7,9 @@ import { type IndexProps } from '@/types/models/platform'
 import { Head } from '@inertiajs/react'
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Platforms', href: '/platforms' }]
 
-const Index = ({ platforms, companies }: IndexProps) => {
+const Index = ({ platforms, companies, internalTokens }: IndexProps) => {
   return (
-    <PlatformsProvider companies={companies}>
+    <PlatformsProvider companies={companies} internalTokens={internalTokens}>
       <Head title="Platforms" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Platforms" description="Manage client platforms and their available tokens.">

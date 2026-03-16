@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, Coins, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
+import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
 import AppLogo from './app-logo';
 
 import { NavGroup } from './nav-group';
@@ -39,16 +39,31 @@ const LeadManagementGroup: NavGroupType = {
         },
       ],
     },
+  ],
+};
+
+const PostbacksGroup: NavGroupType = {
+  title: 'Postbacks',
+  items: [
     {
-      title: 'Postbacks',
-      icon: Webhook,
-      subItems: [
-        {
-          title: 'Queue',
-          href: '/postbacks',
-          icon: LayoutList,
-        },
-      ],
+      title: 'List',
+      href: route('postbacks.index'),
+      icon: List,
+    },
+    {
+      title: 'Executions',
+      href: route('postbacks.executions.index'),
+      icon: LayoutList,
+    },
+    {
+      title: 'Queue Legacy',
+      href: route('postbacks.queue-legacy.index'),
+      icon: LayoutList,
+    },
+    {
+      title: 'Platforms',
+      href: route('platforms.index'),
+      icon: Cpu,
     },
   ],
 };
@@ -95,7 +110,7 @@ const SystemGroup: NavGroupType = {
   ],
 };
 
-const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, OfferwallGroup, SystemGroup];
+const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, PostbacksGroup, OfferwallGroup, SystemGroup];
 
 const AdminGroup: NavGroupType = {
   title: 'Admin',
