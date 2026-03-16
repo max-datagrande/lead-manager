@@ -33,6 +33,11 @@ class PayloadProcessorService
 
     return json_encode($arrayData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
   }
+  public function processUrl(string $url, array $data): string
+  {
+    $processed = $this->injectTokens($url, $data);
+    return $this->releaseTypes($processed);
+  }
 
   public static function generateReplacements(array $leadData, array $mappingConfig): array
   {
