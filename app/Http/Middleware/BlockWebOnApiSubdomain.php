@@ -45,7 +45,14 @@ class BlockWebOnApiSubdomain
 
     $apiUrl = env('APP_API_URL');
     $isInternalApi = $apiUrl ? (parse_url($apiUrl, PHP_URL_HOST) === $host) : false;
-    $subdomainStartsWithApi = str_starts_with($host, 'api.');
+    $apiSubdomains = ['api.', 'bridge.', 'partner.'];
+    $subdomainStartsWithApi = false;
+    foreach ($apiSubdomains as $subdomain) {
+      if (str_starts_with($host, $subdomain)) {
+        $subdomainStartsWithApi = true;
+        break;
+      }
+    }
     $isApiOrigin = $subdomainStartsWithApi || $isInternalApi;
 
     // Solo bloquear si es subdominio api., NO es una ruta v1/* y NO es una petición API

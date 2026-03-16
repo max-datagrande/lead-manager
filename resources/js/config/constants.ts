@@ -49,19 +49,13 @@ export const CORS_HEADERS = [
 ];
 
 // Lista completa de todos los headers para usar en datalist
-export const ALL_HEADERS = [
-  ...AUTH_HEADERS,
-  ...CONTENT_HEADERS,
-  ...CLIENT_HEADERS,
-  ...CACHE_HEADERS,
-  ...CORS_HEADERS,
-];
+export const ALL_HEADERS = [...AUTH_HEADERS, ...CONTENT_HEADERS, ...CLIENT_HEADERS, ...CACHE_HEADERS, ...CORS_HEADERS];
 
 // Solo las keys para el datalist del campo key filtradas duplicadas
-export const HEADER_KEYS = [...new Set(ALL_HEADERS.map(header => header.key).sort())];
+export const HEADER_KEYS = [...new Set(ALL_HEADERS.map((header) => header.key).sort())];
 
 // Solo los values para el datalist del campo value
-export const HEADER_VALUES = [...new Set(ALL_HEADERS.map(header => header.value).sort())];
+export const HEADER_VALUES = [...new Set(ALL_HEADERS.map((header) => header.value).sort())];
 
 // Headers agrupados por categoría para mejor organización
 export const HEADERS_BY_CATEGORY = {

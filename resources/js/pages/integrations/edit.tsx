@@ -7,7 +7,12 @@ import { Head } from '@inertiajs/react';
 interface Props {
   integration: IntegrationDB;
 }
-const EditIntegrationPage = ({ integration, companies, fields }: { integration: IntegrationDB, companies: any[], fields: any[] }) => (
+interface EditIntegrationPageProps {
+  integration: IntegrationDB;
+  companies: any[];
+  fields: any[];
+}
+const EditIntegrationPage = ({ integration, companies, fields }: EditIntegrationPageProps) => (
   <IntegrationsProvider integration={integration}>
     <Head title={`Edit ${integration.name}`} />
     <div className="relative flex-1 space-y-6 p-6 md:p-8">

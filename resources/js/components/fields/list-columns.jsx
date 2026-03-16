@@ -1,15 +1,15 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Globe, Server } from 'lucide-react';
 import { useFields } from '@/hooks/use-fields';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { Edit, Globe, Server, Trash2 } from 'lucide-react';
 
 // Componente para mostrar el tipo de entrada
 const TypeBadge = ({ type }) => {
   const variants = {
     domain: { variant: 'default', icon: Globe, label: 'Domain' },
-    ip: { variant: 'secondary', icon: Server, label: 'IP Address' }
+    ip: { variant: 'secondary', icon: Server, label: 'IP Address' },
   };
 
   const config = variants[type] || variants.domain;
@@ -25,11 +25,7 @@ const TypeBadge = ({ type }) => {
 
 // Componente para mostrar el estado activo/inactivo
 const StatusBadge = ({ isActive }) => {
-  return (
-    <Badge variant={isActive ? 'default' : 'destructive'}>
-      {isActive ? 'Active' : 'Inactive'}
-    </Badge>
-  );
+  return <Badge variant={isActive ? 'default' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>;
 };
 
 // Componente para las acciones de la fila
@@ -39,20 +35,10 @@ const ActionsCell = ({ row }) => {
 
   return (
     <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showEditModal(entry)}
-        className="h-8 w-8 p-0"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(entry)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>

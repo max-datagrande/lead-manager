@@ -9,40 +9,43 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-  static $roles = ['admin', 'user', 'manager'];
-  /** @use HasFactory<\Database\Factories\UserFactory> */
-  use HasFactory, Notifiable;
+    public static array $roles = ['admin', 'user', 'manager'];
 
-  /**
-   * The attributes that are mass assignable.
-   *
-   * @var list<string>
-   */
-  protected $fillable = ['name', 'email', 'password', 'is_approved', 'role', 'email_verified_at'];
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable;
 
-  /**
-   * The attributes that should be hidden for serialization.
-   *
-   * @var list<string>
-   */
-  protected $hidden = ['password', 'remember_token'];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = ['name', 'email', 'password', 'is_approved', 'is_active', 'role', 'email_verified_at'];
 
-  /**
-   * Get the attributes that should be cast.
-   *
-   * @return array<string, string>
-   */
-  protected function casts(): array
-  {
-    return [
-      'email_verified_at' => 'datetime',
-      'password' => 'hashed',
-      'is_approved' => 'boolean',
-      'role' => 'string',
-    ];
-  }
-  public function isAdmin(): bool
-  {
-    return $this->role === 'admin';
-  }
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = ['password', 'remember_token'];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_approved' => 'boolean',
+            'is_active' => 'boolean',
+            'role' => 'string',
+        ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 }

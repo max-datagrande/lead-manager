@@ -33,9 +33,10 @@ export function TableIntegrations({ entries }) {
   });
 
   // Crear opciones de filtro únicas para Company y Type
-  const companyOptions = Array.from(
-    new Set(entries.map((entry) => entry.company?.name).filter(Boolean))
-  ).map((name) => ({ label: name, value: name }));
+  const companyOptions = Array.from(new Set(entries.map((entry) => entry.company?.name).filter(Boolean))).map((name) => ({
+    label: name,
+    value: name,
+  }));
 
   const showDeleteModal = async (integrationToDelete: any) => {
     const confirmed = await confirm({
@@ -63,12 +64,16 @@ export function TableIntegrations({ entries }) {
     });
 
     if (newName) {
-      router.post(route('integrations.duplicate', integrationToDuplicate.id), {
-        name: newName,
-      }, {
-        preserveState: true,
-        preserveScroll: true,
-      });
+      router.post(
+        route('integrations.duplicate', integrationToDuplicate.id),
+        {
+          name: newName,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+        },
+      );
     }
   };
 

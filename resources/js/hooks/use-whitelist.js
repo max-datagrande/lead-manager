@@ -1,5 +1,5 @@
-import { useContext } from 'react';
 import { WhitelistContext } from '@/context/whitelist-provider';
+import { useContext } from 'react';
 
 function useWhitelist() {
   const context = useContext(WhitelistContext);

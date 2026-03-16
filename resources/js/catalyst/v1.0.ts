@@ -363,7 +363,7 @@ class CatalystCore {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
     }
 
-    const payload : Record<string, any> = {
+    const payload: Record<string, any> = {
       fingerprint,
       placement,
       ...data,
@@ -429,7 +429,7 @@ class CatalystCore {
       fingerprint: this.visitorData.fingerprint,
       pathname: window.location.pathname,
       amount: Number(data.amount),
-      offer_token: data.offer_token
+      offer_token: data.offer_token,
     };
 
     try {
@@ -479,6 +479,51 @@ class CatalystCore {
         }
       });
     }
+  }
+
+  // ===================================================================================
+  // PERFORMANCE METRICS
+  // ===================================================================================
+
+  /**
+   * Envía la métrica de tiempo de carga al servidor. Fire-and-forget (fetch sin await).
+   */
+  reportPerformance(loadTimeMs: number): void {
+    const data = {
+      fingerprint: this.visitorData?.fingerprint ?? null,
+      host: window.location.hostname,
+      load_time_ms: loadTimeMs,
+    };
+    const url = this.getEndpoint('METRICS.PERFORMANCE');
+    if (!url) return;
+
+    if (this.config.debug) {
+      console.log('Catalyst SDK: Reporting performance metric', { url, ...data });
+    }
+
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (this.config.debug && this.config?.dev_origin) {
+      headers['Dev-Origin'] = this.config.dev_origin;
+    }
+
+    fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    })
+      .then((res) => {
+        if (this.config.debug) {
+          console.log(`Catalyst SDK: Performance metric reported (${res.status})`, { load_time_ms: loadTimeMs });
+        }
+      })
+      .catch((err) => {
+        if (this.config.debug) {
+          console.warn('Catalyst SDK: Failed to report performance metric', err);
+        }
+      });
   }
 
   // --- Helpers Privados ---
@@ -580,6 +625,14 @@ async function init(): Promise<void> {
 
     // 3. Emitir evento ready
     catalystInstance.dispatch('ready', { catalyst: catalystInstance, visitorData });
+
+    // 4. Fire-and-forget: reportar métrica de tiempo de carga (no bloquea nada)
+    const startTime = (placeholder as any)._startTime;
+    console.log('Catalyst SDK: Load time start:', startTime);
+    if (startTime && visitorData) {
+      const loadTimeMs = Math.round(performance.now() - startTime);
+      catalystInstance.reportPerformance(loadTimeMs);
+    }
   }
 }
 

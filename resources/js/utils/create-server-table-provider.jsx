@@ -1,6 +1,5 @@
-import { createContext } from 'react';
 import { useServerTable } from '@/hooks/use-server-table';
-import { useContext } from 'react';
+import { createContext, useContext } from 'react';
 
 /**
  * Crea un provider de tabla server-side de forma automática
@@ -28,14 +27,10 @@ export function createServerTableProvider(routeName, defaultConfig = {}) {
     const serverTable = useServerTable({
       routeName,
       initialState,
-      ...defaultConfig
+      ...defaultConfig,
     });
 
-    return (
-      <Context.Provider value={serverTable}>
-        {children}
-      </Context.Provider>
-    );
+    return <Context.Provider value={serverTable}>{children}</Context.Provider>;
   }
 
   function useTable() {

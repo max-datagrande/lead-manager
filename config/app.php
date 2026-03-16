@@ -52,6 +52,7 @@ return [
     */
 
   'url' => env('APP_URL', 'http://localhost'),
+  'api_url' => env('APP_API_URL', env('APP_URL', 'http://localhost')),
   'production_url' => env('APP_API_PRODUCTION_URL'),
 
   /*
@@ -83,6 +84,8 @@ return [
   'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
   'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+
+  'fake_ip' => env('APP_FAKE_IP', '127.0.0.1'),
 
   /*
     |--------------------------------------------------------------------------
@@ -117,5 +120,12 @@ return [
   'maintenance' => [
     'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
     'store' => env('APP_MAINTENANCE_STORE', 'database'),
+  ],
+
+  'vps' => [
+    'admin' => [
+      'id'           => env('HOSTINGER_VPS_ADMIN_ID', '652988'),
+      'bearer_token' => env('HOSTINGER_VPS_ADMIN_BEARER_TOKEN'),
+    ],
   ],
 ];

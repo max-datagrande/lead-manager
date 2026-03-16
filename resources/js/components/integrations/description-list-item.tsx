@@ -8,8 +8,8 @@ interface Props {
 export function DescriptionListItem({ term, children }: Props) {
   return (
     <>
-      <p className="text-sm font-medium text-gray-500">{term}</p>
-      <p className="text-sm text-gray-900">{children}</p>
+      <p className="text-sm font-medium text-foreground">{term}</p>
+      <p className="text-sm text-muted-foreground">{children}</p>
     </>
   );
 }

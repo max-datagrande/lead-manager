@@ -1,16 +1,8 @@
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
-export function SelectUnique({items, label, placeholder, onChange}) {
+export function SelectUnique({ items, label, placeholder, onChange }) {
   return (
     <Select onValueChange={onChange}>
       <SelectTrigger className={cn('w-full max-w-52')}>

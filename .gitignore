@@ -26,7 +26,15 @@ yarn-error.log
 /.idea
 /.nova
 /.vscode
-/.zed
 /.trae
+/.claude
+/.codex
+/.zed
 /.gemini
+/.cursor
+/.agents
 GEMINI.*
+.mcp.json
+skills-lock.json
+CLAUDE.md
+AGENTS.md

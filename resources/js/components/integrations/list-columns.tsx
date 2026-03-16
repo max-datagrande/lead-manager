@@ -69,7 +69,7 @@ const ActionsCell = ({ row, table }: { row: { original: Integration }; table: an
               <span className="leading-none">Duplicate</span>
             </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" className="cursor-pointer" onSelect={() => showDeleteModal(integration)}>
-              <Trash2 className="h-4 mb-[1px]" />
+              <Trash2 className="mb-px h-4" />
               <span className="leading-none">Delete</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>

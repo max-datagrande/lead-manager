@@ -1,4 +1,4 @@
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { usePage } from '@inertiajs/react';
@@ -22,6 +22,7 @@ const CardStats = ({ className }) => {
       }
       const data = await response.json();
       const availableTokens = data.available;
+      addMessage('Successfully fetched IP API quota', 'success');
       setRemainingTokens(availableTokens);
     } catch (error) {
       addMessage('Failed to fetch IP API quota', 'error');
@@ -39,11 +40,13 @@ const CardStats = ({ className }) => {
   return (
     <Card className={cn(className, 'justify-between')}>
       <CardHeader>
-        <CardTitle>IP API</CardTitle>
+        <CardTitle className="flex flex-col text-base">
+          <div className='flex items-center gap-2'>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            IP API
+          </div>
         <CardDescription>Pending Requests</CardDescription>
-        <CardAction>
-          <Activity className="text-xl" />
-        </CardAction>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ContentStats remaininTokens={remaininTokens} isLoading={isLoading} />

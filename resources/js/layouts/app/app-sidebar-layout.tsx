@@ -22,9 +22,11 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
 }
 function AppProvider({ children }: { children: ReactNode }) {
   return (
-    <ModalProvider>
-      <Toaster />
-      <ToastProvider>{children}</ToastProvider>
-    </ModalProvider>
+    <ToastProvider>
+        <Toaster />
+        <ModalProvider>
+          {children}
+        </ModalProvider>
+      </ToastProvider>
   );
 }

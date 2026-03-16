@@ -12,6 +12,7 @@ return [
     'webhook_urls' => [
         'default' => env('SLACK_NOTIFY_CHANNEL'),
         'error' => env('SLACK_ERROR_CHANNEL'),
+        'clarity_logs' => env('SLACK_CLARITY_ERRORS_CHANNEL'),
     ],
 
     /*

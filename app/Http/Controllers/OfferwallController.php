@@ -6,6 +6,7 @@ use App\Models\OfferwallConversion;
 use App\Models\Integration;
 use App\Models\OfferwallMix;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class OfferwallController extends Controller
@@ -54,82 +55,10 @@ class OfferwallController extends Controller
       $conversion->cptype = $conversion->tracked_fields['cptype'] ?? null;
       $conversion->placement_id = $conversion->tracked_fields['placement_id'] ?? null;
       $conversion->state = $conversion->tracked_fields['state'] ?? null;
+      $conversion->zip_code = $conversion->tracked_fields['zip_code'] ?? null;
       $conversion->buyer = $conversion->offer_company_name; // Add buyer company name for frontend
       return $conversion;
     });
-
-    $integrations = Integration::select('id', 'name')
-      ->get()
-      ->map(function ($integration) {
-        return ['value' => (string) $integration->id, 'label' => $integration->name];
-      });
-
-    $companies = \App\Models\Integration::with('company')
-      ->where('type', 'offerwall')
-      ->whereNotNull('company_id')
-      ->get()
-      ->unique('company_id')
-      ->map(function ($integration) {
-        return ['value' => (string) $integration->company_id, 'label' => $integration->company->name];
-      })
-      ->values();
-
-    $paths = OfferwallConversion::select('pathname')
-      ->distinct()
-      ->whereNotNull('pathname')
-      ->orderBy('pathname')
-      ->pluck('pathname')
-      ->map(fn($p) => ['value' => $p, 'label' => $p]);
-
-    $hosts = \App\Models\TrafficLog::select('host')
-      ->whereIn('fingerprint', function ($query) {
-        $query->select('fingerprint')->from('offerwall_conversions');
-      })
-      ->distinct()
-      ->whereNotNull('host')
-      ->orderBy('host')
-      ->pluck('host')
-      ->map(function ($host) {
-        return ['value' => $host, 'label' => $host];
-      });
-
-    $cptypes = OfferwallConversion::query()
-      ->select('tracked_fields->cptype as value')
-      ->distinct()
-      ->whereNotNull('tracked_fields->cptype')
-      ->orderBy('value')
-      ->pluck('value')
-      ->map(function ($value) {
-        return ['value' => $value, 'label' => $value];
-      });
-
-    $placements = OfferwallConversion::query()
-      ->select('tracked_fields->placement_id as value')
-      ->distinct()
-      ->whereNotNull('tracked_fields->placement_id')
-      ->orderBy('value')
-      ->pluck('value')
-      ->map(function ($value) {
-        return ['value' => $value, 'label' => $value];
-      });
-
-    $states = OfferwallConversion::query()
-      ->select('tracked_fields->state as value')
-      ->distinct()
-      ->whereNotNull('tracked_fields->state')
-      ->orderBy('value')
-      ->pluck('value')
-      ->map(function ($value) {
-        return ['value' => $value, 'label' => $value];
-      });
-
-    // Buyer Companies - Obtener valores únicos del campo offer_company_name
-    $buyerCompanies = OfferwallConversion::select('offer_company_name as value')
-      ->distinct()
-      ->whereNotNull('offer_company_name')
-      ->orderBy('value')
-      ->pluck('value')
-      ->map(fn($name) => ['value' => $name, 'label' => $name]);
 
     $state = [
       'filters' => json_decode($request->input('filters', '[]'), true),
@@ -146,16 +75,7 @@ class OfferwallController extends Controller
         'current_page' => $conversions->currentPage(),
         'last_page' => $conversions->lastPage(),
       ],
-      'data' => [
-        'integrations' => $integrations,
-        'companies' => $companies,
-        'paths' => $paths,
-        'hosts' => $hosts,
-        'cptypes' => $cptypes,
-        'placements' => $placements,
-        'states' => $states,
-        'buyerCompanies' => $buyerCompanies,
-      ],
+      'data' => Inertia::defer(fn () => $this->getConversionFilterOptions()),
       'totalPayout' => $totalPayout,
     ]);
   }
@@ -181,6 +101,9 @@ class OfferwallController extends Controller
             'Payout',
             'CPType',
             'Placement ID',
+            'State',
+            'Zip Code',
+            'Host',
             'Pathname',
             'Click ID',
             'UTM Source',
@@ -203,6 +126,9 @@ class OfferwallController extends Controller
               $conversion->amount,
               $conversion->tracked_fields['cptype'] ?? '',
               $conversion->tracked_fields['placement_id'] ?? '',
+              $conversion->tracked_fields['state'] ?? '',
+              $conversion->tracked_fields['zip_code'] ?? '',
+              $conversion->host_name,
               $conversion->pathname,
               $conversion->click_id,
               $conversion->utm_source,
@@ -220,6 +146,92 @@ class OfferwallController extends Controller
         'Content-Disposition' => 'attachment; filename="conversions-report-' . now()->format('Y-m-d_H-i-s') . '.csv"',
       ],
     );
+  }
+
+  /**
+   * Get all filter option values for the conversions page.
+   * Loaded via Inertia::defer() so the page renders immediately.
+   *
+   * @return array<string, \Illuminate\Support\Collection>
+   */
+  private function getConversionFilterOptions(): array
+  {
+    $toOptions = fn ($value) => ['value' => $value, 'label' => $value];
+
+    $integrations = Integration::select('id', 'name')
+      ->get()
+      ->map(fn ($i) => ['value' => (string) $i->id, 'label' => $i->name]);
+
+    $companies = Integration::with('company')
+      ->where('type', 'offerwall')
+      ->whereNotNull('company_id')
+      ->get()
+      ->unique('company_id')
+      ->map(fn ($i) => ['value' => (string) $i->company_id, 'label' => $i->company->name])
+      ->values();
+
+    $paths = OfferwallConversion::select('pathname')
+      ->distinct()
+      ->whereNotNull('pathname')
+      ->orderBy('pathname')
+      ->pluck('pathname')
+      ->map($toOptions);
+
+    // Cache hosts for 10 minutes — this query joins traffic_logs (2.5M rows)
+    $hosts = Cache::remember('ow_conversion_hosts', 600, function () use ($toOptions) {
+      return \App\Models\TrafficLog::select('host')
+        ->whereIn('fingerprint', function ($query) {
+          $query->select('fingerprint')->from('offerwall_conversions');
+        })
+        ->distinct()
+        ->whereNotNull('host')
+        ->orderBy('host')
+        ->pluck('host')
+        ->map($toOptions)
+        ->values();
+    });
+
+    $cptypes = OfferwallConversion::query()
+      ->select('tracked_fields->cptype as value')
+      ->distinct()
+      ->whereNotNull('tracked_fields->cptype')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map($toOptions);
+
+    $placements = OfferwallConversion::query()
+      ->select('tracked_fields->placement_id as value')
+      ->distinct()
+      ->whereNotNull('tracked_fields->placement_id')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map($toOptions);
+
+    $states = OfferwallConversion::query()
+      ->select('tracked_fields->state as value')
+      ->distinct()
+      ->whereNotNull('tracked_fields->state')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map($toOptions);
+
+    $buyerCompanies = OfferwallConversion::select('offer_company_name as value')
+      ->distinct()
+      ->whereNotNull('offer_company_name')
+      ->orderBy('value')
+      ->pluck('value')
+      ->map($toOptions);
+
+    return [
+      'integrations' => $integrations,
+      'companies' => $companies,
+      'paths' => $paths,
+      'hosts' => $hosts,
+      'cptypes' => $cptypes,
+      'placements' => $placements,
+      'states' => $states,
+      'buyerCompanies' => $buyerCompanies,
+    ];
   }
 
   /**
@@ -293,7 +305,7 @@ class OfferwallController extends Controller
     $sort = $request->input('sort', 'created_at:desc');
     [$sortColumn, $sortDirection] = get_sort_data($sort);
 
-    if (in_array($sortColumn, ['cptype', 'placement_id', 'state'])) {
+    if (in_array($sortColumn, ['cptype', 'placement_id', 'state', 'zip_code'])) {
       $query->orderBy("offerwall_conversions.tracked_fields->$sortColumn", $sortDirection);
     } elseif ($sortColumn === 'company') {
       $query->orderBy('integrations.company_id', $sortDirection);
