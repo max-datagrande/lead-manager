@@ -35,8 +35,8 @@ class IntegrationService
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|url',
-      'environments.production.url' => 'required|url',
+      'environments.development.url' => 'required|string',
+      'environments.production.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -97,8 +97,8 @@ class IntegrationService
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|url',
-      'environments.production.url' => 'required|url',
+      'environments.development.url' => 'required|string',
+      'environments.production.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
