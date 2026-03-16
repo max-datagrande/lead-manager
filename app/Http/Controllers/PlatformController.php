@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InternalToken;
 use App\Http\Requests\StorePlatformRequest;
 use App\Http\Requests\UpdatePlatformRequest;
 use App\Models\Company;
@@ -17,14 +18,12 @@ class PlatformController extends Controller
     $platforms = Platform::with(['company', 'creator'])
       ->latest()
       ->get();
-
     $companies = Company::orderBy('name')->get(['id', 'name']);
-
     $props = [
       'platforms' => $platforms,
       'companies' => $companies,
+      'internalTokens' => InternalToken::toArray(),
     ];
-
     return Inertia::render('platforms/index', $props);
   }
 
