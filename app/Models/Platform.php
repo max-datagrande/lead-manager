@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 
 class Platform extends Model
 {
+  use HasFactory;
+
   protected $fillable = [
     'name',
     'company_id',
@@ -26,7 +29,7 @@ class Platform extends Model
     parent::boot();
 
     static::creating(function (self $model): void {
-      $model->user_id = Auth::id();
+      $model->user_id ??= Auth::id();
     });
     static::deleting(function (self $model): void {
       $model->updated_user_id = Auth::id();

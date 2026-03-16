@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ExecutionStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class PostbackExecution extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'execution_uuid',
         'postback_id',

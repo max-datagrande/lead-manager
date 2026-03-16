@@ -27,7 +27,7 @@ class PostbackDispatchService
     $startTime = microtime(true);
 
     try {
-      if (app()->environment('local')) {
+      if (app()->environment(['local', 'testing'])) {
         $this->simulateLocalDispatch($execution, $log, $startTime);
 
         return $log;

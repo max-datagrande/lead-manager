@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\FireMode;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class Postback extends Model
 {
+    use HasFactory;
+
     protected $table = 'postbacks';
 
     protected $fillable = [
@@ -24,6 +27,7 @@ class Postback extends Model
         'fire_mode',
         'is_active',
         'is_public',
+        'last_fired_at',
         'user_id',
         'updated_user_id',
     ];
@@ -44,7 +48,7 @@ class Postback extends Model
 
         static::creating(function (self $model): void {
             $model->uuid = (string) Str::uuid();
-            $model->user_id = Auth::id();
+            $model->user_id ??= Auth::id();
         });
 
         static::updating(function (self $model): void {
