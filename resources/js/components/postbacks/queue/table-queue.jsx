@@ -3,7 +3,7 @@ import { DataTableHeader } from '@/components/data-table/table-header';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
-import { usePostbacks } from '@/hooks/use-postbacks';
+import { usePostbackQueue } from '@/hooks/use-postback-queue';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useEffect } from 'react';
 //Icons
@@ -23,7 +23,7 @@ const postbackColumns = createPostbackColumns();
  */
 export default function TablePostbacks({ entries, meta, data }) {
   const { getPostbacks, columnFilters, setColumnFilters, sorting, setSorting, globalFilter, setGlobalFilter, isLoading, pagination, setPagination } =
-    usePostbacks();
+    usePostbackQueue();
 
   const vendorFilterOptions = data.vendorFilterOptions ?? [];
   const statusFilterOptions = mapIcon(data.statusFilterOptions ?? []);

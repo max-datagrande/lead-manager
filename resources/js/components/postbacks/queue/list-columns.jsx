@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { usePostbacks } from '@/hooks/use-postbacks';
+import { usePostbackQueue } from '@/hooks/use-postback-queue';
 import { capitalize } from '@/utils/string';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { SlidersHorizontal } from 'lucide-react';
@@ -15,7 +15,7 @@ const vendors = {
 
 // Componente para las acciones de la fila
 function ActionsCell({ row }) {
-  const { showDeleteModal, showRequestViewer, showStatusModal, handleForceSync } = usePostbacks();
+  const { showDeleteModal, showRequestViewer, showStatusModal, handleForceSync } = usePostbackQueue();
   const postback = row.original;
   const canForceSync = postback.status === 'pending' || postback.status === 'failed';
 

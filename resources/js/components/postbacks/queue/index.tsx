@@ -1,6 +1,6 @@
 export { createPostbackColumns } from './list-columns';
 export { PostbackApiRequestsViewer } from './postback-api-requests-viewer';
-export { default as TablePostbacks } from './table-postbacks';
+export { default as TablePostbacks } from './table-queue';
 
 export type Postback = {
   id: number;
