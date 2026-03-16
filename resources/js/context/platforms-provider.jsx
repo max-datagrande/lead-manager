@@ -6,7 +6,7 @@ import { createContext, useState } from 'react'
 
 export const PlatformsContext = createContext(null)
 
-export function PlatformsProvider({ children, companies = [] }) {
+export function PlatformsProvider({ children, companies = [], internalTokens = [] }) {
   const { openAsync, confirm: confirmModal } = useModal();
   const { addMessage } = useToast()
   const [sorting, setSorting] = useState([])
@@ -17,7 +17,7 @@ export function PlatformsProvider({ children, companies = [] }) {
 
   const showCreateModal = async () => {
     try {
-      await openAsync(<FormModal entry={undefined} companies={companies} />)
+      await openAsync(<FormModal entry={undefined} companies={companies} internalTokens={internalTokens} />)
     } catch (error) {
       addMessage('Error creating platform', 'error')
     }
@@ -25,7 +25,7 @@ export function PlatformsProvider({ children, companies = [] }) {
 
   const showEditModal = async (entry) => {
     try {
-      await openAsync(<FormModal entry={entry} companies={companies} isEdit />)
+      await openAsync(<FormModal entry={entry} companies={companies} internalTokens={internalTokens} isEdit />)
     } catch (error) {
       addMessage('Error updating platform', 'error')
     }
