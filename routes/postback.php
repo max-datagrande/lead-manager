@@ -20,6 +20,14 @@ Route::prefix('postback')->group(function () {
   // Ruta para reconciliar payouts de un día
   Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])->name('api.postback.reconcile');
 
+
+
+
+
+
+
+
+  //NEW POSTBACKS
   // Postback fire endpoint (recibe callbacks de partners externos)
   Route::get('/fire/{uuid}', [PostbackFireController::class, 'fire'])
     ->name('api.postback.fire')
