@@ -6,18 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
+
 class Platform extends Model
 {
   protected $fillable = [
     'name',
     'company_id',
-    'tokens',
+    'token_mappings',
     'user_id',
     'updated_user_id',
   ];
 
   protected $casts = [
-    'tokens' => 'array',
+    'token_mappings' => 'array',
   ];
 
   protected static function boot(): void
@@ -33,6 +34,22 @@ class Platform extends Model
     static::updating(function (self $model): void {
       $model->updated_user_id = Auth::id();
     });
+  }
+
+  /**
+   * @return array<int, string>
+   */
+  public function getInternalTokensAttribute(): array
+  {
+    return array_unique(array_values($this->token_mappings ?? []));
+  }
+
+  /**
+   * @return array<string, string> internal → external
+   */
+  public function getInverseMapping(): array
+  {
+    return array_flip($this->token_mappings ?? []);
   }
 
   public function company(): BelongsTo

@@ -48,17 +48,24 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'tokens',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tokens" />,
-    cell: ({ row }) => (
-      <div className="flex flex-wrap gap-1">
-        {(row.original.tokens ?? []).map((token) => (
-          <Badge key={token} variant="secondary">
-            {token}
-          </Badge>
-        ))}
-      </div>
-    ),
+    accessorKey: 'token_mappings',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Token Mappings" />,
+    cell: ({ row }) => {
+      const mappings = row.original.token_mappings ?? {}
+      console.log(mappings);
+      const entries = Object.entries(mappings)
+      console.log({ entries });
+      if (!entries.length) return <span className="text-muted-foreground">—</span>
+      return (
+        <div className="flex flex-wrap gap-1">
+          {entries.map(([external, internal]) => (
+            <Badge key={external} variant="secondary" className="font-mono text-xs">
+              {external} → {internal}
+            </Badge>
+          ))}
+        </div>
+      )
+    },
     enableSorting: false,
     enableHiding: true,
   },
