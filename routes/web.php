@@ -2,19 +2,20 @@
 
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\CatalystController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PerformanceController;
-use App\Http\Controllers\VpsMetricsController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
+use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\PostbackController;
+use App\Http\Controllers\PostbackQueueController;
 use App\Http\Controllers\VisitorController;
+use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -24,16 +25,29 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::post('vps-metrics/refresh', [VpsMetricsController::class, 'refresh'])->name('vps.refresh');
   // Visitors
   Route::get('visitors', [VisitorController::class, 'index'])->name('visitors.index');
-  // Postbacks
+  // Postbacks — new generic module (list)
   Route::prefix('postbacks')
     ->name('postbacks.')
     ->group(function () {
       Route::get('/', [PostbackController::class, 'index'])->name('index');
+      Route::get('/create', [PostbackController::class, 'create'])->name('create');
+      Route::post('/', [PostbackController::class, 'store'])->name('store');
+      Route::get('/{postback}/edit', [PostbackController::class, 'edit'])->name('edit');
+      Route::put('/{postback}', [PostbackController::class, 'update'])->name('update');
       Route::delete('/{postback}', [PostbackController::class, 'destroy'])->name('destroy');
-      Route::get('/{postbackId}/api-requests', [PostbackController::class, 'getApiRequests'])->name('api-requests');
-      Route::patch('/{postback}/status', [PostbackController::class, 'updateStatus'])->name('updateStatus');
-      Route::post('/{postback}/force-sync', [PostbackController::class, 'forceSync'])->name('force-sync');
+      // NI Queue
+      Route::prefix('queue')
+        ->name('queue.')
+        ->group(function () {
+          Route::get('/', [PostbackQueueController::class, 'index'])->name('index');
+          Route::delete('/{postbackQueue}', [PostbackQueueController::class, 'destroy'])->name('destroy');
+          Route::get('/{postbackId}/api-requests', [PostbackQueueController::class, 'getApiRequests'])->name('api-requests');
+          Route::patch('/{postbackQueue}/status', [PostbackQueueController::class, 'updateStatus'])->name('updateStatus');
+          Route::post('/{postbackQueue}/force-sync', [PostbackQueueController::class, 'forceSync'])->name('force-sync');
+        });
     });
+  // Platforms — independent module
+  Route::resource('platforms', PlatformController::class)->except(['show', 'create', 'edit']);
   // Companies
   Route::resource('companies', CompanyController::class)->except(['show', 'create', 'edit']);
   // Integrations
