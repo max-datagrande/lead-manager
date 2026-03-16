@@ -1,0 +1,696 @@
+// ============================================================
+// Lead Manager — Database Schema (dt_admin)
+// Updated: 2026-03-03 (with FK constraints)
+// Visualize: https://dbdiagram.io or VS Code DBML extension
+// ============================================================
+
+Project lead_manager {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Lead management and postback processing system.
+    39 tables organized by domain.
+    FK constraints enforced with CASCADE / SET NULL / RESTRICT.
+  '''
+}
+
+// ============================================================
+// DOMAIN: Users & Auth
+// ============================================================
+
+Table users {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  email varchar(255) [not null, unique, note: 'Login email']
+  email_verified_at timestamp
+  password varchar(255) [not null, note: 'Hashed via bcrypt']
+  remember_token varchar(100)
+  is_approved boolean [not null, default: false]
+  role varchar(255) [not null, default: 'user', note: 'admin | user | manager']
+  is_active boolean [not null, default: true, note: 'Controls login access']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    email [unique, name: 'users_email_unique']
+    is_active [name: 'users_is_active_index']
+  }
+}
+
+Table sessions {
+  id varchar(255) [pk]
+  user_id bigint [ref: > users.id, note: 'FK CASCADE']
+  ip_address varchar(45)
+  user_agent text
+  payload text [not null]
+  last_activity integer [not null]
+
+  indexes {
+    user_id [name: 'sessions_user_id_index']
+    last_activity [name: 'sessions_last_activity_index']
+  }
+}
+
+Table password_reset_tokens {
+  email varchar(255) [pk]
+  token varchar(255) [not null]
+  created_at timestamp
+}
+
+Table personal_access_tokens {
+  id bigint [pk, increment]
+  tokenable_type varchar(255) [not null]
+  tokenable_id bigint [not null]
+  name text [not null]
+  token varchar(64) [not null, unique]
+  abilities text
+  last_used_at timestamp
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (tokenable_type, tokenable_id) [name: 'personal_access_tokens_tokenable_type_tokenable_id_index']
+    token [unique, name: 'personal_access_tokens_token_unique']
+  }
+}
+
+Table whitelist_entries {
+  id bigint [pk, increment]
+  type varchar(100) [not null, note: 'domain | ip']
+  name varchar(255) [not null, note: 'Friendly name']
+  value varchar(255) [not null, note: 'URL or IP address']
+  is_active boolean [not null, default: true]
+  user_id bigint [not null, default: 1, ref: > users.id, note: 'FK SET NULL - Creator']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL - Last editor']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (type, value) [unique, name: 'unique_type_value']
+    type [name: 'idx_whitelist_entries_type']
+    value [name: 'idx_whitelist_entries_value']
+    is_active [name: 'idx_whitelist_entries_is_active']
+    created_at [name: 'idx_whitelist_entries_created_at']
+  }
+}
+
+// ============================================================
+// DOMAIN: Companies
+// ============================================================
+
+Table companies {
+  id bigint [pk, increment]
+  name varchar(100) [not null]
+  contact_email varchar(100)
+  contact_phone varchar(50)
+  contact_name varchar(255) [unique]
+  active boolean [not null, default: true]
+  user_id bigint [ref: > users.id, note: 'FK SET NULL - Creator']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL - Last editor']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    contact_name [unique, name: 'companies_company_name_unique']
+  }
+}
+
+// ============================================================
+// DOMAIN: Projects & Landing Pages
+// ============================================================
+
+Table projects {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text
+  user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  updated_user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table landings {
+  id bigint [pk, increment]
+  project_id bigint [not null, ref: > projects.id, note: 'FK pre-existing']
+  name varchar(255) [not null]
+  slug varchar(255) [not null, unique]
+  user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  updated_user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    slug [unique, name: 'landings_slug_unique']
+  }
+}
+
+Table hosts {
+  id bigint [pk, increment]
+  landing_id bigint [not null, ref: > landings.id, note: 'FK pre-existing']
+  domain varchar(255) [not null, unique]
+  is_active boolean [not null, default: true]
+  user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  updated_user_id bigint [ref: > users.id, note: 'FK pre-existing']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    domain [unique, name: 'hosts_domain_unique']
+  }
+}
+
+// ============================================================
+// DOMAIN: Leads & Traffic
+// ============================================================
+
+Table leads {
+  id bigint [pk, increment]
+  fingerprint varchar(100) [not null, note: 'Unique visitor identifier']
+  website varchar(255)
+  ip_address varchar(45)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    ip_address [name: 'leads_ip_address_index']
+  }
+}
+
+Table traffic_logs {
+  id uuid [pk, note: 'UUID, not autoincrement']
+  fingerprint char(64) [not null, unique, note: 'Visitor fingerprint']
+  visit_date date [not null]
+  visit_count integer [not null, default: 1]
+  ip_address varchar(45) [not null]
+  user_agent text
+  device_type varchar(20)
+  browser varchar(50)
+  os varchar(50)
+  referrer text
+  host text
+  path_visited text
+  query_params json
+  // Sub-IDs
+  s1 varchar(100)
+  s2 varchar(100)
+  s3 varchar(100)
+  s4 varchar(100)
+  s10 varchar(100)
+  // UTM parameters
+  utm_source text
+  utm_medium text
+  utm_campaign_id text
+  utm_campaign_name text
+  utm_term text
+  utm_content text
+  // Campaign & click
+  campaign_code varchar(255)
+  click_id varchar(255)
+  // Geolocation
+  country_code char(2)
+  state varchar(100)
+  city varchar(100)
+  postal_code varchar(100)
+  // Detection
+  is_bot boolean [not null, default: false]
+  platform varchar(255)
+  channel varchar(255)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    fingerprint [unique, name: 'traffic_logs_fingerprint_unique']
+    fingerprint [name: 'traffic_logs_fingerprint_index']
+    (fingerprint, visit_date) [name: 'traffic_logs_fingerprint_visit_date_index']
+    visit_date [name: 'traffic_logs_visit_date_index']
+    created_at [name: 'traffic_logs_created_at_index']
+    campaign_code [name: 'traffic_logs_campaign_code_index']
+    utm_campaign_id [name: 'traffic_logs_campaign_id_index']
+    click_id [name: 'traffic_logs_click_id_index']
+    (state, is_bot) [name: 'traffic_logs_state_is_bot_index']
+    (utm_source, visit_date) [name: 'traffic_logs_traffic_source_visit_date_index']
+  }
+}
+
+// ============================================================
+// DOMAIN: Fields & Forms
+// ============================================================
+
+Table fields {
+  id bigint [pk, increment]
+  name varchar(100) [not null, unique]
+  label varchar(100) [not null]
+  validation_rules json
+  possible_values json
+  user_id bigint [ref: > users.id, note: 'FK SET NULL - Creator']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL - Last editor']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    name [unique, name: 'fields_name_unique']
+  }
+}
+
+Table forms {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text
+  user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table field_form {
+  id bigint [pk, increment]
+  field_id bigint [not null, ref: > fields.id, note: 'FK CASCADE']
+  form_id bigint [not null, ref: > forms.id, note: 'FK CASCADE']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table lead_field_responses {
+  id bigint [pk, increment]
+  lead_id bigint [not null, ref: > leads.id, note: 'FK CASCADE']
+  field_id bigint [not null, ref: > fields.id, note: 'FK CASCADE']
+  value text [not null]
+  fingerprint varchar(100) [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table field_mappings {
+  id bigint [pk, increment]
+  integration_id bigint [not null, ref: > integrations.id, note: 'FK RESTRICT']
+  external_parameter varchar(100) [not null]
+  type varchar(20) [not null, default: 'string']
+  field_id bigint [not null, ref: > fields.id, note: 'FK RESTRICT']
+  user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Integrations
+// ============================================================
+
+Table integrations {
+  id bigint [pk, increment]
+  company_id bigint [ref: > companies.id, note: 'FK SET NULL - nullable']
+  name varchar(100) [not null]
+  type varchar(255) [not null]
+  is_active boolean [not null, default: false]
+  response_parser_config json [note: 'Config for parsing API responses']
+  request_mapping_config json [note: 'Config for mapping request fields']
+  payload_transformer text [note: 'Custom payload transformer code']
+  use_custom_transformer boolean [not null, default: false]
+  user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table integration_environments {
+  id bigint [pk, increment]
+  integration_id bigint [not null, ref: > integrations.id, note: 'FK pre-existing']
+  environment varchar(50) [not null, note: 'dev | staging | prod']
+  method varchar(100) [not null]
+  url text [not null]
+  request_body text
+  request_headers text
+  content_type varchar(255)
+  authentication_type varchar(255)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (integration_id, environment) [unique, name: 'integration_environments_integration_id_environment_unique']
+  }
+}
+
+Table integration_call_logs {
+  id bigint [pk, increment]
+  loggable_type varchar(255) [not null, note: 'Polymorphic model type']
+  loggable_id bigint [not null, note: 'Polymorphic model ID']
+  integration_id bigint [not null, ref: > integrations.id, note: 'FK pre-existing']
+  status varchar(255) [not null]
+  http_status_code smallint [not null]
+  duration_ms integer [not null]
+  request_url text [not null]
+  request_method varchar(255) [not null]
+  request_headers json
+  request_payload json
+  response_headers json
+  response_body text
+  original_field_values json
+  mapped_field_values json
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (loggable_type, loggable_id) [name: 'integration_call_logs_loggable_type_loggable_id_index']
+  }
+}
+
+// ============================================================
+// DOMAIN: Platforms (independent module)
+// ============================================================
+
+Table platforms {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  company_id bigint [ref: > companies.id, note: 'FK SET NULL - nullable']
+  tokens json [not null, note: 'Array of token names e.g. ["cost","lead_id"]']
+  user_id bigint [ref: > users.id, note: 'FK SET NULL - Creator']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL - Last editor']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Postbacks (generic module — multiple platforms)
+// ============================================================
+
+Table postbacks {
+  id bigint [pk, increment]
+  uuid uuid [unique, not null, note: 'Public-facing fire URL identifier']
+  name varchar(255) [not null]
+  platform_id bigint [not null, ref: > platforms.id, note: 'FK RESTRICT']
+  base_url text [not null, note: 'Original URL with query params']
+  param_mappings json [not null, note: '{"url_param": "platform_token"}']
+  user_id bigint [ref: > users.id, note: 'FK SET NULL - Creator']
+  updated_user_id bigint [ref: > users.id, note: 'FK SET NULL - Last editor']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    uuid [unique, name: 'postbacks_uuid_unique']
+    platform_id [name: 'postbacks_platform_id_index']
+  }
+}
+
+// ============================================================
+// DOMAIN: Postback Queue (Natural Intelligence — NI system)
+// ============================================================
+
+Table postback_queue {
+  id bigint [pk, increment]
+  vendor varchar(255) [note: 'Postback vendor identifier']
+  click_id varchar(255)
+  payout numeric(10,2)
+  transaction_id varchar(255)
+  currency varchar(3) [not null, default: 'USD']
+  event varchar(255)
+  offer_id varchar(255) [not null]
+  status varchar(255) [not null, default: 'pending', note: 'pending | processed | failed | skipped']
+  response_data text
+  message text [note: 'Error or info message']
+  external_campaign_id varchar(100)
+  external_traffic_source varchar(100)
+  processed_at timestamp
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (vendor, transaction_id) [unique, name: 'postback_queue_vendor_transaction_id_unique']
+    (vendor, status) [name: 'postback_queue_vendor_status_index']
+    click_id [name: 'postback_queue_click_id_index']
+    offer_id [name: 'postback_queue_offer_id_index']
+    created_at [name: 'postback_queue_created_at_index']
+  }
+}
+
+Table postback_api_requests {
+  id bigint [pk, increment]
+  request_id varchar(255) [note: 'Unique request identifier']
+  postback_id bigint [ref: > postback_queue.id, note: 'FK CASCADE']
+  service varchar(255) [not null, note: 'natural_intelligence | other_api']
+  endpoint varchar(255) [not null]
+  method varchar(255) [not null, default: 'GET']
+  request_data json
+  response_data json
+  status_code integer
+  error_message text
+  response_time_ms integer
+  related_type varchar(255) [note: 'report | reconciliation | postback_redirect | search_payout | sync']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (related_type, postback_id) [name: 'postback_api_requests_related_type_postback_id_index']
+    (service, created_at) [name: 'postback_api_requests_service_created_at_index']
+    status_code [name: 'postback_api_requests_status_code_index']
+  }
+}
+
+Table conversion_logs {
+  id bigint [pk, increment]
+  fingerprint varchar(255) [not null]
+  event_type varchar(255) [not null]
+  vendor varchar(63) [not null]
+  campaign_id varchar(63) [not null]
+  price numeric(10,2) [not null]
+  click_id varchar(255) [not null]
+  s1 varchar(255)
+  s2 varchar(255)
+  s3 varchar(255)
+  s4 varchar(255)
+  postback_status varchar(255) [not null, default: 'pending']
+  postback_response text
+  postback_sent_at timestamp
+  retry_count integer [not null, default: 0]
+  error_message text
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (fingerprint, event_type, campaign_id) [unique, name: 'unique_conversion']
+    fingerprint [name: 'conversion_logs_fingerprint_index']
+    (fingerprint, event_type) [name: 'conversion_logs_fingerprint_event_type_index']
+    postback_status [name: 'conversion_logs_postback_status_index']
+    created_at [name: 'conversion_logs_created_at_index']
+  }
+}
+
+// ============================================================
+// DOMAIN: Offerwall
+// ============================================================
+
+Table offerwall_mixes {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text
+  user_id bigint [not null, ref: > users.id, note: 'FK pre-existing']
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table offerwall_mix_integrations {
+  id bigint [pk, increment]
+  offerwall_mix_id bigint [not null, ref: > offerwall_mixes.id, note: 'FK pre-existing']
+  integration_id bigint [not null, ref: > integrations.id, note: 'FK pre-existing']
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (offerwall_mix_id, integration_id) [unique, name: 'offerwall_mix_integrations_offerwall_mix_id_integration_id_uniq']
+  }
+}
+
+Table offerwall_mix_logs {
+  id bigint [pk, increment]
+  offerwall_mix_id bigint [not null, ref: > offerwall_mixes.id, note: 'FK pre-existing']
+  fingerprint varchar(255) [not null]
+  origin varchar(255)
+  placement varchar(255)
+  total_integrations integer [not null, default: 0]
+  successful_integrations integer [not null, default: 0]
+  failed_integrations integer [not null, default: 0]
+  total_offers_aggregated integer [not null, default: 0]
+  total_duration_ms integer [not null, default: 0]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    fingerprint [name: 'offerwall_mix_logs_fingerprint_index']
+    origin [name: 'offerwall_mix_logs_origin_index']
+    placement [name: 'offerwall_mix_logs_placement_index']
+  }
+}
+
+Table offerwall_conversions {
+  id bigint [pk, increment]
+  integration_id bigint [not null, ref: > integrations.id, note: 'FK pre-existing']
+  amount numeric(10,4) [not null]
+  fingerprint varchar(255) [not null]
+  click_id varchar(255)
+  utm_source varchar(255)
+  utm_medium varchar(255)
+  offerwall_mix_log_id bigint [ref: > offerwall_mix_logs.id, note: 'FK pre-existing']
+  offer_data jsonb
+  pathname varchar(255)
+  tracked_fields json
+  offer_company_name varchar(255)
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    fingerprint [name: 'offerwall_conversions_fingerprint_index']
+    pathname [name: 'offerwall_conversions_pathname_index']
+  }
+}
+
+// ============================================================
+// DOMAIN: Webhooks
+// ============================================================
+
+Table webhook_leads {
+  id bigint [pk, increment]
+  source varchar(255) [note: 'Webhook source identifier']
+  payload json [not null, note: 'Raw webhook payload']
+  headers json
+  ip_origin varchar(255)
+  status smallint [not null, default: 0, note: 'WebhookLeadStatus enum']
+  data json [note: 'Processed data']
+  response json [note: 'Response sent back']
+  processed_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Sales & Transactions
+// ============================================================
+
+Table sales {
+  id bigint [pk, increment]
+  sale_date timestamp [not null]
+  price integer
+  integration_id bigint [ref: > integrations.id, note: 'FK SET NULL']
+  user_id bigint [ref: > users.id, note: 'FK SET NULL']
+  fingerprint varchar(100) [not null]
+  response json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table transactions {
+  id bigint [pk, increment]
+  sale_id bigint [not null, ref: > sales.id, note: 'FK CASCADE']
+  transaction_date timestamp [not null]
+  amount numeric(10,2)
+  status varchar(255) [not null, default: '1']
+  transaction_details json
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Campaigns
+// ============================================================
+
+Table campaigns {
+  id bigint [pk, increment]
+  name varchar(255) [not null]
+  description text
+  start_date date
+  end_date date
+  status varchar(255)
+  budget numeric(10,2)
+  is_active boolean [not null, default: true]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Logging & System
+// ============================================================
+
+Table cron_logs {
+  id bigint [pk, increment]
+  command varchar(255) [not null]
+  status varchar(255) [not null, default: 'success']
+  output text
+  exception text
+  duration real
+  executed_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ============================================================
+// DOMAIN: Laravel Infrastructure
+// ============================================================
+
+Table migrations {
+  id integer [pk, increment]
+  migration varchar(255) [not null]
+  batch integer [not null]
+}
+
+Table cache {
+  key varchar(255) [pk]
+  value text [not null]
+  expiration integer [not null]
+}
+
+Table cache_locks {
+  key varchar(255) [pk]
+  owner varchar(255) [not null]
+  expiration integer [not null]
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  queue varchar(255) [not null]
+  payload text [not null]
+  attempts smallint [not null]
+  reserved_at integer
+  available_at integer [not null]
+  created_at integer [not null]
+
+  indexes {
+    queue [name: 'jobs_queue_index']
+  }
+}
+
+Table job_batches {
+  id varchar(255) [pk]
+  name varchar(255) [not null]
+  total_jobs integer [not null]
+  pending_jobs integer [not null]
+  failed_jobs integer [not null]
+  failed_job_ids text [not null]
+  options text
+  cancelled_at integer
+  created_at integer [not null]
+  finished_at integer
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar(255) [not null, unique]
+  connection text [not null]
+  queue text [not null]
+  payload text [not null]
+  exception text [not null]
+  failed_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    uuid [unique, name: 'failed_jobs_uuid_unique']
+  }
+}
+
+// ============================================================
+// IMPLICIT RELATIONSHIPS (via fingerprint, no FK constraint)
+// These are linked by matching fingerprint values, not by FK.
+// ============================================================
+
+// Lead.fingerprint <-> TrafficLog.fingerprint
+// OfferwallConversion.fingerprint <-> TrafficLog.fingerprint
+// OfferwallConversion.fingerprint <-> Lead.fingerprint
+// OfferwallMixLog.fingerprint <-> TrafficLog.fingerprint
+// ConversionLog.fingerprint <-> TrafficLog.fingerprint
