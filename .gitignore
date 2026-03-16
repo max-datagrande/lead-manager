@@ -27,11 +27,14 @@ yarn-error.log
 /.nova
 /.vscode
 /.trae
+/.claude
 /.codex
 /.zed
 /.gemini
 /.cursor
+/.agents
 GEMINI.*
 .mcp.json
+skills-lock.json
 CLAUDE.md
 AGENTS.md
