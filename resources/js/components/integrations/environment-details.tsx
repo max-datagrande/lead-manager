@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import JsonViewer from '@/components/ui/json-viewer';
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
@@ -59,14 +59,14 @@ export function EnvironmentDetails({ integrationId, env }) {
             <CardTitle className="capitalize">{env.environment}</CardTitle>
             <CardDescription>Configuration for {env.environment} environment.</CardDescription>
           </div>
-          <CardAction className="self-center">
+          <div className="self-center">
             <SheetTrigger asChild>
               <Button variant="black" size="sm" onClick={() => handleTest(env.id)} disabled={isTesting}>
                 <PlayCircle className="h-4 w-4" />
                 {isTesting ? 'Running...' : 'Test'}
               </Button>
             </SheetTrigger>
-          </CardAction>
+          </div>
         </CardHeader>
         <CardContent>
           <DescriptionList>

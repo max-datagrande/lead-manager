@@ -40,11 +40,13 @@ const CardStats = ({ className }) => {
   return (
     <Card className={cn(className, 'justify-between')}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          IP API
-        </CardTitle>
+        <CardTitle className="flex flex-col text-base">
+          <div className='flex items-center gap-2'>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            IP API
+          </div>
         <CardDescription>Pending Requests</CardDescription>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <ContentStats remaininTokens={remaininTokens} isLoading={isLoading} />

@@ -5,9 +5,10 @@ import { getSortState, serializeSort } from '@/utils/table';
 import { router, useForm } from '@inertiajs/react';
 import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
-export const PostbackContext = createContext(null);
+export const PostbackQueueContext = createContext(null);
 
-export function PostbackProvider({ children, initialState }) {
+
+export function PostbackQueueProvider({ children, initialState }) {
   const modal = useModal();
   const filters = useRef(initialState?.filters ?? []);
   const [globalFilter, setGlobalFilter] = useState(initialState?.search ?? '');
@@ -23,7 +24,7 @@ export function PostbackProvider({ children, initialState }) {
   });
   const showStatusModal = async (postback) => {
     try {
-      const { UpdateStatusModal } = await import('@/components/postback/update-status-modal');
+      const { UpdateStatusModal } = await import('@/components/postbacks/queue/update-status-modal');
       const result = await modal.openAsync(<UpdateStatusModal postback={postback} />);
       console.log(result);
     } catch (error) {
@@ -33,7 +34,7 @@ export function PostbackProvider({ children, initialState }) {
   };
 
   const showRequestViewer = async (postback) => {
-    const { PostbackApiRequestsViewer } = await import('@/components/postback/postback-api-requests-viewer');
+    const { PostbackApiRequestsViewer } = await import('@/components/postbacks/queue/postback-api-requests-viewer');
     modal.open(<PostbackApiRequestsViewer postbackId={postback.id} />, { className: 'max-w-4xl sm:max-w-4xl w-full' });
   };
 
@@ -116,7 +117,7 @@ export function PostbackProvider({ children, initialState }) {
   const getPostbacks = useDebouncedFunction(updatePostbacks, 200);
 
   return (
-    <PostbackContext.Provider
+    <PostbackQueueContext.Provider
       value={{
         getPostbacks,
         handleClearFilters,
@@ -137,6 +138,6 @@ export function PostbackProvider({ children, initialState }) {
       }}
     >
       {children}
-    </PostbackContext.Provider>
+    </PostbackQueueContext.Provider>
   );
 }

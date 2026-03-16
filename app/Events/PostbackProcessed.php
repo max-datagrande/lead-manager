@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Models\Postback;
+use App\Models\PostbackQueue;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -11,12 +11,12 @@ class PostbackProcessed
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public Postback $postback;
+    public PostbackQueue $postback;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(Postback $postback)
+    public function __construct(PostbackQueue $postback)
     {
         $this->postback = $postback;
     }

@@ -5,15 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FirePostbackRequest;
 use App\Http\Requests\SearchPayoutRequest;
-use App\Http\Requests\ReconcilePayoutsRequest;
-use App\Enums\PostbackVendor;
-use App\Models\Postback;
-use App\Services\NaturalIntelligenceService;
+use App\Models\PostbackQueue;
 use App\Services\PostbackService;
-// use App\Jobs\ProcessPostbackJob;
 use Illuminate\Http\JsonResponse;
 use Maxidev\Logger\TailLogger;
-use Illuminate\Http\Request;
 
 /**
  * Controller para manejar postbacks a Natural Intelligence desde landing pages
@@ -24,9 +19,6 @@ class PostbackController extends Controller
 
   /**
    * Endpoint fire para recibir postbacks de vendors específicos
-   *
-   * @param FirePostbackRequest $request
-   * @return JsonResponse
    */
   public function store(FirePostbackRequest $request): JsonResponse
   {
@@ -58,7 +50,7 @@ class PostbackController extends Controller
    */
   public function status(int $postbackId): JsonResponse
   {
-    $postback = Postback::find($postbackId);
+    $postback = PostbackQueue::find($postbackId);
 
     if (!$postback) {
       return response()->json([
@@ -77,15 +69,12 @@ class PostbackController extends Controller
         'payout' => $postback->payout,
         'processed_at' => $postback->processed_at,
         'created_at' => $postback->created_at,
-        'updated_at' => $postback->updated_at
-      ]
+        'updated_at' => $postback->updated_at,
+      ],
     ]);
   }
   /**
    * Endpoint para buscar payout de un cliente específico en un vendor determinado.
-   *
-   * @param SearchPayoutRequest $request
-   * @return JsonResponse
    */
   public function searchPayout(SearchPayoutRequest $request): JsonResponse
   {

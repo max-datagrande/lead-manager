@@ -1,8 +1,8 @@
 import { ServerTable } from '@/components/data-table/server-table';
 import PageHeader from '@/components/page-header';
-import { type Postback } from '@/components/postback/index';
-import { createPostbackColumns } from '@/components/postback/list-columns';
-import { PostbackProvider } from '@/context/postback-provider';
+import { type Postback } from '@/components/postbacks/queue/index';
+import { createPostbackColumns } from '@/components/postbacks/queue/list-columns';
+import { PostbackQueueProvider } from '@/context/postback-queue-provider';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { PageLink } from '@/types';
@@ -54,13 +54,13 @@ interface IndexProps {
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
   const table = useServerTable({
-    routeName: 'postbacks.index',
+    routeName: 'postbacks.queue-legacy.index',
     initialState: state,
     defaultPageSize: 10,
   });
   return (
     <>
-      <PostbackProvider initialState={state}>
+      <PostbackQueueProvider initialState={state}>
         <Head title="Postbacks" />
         <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
           <PageHeader title="Postbacks" description="Check the status of your postbacks." />
@@ -95,7 +95,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
             }}
           />
         </div>
-      </PostbackProvider>
+      </PostbackQueueProvider>
     </>
   );
 };
