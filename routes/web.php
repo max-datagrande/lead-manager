@@ -12,6 +12,7 @@ use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\PostbackController;
+use App\Http\Controllers\PostbackExecutionsController;
 use App\Http\Controllers\PostbackQueueController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
@@ -35,9 +36,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::get('/{postback}/edit', [PostbackController::class, 'edit'])->name('edit');
       Route::put('/{postback}', [PostbackController::class, 'update'])->name('update');
       Route::delete('/{postback}', [PostbackController::class, 'destroy'])->name('destroy');
-      // NI Queue
-      Route::prefix('queue')
-        ->name('queue.')
+      // Executions (new fire system)
+      Route::prefix('executions')
+        ->name('executions.')
+        ->group(function () {
+          Route::get('/', [PostbackExecutionsController::class, 'index'])->name('index');
+          Route::get('/{execution}/dispatch-logs', [PostbackExecutionsController::class, 'dispatchLogs'])->name('dispatch-logs');
+        });
+      // NI Queue (legacy)
+      Route::prefix('queue-legacy')
+        ->name('queue-legacy.')
         ->group(function () {
           Route::get('/', [PostbackQueueController::class, 'index'])->name('index');
           Route::delete('/{postbackQueue}', [PostbackQueueController::class, 'destroy'])->name('destroy');

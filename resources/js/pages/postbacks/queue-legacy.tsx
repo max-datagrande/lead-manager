@@ -54,7 +54,7 @@ interface IndexProps {
 }
 const Index = ({ rows, meta, state, data }: IndexProps) => {
   const table = useServerTable({
-    routeName: 'postbacks.index',
+    routeName: 'postbacks.queue-legacy.index',
     initialState: state,
     defaultPageSize: 10,
   });

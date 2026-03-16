@@ -51,8 +51,13 @@ const PostbacksGroup: NavGroupType = {
       icon: List,
     },
     {
-      title: 'Queue',
-      href: route('postbacks.queue.index'),
+      title: 'Executions',
+      href: route('postbacks.executions.index'),
+      icon: LayoutList,
+    },
+    {
+      title: 'Queue Legacy',
+      href: route('postbacks.queue-legacy.index'),
       icon: LayoutList,
     },
     {
