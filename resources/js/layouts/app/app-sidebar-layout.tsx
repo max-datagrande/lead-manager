@@ -2,6 +2,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { EnvBanner } from '@/components/env-banner';
 import { ToastProvider, Toaster } from '@/components/ui/toaster';
 import { ModalProvider } from '@/hooks/use-modal';
 import { type BreadcrumbItem } from '@/types';
@@ -23,6 +24,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
 function AppProvider({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
+        <EnvBanner />
         <Toaster />
         <ModalProvider>
           {children}
