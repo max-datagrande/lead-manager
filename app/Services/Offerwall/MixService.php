@@ -85,6 +85,7 @@ class MixService
           $headersParsed = $processor->process($headersTemplate, $finalReplacements);
           $headers = json_decode($headersParsed, true) ?? [];
 
+
           $method = strtolower($prodEnv->method ?? 'post');
 
           // Prepare URL
@@ -168,13 +169,30 @@ class MixService
           ];
         }
 
+        $totalOffers = count($aggregatedOffers);
+
+        // Si hay más de 5 ofertas, exigir mínimo 1 centavo.
+        $minimumCpc = $totalOffers > 5 ? 0.01 : 0.00;
+
+        $filteredOffers = array_filter($aggregatedOffers, function ($offer) use ($minimumCpc) {
+          $cpc = (float) ($offer['cpc'] ?? 0);
+
+          if ($minimumCpc > 0) {
+            return $cpc >= $minimumCpc;
+          }
+
+          return $cpc > 0;
+        });
+
+        $finalOffers = !empty($filteredOffers) ? array_values($filteredOffers) : array_values($aggregatedOffers);
+
         return [
           'success' => true,
           'message' => 'Offers aggregated successfully',
           'status_code' => 200,
-          'data' => $aggregatedOffers,
+          'data' => $finalOffers,
           'meta' => [
-            'total_offers' => count($aggregatedOffers),
+            'total_offers' => count($finalOffers),
             'successful_integrations' => $successfulCount,
             'failed_integrations' => $integrations->count() - $successfulCount,
             'duration_ms' => $durationRounded
