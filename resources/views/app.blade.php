@@ -49,7 +49,7 @@
   <title inertia>{{ config('app.name', 'DataLeads') }}</title>
 
   <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon{{ app()->environment('local') ? '-local' : (app()->environment('development', 'staging') ? '-dev' : '') }}.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <link rel="preconnect" href="https://fonts.bunny.net">
