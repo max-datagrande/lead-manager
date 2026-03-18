@@ -36,7 +36,7 @@ class MixService
         'success' => false,
         'message' => 'Lead not found',
         'status_code' => 404,
-        'data' => null
+        'data' => null,
       ];
     }
 
@@ -58,7 +58,7 @@ class MixService
             'success' => true,
             'message' => 'No active integrations found',
             'status_code' => 200,
-            'data' => []
+            'data' => [],
           ];
         }
 
@@ -81,10 +81,9 @@ class MixService
 
           // Prepare Headers
           $headersTemplate = $prodEnv->request_headers ?? '[]';
-          $processor = new \App\Services\PayloadProcessorService();
+          $processor = new \App\Services\PayloadProcessorService;
           $headersParsed = $processor->process($headersTemplate, $finalReplacements);
           $headers = json_decode($headersParsed, true) ?? [];
-
 
           $method = strtolower($prodEnv->method ?? 'post');
 
@@ -137,6 +136,7 @@ class MixService
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
             $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
+            $offers = $this->integrationService->applyOfferFallbacks($offers, $integration);
             $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
@@ -164,8 +164,8 @@ class MixService
               'total_offers' => 0,
               'successful_integrations' => $successfulCount,
               'failed_integrations' => $integrations->count() - $successfulCount,
-              'duration_ms' => $durationRounded
-            ]
+              'duration_ms' => $durationRounded,
+            ],
           ];
         }
 
@@ -195,15 +195,15 @@ class MixService
             'total_offers' => count($finalOffers),
             'successful_integrations' => $successfulCount,
             'failed_integrations' => $integrations->count() - $successfulCount,
-            'duration_ms' => $durationRounded
-          ]
+            'duration_ms' => $durationRounded,
+          ],
         ];
       });
 
       return $result;
     } catch (Throwable $e) {
       TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
-      $slack = new SlackMessageBundler();
+      $slack = new SlackMessageBundler;
       $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
         ->addDivider()
@@ -227,7 +227,7 @@ class MixService
         'success' => false,
         'message' => 'An unexpected error occurred while processing offers',
         'status_code' => 500,
-        'data' => null
+        'data' => null,
       ];
     }
   }
@@ -240,7 +240,7 @@ class MixService
   private function preparePayload(string $template, array $replacemnts, $integration): array
   {
 
-    $processor = new \App\Services\PayloadProcessorService();
+    $processor = new \App\Services\PayloadProcessorService;
     $payloadString = $processor->process($template, $replacemnts);
     $payload = json_decode($payloadString, true) ?? [];
 
@@ -265,14 +265,13 @@ class MixService
       } catch (Throwable $e) {
         TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
           'integration_id' => $integration->id,
-          'error' => $e->getMessage()
+          'error' => $e->getMessage(),
         ]);
       }
     }
 
     return $payload;
   }
-
 
   private function logIntegrationCall(
     OfferwallMixLog $mixLog,
@@ -302,7 +301,7 @@ class MixService
         'error' => get_class($response),
         'message' => $response->getMessage(),
         'file' => $response->getFile(),
-        'line' => $response->getLine()
+        'line' => $response->getLine(),
       ];
     }
 
@@ -345,12 +344,13 @@ class MixService
   private function sortOffersByCpc(array $offers): array
   {
     usort($offers, function ($a, $b) {
-      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float)$a['cpc'] : -1;
-      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float)$b['cpc'] : -1;
+      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float) $a['cpc'] : -1;
+      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float) $b['cpc'] : -1;
 
       if ($cpcA == $cpcB) {
         return 0;
       }
+
       // Orden descendente (mayor a menor)
       return ($cpcA > $cpcB) ? -1 : 1;
     });
