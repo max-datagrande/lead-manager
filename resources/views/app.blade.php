@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-env="{{ app()->environment() }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
 
 <head>
   <meta charset="utf-8">
@@ -38,11 +38,18 @@
       font-style: normal;
     }
   </style>
+  @if (app()->environment('local'))
+    <meta name="theme-color" content="#f59e0b">
+  @elseif(app()->environment('development', 'staging'))
+    <meta name="theme-color" content="#8b5cf6">
+  @else
+    <meta name="theme-color" content="#3b82f6">
+  @endif
 
   <title inertia>{{ config('app.name', 'DataLeads') }}</title>
 
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon{{ app()->environment('local') ? '-local' : (app()->environment('development', 'staging') ? '-dev' : '') }}.ico"  sizes="any">
+  <link rel="icon" href="/favicon{{ app()->environment('local') ? '-local' : (app()->environment('development', 'staging') ? '-dev' : '') }}.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <link rel="preconnect" href="https://fonts.bunny.net">
@@ -54,7 +61,7 @@
   @inertiaHead
 </head>
 
-<body class="font-inter antialiased no-scrollbar">
+<body class="font-inter antialiased no-scrollbar mb-0!">
   @inertia
 </body>
 
