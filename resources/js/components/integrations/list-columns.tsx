@@ -57,7 +57,7 @@ const ActionsCell = ({ row, table }: { row: { original: Integration }; table: an
       {/* Collapse */}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" aria-label="Open menu" size="sm">
+          <Button variant="ghost" size="sm" aria-label="Open menu" className="h-8 w-8 p-0">
             <Cog className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
