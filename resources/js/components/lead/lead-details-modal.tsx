@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { route } from 'ziggy-js';
+import CopyToClipboard from '@/components/copy-to-clipboard';
 
 interface LeadDetailsModalProps {
   fingerprint: string;
@@ -61,7 +62,6 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
           return labelA.localeCompare(labelB);
         })
     : [];
-
   return (
     <>
       <DialogHeader>
@@ -116,9 +116,11 @@ export default function LeadDetailsModal({ fingerprint }: LeadDetailsModalProps)
                   {filteredFields.map((field: any, index: number) => (
                     <div key={index} className="flex flex-col space-y-1 rounded-md border p-3 transition-colors hover:bg-muted/30">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-xs font-medium text-muted-foreground uppercase" title={field.label}>
-                          {field.label || field.name}
-                        </span>
+                        <CopyToClipboard textToCopy={field.name?.toString() || ''}>
+                          <span className="truncate text-xs font-medium text-muted-foreground uppercase" title={field.label}>
+                            {field.label || field.name}
+                          </span>
+                        </CopyToClipboard>
                         {field.id && <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50">#{field.id}</span>}
                       </div>
                       <span className="text-sm font-medium wrap-break-word">{field.value}</span>

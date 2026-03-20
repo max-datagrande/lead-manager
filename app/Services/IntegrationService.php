@@ -35,8 +35,8 @@ class IntegrationService
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|url',
-      'environments.production.url' => 'required|url',
+      'environments.development.url' => 'required|string',
+      'environments.production.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -71,6 +71,7 @@ class IntegrationService
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
       }
+
       return $integration;
     });
   }
@@ -97,8 +98,8 @@ class IntegrationService
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|url',
-      'environments.production.url' => 'required|url',
+      'environments.development.url' => 'required|string',
+      'environments.production.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -208,6 +209,7 @@ class IntegrationService
       $duration = round((microtime(true) - $startTime) * 1000);
       $body = $response->body();
       $result = json_decode($body, true) ?? $body;
+
       return [
         'status' => $response->status(),
         'duration' => $duration,
@@ -221,7 +223,7 @@ class IntegrationService
           'environment_id' => $environment->id,
           'integration_id' => $environment->integration_id,
           'url' => $environment->url,
-          'method' => $environment->method
+          'method' => $environment->method,
         ]
       );
     } catch (\Throwable $th) {
@@ -233,7 +235,7 @@ class IntegrationService
           'url' => $environment->url,
           'method' => $environment->method,
           'file' => $th->getFile(),
-          'line' => $th->getLine()
+          'line' => $th->getLine(),
         ]
       );
     }
@@ -253,6 +255,7 @@ class IntegrationService
         $mappedHeaders[$header['key']] = $header['value'];
       }
     }
+
     return json_encode($mappedHeaders);
   }
 
@@ -269,17 +272,18 @@ class IntegrationService
       return $template;
     }
 
-    $processor = new \App\Services\PayloadProcessorService();
-    //$oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
+    $processor = new \App\Services\PayloadProcessorService;
+    // $oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
     $processedTemplate = $processor->process($template, $finalReplacements);
+
     return $processedTemplate;
   }
 
   /**
    * Parsea la respuesta de una integración de Offerwall para extraer las ofertas normalizadas.
    *
-   * @param array $jsonResponse Respuesta decodificada (array) de la API externa
-   * @param Integration $integration Modelo de integración con su configuración de parseo
+   * @param  array  $jsonResponse  Respuesta decodificada (array) de la API externa
+   * @param  Integration  $integration  Modelo de integración con su configuración de parseo
    * @return array Lista de ofertas normalizadas
    */
   public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
@@ -302,7 +306,7 @@ class IntegrationService
         'raw_response' => $jsonResponse,
         'integration_id' => $integration->id,
         'path_of_offers' => $pathOfOffers,
-        'number_of_offers' => $offers ? count($offers) : 0
+        'number_of_offers' => $offers ? count($offers) : 0,
       ]
     );
     if (!is_array($offers)) {
@@ -313,9 +317,10 @@ class IntegrationService
         [
           'integration_id' => $integration->id,
           'path_of_offers' => $pathOfOffers,
-          'number_of_offers' => $offers ? count($offers) : 0
+          'number_of_offers' => $offers ? count($offers) : 0,
         ]
       );
+
       return [];
     }
 
@@ -325,20 +330,53 @@ class IntegrationService
       foreach ($parserConfig['mapping'] as $key => $valuePath) {
         $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
       }
-      //Add integration id
+      // Add integration id
       $mappedOffer['integration_id'] = $integration->id;
       $mappedOffers[] = $mappedOffer;
     }
 
     TailLogger::saveLog(
-      "Parsed " . count($mappedOffers) . " offers.",
+      'Parsed ' . count($mappedOffers) . ' offers.',
       'integrations/parsing',
       'info',
       [
         'integration_id' => $integration->id,
-        'offers_count' => count($mappedOffers)
+        'offers_count' => count($mappedOffers),
       ]
     );
+
+    return $mappedOffers;
+  }
+
+  /**
+   * Apply fallback values for title and description on parsed offerwall offers.
+   *
+   * When an API returns a mapped key with null or empty string value,
+   * the configured fallback replaces it so offers always have displayable content.
+   *
+   * @param  array<int, array<string, mixed>>  $mappedOffers  Offers already processed by parseOfferwallResponse
+   * @param  Integration  $integration  Integration model containing the fallback config
+   * @return array<int, array<string, mixed>>
+   */
+  public function applyOfferFallbacks(array $mappedOffers, Integration $integration): array
+  {
+    $parserConfig = $integration->response_parser_config;
+    $fallbacks = $parserConfig['fallbacks'] ?? [];
+
+    if (empty($fallbacks)) {
+      return $mappedOffers;
+    }
+
+    $fallbackKeys = ['title', 'description'];
+
+    foreach ($mappedOffers as &$offer) {
+      foreach ($fallbackKeys as $key) {
+        if (isset($fallbacks[$key]) && $fallbacks[$key] !== '' && empty($offer[$key])) {
+          $offer[$key] = $fallbacks[$key];
+        }
+      }
+    }
+    unset($offer);
 
     return $mappedOffers;
   }
@@ -350,6 +388,7 @@ class IntegrationService
 class IntegrationServiceException extends Exception
 {
   protected $context = [];
+
   public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
@@ -360,6 +399,7 @@ class IntegrationServiceException extends Exception
       array_merge(['error' => $message], $context)
     );
   }
+
   public function getContext(): array
   {
     return $this->context;

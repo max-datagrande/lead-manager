@@ -74,6 +74,7 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
         cpc: '',
         display_name: '',
       },
+      fallbacks: {},
     },
     request_mapping_config: integration?.request_mapping_config ?? {},
     payload_transformer: integration?.payload_transformer ?? '',
