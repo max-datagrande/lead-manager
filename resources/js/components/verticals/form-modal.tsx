@@ -16,11 +16,9 @@ export default function FormModal({ entry, isEdit = false }) {
     active: entry?.active ?? true,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const url = isEdit
-      ? route('verticals.update', entry.id)
-      : route('verticals.store');
+    const url = isEdit ? route('verticals.update', entry.id) : route('verticals.store');
     const options = {
       preserveState: true,
       preserveScroll: true,
@@ -42,9 +40,12 @@ export default function FormModal({ entry, isEdit = false }) {
     <>
       <DialogHeader>
         <DialogTitle>{isEdit ? 'Edit Vertical' : 'Create Vertical'}</DialogTitle>
-        <DialogDescription>
-          {isEdit ? 'Edit the vertical details' : 'Add a new vertical'}
-        </DialogDescription>
+        <DialogDescription>{isEdit ? 'Edit the vertical details' : 'Add a new vertical'}</DialogDescription>
+        {/* Active */}
+        <div className="flex items-center space-x-2">
+          <Switch id="is_active" checked={data.active} onCheckedChange={(checked: boolean) => setData('active', checked)} />
+          <Label htmlFor="is_active">{data.active ? 'Active' : 'Inactive'}</Label>
+        </div>
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,16 +73,6 @@ export default function FormModal({ entry, isEdit = false }) {
             placeholder="Internal description (optional)"
           />
           {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-        </div>
-
-        {/* Active */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="active"
-            checked={data.active}
-            onCheckedChange={(checked) => setData('active', checked)}
-          />
-          <Label htmlFor="active">Active</Label>
         </div>
 
         {/* Actions */}
