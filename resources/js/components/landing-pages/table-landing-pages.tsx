@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { columns } from './list-columns';
-import { useVerticalLandingPages } from '@/hooks/use-vertical-landing-pages';
+import { useLandings } from '@/hooks/use-landings';
 
 const toolbarConfig = {
   dateRange: { column: 'created_at', label: 'Created At' },
@@ -50,7 +50,7 @@ export function TableLandingPages({ entries }) {
     setPagination,
     columnFilters,
     setColumnFilters,
-  } = useVerticalLandingPages();
+  } = useLandings();
 
   // Separate date filters from real column filters
   const fromFilter = useMemo(

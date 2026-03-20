@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { useVerticalLandingPages } from '@/hooks/use-vertical-landing-pages';
+import { useLandings } from '@/hooks/use-landings';
 import { Edit, Trash2 } from 'lucide-react';
 
 const StatusBadge = ({ isActive }) => (
@@ -12,7 +12,7 @@ const StatusBadge = ({ isActive }) => (
 );
 
 const ActionsCell = ({ row }) => {
-  const { showEditModal, showDeleteModal } = useVerticalLandingPages();
+  const { showEditModal, showDeleteModal } = useLandings();
   const entry = row.original;
   return (
     <div className="flex items-center gap-2">
@@ -64,18 +64,12 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'company',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
-    cell: ({ row }) => <span>{row.original.company?.name ?? '—'}</span>,
-    enableSorting: false,
-    enableHiding: true,
-  },
-  {
     accessorKey: 'is_external',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     cell: ({ row }) => (
       <Badge variant={row.original.is_external ? 'secondary' : 'outline'}>
         {row.original.is_external ? 'External' : 'Internal'}
+        {row.original.is_external && <span className="text-xs text-gray-500">({row.original.company?.name})</span>}
       </Badge>
     ),
     filterFn: (row, columnId, filterValue: string[]) => {

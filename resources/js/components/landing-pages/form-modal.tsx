@@ -20,11 +20,11 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
     active: entry?.active ?? true,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const url = isEdit
-      ? route('vertical_landing_pages.update', entry.id)
-      : route('vertical_landing_pages.store');
+      ? route('landing_pages.update', entry.id)
+      : route('landing_pages.store');
     const options = {
       preserveState: true,
       preserveScroll: true,
