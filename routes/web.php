@@ -17,6 +17,8 @@ use App\Http\Controllers\PostbackQueueController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\VerticalController;
+use App\Http\Controllers\VerticalLandingPageController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -81,7 +83,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
   Route::resource('offerwall', OfferwallController::class)->parameters(['offerwall' => 'offerwallMix']);
 
-  // Forms
+  //Verticals
+  Route::resource('verticals', VerticalController::class);
+  Route::resource('vertical_landing_pages', VerticalLandingPageController::class);
+
+  //Forms
   Route::prefix('forms')->group(function () {
     Route::resource('fields', FieldController::class);
   });

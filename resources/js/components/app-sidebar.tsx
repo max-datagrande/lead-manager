@@ -4,9 +4,8 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook } from 'lucide-react';
+import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook, Layers, Globe } from 'lucide-react';
 import AppLogo from './app-logo';
-
 import { NavGroup } from './nav-group';
 
 const DashboardGroup: NavGroupType = {
@@ -106,6 +105,16 @@ const SystemGroup: NavGroupType = {
       title: 'Integrations',
       href: route('integrations.index'),
       icon: Webhook,
+    },
+    {
+      title: 'Verticals',
+      href: route('verticals.index'),
+      icon: Layers,
+    },
+    {
+      title: 'Landing Pages',
+      href: route('vertical_landing_pages.index'),
+      icon: Globe,
     },
   ],
 };
