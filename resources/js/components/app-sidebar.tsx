@@ -113,7 +113,7 @@ const SystemGroup: NavGroupType = {
     },
     {
       title: 'Landing Pages',
-      href: route('vertical_landing_pages.index'),
+      href: route('landing_pages.index'),
       icon: Globe,
     },
   ],

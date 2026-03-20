@@ -18,7 +18,7 @@ use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VerticalController;
-use App\Http\Controllers\VerticalLandingPageController;
+use App\Http\Controllers\LandingPageController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -85,7 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
   //Verticals
   Route::resource('verticals', VerticalController::class);
-  Route::resource('vertical_landing_pages', VerticalLandingPageController::class);
+  Route::resource('landing_pages', LandingPageController::class);
 
   //Forms
   Route::prefix('forms')->group(function () {
