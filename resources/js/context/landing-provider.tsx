@@ -1,13 +1,13 @@
-import { FormModal } from '@/components/vertical-landing-pages/index';
+import { FormModal } from '@/components/landing-pages/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
 import { useForm, usePage } from '@inertiajs/react';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useState } from 'react';
 
-export const VerticalLandingPagesContext = createContext(null);
+export const LandingPagesContext = createContext(null);
 
-export function VerticalLandingPagesProvider({ children, verticals, companies }) {
+export function LandingPagesProvider({ children, verticals, companies }) {
   const { filters } = usePage().props as any;
   const modal = useModal();
   const { addMessage: setNotify } = useToast();
@@ -21,9 +21,7 @@ export function VerticalLandingPagesProvider({ children, verticals, companies })
 
   const showCreateModal = async () => {
     try {
-      const result = await modal.openAsync(
-        <FormModal id={0} verticals={verticals} companies={companies} />
-      );
+      const result = await modal.openAsync(<FormModal entry={null} verticals={verticals} companies={companies} />);
       console.log(result);
     } catch (error) {
       setNotify('Error creating landing page', 'error');
@@ -33,9 +31,7 @@ export function VerticalLandingPagesProvider({ children, verticals, companies })
 
   const showEditModal = async (entry) => {
     try {
-      const result = await modal.openAsync(
-        <FormModal id={0} entry={entry} isEdit={true} verticals={verticals} companies={companies} />
-      );
+      const result = await modal.openAsync(<FormModal entry={entry} isEdit={true} verticals={verticals} companies={companies} />);
       console.log(result);
     } catch (error) {
       setNotify('Error updating landing page', 'error');
@@ -44,7 +40,7 @@ export function VerticalLandingPagesProvider({ children, verticals, companies })
   };
 
   const deleteEntry = (entry) => {
-    const url = route('vertical_landing_pages.destroy', entry.id);
+    const url = route('landing_pages.destroy', entry.id);
     destroy(url, {
       preserveScroll: true,
       preserveState: true,
@@ -66,7 +62,7 @@ export function VerticalLandingPagesProvider({ children, verticals, companies })
   };
 
   return (
-    <VerticalLandingPagesContext.Provider
+    <LandingPagesContext.Provider
       value={{
         currentRow,
         setCurrentRow,
@@ -86,6 +82,6 @@ export function VerticalLandingPagesProvider({ children, verticals, companies })
       }}
     >
       {children}
-    </VerticalLandingPagesContext.Provider>
+    </LandingPagesContext.Provider>
   );
 }
