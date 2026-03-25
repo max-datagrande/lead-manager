@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Form\FieldController as ApiFieldController;
 use App\Http\Controllers\Api\IntegrationController as ApiIntegrationController;
 use App\Http\Controllers\Api\CompanyController as ApiCompanyController;
+use App\Http\Controllers\Api\VerticalController as ApiVerticalController;
 
 
 //Sync routes
@@ -20,4 +21,9 @@ Route::prefix('integrations')->group(function () {
 Route::prefix('companies')->group(function () {
   Route::get('/export', [ApiCompanyController::class, 'export'])->name('api.companies.export');
   Route::post('/import', [ApiCompanyController::class, 'import'])->name('api.companies.import');
+});
+
+Route::prefix('verticals')->group(function () {
+  Route::get('/export', [ApiVerticalController::class, 'export'])->name('api.verticals.export');
+  Route::post('/import', [ApiVerticalController::class, 'import'])->name('api.verticals.import');
 });
