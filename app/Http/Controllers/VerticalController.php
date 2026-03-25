@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Vertical;
 use App\Http\Requests\Verticals\StoreRequest;
 use App\Http\Requests\Verticals\UpdateRequest;
+use App\Models\Vertical;
 use Inertia\Inertia;
 
 class VerticalController extends Controller
@@ -18,36 +18,24 @@ class VerticalController extends Controller
     ]);
   }
 
-  public function create()
-  {
-    return Inertia::render('verticals/create');
-  }
-
   public function store(StoreRequest $request)
   {
     Vertical::create($request->validated());
-    return redirect()->route('verticals.index')
-      ->with('success', 'Vertical created successfully.');
-  }
 
-  public function edit(Vertical $vertical)
-  {
-    return Inertia::render('verticals/edit', [
-      'vertical' => $vertical,
-    ]);
+    return redirect()->route('verticals.index')->with('success', 'Vertical created successfully.');
   }
 
   public function update(UpdateRequest $request, Vertical $vertical)
   {
     $vertical->update($request->validated());
-    return redirect()->route('verticals.index')
-      ->with('success', 'Vertical updated successfully.');
+
+    return redirect()->route('verticals.index')->with('success', 'Vertical updated successfully.');
   }
 
   public function destroy(Vertical $vertical)
   {
     $vertical->delete();
-    return redirect()->route('verticals.index')
-      ->with('success', 'Vertical deleted successfully.');
+
+    return redirect()->route('verticals.index')->with('success', 'Vertical deleted successfully.');
   }
 }
