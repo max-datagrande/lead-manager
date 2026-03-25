@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -32,12 +33,12 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array',
       'environments.*.env_type' => 'required|in:ping,post,offerwall',
       'environments.*.environment' => 'required|in:development,production',
       'environments.*.url' => 'required|string',
+      'environments.*.response_config' => 'nullable|array',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -55,7 +56,6 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
@@ -69,6 +69,7 @@ class IntegrationService
           'method' => $envData['method'],
           'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
           'request_body' => $envData['request_body'] ?? null,
+          'response_config' => $envData['response_config'] ?? null,
           'content_type' => $envData['content_type'] ?? 'application/json',
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
@@ -97,12 +98,12 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
       'environments' => 'required|array',
       'environments.*.env_type' => 'required|in:ping,post,offerwall',
       'environments.*.environment' => 'required|in:development,production',
       'environments.*.url' => 'required|string',
+      'environments.*.response_config' => 'nullable|array',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -120,7 +121,6 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'response_parser_config' => $data['response_parser_config'] ?? null,
         'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
@@ -134,6 +134,7 @@ class IntegrationService
             'method' => $envData['method'],
             'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
             'request_body' => $envData['request_body'] ?? null,
+            'response_config' => $envData['response_config'] ?? null,
             'content_type' => $envData['content_type'] ?? 'application/json',
             'authentication_type' => $envData['authentication_type'] ?? 'none',
           ]
@@ -171,7 +172,6 @@ class IntegrationService
       'type' => $integration->type,
       'is_active' => false, // Set to inactive by default for safety
       'company_id' => $integration->company_id,
-      'response_parser_config' => $integration->response_parser_config,
       'request_mapping_config' => $integration->request_mapping_config,
       'payload_transformer' => $integration->payload_transformer,
       'use_custom_transformer' => $integration->use_custom_transformer,
@@ -192,6 +192,7 @@ class IntegrationService
         'method' => $env->method,
         'request_headers' => $formattedHeaders,
         'request_body' => $env->request_body,
+        'response_config' => $env->response_config,
         'content_type' => $env->content_type,
         'authentication_type' => $env->authentication_type,
       ];
@@ -291,7 +292,7 @@ class IntegrationService
    * @param  Integration  $integration  Modelo de integración con su configuración de parseo
    * @return array Lista de ofertas normalizadas
    */
-  public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
+  public function parseOfferwallResponse(array $jsonResponse, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
     TailLogger::saveLog(
       "Parsing offerwall response for Integration ID: {$integration->id}",
@@ -300,7 +301,11 @@ class IntegrationService
       ['integration_id' => $integration->id]
     );
 
-    $parserConfig = $integration->response_parser_config;
+    $env = $environment ?? $integration->environments
+      ->where('env_type', 'offerwall')
+      ->where('environment', 'production')
+      ->first();
+    $parserConfig = $env?->response_config ?? [];
     $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
     $offers = data_get($jsonResponse, $pathOfOffers);
     TailLogger::saveLog(
@@ -363,9 +368,13 @@ class IntegrationService
    * @param  Integration  $integration  Integration model containing the fallback config
    * @return array<int, array<string, mixed>>
    */
-  public function applyOfferFallbacks(array $mappedOffers, Integration $integration): array
+  public function applyOfferFallbacks(array $mappedOffers, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
-    $parserConfig = $integration->response_parser_config;
+    $env = $environment ?? $integration->environments
+      ->where('env_type', 'offerwall')
+      ->where('environment', 'production')
+      ->first();
+    $parserConfig = $env?->response_config ?? [];
     $fallbacks = $parserConfig['fallbacks'] ?? [];
 
     if (empty($fallbacks)) {

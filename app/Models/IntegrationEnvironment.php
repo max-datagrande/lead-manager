@@ -17,8 +17,18 @@ class IntegrationEnvironment extends Model
         'url',
         'request_body',
         'request_headers',
+        'response_config',
         'content_type',
         'authentication_type',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'response_config' => 'array',
     ];
 
     /**

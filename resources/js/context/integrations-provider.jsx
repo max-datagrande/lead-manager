@@ -8,6 +8,7 @@ const defaultEnv = () => ({
   method: 'POST',
   request_headers: [],
   request_body: { template: '', parsers: {} },
+  response_config: null,
 });
 
 // Helper to parse headers from a JSON string into a key-value array
@@ -30,6 +31,7 @@ const normalizeEnvRecord = (env) => ({
     typeof env.request_body === 'string'
       ? JSON.parse(env.request_body || '{}')
       : (env.request_body ?? { template: '', parsers: {} }),
+  response_config: env.response_config ?? null,
 });
 
 // Helper to transform environments from the server for the form
@@ -76,6 +78,7 @@ const serializeEnvs = (type, environments) => {
     request_body: envData.request_body ?? null,
     content_type: envData.content_type ?? 'application/json',
     authentication_type: envData.authentication_type ?? 'none',
+    response_config: envData.response_config ?? null,
   });
 
   if (type === 'ping-post') {
@@ -112,19 +115,6 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     is_active: integration?.is_active ?? true,
     company_id: integration?.company_id ?? '',
     environments: initialEnvironments,
-    response_parser_config: integration?.response_parser_config ?? {
-      offer_list_path: '',
-      mapping: {
-        title: '',
-        description: '',
-        logo_url: '',
-        click_url: '',
-        impression_url: '',
-        cpc: '',
-        display_name: '',
-      },
-      fallbacks: {},
-    },
     request_mapping_config: integration?.request_mapping_config ?? {},
     payload_transformer: integration?.payload_transformer ?? '',
     use_custom_transformer: integration?.use_custom_transformer ?? false,

@@ -72,6 +72,7 @@ function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
 }
 
 function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
+  const { data } = useIntegrations();
   return (
     <Tabs defaultValue="development" className="mt-6">
       <TabsList className="flex w-full gap-2">
@@ -92,6 +93,7 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
             <EnvironmentTab env="development" fields={fields} />
           </CardContent>
         </Card>
+        {data.type === 'offerwall' && <OfferwallParserConfig env="development" />}
       </TabsContent>
       <TabsContent value="production">
         <Card>
@@ -103,6 +105,7 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
             <EnvironmentTab env="production" fields={fields} />
           </CardContent>
         </Card>
+        {data.type === 'offerwall' && <OfferwallParserConfig env="production" />}
       </TabsContent>
     </Tabs>
   );
@@ -218,8 +221,6 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           </CardContent>
         </Card>
       )}
-
-      {data.type === 'offerwall' && <OfferwallParserConfig />}
 
       <div className="mt-6 flex justify-end gap-2">
         <Button type="submit" disabled={processing}>

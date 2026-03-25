@@ -8,8 +8,15 @@ interface EnvironmentBase {
   request_body: string;
 }
 
+interface ResponseConfig {
+  offer_list_path?: string;
+  mapping?: Record<string, string>;
+  fallbacks?: Record<string, string>;
+}
+
 interface EnvironmentForm extends EnvironmentBase {
   request_headers: Array<{ key: string; value: string }>;
+  response_config?: ResponseConfig | null;
 }
 
 interface EnvironmentDB extends EnvironmentBase {
@@ -18,6 +25,7 @@ interface EnvironmentDB extends EnvironmentBase {
   env_type: EnvType;
   request_headers: string;
   environment: EnvironmentType;
+  response_config?: ResponseConfig | null;
   update_at: string;
 }
 
@@ -46,18 +54,6 @@ type PingPostEnvironments = {
 
 interface IntegrationForm extends IntegrationBase {
   environments: FlatEnvironments | PingPostEnvironments;
-  parser_config: {
-    offer_list_path: string;
-    mapping: {
-      title: string;
-      description: string;
-      logo_url: string;
-      click_url: string;
-      impression_url: string;
-      cpc: string;
-      display_name: string;
-    };
-  };
 }
 
 interface EnvironmentTabProps {

@@ -25,13 +25,12 @@ return new class extends Migration
     //    ping-post integrations need manual env_type assignment since we can't
     //    infer ping vs post from the row alone.
     if ($columnAdded) {
-      DB::statement("
-                UPDATE integration_environments ie
-                SET env_type = 'post'
-                FROM integrations i
-                WHERE ie.integration_id = i.id
-                  AND i.type = 'post-only'
-            ");
+      $postOnlyIds = DB::table('integrations')->where('type', 'post-only')->pluck('id');
+      if ($postOnlyIds->isNotEmpty()) {
+        DB::table('integration_environments')
+          ->whereIn('integration_id', $postOnlyIds)
+          ->update(['env_type' => 'post']);
+      }
     }
 
     // 3. Drop old unique constraint (integration_id, environment) if it still exists

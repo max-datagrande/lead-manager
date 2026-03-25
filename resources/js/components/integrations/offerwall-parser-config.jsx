@@ -18,43 +18,45 @@ const MAPPING_FIELDS = [
   { key: 'company', label: 'Company' },
 ]
 
-export function OfferwallParserConfig() {
+const DEFAULT_RESPONSE_CONFIG = {
+  offer_list_path: '',
+  mapping: { title: '', description: '', logo_url: '', click_url: '', impression_url: '', cpc: '', display_name: '', company: '' },
+  fallbacks: {},
+}
+
+export function OfferwallParserConfig({ env }) {
   const timer = useRef(null)
-  const { data, setData } = useIntegrations()
-  const [offerListPathRef, setOfferListPathRef] = useState(data.response_parser_config.offer_list_path ?? '')
-  const [mapping, setMapping] = useState(data.response_parser_config.mapping ?? {})
-  const [fallbacks, setFallbacks] = useState(data.response_parser_config.fallbacks ?? {})
+  const { data, handleEnvironmentChange } = useIntegrations()
+  const envConfig = data.environments[env]?.response_config ?? DEFAULT_RESPONSE_CONFIG
+
+  const [offerListPathRef, setOfferListPathRef] = useState(envConfig.offer_list_path ?? '')
+  const [mapping, setMapping] = useState(envConfig.mapping ?? {})
+  const [fallbacks, setFallbacks] = useState(envConfig.fallbacks ?? {})
 
   const handlePathChange = (e) => {
     const newValue = e.target.value
     setOfferListPathRef(newValue)
-    if (timer.current) {
-      clearTimeout(timer.current)
-    }
+    if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
-      setData('response_parser_config', { ...data.response_parser_config, offer_list_path: newValue })
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, offer_list_path: newValue })
     }, 500)
   }
 
   const handleMappingChange = (key, value) => {
     const newEntry = { [key]: value }
     setMapping({ ...mapping, ...newEntry })
-    if (timer.current) {
-      clearTimeout(timer.current)
-    }
+    if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
-      setData('response_parser_config', { ...data.response_parser_config, mapping: { ...data.response_parser_config.mapping, ...newEntry } })
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, mapping: { ...(envConfig.mapping ?? {}), ...newEntry } })
     }, 500)
   }
 
   const handleFallbackChange = (key, value) => {
     const newFallbacks = { ...fallbacks, [key]: value }
     setFallbacks(newFallbacks)
-    if (timer.current) {
-      clearTimeout(timer.current)
-    }
+    if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
-      setData('response_parser_config', { ...data.response_parser_config, fallbacks: { ...data.response_parser_config.fallbacks, [key]: value } })
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, fallbacks: { ...(envConfig.fallbacks ?? {}), [key]: value } })
     }, 500)
   }
 

@@ -18,7 +18,6 @@ class Integration extends Model
     'name',
     'type',
     'is_active',
-    'response_parser_config',
     'request_mapping_config',
     'payload_transformer',
     'use_custom_transformer',
@@ -32,7 +31,6 @@ class Integration extends Model
    * @var array
    */
   protected $casts = [
-    'response_parser_config' => 'array',
     'request_mapping_config' => 'array',
     'use_custom_transformer' => 'boolean',
   ];
