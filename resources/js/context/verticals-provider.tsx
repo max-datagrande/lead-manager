@@ -2,7 +2,8 @@ import { FormModal } from '@/components/verticals/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { createContext, useState } from 'react';
 
 export const VerticalsContext = createContext(null);
@@ -62,6 +63,35 @@ export function VerticalsProvider({ children }) {
     }
   };
 
+  const confirmSync = async () => {
+    const confirmed = await modal.confirm({
+      title: 'Sync verticals',
+      description:
+        'This action will sync all verticals from production to local. Are you sure you want to sync from production? This will TRUNCATE your local verticals table!',
+      confirmText: 'Sync',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (confirmed) {
+      setNotify('Syncing verticals', 'info');
+      syncVerticals();
+    }
+  };
+
+  const syncVerticals = async () => {
+    const url = route('api.verticals.import');
+    try {
+      const response = await axios.post(url);
+      const notify = response.data.message || 'Sync completed!';
+      setNotify(notify, 'success');
+      router.reload();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'An unknown error occurred.';
+      console.log(error);
+      setNotify(errorMessage, 'error');
+    }
+  };
+
   return (
     <VerticalsContext.Provider
       value={{
@@ -80,6 +110,7 @@ export function VerticalsProvider({ children }) {
         setGlobalFilter,
         pagination,
         setPagination,
+        confirmSync,
       }}
     >
       {children}
