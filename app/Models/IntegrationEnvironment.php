@@ -12,6 +12,7 @@ class IntegrationEnvironment extends Model
     protected $fillable = [
         'integration_id',
         'environment',
+        'env_type',
         'method',
         'url',
         'request_body',

@@ -1,5 +1,7 @@
 /* Environment types */
 type EnvironmentType = 'development' | 'production';
+type EnvType = 'ping' | 'post' | 'offerwall';
+
 interface EnvironmentBase {
   url: string;
   method: string;
@@ -13,6 +15,7 @@ interface EnvironmentForm extends EnvironmentBase {
 interface EnvironmentDB extends EnvironmentBase {
   id: number;
   integration_id: number;
+  env_type: EnvType;
   request_headers: string;
   environment: EnvironmentType;
   update_at: string;
@@ -29,11 +32,20 @@ interface IntegrationDB extends IntegrationBase {
   environments: EnvironmentDB[];
 }
 
+/** Flat structure used by offerwall and post-only forms */
+type FlatEnvironments = {
+  development: Partial<EnvironmentForm>;
+  production: Partial<EnvironmentForm>;
+};
+
+/** Nested structure used by ping-post forms (ping/post × dev/prod) */
+type PingPostEnvironments = {
+  ping: FlatEnvironments;
+  post: FlatEnvironments;
+};
+
 interface IntegrationForm extends IntegrationBase {
-  environments: {
-    development: Partial<EnvironmentForm>;
-    production: Partial<EnvironmentForm>;
-  };
+  environments: FlatEnvironments | PingPostEnvironments;
   parser_config: {
     offer_list_path: string;
     mapping: {
@@ -48,4 +60,21 @@ interface IntegrationForm extends IntegrationBase {
   };
 }
 
-export type { EnvironmentDB, EnvironmentForm, EnvironmentType, IntegrationBase, IntegrationDB, IntegrationForm };
+interface EnvironmentTabProps {
+  env: 'development' | 'production';
+  envType?: 'ping' | 'post' | null;
+  fields?: any[];
+}
+
+export type {
+  EnvType,
+  EnvironmentDB,
+  EnvironmentForm,
+  EnvironmentType,
+  FlatEnvironments,
+  IntegrationBase,
+  IntegrationDB,
+  IntegrationForm,
+  PingPostEnvironments,
+  EnvironmentTabProps,
+};

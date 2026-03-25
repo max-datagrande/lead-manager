@@ -7,50 +7,141 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { cn } from '@/lib/utils';
+import { Radio, Send } from 'lucide-react';
+import { useState } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
 import { MappingConfigurator } from './mapping-configurator';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { TokenInserter } from './token-inserter';
 
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
+  const [ppEnvType, setPpEnvType] = useState<'ping' | 'post'>('ping');
+
+  return (
+    <Tabs defaultValue="development" className="mt-6">
+      <TabsList className="flex w-full gap-2">
+        <TabsTrigger className="flex-auto" value="development">
+          Development
+        </TabsTrigger>
+        <TabsTrigger className="flex-auto" value="production">
+          Production
+        </TabsTrigger>
+      </TabsList>
+      {(['development', 'production'] as const).map((env) => (
+        <TabsContent key={env} value={env}>
+          <div className="flex gap-6">
+            <aside className="w-28 shrink-0">
+              <nav className="flex flex-col gap-1 rounded-lg bg-muted/50 p-2">
+                {([
+                  { type: 'ping', icon: Radio },
+                  { type: 'post', icon: Send },
+                ] as const).map(({ type: et, icon: Icon }) => (
+                  <Button
+                    key={et}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className={cn(
+                      'w-full justify-start gap-2 capitalize',
+                      ppEnvType === et && 'bg-background shadow-sm',
+                    )}
+                    onClick={() => setPpEnvType(et)}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    {et}
+                  </Button>
+                ))}
+              </nav>
+            </aside>
+            <Card className="flex-1">
+              <CardHeader className="gap-0 pb-0">
+                <CardTitle className="text-lg">{ppEnvType === 'ping' ? 'Ping environment' : 'Post environment'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EnvironmentTab env={env} envType={ppEnvType} fields={fields} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
+
+function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
+  return (
+    <Tabs defaultValue="development" className="mt-6">
+      <TabsList className="flex w-full gap-2">
+        <TabsTrigger className="flex-auto" value="development">
+          Development
+        </TabsTrigger>
+        <TabsTrigger className="flex-auto" value="production">
+          Production
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="development">
+        <Card>
+          <CardHeader className="gap-0">
+            <CardTitle className="text-lg">Development Environment</CardTitle>
+            <CardDescription>Configuration for testing and development.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EnvironmentTab env="development" fields={fields} />
+          </CardContent>
+        </Card>
+      </TabsContent>
+      <TabsContent value="production">
+        <Card>
+          <CardHeader className="gap-0">
+            <CardTitle className="text-lg">Production Environment</CardTitle>
+            <CardDescription>Live, production-ready configuration.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EnvironmentTab env="production" fields={fields} />
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+// ─── Main form ────────────────────────────────────────────────────────────────
+
 export function IntegrationForm({ companies = [], fields = [] }) {
-  const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();
+  const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
 
   const handleTokenSelect = (tokenName: string) => {
-    const newRequestMappingConfig = { ...data.request_mapping_config, [tokenName]: {} };
-    setData('request_mapping_config', newRequestMappingConfig);
+    setData('request_mapping_config', { ...data.request_mapping_config, [tokenName]: {} });
   };
 
   const handleMappingChange = (token: string, field: string, fieldValue: any) => {
-    const newRequestMappingConfig = {
+    setData('request_mapping_config', {
       ...data.request_mapping_config,
-      [token]: {
-        ...data.request_mapping_config[token],
-        [field]: fieldValue,
-      },
-    };
-    setData('request_mapping_config', newRequestMappingConfig);
+      [token]: { ...data.request_mapping_config[token], [field]: fieldValue },
+    });
   };
 
   const handleRemoveToken = (tokenName: string) => {
-    const newRequestMappingConfig = { ...data.request_mapping_config };
-    delete newRequestMappingConfig[tokenName];
-    setData('request_mapping_config', newRequestMappingConfig);
+    const updated = { ...data.request_mapping_config };
+    delete updated[tokenName];
+    setData('request_mapping_config', updated);
   };
 
   return (
     <form onSubmit={handleSubmit}>
       {/* Form Header */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Name */}
         <div className="flex-auto space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
           {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
         </div>
-        {/* Type */}
         <div className="flex-auto space-y-2">
           <Label htmlFor="type">Integration Type</Label>
-          <Select value={data.type} onValueChange={(value) => setData('type', value)}>
+          <Select value={data.type} onValueChange={handleTypeChange}>
             <SelectTrigger id="type">
               <SelectValue />
             </SelectTrigger>
@@ -61,7 +152,6 @@ export function IntegrationForm({ companies = [], fields = [] }) {
             </SelectContent>
           </Select>
         </div>
-        {/* Company */}
         <div className="flex-auto space-y-2">
           <Label htmlFor="company_id">Company</Label>
           <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
@@ -79,45 +169,13 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         </div>
       </div>
 
-      {/* Active Switch */}
       <div className="flex items-center space-x-2 pt-4">
         <Label htmlFor="is_active">Active</Label>
         <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
       </div>
 
       {/* Environment Tabs */}
-      <Tabs defaultValue="development" className="mt-6">
-        <TabsList className="flex w-full gap-2">
-          <TabsTrigger className="flex-auto" value="development">
-            Development
-          </TabsTrigger>
-          <TabsTrigger className="flex-auto" value="production">
-            Production
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="development">
-          <Card>
-            <CardHeader className="gap-0">
-              <CardTitle className="text-lg">Development Environment</CardTitle>
-              <CardDescription>Configuration for testing and development.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EnvironmentTab env="development" fields={fields} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="production">
-          <Card>
-            <CardHeader className="gap-0">
-              <CardTitle className="text-lg">Production Environment</CardTitle>
-              <CardDescription>Live, production-ready configuration.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EnvironmentTab env="production" fields={fields} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {data.type === 'ping-post' ? <PingPostEnvironmentTabs fields={fields} /> : <FlatEnvironmentTabs fields={fields} />}
 
       {/* Custom Payload Transformer */}
       <Card className="mt-6">
@@ -142,7 +200,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      {/* Production Payload Mapping - ONLY IN EDIT MODE */}
+      {/* Production Payload Mapping — edit mode only */}
       {isEdit && (
         <Card className="mt-6">
           <CardHeader>

@@ -34,9 +34,10 @@ class IntegrationService
       'company_id' => 'required|exists:companies,id',
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
-      'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|string',
-      'environments.production.url' => 'required|string',
+      'environments' => 'required|array',
+      'environments.*.env_type' => 'required|in:ping,post,offerwall',
+      'environments.*.environment' => 'required|in:development,production',
+      'environments.*.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -60,13 +61,14 @@ class IntegrationService
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      foreach ($data['environments'] as $envName => $envData) {
+      foreach ($data['environments'] as $envData) {
         $integration->environments()->create([
-          'environment' => $envName,
+          'env_type' => $envData['env_type'],
+          'environment' => $envData['environment'],
           'url' => $envData['url'],
           'method' => $envData['method'],
-          'request_headers' => $this->convertHeadersToJson($envData['request_headers']),
-          'request_body' => $envData['request_body'],
+          'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
+          'request_body' => $envData['request_body'] ?? null,
           'content_type' => $envData['content_type'] ?? 'application/json',
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
@@ -97,9 +99,10 @@ class IntegrationService
       'company_id' => 'required|exists:companies,id',
       'response_parser_config' => 'required_if:type,offerwall|array',
       'request_mapping_config' => 'nullable|array',
-      'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|string',
-      'environments.production.url' => 'required|string',
+      'environments' => 'required|array',
+      'environments.*.env_type' => 'required|in:ping,post,offerwall',
+      'environments.*.environment' => 'required|in:development,production',
+      'environments.*.url' => 'required|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -123,14 +126,14 @@ class IntegrationService
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      foreach ($data['environments'] as $envName => $envData) {
+      foreach ($data['environments'] as $envData) {
         $integration->environments()->updateOrCreate(
-          ['environment' => $envName], // Condiciones para buscar
-          [ // Datos para actualizar o crear
+          ['environment' => $envData['environment'], 'env_type' => $envData['env_type']],
+          [
             'url' => $envData['url'],
             'method' => $envData['method'],
-            'request_headers' => $this->convertHeadersToJson($envData['request_headers']),
-            'request_body' => $envData['request_body'],
+            'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
+            'request_body' => $envData['request_body'] ?? null,
             'content_type' => $envData['content_type'] ?? 'application/json',
             'authentication_type' => $envData['authentication_type'] ?? 'none',
           ]
@@ -182,7 +185,9 @@ class IntegrationService
         $formattedHeaders[] = ['key' => $key, 'value' => $value];
       }
 
-      $data['environments'][$env->environment] = [
+      $data['environments'][] = [
+        'env_type' => $env->env_type,
+        'environment' => $env->environment,
         'url' => $env->url,
         'method' => $env->method,
         'request_headers' => $formattedHeaders,
