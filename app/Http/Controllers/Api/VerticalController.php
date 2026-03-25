@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Vertical;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
@@ -60,9 +61,10 @@ class VerticalController extends Controller
       if (empty($verticalsToInsert)) {
         return response()->json(['message' => 'No verticals to import from production.']);
       }
+      $userId = Auth::id() ?? User::where('role', 'admin')->first()?->id;
 
-      $processedVerticals = array_map(function ($vertical) {
-        $vertical['user_id'] = Auth::id();
+      $processedVerticals = array_map(function ($vertical) use ($userId) {
+        $vertical['user_id'] = $userId;
         $vertical['updated_user_id'] = null;
         $vertical['created_at'] = $vertical['created_at'] ?? now();
         $vertical['updated_at'] = $vertical['updated_at'] ?? now();

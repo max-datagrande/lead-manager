@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
+use App\Models\User;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
@@ -33,6 +34,7 @@ class CompanyController extends Controller
       return response()->json(['error' => 'This action is only available in the local environment.'], 403);
     }
 
+
     $app = config('app');
     $localUrl = $app['url'];
     $productionUrl = $app['production_url'];
@@ -60,9 +62,10 @@ class CompanyController extends Controller
       if (empty($companiesToInsert)) {
         return response()->json(['message' => 'No companies to import from production.']);
       }
+      $userId = Auth::id() ?? User::where('role', 'admin')->first()?->id;
 
-      $processedCompanies = array_map(function ($company) {
-        $company['user_id'] = Auth::id();
+      $processedCompanies = array_map(function ($company) use ($userId) {
+        $company['user_id'] = $userId;
         $company['updated_user_id'] = null;
         $company['created_at'] = $company['created_at'] ?? now();
         $company['updated_at'] = $company['updated_at'] ?? now();
