@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\MaxconvController;
+use App\Http\Controllers\Api\PingPost\PostbackWebhookController;
 use App\Http\Controllers\Api\PostbackController;
 use App\Http\Controllers\Api\PostbackFireController;
 use Illuminate\Support\Facades\Route;
@@ -20,8 +21,7 @@ Route::prefix('postback')->group(function () {
   // Ruta para reconciliar payouts de un día
   Route::post('/reconcile', [PostbackController::class, 'reconcilePayouts'])->name('api.postback.reconcile');
 
-
-  //NEW POSTBACKS
+  // NEW POSTBACKS
   // Postback fire endpoint (recibe callbacks de partners externos)
   Route::get('/fire/{uuid}', [PostbackFireController::class, 'fire'])
     ->name('api.postback.fire')
@@ -33,6 +33,9 @@ Route::prefix('postback')->group(function () {
     ->name('api.postback.execution-status')
     ->where('executionUuid', '[0-9a-f-]{36}');
 });
+
+// Ping-Post postback webhook (no auth — external buyer callback)
+Route::post('ping-post/postback/{dispatch}/{integration}', [PostbackWebhookController::class, 'receive'])->name('api.ping-post.postback');
 
 // Rutas para Maxconv Service
 Route::prefix('maxconv')->group(function () {
