@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Lead extends Model
 {
+  use HasFactory;
+
   protected $table = 'leads';
 
   protected $primaryKey = 'id';
@@ -55,12 +58,12 @@ class Lead extends Model
     return $this->hasMany(LeadFieldResponse::class, 'lead_id');
   }
 
-  public function fields()             // acceso directo a los Field
+  public function fields()
   {
-    return $this->belongsToMany(Field::class, 'lead_field_responses')
-      ->withPivot('value')
-      ->withTimestamps();
+    // acceso directo a los Field
+    return $this->belongsToMany(Field::class, 'lead_field_responses')->withPivot('value')->withTimestamps();
   }
+
   /**
    * Relation to the lead's traffic logs by fingerprint.
    */
@@ -77,4 +80,3 @@ class Lead extends Model
     return $this->trafficLogs()->latest('visit_date')->value('host');
   }
 }
-
