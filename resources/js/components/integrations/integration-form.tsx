@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
 import { MappingConfigurator } from './mapping-configurator';
 import { OfferwallParserConfig } from './offerwall-parser-config';
+import { PingPostResponseConfig } from './ping-post-response-config';
 import { TokenInserter } from './token-inserter';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -35,19 +36,18 @@ function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
           <div className="flex gap-6">
             <aside className="w-28 shrink-0">
               <nav className="flex flex-col gap-1 rounded-lg bg-muted/50 p-2">
-                {([
-                  { type: 'ping', icon: Radio },
-                  { type: 'post', icon: Send },
-                ] as const).map(({ type: et, icon: Icon }) => (
+                {(
+                  [
+                    { type: 'ping', icon: Radio },
+                    { type: 'post', icon: Send },
+                  ] as const
+                ).map(({ type: et, icon: Icon }) => (
                   <Button
                     key={et}
                     type="button"
                     size="sm"
                     variant="ghost"
-                    className={cn(
-                      'w-full justify-start gap-2 capitalize',
-                      ppEnvType === et && 'bg-background shadow-sm',
-                    )}
+                    className={cn('w-full justify-start gap-2 capitalize', ppEnvType === et && 'bg-background shadow-sm')}
                     onClick={() => setPpEnvType(et)}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0" />
@@ -56,14 +56,17 @@ function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
                 ))}
               </nav>
             </aside>
-            <Card className="flex-1">
-              <CardHeader className="gap-0 pb-0">
-                <CardTitle className="text-lg">{ppEnvType === 'ping' ? 'Ping environment' : 'Post environment'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EnvironmentTab env={env} envType={ppEnvType} fields={fields} />
-              </CardContent>
-            </Card>
+            <div className="flex flex-1 flex-col gap-4">
+              <Card>
+                <CardHeader className="gap-0 pb-0">
+                  <CardTitle className="text-lg">{ppEnvType === 'ping' ? 'Ping environment' : 'Post environment'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <EnvironmentTab env={env} envType={ppEnvType} fields={fields} />
+                </CardContent>
+              </Card>
+              <PingPostResponseConfig envType={ppEnvType} env={env} />
+            </div>
           </div>
         </TabsContent>
       ))}
@@ -74,40 +77,41 @@ function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
 function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
   const { data } = useIntegrations();
   return (
-    <Tabs defaultValue="development" className="mt-6">
-      <TabsList className="flex w-full gap-2">
-        <TabsTrigger className="flex-auto" value="development">
-          Development
-        </TabsTrigger>
-        <TabsTrigger className="flex-auto" value="production">
-          Production
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="development">
-        <Card>
-          <CardHeader className="gap-0">
-            <CardTitle className="text-lg">Development Environment</CardTitle>
-            <CardDescription>Configuration for testing and development.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EnvironmentTab env="development" fields={fields} />
-          </CardContent>
-        </Card>
-        {data.type === 'offerwall' && <OfferwallParserConfig env="development" />}
-      </TabsContent>
-      <TabsContent value="production">
-        <Card>
-          <CardHeader className="gap-0">
-            <CardTitle className="text-lg">Production Environment</CardTitle>
-            <CardDescription>Live, production-ready configuration.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EnvironmentTab env="production" fields={fields} />
-          </CardContent>
-        </Card>
-        {data.type === 'offerwall' && <OfferwallParserConfig env="production" />}
-      </TabsContent>
-    </Tabs>
+    <>
+      <Tabs defaultValue="development" className="mt-6">
+        <TabsList className="flex w-full gap-2">
+          <TabsTrigger className="flex-auto" value="development">
+            Development
+          </TabsTrigger>
+          <TabsTrigger className="flex-auto" value="production">
+            Production
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="development">
+          <Card>
+            <CardHeader className="gap-0">
+              <CardTitle className="text-lg">Development Environment</CardTitle>
+              <CardDescription>Configuration for testing and development.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EnvironmentTab env="development" fields={fields} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="production">
+          <Card>
+            <CardHeader className="gap-0">
+              <CardTitle className="text-lg">Production Environment</CardTitle>
+              <CardDescription>Live, production-ready configuration.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EnvironmentTab env="production" fields={fields} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      {data.type === 'offerwall' && <OfferwallParserConfig env="production" />}
+    </>
   );
 }
 

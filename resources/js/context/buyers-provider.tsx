@@ -12,8 +12,6 @@ interface BuyersContextValue {
     company_id: number | null
     ping_timeout_ms: number | ''
     post_timeout_ms: number | ''
-    ping_response_config: { bid_price_path: string; accepted_path: string; accepted_value: string }
-    post_response_config: { accepted_path: string; accepted_value: string }
     pricing_type: string
     fixed_price: string
     min_bid: string
@@ -38,15 +36,6 @@ function buildInitialData(buyer: Buyer | null) {
     company_id: buyer?.company_id ?? null,
     ping_timeout_ms: cfg?.ping_timeout_ms ?? '',
     post_timeout_ms: cfg?.post_timeout_ms ?? '',
-    ping_response_config: {
-      bid_price_path: cfg?.ping_response_config?.bid_price_path ?? '',
-      accepted_path: cfg?.ping_response_config?.accepted_path ?? '',
-      accepted_value: cfg?.ping_response_config?.accepted_value ?? '',
-    },
-    post_response_config: {
-      accepted_path: cfg?.post_response_config?.accepted_path ?? '',
-      accepted_value: cfg?.post_response_config?.accepted_value ?? '',
-    },
     pricing_type: cfg?.pricing_type ?? 'fixed',
     fixed_price: String(cfg?.fixed_price ?? ''),
     min_bid: String(cfg?.min_bid ?? ''),

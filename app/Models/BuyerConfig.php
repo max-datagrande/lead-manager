@@ -10,18 +10,8 @@ class BuyerConfig extends Model
 {
     protected $fillable = [
         'integration_id',
-        'ping_url',
-        'ping_method',
-        'ping_headers',
-        'ping_body',
         'ping_timeout_ms',
-        'post_url',
-        'post_method',
-        'post_headers',
-        'post_body',
         'post_timeout_ms',
-        'ping_response_config',
-        'post_response_config',
         'pricing_type',
         'fixed_price',
         'min_bid',
@@ -30,10 +20,6 @@ class BuyerConfig extends Model
     ];
 
     protected $casts = [
-        'ping_headers' => 'array',
-        'post_headers' => 'array',
-        'ping_response_config' => 'array',
-        'post_response_config' => 'array',
         'conditional_pricing_rules' => 'array',
         'pricing_type' => PricingType::class,
         'fixed_price' => 'decimal:4',

@@ -92,10 +92,12 @@ const serializeEnvs = (type, environments) => {
   }
 
   const envType = type === 'offerwall' ? 'offerwall' : 'post';
+  const prodConfig = type === 'offerwall' ? (environments['production']?.response_config ?? null) : undefined;
   return ['development', 'production'].map((e) => ({
     env_type: envType,
     environment: e,
     ...flattenEnv(environments[e]),
+    ...(type === 'offerwall' ? { response_config: prodConfig } : {}),
   }));
 };
 

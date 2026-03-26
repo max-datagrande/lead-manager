@@ -108,132 +108,52 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
         </CardContent>
       </Card>
 
-      {/* ── Response Config — visible once an integration is selected ───────── */}
+      {/* ── Timeouts ────────────────────────────────────────────────────────── */}
       {selectedIntegration && (
-        <>
-          {isPingPost && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ping Response Config</CardTitle>
-                <CardDescription>
-                  En la fase de ping el sistema envía datos parciales del lead y espera que el buyer responda con un precio (bid) y confirmación de interés.
-                  Configura aquí cómo interpretar esa respuesta JSON.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Connection Timeouts</CardTitle>
+            <CardDescription>
+              Tiempo máximo de espera para cada fase. La configuración de response parsing (paths de
+              aceptación, bid price, etc.) se gestiona en el formulario de la integración.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
-                <div className="space-y-2">
-                  <Label htmlFor="bid_price_path">
-                    Bid Price Path
-                    <FieldHint text='Ruta dot-notation para extraer el precio ofertado de la respuesta JSON del ping. Ejemplo: si la respuesta es { "data": { "bid": 2.50 } }, la ruta es data.bid. El sistema comparará este valor contra tu configuración de pricing para decidir si aceptar o rechazar al buyer.' />
-                  </Label>
-                  <Input
-                    id="bid_price_path"
-                    placeholder="e.g. data.bid  →  { data: { bid: 2.50 } }"
-                    value={data.ping_response_config.bid_price_path}
-                    onChange={(e) => setData('ping_response_config', { ...data.ping_response_config, bid_price_path: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ping_accepted_path">
-                    Accepted Path
-                    <FieldHint text='Ruta dot-notation al campo que indica si el buyer aceptó el lead en el ping. Ejemplo: status para { "status": "accepted" }. Si el campo no existe o tiene otro valor, el buyer se considera rechazado.' />
-                  </Label>
-                  <Input
-                    id="ping_accepted_path"
-                    placeholder="e.g. status  →  { status: 'accepted' }"
-                    value={data.ping_response_config.accepted_path}
-                    onChange={(e) => setData('ping_response_config', { ...data.ping_response_config, accepted_path: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ping_accepted_value">
-                    Accepted Value
-                    <FieldHint text='El valor exacto que debe tener el campo anterior para que el ping se considere aceptado. Puede ser string, número o booleano. Ejemplos: accepted, true, 1, ok.' />
-                  </Label>
-                  <Input
-                    id="ping_accepted_value"
-                    placeholder="e.g. accepted / true / 1"
-                    value={data.ping_response_config.accepted_value}
-                    onChange={(e) => setData('ping_response_config', { ...data.ping_response_config, accepted_value: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ping_timeout_ms">
-                    Ping Timeout (ms)
-                    <FieldHint text="Tiempo máximo en milisegundos que se espera la respuesta del ping. Si el buyer no responde a tiempo, es omitido en esta ronda. Se recomienda un valor bajo (1000–3000 ms) para no bloquear el workflow." />
-                  </Label>
-                  <Input
-                    id="ping_timeout_ms"
-                    type="number"
-                    min={500}
-                    placeholder="e.g. 3000  (recomendado: 1000–3000)"
-                    value={data.ping_timeout_ms}
-                    onChange={(e) => setData('ping_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
-                  />
-                </div>
-
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Post Response Config</CardTitle>
-              <CardDescription>
-                En la fase de post el lead completo es enviado al buyer. Configura cómo interpretar
-                la respuesta para saber si el buyer confirmó la compra.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
+            {isPingPost && (
               <div className="space-y-2">
-                <Label htmlFor="post_accepted_path">
-                  Accepted Path
-                  <FieldHint text='Ruta dot-notation al campo que indica si el buyer aceptó el lead en el post. Ejemplo: result para { "result": "success" }.' />
+                <Label htmlFor="ping_timeout_ms">
+                  Ping Timeout (ms)
+                  <FieldHint text="Tiempo máximo en milisegundos que se espera la respuesta del ping. Si el buyer no responde a tiempo, es omitido en esta ronda. Se recomienda un valor bajo (1000–3000 ms) para no bloquear el workflow." />
                 </Label>
                 <Input
-                  id="post_accepted_path"
-                  placeholder="e.g. result  →  { result: 'success' }"
-                  value={data.post_response_config.accepted_path}
-                  onChange={(e) => setData('post_response_config', { ...data.post_response_config, accepted_path: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="post_accepted_value">
-                  Accepted Value
-                  <FieldHint text="El valor exacto en el campo anterior que significa que el buyer aceptó el lead. Ejemplos: success, true, accepted, 1." />
-                </Label>
-                <Input
-                  id="post_accepted_value"
-                  placeholder="e.g. success / true / 1"
-                  value={data.post_response_config.accepted_value}
-                  onChange={(e) => setData('post_response_config', { ...data.post_response_config, accepted_value: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="post_timeout_ms">
-                  Post Timeout (ms)
-                  <FieldHint text="Tiempo máximo en milisegundos para esperar la respuesta del post. Puede ser más alto que el ping timeout ya que el lead completo se está transfiriendo. Valor recomendado: 5000–10000 ms." />
-                </Label>
-                <Input
-                  id="post_timeout_ms"
+                  id="ping_timeout_ms"
                   type="number"
                   min={500}
-                  placeholder="e.g. 5000  (recomendado: 5000–10000)"
-                  value={data.post_timeout_ms}
-                  onChange={(e) => setData('post_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
+                  placeholder="e.g. 3000  (recomendado: 1000–3000)"
+                  value={data.ping_timeout_ms}
+                  onChange={(e) => setData('ping_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
                 />
               </div>
+            )}
 
-            </CardContent>
-          </Card>
-        </>
+            <div className="space-y-2">
+              <Label htmlFor="post_timeout_ms">
+                Post Timeout (ms)
+                <FieldHint text="Tiempo máximo en milisegundos para esperar la respuesta del post. Puede ser más alto que el ping timeout ya que el lead completo se está transfiriendo. Valor recomendado: 5000–10000 ms." />
+              </Label>
+              <Input
+                id="post_timeout_ms"
+                type="number"
+                min={500}
+                placeholder="e.g. 5000  (recomendado: 5000–10000)"
+                value={data.post_timeout_ms}
+                onChange={(e) => setData('post_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
+              />
+            </div>
+
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Pricing ────────────────────────────────────────────────────────── */}

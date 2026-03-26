@@ -19,8 +19,6 @@ export interface BuyerConfig {
   integration_id: number
   ping_timeout_ms: number
   post_timeout_ms: number
-  ping_response_config: { bid_price_path?: string; accepted_path?: string; accepted_value?: string } | null
-  post_response_config: { accepted_path?: string; accepted_value?: string } | null
   pricing_type: 'fixed' | 'min_bid' | 'conditional' | 'postback'
   fixed_price: number | null
   min_bid: number | null
