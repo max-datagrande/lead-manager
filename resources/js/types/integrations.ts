@@ -29,6 +29,12 @@ interface EnvironmentDB extends EnvironmentBase {
   update_at: string;
 }
 
+interface MappingEntry {
+  type?: string;
+  defaultValue?: string;
+  value_mapping?: Record<string, string>;
+}
+
 interface IntegrationBase {
   name: string;
   type: string;
@@ -38,6 +44,8 @@ interface IntegrationBase {
 interface IntegrationDB extends IntegrationBase {
   id: number;
   environments: EnvironmentDB[];
+  request_mapping_config?: Record<string, MappingEntry>;
+  updated_at?: string;
 }
 
 /** Flat structure used by offerwall and post-only forms */
@@ -71,6 +79,7 @@ export type {
   IntegrationBase,
   IntegrationDB,
   IntegrationForm,
+  MappingEntry,
   PingPostEnvironments,
   EnvironmentTabProps,
 };
