@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $request_headers
  * @property string|null $content_type
  * @property string|null $authentication_type
- * @property-read OfferwallResponseConfig|PingResponseConfig|PostResponseConfig|null $config
+ * @property-read OfferwallResponseConfig|PingResponseConfig|PostResponseConfig|null $response_config
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -50,6 +50,16 @@ class IntegrationEnvironment extends Model
     'authentication_type',
   ];
 
+  protected $with = [
+    'offerwallResponseConfig',
+    'pingResponseConfig',
+    'postResponseConfig',
+  ];
+
+  protected $appends = [
+    'response_config',
+  ];
+
   /**
    * Resolve the typed response config for this environment.
    *
@@ -58,7 +68,7 @@ class IntegrationEnvironment extends Model
    * - ping      → PingResponseConfig
    * - post      → PostResponseConfig
    */
-  protected function config(): Attribute
+  protected function responseConfig(): Attribute
   {
     return Attribute::get(fn () => match ($this->env_type) {
       self::ENV_TYPE_OFFERWALL => $this->offerwallResponseConfig,
