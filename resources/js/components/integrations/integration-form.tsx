@@ -7,9 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
-import { cn } from '@/lib/utils';
 import { Radio, Send } from 'lucide-react';
-import { useState } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
 import { MappingConfigurator } from './mapping-configurator';
 import { OfferwallParserConfig } from './offerwall-parser-config';
@@ -18,9 +16,30 @@ import { TokenInserter } from './token-inserter';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
-  const [ppEnvType, setPpEnvType] = useState<'ping' | 'post'>('ping');
+function PingPostEnvContent({ env, fields }: { env: 'development' | 'production'; fields: any[] }) {
+  return (
+    <Tabs defaultValue="ping" className="mt-3">
+      <TabsList className="h-8 gap-1 rounded-md px-1">
+        <TabsTrigger value="ping" className="h-6 gap-1.5 px-2.5 text-xs">
+          <Radio className="size-3 shrink-0" />
+          Ping
+        </TabsTrigger>
+        <TabsTrigger value="post" className="h-6 gap-1.5 px-2.5 text-xs">
+          <Send className="size-3 shrink-0" />
+          Post
+        </TabsTrigger>
+      </TabsList>
+      {(['ping', 'post'] as const).map((envType) => (
+        <TabsContent key={envType} value={envType} className="mt-4 flex flex-col gap-4">
+          <EnvironmentTab env={env} envType={envType} fields={fields} />
+          <PingPostResponseConfig envType={envType} env={env} />
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
 
+function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
   return (
     <Tabs defaultValue="development" className="mt-6">
       <TabsList className="flex w-full gap-2">
@@ -33,41 +52,7 @@ function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
       </TabsList>
       {(['development', 'production'] as const).map((env) => (
         <TabsContent key={env} value={env}>
-          <div className="flex gap-6">
-            <aside className="w-28 shrink-0">
-              <nav className="flex flex-col gap-1 rounded-lg bg-muted/50 p-2">
-                {(
-                  [
-                    { type: 'ping', icon: Radio },
-                    { type: 'post', icon: Send },
-                  ] as const
-                ).map(({ type: et, icon: Icon }) => (
-                  <Button
-                    key={et}
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className={cn('w-full justify-start gap-2 capitalize', ppEnvType === et && 'bg-background shadow-sm')}
-                    onClick={() => setPpEnvType(et)}
-                  >
-                    <Icon className="h-3.5 w-3.5 shrink-0" />
-                    {et}
-                  </Button>
-                ))}
-              </nav>
-            </aside>
-            <div className="flex flex-1 flex-col gap-4">
-              <Card>
-                <CardHeader className="gap-0 pb-0">
-                  <CardTitle className="text-lg">{ppEnvType === 'ping' ? 'Ping environment' : 'Post environment'}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EnvironmentTab env={env} envType={ppEnvType} fields={fields} />
-                </CardContent>
-              </Card>
-              <PingPostResponseConfig envType={ppEnvType} env={env} />
-            </div>
-          </div>
+          <PingPostEnvContent env={env} fields={fields} />
         </TabsContent>
       ))}
     </Tabs>
