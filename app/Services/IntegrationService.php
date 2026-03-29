@@ -332,7 +332,7 @@ class IntegrationService
       ->where('env_type', 'offerwall')
       ->where('environment', 'production')
       ->first();
-    $parserConfig = $env?->config;
+    $parserConfig = $env?->response_config;
     $pathOfOffers = $parserConfig?->offer_list_path ?? '';
     $offers = data_get($jsonResponse, $pathOfOffers);
     TailLogger::saveLog(
@@ -402,7 +402,7 @@ class IntegrationService
       ->where('env_type', 'offerwall')
       ->where('environment', 'production')
       ->first();
-    $fallbacks = $env?->config?->fallbacks ?? [];
+    $fallbacks = $env?->response_config?->fallbacks ?? [];
 
     if (empty($fallbacks)) {
       return $mappedOffers;

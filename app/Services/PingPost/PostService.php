@@ -52,7 +52,7 @@ class PostService
         ->where('env_type', 'ping')
         ->where('environment', 'production')
         ->first();
-      $leadIdPath = $pingEnv?->config?->lead_id_path;
+      $leadIdPath = $pingEnv?->response_config?->lead_id_path;
       if ($leadIdPath) {
         $leadData['ping_lead_id'] = Arr::get($pingResult->response_body, $leadIdPath, '');
       }
@@ -89,7 +89,7 @@ class PostService
       $response = Http::withHeaders($headers)->timeout($config->post_timeout_ms / 1000)->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
-      $configUrl = $postEnv->config;
+      $configUrl = $postEnv->response_config;
       $accepted = $this->isAccepted($response, $configUrl);
       $rejectionReason = $this->extractRejectionReason($response, $configUrl);
 

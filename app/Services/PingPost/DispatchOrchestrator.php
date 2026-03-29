@@ -304,7 +304,7 @@ class DispatchOrchestrator
             $idempotencyKey = LeadDispatch::generateIdempotencyKey($dispatch->workflow_id, $integrationId, $dispatch->fingerprint);
 
             if ($response instanceof \Illuminate\Http\Client\Response) {
-                $config = $pingEnv->config;
+                $config = $pingEnv->response_config;
                 $bidPrice = $this->extractBidFromResponse($response, $config);
                 $accepted = $this->isAcceptedResponse($response, $config);
 

@@ -64,7 +64,7 @@ class PingService
       $response = Http::withHeaders($headers)->timeout($config->ping_timeout_ms / 1000)->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
-      $config = $pingEnv->config;
+      $config = $pingEnv->response_config;
       $bidPrice = $this->extractBidPrice($response, $config);
       $accepted = $this->isAccepted($response, $config);
       $status = $accepted ? PingResultStatus::ACCEPTED : PingResultStatus::REJECTED;
