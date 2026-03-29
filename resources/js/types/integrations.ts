@@ -8,11 +8,26 @@ interface EnvironmentBase {
   request_body: string;
 }
 
-interface ResponseConfig {
+interface OfferwallResponseConfig {
   offer_list_path?: string;
   mapping?: Record<string, string>;
   fallbacks?: Record<string, string>;
 }
+
+interface PingResponseConfig {
+  bid_price_path?: string;
+  accepted_path?: string;
+  accepted_value?: string;
+  lead_id_path?: string;
+}
+
+interface PostResponseConfig {
+  accepted_path?: string;
+  accepted_value?: string;
+  rejected_path?: string;
+}
+
+type ResponseConfig = OfferwallResponseConfig | PingResponseConfig | PostResponseConfig;
 
 interface EnvironmentForm extends EnvironmentBase {
   request_headers: Array<{ key: string; value: string }>;
@@ -82,4 +97,8 @@ export type {
   MappingEntry,
   PingPostEnvironments,
   EnvironmentTabProps,
+  OfferwallResponseConfig,
+  PingResponseConfig,
+  PostResponseConfig,
+  ResponseConfig,
 };
