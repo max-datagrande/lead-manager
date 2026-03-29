@@ -52,35 +52,35 @@ class IntegrationFactory extends Factory
   {
     return $this->afterCreating(function (Integration $integration) use ($configOverrides): void {
       // Create environments for both development and production
-      foreach (['development', 'production'] as $env) {
+      foreach (['development', 'production'] as $envName) {
         if ($integration->type === 'ping-post') {
-          $integration->environments()->create([
-            'environment' => $env,
+          $pingEnv = $integration->environments()->create([
+            'environment' => $envName,
             'env_type' => 'ping',
             'url' => 'https://buyer.example.com/ping',
             'method' => 'POST',
             'request_headers' => '{}',
             'request_body' => '{"fingerprint":"{fingerprint}"}',
-            'response_config' => [
-              'bid_price_path' => 'bid',
-              'accepted_path' => 'accepted',
-              'accepted_value' => 'true',
-            ],
+          ]);
+          $pingEnv->pingResponseConfig()->create([
+            'bid_price_path' => 'bid',
+            'accepted_path' => 'accepted',
+            'accepted_value' => 'true',
           ]);
         }
 
-        $integration->environments()->create([
-          'environment' => $env,
+        $postEnv = $integration->environments()->create([
+          'environment' => $envName,
           'env_type' => 'post',
           'url' => 'https://buyer.example.com/post',
           'method' => 'POST',
           'request_headers' => '{}',
           'request_body' => '{"fingerprint":"{fingerprint}"}',
-          'response_config' => [
-            'accepted_path' => 'accepted',
-            'accepted_value' => 'true',
-            'rejected_path' => 'reason',
-          ],
+        ]);
+        $postEnv->postResponseConfig()->create([
+          'accepted_path' => 'accepted',
+          'accepted_value' => 'true',
+          'rejected_path' => 'reason',
         ]);
       }
 
