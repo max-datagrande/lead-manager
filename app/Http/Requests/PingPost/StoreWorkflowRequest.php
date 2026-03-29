@@ -30,7 +30,7 @@ class StoreWorkflowRequest extends FormRequest
             'advance_on_timeout' => ['boolean'],
             'advance_on_error' => ['boolean'],
             'buyers' => ['required', 'array', 'min:1'],
-            'buyers.*.integration_id' => ['required', 'integer', 'exists:integrations,id'],
+            'buyers.*.buyer_id' => ['required', 'integer', 'exists:buyers,id'],
             'buyers.*.position' => ['required', 'integer', 'min:0'],
             'buyers.*.is_fallback' => ['boolean'],
             'buyers.*.buyer_group' => ['nullable', Rule::in(['primary', 'secondary'])],

@@ -30,7 +30,9 @@ interface WorkflowsContextValue {
 
 export const WorkflowsContext = createContext<WorkflowsContextValue | null>(null)
 
-function buildInitialData(workflow: Workflow | null): WorkflowFormData {
+function buildInitialData(workflow: Workflow | null, availableBuyers: Buyer[]): WorkflowFormData {
+  const integrationToBuyer = new Map(availableBuyers.map((b) => [b.integration_id, b.id]))
+
   return {
     name: workflow?.name ?? '',
     execution_mode: workflow?.execution_mode ?? 'sync',
@@ -45,6 +47,7 @@ function buildInitialData(workflow: Workflow | null): WorkflowFormData {
     buyers: (workflow?.workflowBuyers ?? []).map((wb) => ({
       id: wb.id,
       workflow_id: wb.workflow_id,
+      buyer_id: integrationToBuyer.get(wb.integration_id),
       integration_id: wb.integration_id,
       position: wb.position,
       is_fallback: wb.is_fallback,
@@ -64,7 +67,7 @@ interface Props {
 
 export function WorkflowsProvider({ children, workflow = null, availableBuyers = [], strategies = [] }: Props) {
   const isEdit = !!workflow
-  const initialData = useMemo(() => buildInitialData(workflow), [workflow?.id])
+  const initialData = useMemo(() => buildInitialData(workflow, availableBuyers), [workflow?.id])
 
   const { data, setData, post, put, processing, errors } = useForm(initialData)
 

@@ -30,7 +30,7 @@ class UpdateWorkflowRequest extends FormRequest
       'advance_on_timeout' => ['boolean'],
       'advance_on_error' => ['boolean'],
       'buyers' => ['sometimes', 'array', 'min:1'],
-      'buyers.*.integration_id' => ['required_with:buyers', 'integer', 'exists:integrations,id'],
+      'buyers.*.buyer_id' => ['required_with:buyers', 'integer', 'exists:buyers,id'],
       'buyers.*.position' => ['required_with:buyers', 'integer', 'min:0'],
       'buyers.*.is_fallback' => ['boolean'],
       'buyers.*.buyer_group' => ['nullable', Rule::in(['primary', 'secondary'])],

@@ -18,7 +18,7 @@ interface SortableRowProps {
 }
 
 function SortableRow({ item, availableBuyers, strategy, onUpdate, onRemove }: SortableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.integration_id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.buyer_id! })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -32,15 +32,15 @@ function SortableRow({ item, availableBuyers, strategy, onUpdate, onRemove }: So
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <Select value={String(item.integration_id)} onValueChange={(v) => onUpdate({ integration_id: parseInt(v) })}>
-        <SelectTrigger className="w-48">
+      <Select value={String(item.buyer_id)} onValueChange={(v) => onUpdate({ buyer_id: parseInt(v) })}>
+        <SelectTrigger className="flex-1 max-w-70 flex items-center justify-between">
           <SelectValue placeholder="Select buyer" />
         </SelectTrigger>
         <SelectContent>
           {availableBuyers.map((b) => (
-            <SelectItem key={b.id} value={String(b.id)}>
-              {b.name}
-              <span className="ml-1 text-xs text-muted-foreground">({b.type})</span>
+            <SelectItem key={b.id} value={String(b.id)} className="w-full">
+              <span className="whitespace-nowrap text-ellipsis max-w-[300px] block overflow-hidden">{b.name}</span>
+              <span className="ml-1 text-xs text-muted-foreground whitespace-nowrap">({b.integration?.type})</span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -59,15 +59,15 @@ function SortableRow({ item, availableBuyers, strategy, onUpdate, onRemove }: So
       )}
 
       <div className="flex items-center gap-1">
-        <Switch checked={item.is_fallback} onCheckedChange={(v) => onUpdate({ is_fallback: v })} id={`fallback-${item.integration_id}`} />
-        <Label htmlFor={`fallback-${item.integration_id}`} className="cursor-pointer text-xs">
+        <Switch checked={item.is_fallback} onCheckedChange={(v) => onUpdate({ is_fallback: v })} id={`fallback-${item.buyer_id}`} />
+        <Label htmlFor={`fallback-${item.buyer_id}`} className="cursor-pointer text-xs">
           Fallback
         </Label>
       </div>
 
       <div className="flex items-center gap-1">
-        <Switch checked={item.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} id={`active-${item.integration_id}`} />
-        <Label htmlFor={`active-${item.integration_id}`} className="cursor-pointer text-xs">
+        <Switch checked={item.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} id={`active-${item.buyer_id}`} />
+        <Label htmlFor={`active-${item.buyer_id}`} className="cursor-pointer text-xs">
           Active
         </Label>
       </div>
@@ -102,17 +102,17 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = buyers.findIndex((b) => b.integration_id === active.id)
-    const newIndex = buyers.findIndex((b) => b.integration_id === over.id)
+    const oldIndex = buyers.findIndex((b) => b.buyer_id === active.id)
+    const newIndex = buyers.findIndex((b) => b.buyer_id === over.id)
     const reordered = arrayMove(buyers, oldIndex, newIndex).map((b, i) => ({ ...b, position: i }))
     onChange(reordered)
   }
 
   const addBuyer = () => {
-    const used = new Set(buyers.map((b) => b.integration_id))
+    const used = new Set(buyers.map((b) => b.buyer_id))
     const next = availableBuyers.find((b) => !used.has(b.id))
     if (!next) return
-    onChange([...buyers, { integration_id: next.id, position: buyers.length, is_fallback: false, buyer_group: 'primary', is_active: true }])
+    onChange([...buyers, { buyer_id: next.id, integration_id: next.integration_id, position: buyers.length, is_fallback: false, buyer_group: 'primary', is_active: true }])
   }
 
   const removeAt = (index: number) => {
@@ -126,10 +126,10 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
   return (
     <div className="space-y-2">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={buyers.map((b) => b.integration_id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={buyers.map((b) => b.buyer_id!)} strategy={verticalListSortingStrategy}>
           {buyers.map((item, i) => (
             <SortableRow
-              key={item.integration_id}
+              key={item.buyer_id}
               item={item}
               availableBuyers={availableBuyers}
               strategy={strategy}

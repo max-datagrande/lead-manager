@@ -61,6 +61,7 @@ export interface Buyer {
 export interface WorkflowBuyer {
   id?: number
   workflow_id?: number
+  buyer_id?: number
   integration_id: number
   position: number
   is_fallback: boolean
