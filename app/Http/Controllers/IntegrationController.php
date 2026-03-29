@@ -73,8 +73,11 @@ class IntegrationController extends Controller
    */
   public function show(Integration $integration)
   {
+    $integration->load('environments');
+    $integration->environments->each->append('response_config_fields');
+
     return Inertia::render('integrations/show', [
-      'integration' => $integration->load('environments'),
+      'integration' => $integration,
     ]);
   }
 
