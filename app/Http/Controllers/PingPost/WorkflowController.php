@@ -76,18 +76,10 @@ class WorkflowController extends Controller
     $data = $request->safe()->except('buyers');
     $buyers = $request->input('buyers');
 
-    try {
-      $this->workflowService->update($workflow, $data);
-    } catch (\Throwable $th) {
-      return redirect()->back()->with('error', 'Workflow updated failed: ' . $th->getMessage());
-    }
+    $this->workflowService->update($workflow, $data);
 
     if ($buyers !== null) {
-      try {
-        $this->workflowService->syncBuyers($workflow, $buyers);
-      } catch (\Throwable $th) {
-        return redirect()->back()->with('error', 'Workflow buyers updated failed: ' . $th->getMessage());
-      }
+      $this->workflowService->syncBuyers($workflow, $buyers);
     }
 
     return redirect()->route('ping-post.workflows.show', $workflow)

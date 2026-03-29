@@ -84,7 +84,7 @@ export interface Workflow {
   advance_on_rejection: boolean
   advance_on_timeout: boolean
   advance_on_error: boolean
-  workflowBuyers?: WorkflowBuyer[]
+  workflow_buyers?: WorkflowBuyer[]
   workflow_buyers_count?: number
   user?: { id: number; name: string }
   created_at: string

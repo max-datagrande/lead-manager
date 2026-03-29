@@ -44,7 +44,7 @@ function buildInitialData(workflow: Workflow | null, availableBuyers: Buyer[]): 
     advance_on_rejection: workflow?.advance_on_rejection ?? true,
     advance_on_timeout: workflow?.advance_on_timeout ?? true,
     advance_on_error: workflow?.advance_on_error ?? false,
-    buyers: (workflow?.workflowBuyers ?? []).map((wb) => ({
+    buyers: (workflow?.workflow_buyers ?? []).map((wb) => ({
       id: wb.id,
       workflow_id: wb.workflow_id,
       buyer_id: integrationToBuyer.get(wb.integration_id),

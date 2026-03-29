@@ -85,12 +85,12 @@ const WorkflowsShow = ({ workflow }: Props) => {
           <Card>
             <CardHeader>
               <CardTitle>Buyers</CardTitle>
-              <CardDescription>{workflow.workflowBuyers?.length ?? 0} configured</CardDescription>
+              <CardDescription>{workflow.workflow_buyers?.length ?? 0} configured</CardDescription>
             </CardHeader>
             <CardContent>
-              {workflow.workflowBuyers?.length ? (
+              {workflow.workflow_buyers?.length ? (
                 <div className="space-y-2">
-                  {[...workflow.workflowBuyers]
+                  {[...workflow.workflow_buyers]
                     .sort((a, b) => a.position - b.position)
                     .map((wb) => (
                       <div key={wb.id} className="flex items-center justify-between rounded bg-muted px-3 py-2 text-sm">
