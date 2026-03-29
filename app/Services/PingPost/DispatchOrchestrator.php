@@ -304,9 +304,9 @@ class DispatchOrchestrator
             $idempotencyKey = LeadDispatch::generateIdempotencyKey($dispatch->workflow_id, $integrationId, $dispatch->fingerprint);
 
             if ($response instanceof \Illuminate\Http\Client\Response) {
-                $responseConfig = $pingEnv->response_config ?? [];
-                $bidPrice = $this->extractBidFromResponse($response, $responseConfig);
-                $accepted = $this->isAcceptedResponse($response, $responseConfig);
+                $config = $pingEnv->config;
+                $bidPrice = $this->extractBidFromResponse($response, $config);
+                $accepted = $this->isAcceptedResponse($response, $config);
 
                 $pingResults[$integrationId] = PingResult::create([
                     'lead_dispatch_id' => $dispatch->id,
@@ -423,9 +423,9 @@ class DispatchOrchestrator
         return PingResult::where('idempotency_key', $key)->exists();
     }
 
-    private function extractBidFromResponse(\Illuminate\Http\Client\Response $response, array $responseConfig): ?float
+    private function extractBidFromResponse(\Illuminate\Http\Client\Response $response, ?\App\Models\PingResponseConfig $config): ?float
     {
-        $path = \Illuminate\Support\Arr::get($responseConfig, 'bid_price_path');
+        $path = $config?->bid_price_path;
 
         if (! $path) {
             return null;
@@ -436,10 +436,10 @@ class DispatchOrchestrator
         return is_numeric($value) ? (float) $value : null;
     }
 
-    private function isAcceptedResponse(\Illuminate\Http\Client\Response $response, array $responseConfig): bool
+    private function isAcceptedResponse(\Illuminate\Http\Client\Response $response, ?\App\Models\PingResponseConfig $config): bool
     {
-        $acceptedPath = \Illuminate\Support\Arr::get($responseConfig, 'accepted_path');
-        $acceptedValue = \Illuminate\Support\Arr::get($responseConfig, 'accepted_value');
+        $acceptedPath = $config?->accepted_path;
+        $acceptedValue = $config?->accepted_value;
 
         if (! $acceptedPath) {
             return $response->successful();

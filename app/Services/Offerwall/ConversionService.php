@@ -94,14 +94,15 @@ class ConversionService
           ->where('env_type', 'offerwall')
           ->where('environment', 'production')
           ->first();
-        $parserConfig = $offerwallEnv?->response_config ?? [];
-        $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+        $parserConfig = $offerwallEnv?->config;
+        $pathOfOffers = $parserConfig?->offer_list_path ?? '';
         $offers = data_get($callLog->response_body, $pathOfOffers);
 
         if (isset($offers[$offerIndex])) {
           $offerData = $offers[$offerIndex];
           // Get company name from the offer data using the mapping
-          $companyMappingPath = $parserConfig['mapping']['company'] ?? null;
+          $mapping = $parserConfig?->mapping ?? [];
+          $companyMappingPath = $mapping['company'] ?? null;
           if ($companyMappingPath) {
             $offerCompanyName = data_get($offerData, $companyMappingPath);
           }

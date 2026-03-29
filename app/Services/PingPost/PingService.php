@@ -8,6 +8,7 @@ use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
 use App\Models\LeadDispatch;
 use App\Models\PingResult;
+use App\Models\PingResponseConfig;
 use App\Services\PayloadProcessorService;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
@@ -63,9 +64,9 @@ class PingService
       $response = Http::withHeaders($headers)->timeout($config->ping_timeout_ms / 1000)->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
-      $responseConfig = $pingEnv->response_config ?? [];
-      $bidPrice = $this->extractBidPrice($response, $responseConfig);
-      $accepted = $this->isAccepted($response, $responseConfig);
+      $config = $pingEnv->config;
+      $bidPrice = $this->extractBidPrice($response, $config);
+      $accepted = $this->isAccepted($response, $config);
       $status = $accepted ? PingResultStatus::ACCEPTED : PingResultStatus::REJECTED;
 
       return PingResult::create([
@@ -101,9 +102,9 @@ class PingService
     }
   }
 
-  private function extractBidPrice(Response $response, array $responseConfig): ?float
+  private function extractBidPrice(Response $response, ?PingResponseConfig $config): ?float
   {
-    $path = Arr::get($responseConfig, 'bid_price_path');
+    $path = $config?->bid_price_path;
 
     if (! $path) {
       return null;
@@ -114,10 +115,10 @@ class PingService
     return is_numeric($value) ? (float) $value : null;
   }
 
-  private function isAccepted(Response $response, array $responseConfig): bool
+  private function isAccepted(Response $response, ?PingResponseConfig $config): bool
   {
-    $acceptedPath = Arr::get($responseConfig, 'accepted_path');
-    $acceptedValue = Arr::get($responseConfig, 'accepted_value');
+    $acceptedPath = $config?->accepted_path;
+    $acceptedValue = $config?->accepted_value;
 
     if (! $acceptedPath) {
       return $response->successful();

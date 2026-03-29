@@ -9,6 +9,7 @@ use App\Models\Integration;
 use App\Models\LeadDispatch;
 use App\Models\PingResult;
 use App\Models\PostResult;
+use App\Models\PostResponseConfig;
 use App\Services\PayloadProcessorService;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
@@ -51,7 +52,7 @@ class PostService
         ->where('env_type', 'ping')
         ->where('environment', 'production')
         ->first();
-      $leadIdPath = Arr::get($pingEnv?->response_config ?? [], 'lead_id_path');
+      $leadIdPath = $pingEnv?->config?->lead_id_path;
       if ($leadIdPath) {
         $leadData['ping_lead_id'] = Arr::get($pingResult->response_body, $leadIdPath, '');
       }
@@ -88,9 +89,9 @@ class PostService
       $response = Http::withHeaders($headers)->timeout($config->post_timeout_ms / 1000)->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
-      $postResponseConfig = $postEnv->response_config ?? [];
-      $accepted = $this->isAccepted($response, $postResponseConfig);
-      $rejectionReason = $this->extractRejectionReason($response, $postResponseConfig);
+      $configUrl = $postEnv->config;
+      $accepted = $this->isAccepted($response, $configUrl);
+      $rejectionReason = $this->extractRejectionReason($response, $configUrl);
 
       $status = $accepted ? PostResultStatus::ACCEPTED : PostResultStatus::REJECTED;
 
@@ -131,10 +132,10 @@ class PostService
     }
   }
 
-  private function isAccepted(Response $response, array $responseConfig): bool
+  private function isAccepted(Response $response, ?PostResponseConfig $config): bool
   {
-    $acceptedPath = Arr::get($responseConfig, 'accepted_path');
-    $acceptedValue = Arr::get($responseConfig, 'accepted_value');
+    $acceptedPath = $config?->accepted_path;
+    $acceptedValue = $config?->accepted_value;
 
     if (! $acceptedPath) {
       return $response->successful();
@@ -145,9 +146,9 @@ class PostService
     return (string) $actual === (string) $acceptedValue;
   }
 
-  private function extractRejectionReason(Response $response, array $responseConfig): ?string
+  private function extractRejectionReason(Response $response, ?PostResponseConfig $config): ?string
   {
-    $rejectedPath = Arr::get($responseConfig, 'rejected_path');
+    $rejectedPath = $config?->rejected_path;
 
     if (! $rejectedPath) {
       return null;
