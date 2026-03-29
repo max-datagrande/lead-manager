@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { getCookie } from '@/utils/navigator'
-import { EnvironmentDB, MappingEntry } from '@/types/integrations'
+import { EnvironmentDB, MappingEntry, ResponseConfigField } from '@/types/integrations'
 import { ArrowRightLeft, Check, Clock, Copy, PlayCircle } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { route } from 'ziggy-js'
@@ -148,37 +148,46 @@ function TokenList({ mappingConfig }: { mappingConfig: Record<string, MappingEnt
 
 // ─── Response config section ──────────────────────────────────────────────────
 
-const PING_FIELDS = [
-  { key: 'bid_price_path', label: 'Bid Price Path', hint: 'JSON path to extract the buyer\'s bid price from the response (e.g. "data.bid")' },
-  { key: 'accepted_path', label: 'Accepted Path', hint: 'JSON path to the field that signals whether the lead was accepted (e.g. "status")' },
-  { key: 'accepted_value', label: 'Accepted Value', hint: 'The value at accepted_path that means the lead was accepted (e.g. "accepted", "true", "1")' },
-  { key: 'lead_id_path', label: 'Lead ID Path', hint: 'JSON path to extract the external lead ID assigned by the buyer (e.g. "data.lead_id")' },
-]
+function ConfigFieldValue({ value }: { value: ResponseConfigField['value'] }) {
+  if (value == null) {
+    return <span className="text-xs italic text-muted-foreground/40">Not configured</span>
+  }
 
-const POST_FIELDS = [
-  { key: 'accepted_path', label: 'Accepted Path', hint: 'JSON path to the field that signals the post was accepted (e.g. "result")' },
-  { key: 'accepted_value', label: 'Accepted Value', hint: 'The value at accepted_path that means the lead was accepted (e.g. "success", "true", "1")' },
-  { key: 'rejected_path', label: 'Rejected Path', hint: 'JSON path to extract the rejection reason from the response (e.g. "error_message")' },
-]
+  if (typeof value === 'object') {
+    return (
+      <div className="flex flex-col gap-1">
+        {Object.entries(value).map(([k, v]) => (
+          <div key={k} className="flex items-baseline gap-2">
+            <span className="shrink-0 font-mono text-xs text-muted-foreground/50">{k}</span>
+            <span className="text-xs text-muted-foreground/30">→</span>
+            {v != null
+              ? <span className="font-mono text-xs text-muted-foreground">{v}</span>
+              : <span className="text-xs italic text-muted-foreground/30">—</span>
+            }
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return <span className="font-mono text-sm text-muted-foreground">{value}</span>
+}
 
 function ResponseConfigSection({ env }: { env: EnvironmentDB }) {
-  const responseConfig = (env.response_config ?? {}) as Record<string, string>
-  const fields = env.env_type === 'ping' ? PING_FIELDS : POST_FIELDS
-  const configured = fields.filter((f) => responseConfig[f.key])
-
-  if (configured.length === 0) return null
+  const fields = env.response_config_fields
+  if (!fields || Object.keys(fields).length === 0) return null
 
   return (
     <div className="border-t px-5 py-3">
       <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Response Config</p>
-      <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2">
-        {configured.map((f) => (
-          <Fragment key={f.key}>
-            <div className="flex items-center gap-0.5">
-              <span className="text-sm font-medium text-foreground">{f.label}</span>
-              <FieldHint text={f.hint} side="right" />
+      <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3">
+        {Object.entries(fields).map(([key, { label, hint, value }]) => (
+          <Fragment key={key}>
+            <div className="flex items-center gap-0.5 pt-0.5">
+              <span className="whitespace-nowrap text-sm font-medium text-foreground">{label}</span>
+              <FieldHint text={hint} side="right" />
             </div>
-            <span className="font-mono text-sm text-muted-foreground">{responseConfig[f.key]}</span>
+            <ConfigFieldValue value={value} />
           </Fragment>
         ))}
       </div>

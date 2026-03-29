@@ -34,6 +34,12 @@ interface EnvironmentForm extends EnvironmentBase {
   response_config?: ResponseConfig | null;
 }
 
+interface ResponseConfigField {
+  label: string;
+  hint: string;
+  value: string | Record<string, string | null> | null;
+}
+
 interface EnvironmentDB extends EnvironmentBase {
   id: number;
   integration_id: number;
@@ -41,6 +47,7 @@ interface EnvironmentDB extends EnvironmentBase {
   request_headers: string;
   environment: EnvironmentType;
   response_config?: ResponseConfig | null;
+  response_config_fields?: Record<string, ResponseConfigField>;
   update_at: string;
 }
 
@@ -101,4 +108,5 @@ export type {
   PingResponseConfig,
   PostResponseConfig,
   ResponseConfig,
+  ResponseConfigField
 };
