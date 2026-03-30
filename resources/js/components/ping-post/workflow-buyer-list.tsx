@@ -1,54 +1,89 @@
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import type { Buyer, WorkflowBuyer } from '@/types/ping-post'
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus, Trash2 } from 'lucide-react'
+import { GripVertical, Plus, Trash2, Users } from 'lucide-react'
 
 interface SortableRowProps {
   item: WorkflowBuyer
+  position: number
   availableBuyers: Buyer[]
   strategy: string
   onUpdate: (updates: Partial<WorkflowBuyer>) => void
   onRemove: () => void
 }
 
-function SortableRow({ item, availableBuyers, strategy, onUpdate, onRemove }: SortableRowProps) {
+function SortableRow({ item, position, availableBuyers, strategy, onUpdate, onRemove }: SortableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.buyer_id! })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 rounded-md border bg-card px-3 py-2">
-      <button type="button" {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground">
-        <GripVertical className="h-4 w-4" />
-      </button>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all',
+        isDragging ? 'opacity-50 shadow-lg' : '',
+        !item.is_active ? 'opacity-60 bg-muted/30' : 'bg-card',
+        item.is_fallback && item.is_active ? 'border-amber-400/50 bg-amber-50/30 dark:bg-amber-900/10' : '',
+      )}
+    >
+      {/* Drag handle + position */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <span className="w-4 text-center font-mono text-xs text-muted-foreground">{position + 1}</span>
+      </div>
 
+      {/* Buyer select */}
       <Select value={String(item.buyer_id)} onValueChange={(v) => onUpdate({ buyer_id: parseInt(v) })}>
-        <SelectTrigger className="flex-1 max-w-70 flex items-center justify-between">
+        <SelectTrigger className="min-w-0 flex-1 max-w-64">
           <SelectValue placeholder="Select buyer" />
         </SelectTrigger>
         <SelectContent>
           {availableBuyers.map((b) => (
-            <SelectItem key={b.id} value={String(b.id)} className="w-full">
-              <span className="whitespace-nowrap text-ellipsis max-w-[300px] block overflow-hidden">{b.name}</span>
-              <span className="ml-1 text-xs text-muted-foreground whitespace-nowrap">({b.integration?.type})</span>
+            <SelectItem key={b.id} value={String(b.id)}>
+              <span className="block max-w-[220px] truncate">{b.name}</span>
+              <span className="ml-1 text-xs text-muted-foreground">({b.integration?.type})</span>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
+      {/* Group select — combined strategy only */}
       {strategy === 'combined' && (
         <Select value={item.buyer_group} onValueChange={(v) => onUpdate({ buyer_group: v as 'primary' | 'secondary' })}>
-          <SelectTrigger className="w-28">
+          <SelectTrigger className="w-28 shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -58,27 +93,41 @@ function SortableRow({ item, availableBuyers, strategy, onUpdate, onRemove }: So
         </Select>
       )}
 
-      <div className="flex items-center gap-1">
-        <Switch checked={item.is_fallback} onCheckedChange={(v) => onUpdate({ is_fallback: v })} id={`fallback-${item.buyer_id}`} />
-        <Label htmlFor={`fallback-${item.buyer_id}`} className="cursor-pointer text-xs">
+      {/* Fallback toggle */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Switch
+          checked={item.is_fallback}
+          onCheckedChange={(v) => onUpdate({ is_fallback: v })}
+          id={`fallback-${item.buyer_id}`}
+          className="scale-90"
+        />
+        <Label htmlFor={`fallback-${item.buyer_id}`} className="cursor-pointer whitespace-nowrap text-xs text-muted-foreground">
           Fallback
         </Label>
       </div>
 
-      <div className="flex items-center gap-1">
-        <Switch checked={item.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} id={`active-${item.buyer_id}`} />
-        <Label htmlFor={`active-${item.buyer_id}`} className="cursor-pointer text-xs">
+      {/* Active toggle */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Switch
+          checked={item.is_active}
+          onCheckedChange={(v) => onUpdate({ is_active: v })}
+          id={`active-${item.buyer_id}`}
+          className="scale-90"
+        />
+        <Label htmlFor={`active-${item.buyer_id}`} className="cursor-pointer text-xs text-muted-foreground">
           Active
         </Label>
       </div>
 
-      {item.is_fallback && (
-        <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
-          Fallback
-        </Badge>
-      )}
-
-      <Button variant="ghost" size="icon" onClick={onRemove} type="button" className="ml-auto shrink-0 text-destructive">
+      {/* Delete */}
+      <Button
+        variant="ghost-destructive"
+        size="icon"
+        onClick={onRemove}
+        type="button"
+        className="ml-auto h-8 w-8 shrink-0"
+        aria-label="Remove buyer"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
@@ -131,6 +180,7 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
             <SortableRow
               key={item.buyer_id}
               item={item}
+              position={i}
               availableBuyers={availableBuyers}
               strategy={strategy}
               onUpdate={(updates) => updateAt(i, updates)}
@@ -139,14 +189,20 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
           ))}
         </SortableContext>
       </DndContext>
+
+      {buyers.length === 0 && (
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center">
+          <Users className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm font-medium text-muted-foreground">No buyers added yet</p>
+          <p className="text-xs text-muted-foreground/70">Add buyers to this workflow to start distributing leads.</p>
+        </div>
+      )}
+
       {availableBuyers.length > buyers.length && (
-        <Button variant="outline" size="sm" onClick={addBuyer} type="button">
-          <Plus className="mr-1 h-4 w-4" />
+        <Button variant="outline" size="sm" onClick={addBuyer} type="button" className="mt-1">
+          <Plus className="mr-1.5 h-4 w-4" />
           Add Buyer
         </Button>
-      )}
-      {buyers.length === 0 && (
-        <p className="py-4 text-center text-sm text-muted-foreground">No buyers added yet. Click "Add Buyer" to start.</p>
       )}
     </div>
   )
