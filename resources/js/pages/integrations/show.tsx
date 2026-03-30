@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import AppLayout from '@/layouts/app-layout'
 import { EnvironmentDB, IntegrationDB, MappingEntry } from '@/types/integrations'
+import { useUrlParam } from '@/hooks/use-url-param'
 import { Head, Link } from '@inertiajs/react'
 import { Radio, Send } from 'lucide-react'
 
@@ -39,11 +40,12 @@ function PingPostEnvContent({
   integrationId: number
   mappingConfig: Record<string, MappingEntry>
 }) {
+  const [envType, setEnvType] = useUrlParam('envType', 'ping')
   const pingEnv = environments.find((e) => e.env_type === 'ping') ?? null
   const postEnv = environments.find((e) => e.env_type === 'post') ?? null
 
   return (
-    <Tabs defaultValue="ping" className="mt-3">
+    <Tabs value={envType} onValueChange={setEnvType} className="mt-3">
       <TabsList className="h-8 gap-1 rounded-md px-1">
         <TabsTrigger value="ping" className="h-6 gap-1.5 px-2.5 text-xs">
           <Radio className="size-3 shrink-0" />
@@ -65,12 +67,13 @@ function PingPostEnvContent({
 }
 
 function PingPostTabs({ integration }: { integration: IntegrationDB }) {
+  const [env, setEnv] = useUrlParam('env', 'development')
   const devEnvs = integration.environments.filter((e) => e.environment === 'development')
   const prodEnvs = integration.environments.filter((e) => e.environment === 'production')
   const mappingConfig = integration.request_mapping_config ?? {}
 
   return (
-    <Tabs defaultValue="development">
+    <Tabs value={env} onValueChange={setEnv}>
       <TabsList className="flex w-full gap-2">
         <TabsTrigger className="flex-auto" value="development">
           Development
@@ -90,12 +93,13 @@ function PingPostTabs({ integration }: { integration: IntegrationDB }) {
 }
 
 function FlatTabs({ integration }: { integration: IntegrationDB }) {
+  const [env, setEnv] = useUrlParam('env', 'development')
   const devEnv = integration.environments.find((e) => e.environment === 'development') ?? null
   const prodEnv = integration.environments.find((e) => e.environment === 'production') ?? null
   const mappingConfig = integration.request_mapping_config ?? {}
 
   return (
-    <Tabs defaultValue="development">
+    <Tabs value={env} onValueChange={setEnv}>
       <TabsList className="flex w-full gap-2">
         <TabsTrigger className="flex-auto" value="development">
           Development
