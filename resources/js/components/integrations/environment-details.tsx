@@ -10,10 +10,15 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { getCookie } from '@/utils/navigator'
 import { EnvironmentDB, MappingEntry, ResponseConfigField } from '@/types/integrations'
-import { ArrowRightLeft, Check, Clock, Copy, PlayCircle } from 'lucide-react'
+import { ArrowRightLeft, Braces, Check, Clock, Copy, Globe, List, PlayCircle, SlidersHorizontal } from 'lucide-react'
+import { useUrlParam } from '@/hooks/use-url-param'
 import { Fragment, useState } from 'react'
 import { route } from 'ziggy-js'
 import { DescriptionList, DescriptionListItem } from './description-list-item'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Section = 'endpoint' | 'headers' | 'tokens' | 'response'
 
 // ─── HTTP method badge ────────────────────────────────────────────────────────
 
@@ -99,54 +104,51 @@ function ValueMappingPopover({ token, valueMapping }: { token: string; valueMapp
 function TokenList({ mappingConfig }: { mappingConfig: Record<string, MappingEntry> }) {
   const entries = Object.entries(mappingConfig)
   return (
-    <div className="space-y-1">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground mb-1.5">Tokens</p>
-      <table className="w-full border-0 text-xs">
-        <thead>
-          <tr className="border-b border-border/50">
-            <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Token</th>
-            <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Type</th>
-            <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Default</th>
-            <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Mapping</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border/50">
-          {entries.map(([token, entry]) => {
-            const hasType = Boolean(entry.type)
-            const hasDefault = Boolean(entry.defaultValue)
-            const hasValueMapping = Boolean(entry.value_mapping && Object.keys(entry.value_mapping).length > 0)
+    <table className="w-full border-0 text-xs">
+      <thead>
+        <tr className="border-b border-border/50">
+          <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Token</th>
+          <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Type</th>
+          <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Default</th>
+          <th className="pb-1 text-left text-[10px] font-medium text-muted-foreground">Mapping</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border/50">
+        {entries.map(([token, entry]) => {
+          const hasType = Boolean(entry.type)
+          const hasDefault = Boolean(entry.defaultValue)
+          const hasValueMapping = Boolean(entry.value_mapping && Object.keys(entry.value_mapping).length > 0)
 
-            return (
-              <tr key={token}>
-                <td className="py-1.5 pr-4 font-mono text-xs text-foreground">{`{${token}}`}</td>
-                <td className="py-1.5 pr-4">
-                  {hasType
-                    ? <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0">{entry.type}</Badge>
-                    : <span className="text-muted-foreground/40">—</span>
-                  }
-                </td>
-                <td className="py-1.5 pr-4">
-                  {hasDefault
-                    ? <span className="font-mono text-muted-foreground">{entry.defaultValue}</span>
-                    : <span className="text-muted-foreground/40">—</span>
-                  }
-                </td>
-                <td className="py-1.5">
-                  {hasValueMapping
-                    ? <ValueMappingPopover token={token} valueMapping={entry.value_mapping!} />
-                    : <span className="text-muted-foreground/40">—</span>
-                  }
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
+          return (
+            <tr key={token}>
+              <td className="py-1.5 pr-4 font-mono text-xs text-foreground">{`{${token}}`}</td>
+              <td className="py-1.5 pr-4">
+                {hasType
+                  ? <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0">{entry.type}</Badge>
+                  : <span className="text-muted-foreground/40">—</span>
+                }
+              </td>
+              <td className="py-1.5 pr-4">
+                {hasDefault
+                  ? <span className="font-mono text-muted-foreground">{entry.defaultValue}</span>
+                  : <span className="text-muted-foreground/40">—</span>
+                }
+              </td>
+              <td className="py-1.5">
+                {hasValueMapping
+                  ? <ValueMappingPopover token={token} valueMapping={entry.value_mapping!} />
+                  : <span className="text-muted-foreground/40">—</span>
+                }
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }
 
-// ─── Response config section ──────────────────────────────────────────────────
+// ─── Response config field value ──────────────────────────────────────────────
 
 function ConfigFieldValue({ value }: { value: ResponseConfigField['value'] }) {
   if (value == null) {
@@ -173,28 +175,6 @@ function ConfigFieldValue({ value }: { value: ResponseConfigField['value'] }) {
   return <span className="font-mono text-sm text-muted-foreground">{value}</span>
 }
 
-function ResponseConfigSection({ env }: { env: EnvironmentDB }) {
-  const fields = env.response_config_fields
-  if (!fields || Object.keys(fields).length === 0) return null
-
-  return (
-    <div className="border-t px-5 py-3">
-      <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Response Config</p>
-      <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3">
-        {Object.entries(fields).map(([key, { label, hint, value }]) => (
-          <Fragment key={key}>
-            <div className="flex items-center gap-0.5 pt-0.5">
-              <span className="whitespace-nowrap text-sm font-medium text-foreground">{label}</span>
-              <FieldHint text={hint} side="right" />
-            </div>
-            <ConfigFieldValue value={value} />
-          </Fragment>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface Props {
@@ -204,6 +184,7 @@ interface Props {
 }
 
 export function EnvironmentDetails({ integrationId, env, mappingConfig }: Props) {
+  const [sectionParam, setSectionParam] = useUrlParam('section', 'endpoint')
   const [testResult, setTestResult] = useState(null)
   const [isTesting, setIsTesting] = useState(false)
   const { addMessage } = useToast()
@@ -255,48 +236,112 @@ export function EnvironmentDetails({ integrationId, env, mappingConfig }: Props)
     // not valid JSON or empty — skip
   }
 
+  const hasMapping = Object.keys(mappingConfig).length > 0
+  const responseFields = env.response_config_fields
+  const hasResponseConfig = Boolean(responseFields && Object.keys(responseFields).length > 0)
+
+  const navItems: { id: Section; label: string; Icon: React.ElementType }[] = [
+    { id: 'endpoint', label: 'Endpoint', Icon: Globe },
+    ...(parsedHeaders ? [{ id: 'headers' as Section, label: 'Headers', Icon: List }] : []),
+    ...(hasMapping ? [{ id: 'tokens' as Section, label: 'Token Mapping', Icon: Braces }] : []),
+    ...(hasResponseConfig ? [{ id: 'response' as Section, label: 'Response Config', Icon: SlidersHorizontal }] : []),
+  ]
+
+  const effectiveSection: Section = navItems.some((item) => item.id === sectionParam)
+    ? (sectionParam as Section)
+    : 'endpoint'
+
   return (
     <Sheet>
-      <Card className="gap-0">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 px-5 py-4">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <MethodBadge method={env.method} />
-            <div className="flex min-w-0 flex-1 items-center gap-1.5">
-              <span className="truncate font-mono text-sm text-foreground" title={env.url}>
-                {env.url}
-              </span>
-              <CopyUrlButton url={env.url} />
-            </div>
-          </div>
-          <SheetTrigger asChild>
-            <Button variant="black" size="sm" onClick={() => handleTest(env.id)} disabled={isTesting} className="shrink-0">
-              <PlayCircle className="size-4" />
-              {isTesting ? 'Running...' : 'Test'}
-            </Button>
-          </SheetTrigger>
-        </CardHeader>
+      <div className="flex items-start gap-5">
+        {/* Aside nav */}
+        <nav className="flex w-36 shrink-0 flex-col gap-0.5 pt-0.5">
+          {navItems.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setSectionParam(id)}
+              className={cn(
+                'flex w-full items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm transition-colors',
+                effectiveSection === id
+                  ? 'bg-muted font-medium text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+              )}
+            >
+              <Icon className="size-3.5 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-        {parsedHeaders && (
-          <div className="border-t px-5 py-3">
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Headers</p>
-            <DescriptionList>
-              {Object.entries(parsedHeaders).map(([key, value]) => (
-                <DescriptionListItem key={key} term={key}>
-                  {value}
-                </DescriptionListItem>
-              ))}
-            </DescriptionList>
-          </div>
-        )}
+        {/* Section content */}
+        <div className="min-w-0 flex-1">
+          {effectiveSection === 'endpoint' && (
+            <Card className="gap-0">
+              <CardHeader className="flex flex-row items-center justify-between gap-4 px-5 py-4">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <MethodBadge method={env.method} />
+                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="truncate font-mono text-sm text-foreground" title={env.url}>
+                      {env.url}
+                    </span>
+                    <CopyUrlButton url={env.url} />
+                  </div>
+                </div>
+                <SheetTrigger asChild>
+                  <Button variant="black" size="sm" onClick={() => handleTest(env.id)} disabled={isTesting} className="shrink-0">
+                    <PlayCircle className="size-4" />
+                    {isTesting ? 'Running...' : 'Test'}
+                  </Button>
+                </SheetTrigger>
+              </CardHeader>
+            </Card>
+          )}
 
-        {Object.keys(mappingConfig).length > 0 && (
-          <div className="border-t px-5 py-3">
-            <TokenList mappingConfig={mappingConfig} />
-          </div>
-        )}
+          {effectiveSection === 'headers' && parsedHeaders && (
+            <Card className="gap-0">
+              <div className="px-5 py-4">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Headers</p>
+                <DescriptionList>
+                  {Object.entries(parsedHeaders).map(([key, value]) => (
+                    <DescriptionListItem key={key} term={key}>
+                      {value}
+                    </DescriptionListItem>
+                  ))}
+                </DescriptionList>
+              </div>
+            </Card>
+          )}
 
-        <ResponseConfigSection env={env} />
-      </Card>
+          {effectiveSection === 'tokens' && hasMapping && (
+            <Card className="gap-0">
+              <div className="px-5 py-4">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Token Mapping</p>
+                <TokenList mappingConfig={mappingConfig} />
+              </div>
+            </Card>
+          )}
+
+          {effectiveSection === 'response' && responseFields && (
+            <Card className="gap-0">
+              <div className="px-5 py-4">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Response Config</p>
+                <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-3">
+                  {Object.entries(responseFields).map(([key, { label, hint, value }]) => (
+                    <Fragment key={key}>
+                      <div className="flex items-center gap-0.5 pt-0.5">
+                        <span className="whitespace-nowrap text-sm font-medium text-foreground">{label}</span>
+                        <FieldHint text={hint} side="right" />
+                      </div>
+                      <ConfigFieldValue value={value} />
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
 
       <SheetContent className="w-[400px] gap-0 sm:w-[540px]">
         <SheetHeader>
