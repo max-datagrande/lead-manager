@@ -1,16 +1,26 @@
 import { CapRuleEditor } from '@/components/ping-post/cap-rule-editor'
 import { EligibilityRuleEditor } from '@/components/ping-post/eligibility-rule-editor'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { FieldHint } from '@/components/ui/field-hint'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { FieldHint } from '@/components/ui/field-hint'
 import { useBuyers } from '@/hooks/use-buyers'
+import { cn } from '@/lib/utils'
 import type { Integration } from '@/types/ping-post'
 import { Link } from '@inertiajs/react'
+import { type LucideIcon, DollarSign, GitBranch, RotateCcw, TrendingUp } from 'lucide-react'
 import { route } from 'ziggy-js'
+
+const PRICING_META: Record<string, { icon: LucideIcon; description: string }> = {
+  fixed: { icon: DollarSign, description: 'Fixed price per accepted lead' },
+  min_bid: { icon: TrendingUp, description: 'Minimum bid required from buyer' },
+  conditional: { icon: GitBranch, description: 'Price varies by lead conditions' },
+  postback: { icon: RotateCcw, description: 'Price confirmed via postback callback' },
+}
 
 interface Props {
   integrations?: Integration[]
@@ -29,12 +39,23 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
 
       {/* ── Buyer Info ─────────────────────────────────────────────────────── */}
       <Card>
-        <CardHeader>
-          <CardTitle>Buyer Info</CardTitle>
-          <CardDescription>
-            Identifica al buyer y vinculalo a una integración existente. La integración define
-            los endpoints a los que se enviarán los leads.
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle>Buyer Info</CardTitle>
+            <CardDescription className="mt-1">
+              Identifica al buyer y vinculalo a una integración existente.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch id="is_active" checked={data.is_active} onCheckedChange={(v) => setData('is_active', v)} />
+            <Label htmlFor="is_active" className="cursor-pointer">
+              {data.is_active
+                ? <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white">Active</Badge>
+                : <Badge variant="secondary">Inactive</Badge>
+              }
+            </Label>
+            <FieldHint text="Un buyer inactivo es ignorado por todos los workflows y no recibe leads, aunque esté asignado. Útil para pausar temporalmente sin eliminarlo." />
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
@@ -52,23 +73,31 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
               Integration
               <FieldHint text="La integración define los endpoints (URLs) configurados para este buyer. Ping-post = el buyer recibe primero un ping con datos parciales y oferta un precio antes de recibir el lead completo. Post-only = el lead se envía directamente sin fase de ping previa. Cada integración solo puede tener un buyer asignado." />
             </Label>
-            <Select
-              value={data.integration_id ? String(data.integration_id) : ''}
-              onValueChange={(v) => setData('integration_id', parseInt(v))}
-              disabled={isEdit}
-            >
-              <SelectTrigger id="integration_id">
-                <SelectValue placeholder="Select an integration" />
-              </SelectTrigger>
-              <SelectContent>
-                {integrations.map((i) => (
-                  <SelectItem key={i.id} value={String(i.id)}>
-                    {i.name}
-                    <span className="ml-2 text-xs text-muted-foreground">({i.type})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isEdit ? (
+              <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/50 px-3 text-sm text-foreground">
+                <span className="flex-1 truncate">{selectedIntegration?.name ?? '—'}</span>
+                {selectedIntegration && (
+                  <Badge variant="outline" className="shrink-0 text-xs">{selectedIntegration.type}</Badge>
+                )}
+              </div>
+            ) : (
+              <Select
+                value={data.integration_id ? String(data.integration_id) : ''}
+                onValueChange={(v) => setData('integration_id', parseInt(v))}
+              >
+                <SelectTrigger id="integration_id">
+                  <SelectValue placeholder="Select an integration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {integrations.map((i) => (
+                    <SelectItem key={i.id} value={String(i.id)}>
+                      {i.name}
+                      <span className="ml-2 text-xs text-muted-foreground">({i.type})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {errors.integration_id && <p className="text-sm text-destructive">{errors.integration_id}</p>}
             {isEdit && <p className="text-xs text-muted-foreground">Integration cannot be changed after creation.</p>}
           </div>
@@ -97,14 +126,6 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-2">
-            <Switch id="is_active" checked={data.is_active} onCheckedChange={(v) => setData('is_active', v)} />
-            <Label htmlFor="is_active">
-              Active
-              <FieldHint text="Un buyer inactivo es ignorado por todos los workflows y no recibe leads, aunque esté asignado. Útil para pausar temporalmente sin eliminarlo." />
-            </Label>
-          </div>
-
         </CardContent>
       </Card>
 
@@ -114,8 +135,7 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
           <CardHeader>
             <CardTitle>Connection Timeouts</CardTitle>
             <CardDescription>
-              Tiempo máximo de espera para cada fase. La configuración de response parsing (paths de
-              aceptación, bid price, etc.) se gestiona en el formulario de la integración.
+              Tiempo máximo de espera para cada fase. La configuración de response parsing se gestiona en el formulario de la integración.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -126,14 +146,18 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
                   Ping Timeout (ms)
                   <FieldHint text="Tiempo máximo en milisegundos que se espera la respuesta del ping. Si el buyer no responde a tiempo, es omitido en esta ronda. Se recomienda un valor bajo (1000–3000 ms) para no bloquear el workflow." />
                 </Label>
-                <Input
-                  id="ping_timeout_ms"
-                  type="number"
-                  min={500}
-                  placeholder="e.g. 3000  (recomendado: 1000–3000)"
-                  value={data.ping_timeout_ms}
-                  onChange={(e) => setData('ping_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
-                />
+                <div className="relative">
+                  <Input
+                    id="ping_timeout_ms"
+                    type="number"
+                    min={500}
+                    placeholder="e.g. 3000 (recomendado: 1000–3000)"
+                    value={data.ping_timeout_ms}
+                    onChange={(e) => setData('ping_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    className="pr-9"
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">ms</span>
+                </div>
               </div>
             )}
 
@@ -142,14 +166,18 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
                 Post Timeout (ms)
                 <FieldHint text="Tiempo máximo en milisegundos para esperar la respuesta del post. Puede ser más alto que el ping timeout ya que el lead completo se está transfiriendo. Valor recomendado: 5000–10000 ms." />
               </Label>
-              <Input
-                id="post_timeout_ms"
-                type="number"
-                min={500}
-                placeholder="e.g. 5000  (recomendado: 5000–10000)"
-                value={data.post_timeout_ms}
-                onChange={(e) => setData('post_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
-              />
+              <div className="relative">
+                <Input
+                  id="post_timeout_ms"
+                  type="number"
+                  min={500}
+                  placeholder="e.g. 5000 (recomendado: 5000–10000)"
+                  value={data.post_timeout_ms}
+                  onChange={(e) => setData('post_timeout_ms', e.target.value === '' ? '' : parseInt(e.target.value))}
+                  className="pr-9"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">ms</span>
+              </div>
             </div>
 
           </CardContent>
@@ -164,30 +192,44 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
             Define cómo se determina el precio que se cobra o acepta por cada lead enviado a este buyer.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
+        <CardContent className="space-y-5">
           <div className="space-y-2">
             <Label>
               Pricing Type
               <FieldHint items={[
-                { label: 'Fixed',       description: 'Se cobra un precio fijo por lead, independiente de lo que el buyer oferte en el ping.' },
-                { label: 'Min Bid',     description: 'El buyer debe ofertar al menos el valor configurado. Bids menores son rechazados automáticamente.' },
-                { label: 'Conditional', description: 'El precio varía según condiciones del lead (estado, edad, vertical, etc.). Se configuran reglas con condiciones y precio asociado; se aplica la primera regla que coincida.' },
-                { label: 'Postback',    description: 'El precio final se confirma cuando el buyer envía un postback de conversión. Hasta entonces el lead queda pendiente.' },
+                { label: 'Fixed', description: 'Se cobra un precio fijo por lead, independiente de lo que el buyer oferte en el ping.' },
+                { label: 'Min Bid', description: 'El buyer debe ofertar al menos el valor configurado. Bids menores son rechazados automáticamente.' },
+                { label: 'Conditional', description: 'El precio varía según condiciones del lead (estado, edad, vertical, etc.). Se aplica la primera regla que coincida.' },
+                { label: 'Postback', description: 'El precio final se confirma cuando el buyer envía un postback de conversión. Hasta entonces el lead queda pendiente.' },
               ]} />
             </Label>
-            <Select value={data.pricing_type} onValueChange={(v) => setData('pricing_type', v)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {pricingTypes.map((pt) => (
-                  <SelectItem key={pt.value} value={pt.value}>
-                    {pt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {pricingTypes.map((pt) => {
+                const meta = PRICING_META[pt.value]
+                const Icon = meta?.icon
+                const isSelected = data.pricing_type === pt.value
+                return (
+                  <button
+                    key={pt.value}
+                    type="button"
+                    onClick={() => setData('pricing_type', pt.value)}
+                    className={cn(
+                      'flex flex-col gap-2 rounded-xl border p-3 text-left transition-all hover:bg-muted/30',
+                      isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border',
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      {Icon && <Icon className={cn('h-4 w-4', isSelected ? 'text-primary' : 'text-muted-foreground')} />}
+                      {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <p className={cn('text-xs font-semibold', isSelected ? 'text-primary' : '')}>{pt.label}</p>
+                      {meta && <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{meta.description}</p>}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {data.pricing_type === 'fixed' && (
@@ -204,6 +246,7 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
                 value={data.fixed_price}
                 onChange={(e) => setData('fixed_price', e.target.value)}
                 placeholder="0.00"
+                className="max-w-40"
               />
               {errors.fixed_price && <p className="text-sm text-destructive">{errors.fixed_price}</p>}
             </div>
@@ -223,6 +266,7 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
                 value={data.min_bid}
                 onChange={(e) => setData('min_bid', e.target.value)}
                 placeholder="0.00"
+                className="max-w-40"
               />
               {errors.min_bid && <p className="text-sm text-destructive">{errors.min_bid}</p>}
             </div>
@@ -242,6 +286,7 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
                 placeholder="e.g. 15  (máx. 90 días)"
                 value={data.postback_pending_days}
                 onChange={(e) => setData('postback_pending_days', e.target.value === '' ? '' : parseInt(e.target.value))}
+                className="max-w-40"
               />
             </div>
           )}
@@ -284,7 +329,7 @@ export function BuyerForm({ integrations = [], pricingTypes = [], companies = []
         <Button variant="outline" asChild>
           <Link href={route('ping-post.buyers.index')}>Cancel</Link>
         </Button>
-        <Button type="submit" disabled={processing}>
+        <Button type="submit" disabled={processing} className="min-w-28">
           {processing ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Buyer'}
         </Button>
       </div>
