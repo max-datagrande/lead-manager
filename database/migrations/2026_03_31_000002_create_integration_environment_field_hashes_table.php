@@ -18,7 +18,7 @@ return new class extends Migration
       $table->boolean('is_hashed')->default(false);
       $table->string('hash_algorithm')->nullable()->comment('Possible values: md5 | sha1 | sha256 | sha512 | base64 | hmac_sha256');
       $table->string('hmac_secret')->nullable()->comment('Only used when hash_algorithm = hmac_sha256');
-      $table->unique(['integration_environment_id', 'field_id']);
+      $table->unique(['integration_environment_id', 'field_id'], 'iefh_env_field_unique');
       $table->timestamps();
     });
   }
