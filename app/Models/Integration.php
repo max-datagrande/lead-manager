@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\DB;
 
 class Integration extends Model
 {
@@ -57,6 +57,14 @@ class Integration extends Model
   public function fieldMappings()
   {
     return $this->hasMany(FieldMapping::class);
+  }
+
+  /**
+   * Get the token mappings for the integration (new {$field_id} token system).
+   */
+  public function tokenMappings(): HasMany
+  {
+    return $this->hasMany(IntegrationFieldMapping::class);
   }
 
   /**
