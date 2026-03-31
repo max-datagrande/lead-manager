@@ -8,6 +8,8 @@ use App\Models\IntegrationEnvironment;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
 
 class IntegrationController extends Controller
 {
@@ -76,6 +78,8 @@ class IntegrationController extends Controller
           $newIntegration->fill($integration);
           if (isset($integration['id'])) {
             $newIntegration->id = $integration['id'];
+            $newIntegration->user_id = Auth::id();
+            $newIntegration->updated_user_id = null;
           }
           $newIntegration->save();
           $environments = collect($environmentsToInsert)

@@ -6,17 +6,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { HEADER_KEYS, HEADER_VALUES } from '@/config/constants';
 import { useIntegrations } from '@/hooks/use-integrations';
 
-export function EnvironmentTab({ env, fields = [] }) {
+/**
+ * @param {import('@/types/integrations').EnvironmentTabProps} props
+ */
+export function EnvironmentTab({ env, envType = null, fields = [] }) {
   const { data, handleEnvironmentChange } = useIntegrations();
   const headerFields = fields.map((field) => `{${field.name}}`);
   const headerValues = [...HEADER_VALUES, ...headerFields];
+
+  // Resolve the data slice for this env slot
+  const envData = envType ? data.environments[envType]?.[env] : data.environments[env];
+  const onChange = (field, value) => handleEnvironmentChange(env, field, value, envType);
+
   return (
     <div className="space-y-4">
       <div className="flex w-full gap-4">
         <div className="min-w-36 flex-none space-y-2">
-          <Label htmlFor={`${env}-method`}>Method</Label>
-          <Select value={data.environments[env]?.method ?? 'POST'} onValueChange={(value) => handleEnvironmentChange(env, 'method', value)}>
-            <SelectTrigger id={`${env}-method`}>
+          <Label htmlFor={`${envType ?? 'env'}-${env}-method`}>Method</Label>
+          <Select value={envData?.method ?? 'POST'} onValueChange={(value) => onChange('method', value)}>
+            <SelectTrigger id={`${envType ?? 'env'}-${env}-method`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -29,11 +37,11 @@ export function EnvironmentTab({ env, fields = [] }) {
           </Select>
         </div>
         <div className="flex-auto space-y-2">
-          <Label htmlFor={`${env}-url`}>URL</Label>
+          <Label htmlFor={`${envType ?? 'env'}-${env}-url`}>URL</Label>
           <Input
-            id={`${env}-url`}
-            value={data.environments[env]?.url ?? ''}
-            onChange={(e) => handleEnvironmentChange(env, 'url', e.target.value)}
+            id={`${envType ?? 'env'}-${env}-url`}
+            value={envData?.url ?? ''}
+            onChange={(e) => onChange('url', e.target.value)}
             placeholder="https://api.example.com/endpoint"
           />
         </div>
@@ -41,9 +49,10 @@ export function EnvironmentTab({ env, fields = [] }) {
 
       <div className="space-y-2">
         <KeyValueList
+          key={`${envType ?? 'env'}-${env}`}
           label="Request Headers"
-          initialValues={data.environments[env]?.request_headers ?? []}
-          onChange={(values) => handleEnvironmentChange(env, 'request_headers', values)}
+          initialValues={envData?.request_headers ?? []}
+          onChange={(values) => onChange('request_headers', values)}
           fields={fields}
           keyPlaceholder="Header Name"
           valuePlaceholder="Header Value"
@@ -56,9 +65,9 @@ export function EnvironmentTab({ env, fields = [] }) {
       <div className="space-y-2">
         <JsonEditor
           label="Request Body (JSON)"
-          id={`${env}-body`}
-          value={data.environments[env]?.request_body ?? ''}
-          onChange={(value) => handleEnvironmentChange(env, 'request_body', value)}
+          id={`${envType ?? 'env'}-${env}-body`}
+          value={envData?.request_body ?? ''}
+          onChange={(value) => onChange('request_body', value)}
           placeholder='{ "lead_id": "{lead_id}" }'
         />
       </div>
