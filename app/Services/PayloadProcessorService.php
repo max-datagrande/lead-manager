@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Integration;
+use App\Models\IntegrationEnvironment;
+
 /**
  * Servicio PayloadProcessorService
  * * Este servicio se encarga de transformar plantillas JSON con tokens dinámicos en estructuras
@@ -68,6 +71,75 @@ class PayloadProcessorService
       'mappedValues' => $mappedValues,
       'finalReplacements' => $finalReplacements,
     ];
+  }
+
+  /**
+   * Resolve {$field_id} tokens in a template using the relational token system.
+   *
+   * Replaces each {$N} placeholder with the lead's field value, applying
+   * value_mapping, data_type casting and per-environment hash config in order.
+   *
+   * @param  string                  $template    request_body template with {$N} tokens
+   * @param  Integration             $integration With tokenMappings + field eager-loaded
+   * @param  IntegrationEnvironment  $environment With fieldHashes eager-loaded
+   * @param  array<string, mixed>    $leadData    Lead fields keyed by field name
+   */
+  public function resolveTokens(
+    string $template,
+    Integration $integration,
+    IntegrationEnvironment $environment,
+    array $leadData
+  ): string {
+    if (empty($template)) {
+      return '';
+    }
+
+    $hashConfigs = $environment->fieldHashes->keyBy('field_id');
+
+    foreach ($integration->tokenMappings as $mapping) {
+      $raw = $leadData[$mapping->field->name] ?? $mapping->default_value ?? '';
+
+      // Apply value_mapping if configured
+      $value = $mapping->value_mapping[$raw] ?? $raw;
+
+      // Apply hash before type watermarking
+      $hashConfig = $hashConfigs->get($mapping->field_id);
+      if ($hashConfig?->is_hashed && $hashConfig->hash_algorithm) {
+        $value = $this->hashValue((string) $value, $hashConfig->hash_algorithm, $hashConfig->hmac_secret);
+      }
+
+      // Watermark based on data_type so releaseTypes() strips quotes in JSON
+      $watermarked = match ($mapping->data_type) {
+        'integer' => '___INT___' . (int) $value,
+        'float'   => '___FLOAT___' . (float) $value,
+        'boolean' => '___BOOL___' . (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'),
+        default   => (string) $value,
+      };
+
+      $template = str_replace('{$' . $mapping->field_id . '}', $watermarked, $template);
+    }
+
+    return $this->releaseTypes($template);
+  }
+
+  /**
+   * Hash a string value using the configured algorithm.
+   *
+   * @param  string       $value      The raw value to hash
+   * @param  string       $algorithm  md5 | sha1 | sha256 | sha512 | base64 | hmac_sha256
+   * @param  string|null  $secret     Required for hmac_sha256
+   */
+  private function hashValue(string $value, string $algorithm, ?string $secret): string
+  {
+    return match ($algorithm) {
+      'md5'         => md5($value),
+      'sha1'        => sha1($value),
+      'sha256'      => hash('sha256', $value),
+      'sha512'      => hash('sha512', $value),
+      'base64'      => base64_encode($value),
+      'hmac_sha256' => hash_hmac('sha256', $value, $secret ?? ''),
+      default       => $value,
+    };
   }
 
   /**
