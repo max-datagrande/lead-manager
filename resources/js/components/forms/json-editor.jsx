@@ -31,6 +31,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
   const { addMessage } = useToast()
   const viewRef = useRef(null)
   const atFromRef = useRef(null)
+  const wrapperRef = useRef(null)
   const [searchPopover, setSearchPopover] = useState(null) // { top, left } | null
   const [activePill, setActivePill] = useState(null) // { fieldId, field, from, to, position }
 
@@ -121,6 +122,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
 
     const fieldId = parseInt(target.dataset.fieldId, 10)
     const rect = target.getBoundingClientRect()
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect() ?? { top: 0, left: 0 }
 
     // posAtDOM approximates the document position of the widget node.
     // We search a small window around it to find the actual decoration range.
@@ -138,7 +140,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
         field: fields.find((f) => f.id === fieldId),
         from: range.from,
         to: range.to,
-        position: { top: rect.bottom + 4, left: rect.left },
+        position: { top: rect.bottom - wrapperRect.top + 4, left: rect.left - wrapperRect.left },
       })
     }
   }
@@ -161,7 +163,7 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div ref={wrapperRef} className={cn('relative space-y-2', className)}>
       <div className="mb-2 flex justify-between gap-4">
         {label && (
           <Label className="flex items-center gap-2" htmlFor="json-editor">
