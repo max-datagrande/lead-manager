@@ -64,7 +64,8 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
   openSearchRef.current = (atFrom, coords) => {
     if (!fields.length) return
     atFromRef.current = atFrom
-    setSearchPopover({ top: coords.bottom + 4, left: coords.left })
+    const wrapperRect = wrapperRef.current?.getBoundingClientRect() ?? { top: 0, left: 0 }
+    setSearchPopover({ top: coords.bottom - wrapperRect.top + 4, left: coords.left - wrapperRect.left })
   }
 
   const atTriggerExtension = useMemo(

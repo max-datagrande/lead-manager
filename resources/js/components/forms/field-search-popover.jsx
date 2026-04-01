@@ -1,7 +1,6 @@
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 
 /**
  * Floating searchable popover for picking a field to insert as a token.
@@ -13,6 +12,7 @@ export function FieldSearchPopover({ fields = [], position, onSelect, onClose })
   const [activeIndex, setActiveIndex] = useState(0)
   const inputRef = useRef(null)
   const containerRef = useRef(null)
+  const itemRefs = useRef([])
 
   const filtered = fields.filter(
     (f) =>
@@ -27,6 +27,11 @@ export function FieldSearchPopover({ fields = [], position, onSelect, onClose })
   useEffect(() => {
     setActiveIndex(0)
   }, [search])
+
+  // Scroll active item into view when navigating with keyboard
+  useEffect(() => {
+    itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' })
+  }, [activeIndex])
 
   useEffect(() => {
     const handler = (e) => {
@@ -59,42 +64,58 @@ export function FieldSearchPopover({ fields = [], position, onSelect, onClose })
     }
   }
 
-  if (typeof document === 'undefined') return null
-
-  return createPortal(
+  return (
     <div
       ref={containerRef}
-      style={{ position: 'fixed', top: position.top, left: position.left, zIndex: 9999 }}
-      className="w-64 rounded-lg border bg-popover shadow-md"
+      style={{ position: 'absolute', top: position.top, left: position.left, zIndex: 9999 }}
+      className="w-72 overflow-hidden rounded-lg border bg-popover shadow-lg"
     >
-      <div className="p-2">
+      <div className="border-b p-2">
         <Input
           ref={inputRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search fields..."
+          placeholder="Search fields…"
           className="h-7 text-xs"
         />
       </div>
-      <div className="max-h-52 overflow-y-auto pb-1">
-        {filtered.length === 0 && <p className="px-3 py-2 text-xs text-muted-foreground">No fields found.</p>}
+
+      <div className="max-h-56 overflow-y-auto py-1">
+        {filtered.length === 0 && (
+          <p className="px-3 py-4 text-center text-xs text-muted-foreground">No fields found.</p>
+        )}
         {filtered.map((field, i) => (
           <button
             key={field.id}
+            ref={(el) => (itemRefs.current[i] = el)}
             type="button"
             onMouseDown={(e) => {
               e.preventDefault()
               onSelect(field)
             }}
-            className={cn('flex w-full flex-col px-3 py-1.5 text-left hover:bg-accent', i === activeIndex && 'bg-accent')}
+            className={cn(
+              'flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors',
+              i === activeIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
+            )}
           >
-            <span className="text-xs font-medium">{field.label ?? field.name}</span>
-            <span className="text-xs text-muted-foreground">{field.name}</span>
+            <span className="text-xs font-medium leading-none">{field.label ?? field.name}</span>
+            <span className="font-mono text-[10px] leading-none text-muted-foreground">{field.name}</span>
           </button>
         ))}
       </div>
-    </div>,
-    document.body,
+
+      {filtered.length > 0 && (
+        <div className="border-t px-3 py-1.5">
+          <p className="text-[10px] text-muted-foreground">
+            <kbd className="rounded border px-1 font-mono text-[9px]">↑↓</kbd> navegar
+            {' · '}
+            <kbd className="rounded border px-1 font-mono text-[9px]">↵</kbd> insertar
+            {' · '}
+            <kbd className="rounded border px-1 font-mono text-[9px]">Esc</kbd> cerrar
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
