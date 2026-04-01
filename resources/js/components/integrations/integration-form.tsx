@@ -10,6 +10,7 @@ import { useIntegrations } from '@/hooks/use-integrations';
 import { Radio, Send } from 'lucide-react';
 import { EnvironmentTab } from './enviroments-tab';
 import { FieldMappingsModal } from './field-mappings-modal';
+import { IntegrationTypeCards } from './integration-type-selector';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { PingPostResponseConfig } from './ping-post-response-config';
 
@@ -106,27 +107,20 @@ export function IntegrationForm({ companies = [], fields = [] }) {
 
   return (
     <form onSubmit={handleSubmit}>
-      {/* Form Header */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="flex-auto space-y-2">
+      {/* Type selector — interactive in create, read-only in edit */}
+      <div className="space-y-2">
+        <Label>Integration Type</Label>
+        <IntegrationTypeCards value={data.type} onChange={handleTypeChange} readonly={isEdit} />
+      </div>
+
+      {/* Name + Company */}
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
           {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
         </div>
-        <div className="flex-auto space-y-2">
-          <Label htmlFor="type">Integration Type</Label>
-          <Select value={data.type} onValueChange={handleTypeChange}>
-            <SelectTrigger id="type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="post-only">Post Only</SelectItem>
-              <SelectItem value="ping-post">Ping-Post</SelectItem>
-              <SelectItem value="offerwall">Offerwall</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-auto space-y-2">
+        <div className="space-y-2">
           <Label htmlFor="company_id">Company</Label>
           <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
             <SelectTrigger id="company_id">
