@@ -40,7 +40,10 @@ class MixService
       ];
     }
 
-    $integrations = $mix->integrations()->where('is_active', true)->get();
+    $integrations = $mix->integrations()
+      ->where('is_active', true)
+      ->with(['tokenMappings.field', 'environments.fieldHashes'])
+      ->get();
     $leadData = $this->prepareLeadData($lead);
     $mixLog = null;
     try {
@@ -68,27 +71,19 @@ class MixService
           if (!$prodEnv) {
             continue;
           }
-          $templateBody = $prodEnv->request_body ?? '';
-          $mappingConfig = $integration->request_mapping_config ?? [];
-          $replacements = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
+          $processor    = new \App\Services\PayloadProcessorService;
+          $replacements = $processor->buildReplacements($integration, $prodEnv, $leadData);
 
-          $finalReplacements = $replacements['finalReplacements'] ?? [];
-          $originalValues = $replacements['originalValues'] ?? [];
-          $mappedValues = $replacements['mappedValues'] ?? [];
+          $payloadString = $processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements);
+          $payload       = json_decode($payloadString, true) ?? [];
 
-          // Prepare Body
-          $payload = $this->preparePayload($templateBody, $finalReplacements, $integration);
+          if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
+            $payload = $this->applyTwigTransformer($integration, $payload);
+          }
 
-          // Prepare Headers
-          $headersTemplate = $prodEnv->request_headers ?? '[]';
-          $processor = new \App\Services\PayloadProcessorService;
-          $headersParsed = $processor->process($headersTemplate, $finalReplacements);
-          $headers = json_decode($headersParsed, true) ?? [];
-
-          $method = strtolower($prodEnv->method ?? 'post');
-
-          // Prepare URL
-          $url = $processor->processUrl($prodEnv->url, $finalReplacements);
+          $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
+          $method  = strtolower($prodEnv->method ?? 'post');
+          $url     = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
 
           $requestsData[$integration->id] = [
             'integration' => $integration,
@@ -96,8 +91,6 @@ class MixService
             'payload' => $payload,
             'method' => $method,
             'headers' => $headers,
-            'originalValues' => $originalValues,
-            'mappedValues' => $mappedValues,
           ];
         }
 
@@ -129,8 +122,6 @@ class MixService
             $requestData['method'],
             $requestData['headers'],
             $requestData['payload'],
-            $requestData['originalValues'],
-            $requestData['mappedValues']
           );
 
           if ($response instanceof Response && $response->successful()) {
@@ -237,37 +228,29 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function preparePayload(string $template, array $replacemnts, $integration): array
+  private function applyTwigTransformer($integration, array $payload): array
   {
+    try {
+      $loader = new ArrayLoader([
+        'index.html' => $integration->payload_transformer,
+      ]);
+      $twig = new Environment($loader);
 
-    $processor = new \App\Services\PayloadProcessorService;
-    $payloadString = $processor->process($template, $replacemnts);
-    $payload = json_decode($payloadString, true) ?? [];
+      $twig->addFunction(new TwigFunction('output_json', function ($data) {
+        return json_encode($data);
+      }, ['is_safe' => ['html']]));
 
-    // 2. Custom transformation using Twig
-    if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
-      try {
-        $loader = new ArrayLoader([
-          'index.html' => $integration->payload_transformer,
-        ]);
-        $twig = new Environment($loader);
+      $rendered = $twig->render('index.html', ['data' => $payload]);
+      $transformed = json_decode($rendered, true);
 
-        $twig->addFunction(new TwigFunction('output_json', function ($data) {
-          return json_encode($data);
-        }, ['is_safe' => ['html']]));
-
-        $rendered = $twig->render('index.html', ['data' => $payload]);
-        $transformed = json_decode($rendered, true);
-
-        if (json_last_error() === JSON_ERROR_NONE) {
-          $payload = $transformed;
-        }
-      } catch (Throwable $e) {
-        TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
-          'integration_id' => $integration->id,
-          'error' => $e->getMessage(),
-        ]);
+      if (json_last_error() === JSON_ERROR_NONE) {
+        return $transformed;
       }
+    } catch (Throwable $e) {
+      TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
+        'integration_id' => $integration->id,
+        'error' => $e->getMessage(),
+      ]);
     }
 
     return $payload;
@@ -280,8 +263,6 @@ class MixService
     string $method,
     array $headers,
     array $payload,
-    ?array $originalValues = null,
-    ?array $mappedValues = null
   ): void {
     $isResponse = $response instanceof Response;
     $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
@@ -316,8 +297,8 @@ class MixService
       'request_payload' => $payload,
       'response_headers' => $isResponse ? $response->headers() : [],
       'response_body' => $responseBody,
-      'original_field_values' => $originalValues,
-      'mapped_field_values' => $mappedValues,
+      'original_field_values' => null,
+      'mapped_field_values' => null,
     ]);
   }
 
