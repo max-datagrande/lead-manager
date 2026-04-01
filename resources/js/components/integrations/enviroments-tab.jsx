@@ -69,6 +69,7 @@ export function EnvironmentTab({ env, envType = null, fields = [] }) {
           value={envData?.request_body ?? ''}
           onChange={(value) => onChange('request_body', value)}
           placeholder='{ "lead_id": "{lead_id}" }'
+          fields={fields}
         />
       </div>
     </div>
