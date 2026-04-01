@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use Maxidev\Logger\TailLogger;
 
 /**
  * Servicio PayloadProcessorService
@@ -146,9 +147,18 @@ class PayloadProcessorService
       return '';
     }
 
-    return $this->releaseTypes(
-      str_replace(array_keys($replacements), array_values($replacements), $template)
-    );
+    $afterReplace = str_replace(array_keys($replacements), array_values($replacements), $template);
+    TailLogger::saveLog('After str_replace (before releaseTypes)', 'debug/payload-processor', 'info', [
+      'replacements' => $replacements,
+      'result' => $afterReplace,
+    ]);
+
+    $afterRelease = $this->releaseTypes($afterReplace);
+    TailLogger::saveLog('After releaseTypes', 'debug/payload-processor', 'info', [
+      'result' => $afterRelease,
+    ]);
+
+    return $afterRelease;
   }
 
   /**
@@ -243,23 +253,61 @@ class PayloadProcessorService
   }
 
   /**
-   * Elimina las comillas de los valores marcados con marcas de agua.
+   * Convierte valores con watermark a sus tipos reales quitando las comillas que los envuelven.
+   *
+   * El sistema de watermarks funciona así:
+   *   1. buildReplacements() marca los valores tipados: "age" → ___INT___25
+   *   2. str_replace() inserta esos valores en el template JSON
+   *   3. releaseTypes() (esta función) quita las comillas JSON que envuelven el valor,
+   *      convirtiendo "___INT___25" (string) → 25 (integer nativo en JSON)
+   *
+   * Los tokens pueden aparecer en 3 contextos distintos dentro del JSON:
+   *
+   *   Contexto 1 — Valor JSON directo (comillas regulares):
+   *     Template:  "age": "{$100}"
+   *     Después:   "age": "___INT___25"
+   *     Resultado: "age": 25
+   *
+   *   Contexto 2 — Dentro de un JSON anidado como string (comillas escapadas \"):
+   *     Template:  "data": "{\"age\":\"{$100}\"}"
+   *     Después:   "data": "{\"age\":\"___INT___25\"}"
+   *     Resultado: "data": "{\"age\":25}"
+   *
+   *   Contexto 3 — Sin comillas (token insertado sin wrapper):
+   *     Template:  "data": "{\"age\":{$100}}"
+   *     Después:   "data": "{\"age\":___INT___25}"
+   *     Resultado: "data": "{\"age\":25}"
    */
   private function releaseTypes(string $jsonString): string
   {
-    //Deprecated code (Replace with regex) to prevent complex and bad performance by multiple replacements
-    /*  $jsonString = preg_replace('/"___INT___(.*?)"/', '$1', $jsonString);
-    $jsonString = preg_replace('/"___BOOL___(.*?)"/', '$1', $jsonString);
-    $jsonString = preg_replace('/"___FLOAT___(.*?)"/', '$1', $jsonString);
+    $notEscaped = '(?<!\\\\)';
+    $escaped    = '\\\\"';
+    $capture    = '$1';
 
-    return $jsonString; */
-    // Negative lookbehind (?<!\\) prevents matching escaped quotes (\") inside
-    // nested JSON strings, which would corrupt the outer JSON structure.
-    return preg_replace(
-      ['/(?<!\\\\)"___INT___(.*?)(?<!\\\\)"/', '/(?<!\\\\)"___BOOL___(.*?)(?<!\\\\)"/', '/(?<!\\\\)"___FLOAT___(.*?)(?<!\\\\)"/'],
-      ['$1', '$1', '$1'],
-      $jsonString
-    );
+    $watermarks = [
+      'integer' => '-?\d+',
+      'boolean' => 'true|false',
+      'float'   => '-?[\d.]+',
+    ];
+
+    foreach ($watermarks as $type => $valuePattern) {
+      $marker = match ($type) {
+        'integer' => '___INT___',
+        'boolean' => '___BOOL___',
+        'float'   => '___FLOAT___',
+      };
+
+      // ── Contexto 1: comillas regulares "___INT___25" → 25
+      $jsonString = preg_replace("/{$notEscaped}\"{$marker}({$valuePattern}){$notEscaped}\"/", $capture, $jsonString);
+
+      // ── Contexto 2: comillas escapadas \"___INT___25\" → 25 (JSON anidado como string)
+      $jsonString = preg_replace("/{$escaped}{$marker}({$valuePattern}){$escaped}/", $capture, $jsonString);
+
+      // ── Contexto 3: sin comillas ___INT___25 → 25 (fallback)
+      $jsonString = preg_replace("/{$marker}({$valuePattern})/", $capture, $jsonString);
+    }
+
+    return $jsonString;
   }
 }
 

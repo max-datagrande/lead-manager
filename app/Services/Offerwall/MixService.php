@@ -77,6 +77,12 @@ class MixService
           $payloadString = $processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements);
           $payload       = json_decode($payloadString, true) ?? [];
 
+          TailLogger::saveLog('MixService payload after json_decode', 'debug/payload-processor', 'info', [
+            'integration' => $integration->name,
+            'payloadString' => $payloadString,
+            'payload' => $payload,
+          ]);
+
           if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
             $payload = $this->applyTwigTransformer($integration, $payload);
           }
