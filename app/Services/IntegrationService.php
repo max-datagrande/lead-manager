@@ -37,7 +37,6 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'request_mapping_config' => 'nullable|array',
       'field_mappings' => 'nullable|array',
       'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
       'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
@@ -70,7 +69,6 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
@@ -116,7 +114,6 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'request_mapping_config' => 'nullable|array',
       'field_mappings' => 'nullable|array',
       'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
       'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
@@ -149,7 +146,6 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
@@ -208,9 +204,8 @@ class IntegrationService
     $data = [
       'name' => $newName ?? ($integration->name . ' (Copy)'),
       'type' => $integration->type,
-      'is_active' => false, // Set to inactive by default for safety
+      'is_active' => false,
       'company_id' => $integration->company_id,
-      'request_mapping_config' => $integration->request_mapping_config,
       'payload_transformer' => $integration->payload_transformer,
       'use_custom_transformer' => $integration->use_custom_transformer,
       'field_mappings' => $integration->tokenMappings->map(fn($m) => [
