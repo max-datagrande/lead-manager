@@ -163,7 +163,7 @@ export function FieldMappingsModal({ fields = [] }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" className="gap-2">
+        <Button type="button" variant="black" className="gap-2">
           <Settings2 className="size-4" />
           Field Mappings{totalMappings > 0 ? ` (${totalMappings})` : ''}
         </Button>
