@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use App\Models\IntegrationFieldMapping;
 use App\Models\OfferwallResponseConfig;
 use App\Models\PingResponseConfig;
 use App\Models\PostResponseConfig;
@@ -36,12 +37,21 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'request_mapping_config' => 'nullable|array',
+      'field_mappings' => 'nullable|array',
+      'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
+      'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
+      'field_mappings.*.default_value' => 'nullable|string',
+      'field_mappings.*.value_mapping' => 'nullable|array',
       'environments' => 'required|array',
       'environments.*.env_type' => 'required|in:ping,post,offerwall',
       'environments.*.environment' => 'required|in:development,production',
       'environments.*.url' => 'required|string',
       'environments.*.response_config' => 'nullable|array',
+      'environments.*.field_hashes' => 'nullable|array',
+      'environments.*.field_hashes.*.field_id' => 'required_with:environments.*.field_hashes|integer|exists:fields,id',
+      'environments.*.field_hashes.*.is_hashed' => 'nullable|boolean',
+      'environments.*.field_hashes.*.hash_algorithm' => 'nullable|in:md5,sha1,sha256,sha512,base64,hmac_sha256',
+      'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -59,10 +69,11 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
+
+      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->create([
@@ -75,9 +86,9 @@ class IntegrationService
           'content_type' => $envData['content_type'] ?? 'application/json',
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
-        $config = $envData['response_config'] ?? null;
 
-        $this->saveResponseConfig($env, $config);
+        $this->saveResponseConfig($env, $envData['response_config'] ?? null);
+        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
       }
 
       return $integration;
@@ -103,12 +114,21 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'request_mapping_config' => 'nullable|array',
+      'field_mappings' => 'nullable|array',
+      'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
+      'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
+      'field_mappings.*.default_value' => 'nullable|string',
+      'field_mappings.*.value_mapping' => 'nullable|array',
       'environments' => 'required|array',
       'environments.*.env_type' => 'required|in:ping,post,offerwall',
       'environments.*.environment' => 'required|in:development,production',
       'environments.*.url' => 'required|string',
       'environments.*.response_config' => 'nullable|array',
+      'environments.*.field_hashes' => 'nullable|array',
+      'environments.*.field_hashes.*.field_id' => 'required_with:environments.*.field_hashes|integer|exists:fields,id',
+      'environments.*.field_hashes.*.is_hashed' => 'nullable|boolean',
+      'environments.*.field_hashes.*.hash_algorithm' => 'nullable|in:md5,sha1,sha256,sha512,base64,hmac_sha256',
+      'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -126,10 +146,11 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
+
+      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->updateOrCreate(
@@ -143,9 +164,9 @@ class IntegrationService
             'authentication_type' => $envData['authentication_type'] ?? 'none',
           ]
         );
-        $config = $envData['response_config'] ?? null;
 
-        $this->saveResponseConfig($env, $config);
+        $this->saveResponseConfig($env, $envData['response_config'] ?? null);
+        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
       }
 
       return $integration;
@@ -172,16 +193,27 @@ class IntegrationService
    */
   public function duplicateIntegration(Integration $integration, ?string $newName = null)
   {
-    $integration->load('environments.offerwallResponseConfig', 'environments.pingResponseConfig', 'environments.postResponseConfig');
+    $integration->load([
+      'environments.offerwallResponseConfig',
+      'environments.pingResponseConfig',
+      'environments.postResponseConfig',
+      'environments.fieldHashes',
+      'tokenMappings',
+    ]);
 
     $data = [
       'name' => $newName ?? ($integration->name . ' (Copy)'),
       'type' => $integration->type,
-      'is_active' => false, // Set to inactive by default for safety
+      'is_active' => false,
       'company_id' => $integration->company_id,
-      'request_mapping_config' => $integration->request_mapping_config,
       'payload_transformer' => $integration->payload_transformer,
       'use_custom_transformer' => $integration->use_custom_transformer,
+      'field_mappings' => $integration->tokenMappings->map(fn($m) => [
+        'field_id'      => $m->field_id,
+        'data_type'     => $m->data_type,
+        'default_value' => $m->default_value,
+        'value_mapping' => $m->value_mapping,
+      ])->toArray(),
       'environments' => [],
     ];
 
@@ -222,6 +254,12 @@ class IntegrationService
         'response_config' => $responseConfig,
         'content_type' => $env->content_type,
         'authentication_type' => $env->authentication_type,
+        'field_hashes' => $env->fieldHashes->map(fn($h) => [
+          'field_id'       => $h->field_id,
+          'is_hashed'      => $h->is_hashed,
+          'hash_algorithm' => $h->hash_algorithm,
+          'hmac_secret'    => $h->hmac_secret,
+        ])->toArray(),
       ];
     }
 
@@ -272,6 +310,52 @@ class IntegrationService
         ]
       );
     }
+  }
+
+  /**
+   * Sync token mappings for an integration (delete + recreate).
+   *
+   * @param  array<int, array{field_id: int, data_type?: string, default_value?: string, value_mapping?: array}>  $mappings
+   */
+  private function syncTokenMappings(Integration $integration, array $mappings): void
+  {
+    $integration->tokenMappings()->delete();
+
+    if (empty($mappings)) {
+      return;
+    }
+
+    $integration->tokenMappings()->createMany(
+      collect($mappings)->map(fn($m) => [
+        'field_id'      => $m['field_id'],
+        'data_type'     => $m['data_type'] ?? 'string',
+        'default_value' => $m['default_value'] ?? null,
+        'value_mapping' => !empty($m['value_mapping']) ? $m['value_mapping'] : null,
+      ])->toArray()
+    );
+  }
+
+  /**
+   * Sync field hash configs for an environment (delete + recreate).
+   *
+   * @param  array<int, array{field_id: int, is_hashed?: bool, hash_algorithm?: string, hmac_secret?: string}>  $hashes
+   */
+  private function syncFieldHashes(IntegrationEnvironment $env, array $hashes): void
+  {
+    $env->fieldHashes()->delete();
+
+    if (empty($hashes)) {
+      return;
+    }
+
+    $env->fieldHashes()->createMany(
+      collect($hashes)->map(fn($h) => [
+        'field_id'       => $h['field_id'],
+        'is_hashed'      => $h['is_hashed'] ?? false,
+        'hash_algorithm' => $h['hash_algorithm'] ?? null,
+        'hmac_secret'    => $h['hmac_secret'] ?? null,
+      ])->toArray()
+    );
   }
 
   /**

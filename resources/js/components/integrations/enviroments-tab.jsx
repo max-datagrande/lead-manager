@@ -10,13 +10,16 @@ import { useIntegrations } from '@/hooks/use-integrations';
  * @param {import('@/types/integrations').EnvironmentTabProps} props
  */
 export function EnvironmentTab({ env, envType = null, fields = [] }) {
-  const { data, handleEnvironmentChange } = useIntegrations();
+  const { data, handleEnvironmentChange, onTokenInsert, onTokenRemove, updateFieldHash } = useIntegrations();
   const headerFields = fields.map((field) => `{${field.name}}`);
   const headerValues = [...HEADER_VALUES, ...headerFields];
 
   // Resolve the data slice for this env slot
   const envData = envType ? data.environments[envType]?.[env] : data.environments[env];
   const onChange = (field, value) => handleEnvironmentChange(env, field, value, envType);
+
+  // envKey used to namespace token sets per environment slot
+  const envKey = envType ? `${envType}-${env}` : env;
 
   return (
     <div className="space-y-4">
@@ -69,6 +72,11 @@ export function EnvironmentTab({ env, envType = null, fields = [] }) {
           value={envData?.request_body ?? ''}
           onChange={(value) => onChange('request_body', value)}
           placeholder='{ "lead_id": "{lead_id}" }'
+          fields={fields}
+          onTokenInsert={(fieldId) => onTokenInsert(envKey, fieldId)}
+          onTokenRemove={(fieldId) => onTokenRemove(envKey, fieldId)}
+          getHashConfig={(fieldId) => (envData?.field_hashes ?? []).find((h) => h.field_id === fieldId) ?? null}
+          onHashChange={(fieldId, patch) => updateFieldHash(envKey, fieldId, patch)}
         />
       </div>
     </div>

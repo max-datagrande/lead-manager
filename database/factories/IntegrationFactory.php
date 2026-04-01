@@ -22,7 +22,6 @@ class IntegrationFactory extends Factory
       'name' => $this->faker->company(),
       'type' => 'ping-post',
       'is_active' => true,
-      'request_mapping_config' => [],
       'payload_transformer' => null,
       'use_custom_transformer' => false,
     ];

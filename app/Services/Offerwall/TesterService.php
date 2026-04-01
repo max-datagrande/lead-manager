@@ -31,36 +31,34 @@ class TesterService
     ) {}
 
     /**
-     * Get the dynamic fields for an integration based on its request_mapping_config.
+     * Get the dynamic fields for an integration based on its tokenMappings.
      *
      * @return array{fields: array, cptypeField: array|null, stateField: array|null}
      */
     public function getIntegrationFields(Integration $integration): array
     {
-        $mappingConfig = $integration->request_mapping_config ?? [];
-        $tokenNames = array_keys($mappingConfig);
-
-        $fields = Field::whereIn('name', $tokenNames)
-            ->get(['id', 'name', 'label', 'possible_values']);
+        $integration->loadMissing('tokenMappings.field');
 
         $fieldData = [];
         $cptypeField = null;
         $stateField = null;
 
-        foreach ($tokenNames as $tokenName) {
-            $field = $fields->firstWhere('name', $tokenName);
-            $config = $mappingConfig[$tokenName];
+        foreach ($integration->tokenMappings as $mapping) {
+            $field = $mapping->field;
+            if (! $field) {
+                continue;
+            }
 
             $entry = [
-                'token' => $tokenName,
-                'label' => $field?->label ?? ucfirst(str_replace('_', ' ', $tokenName)),
-                'possible_values' => $field?->possible_values ?? [],
-                'default_value' => $config['defaultValue'] ?? '',
+                'token' => $field->name,
+                'label' => $field->label ?? ucfirst(str_replace('_', ' ', $field->name)),
+                'possible_values' => $field->possible_values ?? [],
+                'default_value' => $mapping->default_value ?? '',
             ];
 
-            if (strtolower($tokenName) === 'cptype') {
+            if (strtolower($field->name) === 'cptype') {
                 $cptypeField = $entry;
-            } elseif (strtolower($tokenName) === 'state') {
+            } elseif (strtolower($field->name) === 'state') {
                 $stateField = $entry;
             } else {
                 $fieldData[] = $entry;
@@ -154,7 +152,7 @@ class TesterService
      */
     public function executeSingleCptype(int $integrationId, int $mixLogId, int $leadId, ?string $cptype): array
     {
-        $integration = Integration::with(['environments'])->findOrFail($integrationId);
+        $integration = Integration::with(['environments.fieldHashes', 'tokenMappings.field'])->findOrFail($integrationId);
         $prodEnv = $integration->environments->where('environment', 'production')->first();
 
         if (! $prodEnv) {
@@ -224,29 +222,19 @@ class TesterService
         array $leadData,
         OfferwallMixLog $mixLog,
     ): array {
-        $mappingConfig = $integration->request_mapping_config ?? [];
+        $processor    = new PayloadProcessorService;
+        $replacements = $processor->buildReplacements($integration, $prodEnv, $leadData);
 
-        // Prepare payload (mirrors MixService::preparePayload)
-        $replacementsResult = PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-        $processor = new PayloadProcessorService;
+        $payloadArray = json_decode($processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements), true) ?? [];
 
-        $template = $prodEnv->request_body ?? '';
-        $payloadString = $processor->process($template, $replacementsResult['finalReplacements']);
-        $payloadArray = json_decode($payloadString, true) ?? [];
-
-        // Custom Twig transformer
         if ($integration->use_custom_transformer && ! empty($integration->payload_transformer)) {
             $payloadArray = $this->applyTwigTransformer($integration, $payloadArray);
         }
 
-        // Prepare headers
-        $headersTemplate = $prodEnv->request_headers ?? '[]';
-        $headersReplacements = PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-        $headersParsed = $processor->process($headersTemplate, $headersReplacements['finalReplacements']);
-        $headers = json_decode($headersParsed, true) ?? [];
+        $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
+        $url     = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
 
         $method = strtolower($prodEnv->method ?? 'post');
-        $url = $prodEnv->url;
 
         // Execute HTTP call
         $callStartTime = microtime(true);
@@ -270,8 +258,8 @@ class TesterService
             $url,
             $headers,
             $payloadArray,
-            $replacementsResult['originalValues'],
-            $replacementsResult['mappedValues'],
+            null,
+            null,
             $callDurationMs,
         );
 
@@ -300,8 +288,8 @@ class TesterService
             'request_payload' => $payloadArray,
             'response_headers' => $response instanceof Response ? $response->headers() : [],
             'response_body' => $response instanceof Response ? ($response->json() ?? $response->body()) : ($exception?->getMessage() ?? 'Unknown error'),
-            'original_field_values' => $replacementsResult['originalValues'],
-            'mapped_field_values' => $replacementsResult['mappedValues'],
+            'original_field_values' => [],
+            'mapped_field_values' => [],
         ];
 
         return [

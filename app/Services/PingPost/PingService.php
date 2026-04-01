@@ -45,17 +45,11 @@ class PingService
       return $this->createSkippedResult($dispatch, $integration, $idempotencyKey, 'No ping URL configured');
     }
 
-    $mappingConfig = $integration->request_mapping_config ?? [];
-    $replacements = PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-    $finals = $replacements['finalReplacements'] ?? [];
-
-    $requestUrl = $this->payloadProcessor->processUrl($pingEnv->url, $finals);
-    $payloadString = $this->payloadProcessor->process($pingEnv->request_body ?? '{}', $finals);
-    $payload = json_decode($payloadString, true) ?? [];
-    $headersRaw = $pingEnv->request_headers ?? '{}';
-    $headersString = $this->payloadProcessor->process($headersRaw, $finals);
-    $headers = json_decode($headersString, true) ?? [];
-    $method = strtolower($pingEnv->method ?? 'post');
+    $replacements = $this->payloadProcessor->buildReplacements($integration, $pingEnv, $leadData);
+    $requestUrl   = $this->payloadProcessor->applyReplacements($pingEnv->url ?? '', $replacements);
+    $payload      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $headers      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
+    $method       = strtolower($pingEnv->method ?? 'post');
 
     $startMs = microtime(true);
 

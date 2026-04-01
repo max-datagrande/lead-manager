@@ -58,17 +58,11 @@ class PostService
       }
     }
 
-    $mappingConfig = $integration->request_mapping_config ?? [];
-    $replacements = PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-    $finals = $replacements['finalReplacements'] ?? [];
-
-    $requestUrl = $this->payloadProcessor->processUrl($postEnv->url, $finals);
-    $payloadString = $this->payloadProcessor->process($postEnv->request_body ?? '{}', $finals);
-    $payload = json_decode($payloadString, true) ?? [];
-    $headersRaw = $postEnv->request_headers ?? '{}';
-    $headersString = $this->payloadProcessor->process($headersRaw, $finals);
-    $headers = json_decode($headersString, true) ?? [];
-    $method = strtolower($postEnv->method ?? 'post');
+    $replacements = $this->payloadProcessor->buildReplacements($integration, $postEnv, $leadData);
+    $requestUrl   = $this->payloadProcessor->applyReplacements($postEnv->url ?? '', $replacements);
+    $payload      = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $headers      = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
+    $method       = strtolower($postEnv->method ?? 'post');
 
     // Async postback: create a pending record immediately
     if ($config->pricing_type->isAsync()) {

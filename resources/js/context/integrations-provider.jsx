@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { produce } from 'immer';
-import { createContext, useMemo } from 'react';
+import { createContext, useMemo, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
 const defaultEnv = () => ({
@@ -9,6 +9,7 @@ const defaultEnv = () => ({
   request_headers: [],
   request_body: { template: '', parsers: {} },
   response_config: null,
+  field_hashes: [],
 });
 
 // Helper to parse headers from a JSON string into a key-value array
@@ -32,6 +33,14 @@ const normalizeEnvRecord = (env) => ({
       ? JSON.parse(env.request_body || '{}')
       : (env.request_body ?? { template: '', parsers: {} }),
   response_config: env.response_config ?? null,
+  field_hashes: Array.isArray(env.field_hashes)
+    ? env.field_hashes.map((h) => ({
+        field_id: h.field_id,
+        is_hashed: h.is_hashed ?? false,
+        hash_algorithm: h.hash_algorithm ?? null,
+        hmac_secret: h.hmac_secret ?? null,
+      }))
+    : [],
 });
 
 // Helper to transform environments from the server for the form
@@ -79,6 +88,7 @@ const serializeEnvs = (type, environments) => {
     content_type: envData.content_type ?? 'application/json',
     authentication_type: envData.authentication_type ?? 'none',
     response_config: envData.response_config ?? null,
+    field_hashes: envData.field_hashes ?? [],
   });
 
   if (type === 'ping-post') {
@@ -101,6 +111,67 @@ const serializeEnvs = (type, environments) => {
   }));
 };
 
+/**
+ * Scan a request_body string/object for {$N} tokens and return a Set of field IDs.
+ */
+const scanBodyForTokens = (body) => {
+  if (!body) return new Set()
+  const text = typeof body === 'object' ? JSON.stringify(body) : String(body)
+  const regex = /\{\$(\d+)\}/g
+  const ids = new Set()
+  let m
+  while ((m = regex.exec(text)) !== null) {
+    ids.add(parseInt(m[1], 10))
+  }
+  return ids
+}
+
+/**
+ * Build the initial envTokenSets Map by scanning all environments on mount (edit mode).
+ * Returns Map<envKey, Set<fieldId>>.
+ */
+const buildInitialEnvTokenSets = (integration) => {
+  if (!integration?.environments?.length) return new Map()
+  const sets = new Map()
+  for (const env of integration.environments) {
+    const key = integration.type === 'ping-post'
+      ? `${env.env_type}-${env.environment}`
+      : env.environment
+    const ids = scanBodyForTokens(env.request_body)
+    if (ids.size > 0) sets.set(key, ids)
+  }
+  return sets
+}
+
+/**
+ * Build the initial field_mappings array for useForm.
+ * Merges DB records (token_mappings) with any {$N} tokens found in request bodies
+ * that have no DB record yet — avoids empty modal on pre-S6 integrations.
+ */
+const buildInitialFieldMappings = (integration) => {
+  const dbMappings = integration?.token_mappings?.map((tm) => ({
+    field_id: tm.field_id,
+    data_type: tm.data_type ?? 'string',
+    default_value: tm.default_value ?? null,
+    value_mapping: tm.value_mapping ?? null,
+  })) ?? []
+
+  const dbIds = new Set(dbMappings.map((m) => m.field_id))
+
+  // Collect all field_ids found in request bodies across all environments
+  const envSets = buildInitialEnvTokenSets(integration)
+  for (const set of envSets.values()) {
+    for (const fieldId of set) {
+      if (!dbIds.has(fieldId)) {
+        dbMappings.push({ field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null })
+        dbIds.add(fieldId)
+      }
+    }
+  }
+
+  return dbMappings
+}
+
 export const IntegrationsContext = createContext(null);
 
 export const IntegrationsProvider = ({ children, integration = null }) => {
@@ -117,10 +188,21 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     is_active: integration?.is_active ?? true,
     company_id: integration?.company_id ?? '',
     environments: initialEnvironments,
-    request_mapping_config: integration?.request_mapping_config ?? {},
+    field_mappings: buildInitialFieldMappings(integration),
     payload_transformer: integration?.payload_transformer ?? '',
     use_custom_transformer: integration?.use_custom_transformer ?? false,
   });
+
+  // ── Segregated token sets per environment (not in useForm — local state only) ──
+  // Map<envKey, Set<fieldId>>, where envKey = e.g. "ping-development" or "development"
+  const [envTokenSets, setEnvTokenSets] = useState(() => buildInitialEnvTokenSets(integration))
+
+  // ── Stable refs for always-fresh closure access (assigned during render) ──────
+  const fieldMappingsRef = useRef(null)
+  fieldMappingsRef.current = data.field_mappings
+
+  const envTokenSetsRef = useRef(null)
+  envTokenSetsRef.current = envTokenSets
 
   // Transform environments to array format before submission
   transform((formData) => ({
@@ -158,6 +240,96 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     isEdit ? put(url, options) : post(url, options);
   };
 
+  /**
+   * Called by JsonEditor when a field token is inserted into a request_body.
+   * Adds the fieldId to the env's token set and registers it in field_mappings if new.
+   *
+   * @param {string} envKey  e.g. "ping-development" | "development"
+   * @param {number} fieldId
+   */
+  const onTokenInsert = (envKey, fieldId) => {
+    const prevSets = envTokenSetsRef.current
+    const next = new Map(prevSets)
+    const set = new Set(next.get(envKey) ?? [])
+    set.add(fieldId)
+    next.set(envKey, set)
+    setEnvTokenSets(next)
+
+    const current = fieldMappingsRef.current
+    if (!current.some((m) => m.field_id === fieldId)) {
+      setData('field_mappings', [...current, { field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null }])
+    }
+  }
+
+  /**
+   * Called by JsonEditor when a field token pill is deleted from a request_body.
+   * Removes the fieldId from the env's token set and purges it from field_mappings
+   * if it no longer appears in any environment body.
+   *
+   * @param {string} envKey  e.g. "ping-development" | "development"
+   * @param {number} fieldId
+   */
+  const onTokenRemove = (envKey, fieldId) => {
+    const prevSets = envTokenSetsRef.current
+    const next = new Map(prevSets)
+    const set = new Set(next.get(envKey) ?? [])
+    set.delete(fieldId)
+    if (set.size === 0) next.delete(envKey)
+    else next.set(envKey, set)
+    setEnvTokenSets(next)
+
+    const usedElsewhere = [...next.values()].some((s) => s.has(fieldId))
+    if (!usedElsewhere) {
+      setData('field_mappings', fieldMappingsRef.current.filter((m) => m.field_id !== fieldId))
+    }
+  }
+
+  /**
+   * Update the global config for a specific field mapping (data_type, default_value, value_mapping).
+   *
+   * @param {number} fieldId
+   * @param {Partial<{ data_type: string, default_value: string|null, value_mapping: object|null }>} patch
+   */
+  const updateFieldMapping = (fieldId, patch) => {
+    setData('field_mappings', fieldMappingsRef.current.map((m) =>
+      m.field_id === fieldId ? { ...m, ...patch } : m,
+    ))
+  }
+
+  /**
+   * Update the hash config for a specific (envKey, fieldId) pair.
+   * envKey format: "${envType}-${env}" for ping-post, "${env}" for flat.
+   *
+   * @param {string} envKey
+   * @param {number} fieldId
+   * @param {Partial<{ is_hashed: boolean, hash_algorithm: string|null, hmac_secret: string|null }>} patch
+   */
+  const updateFieldHash = (envKey, fieldId, patch) => {
+    const nextState = produce(data, (draft) => {
+      // Resolve the env slot from the envKey
+      let envSlot
+      if (envKey.includes('-')) {
+        const dashIdx = envKey.indexOf('-')
+        const envType = envKey.substring(0, dashIdx)
+        const env = envKey.substring(dashIdx + 1)
+        envSlot = draft.environments[envType]?.[env]
+      } else {
+        envSlot = draft.environments[envKey]
+      }
+      if (!envSlot) return
+
+      const hashes = envSlot.field_hashes ?? []
+      const idx = hashes.findIndex((h) => h.field_id === fieldId)
+      if (idx >= 0) {
+        Object.assign(hashes[idx], patch)
+      } else {
+        hashes.push({ field_id: fieldId, is_hashed: false, hash_algorithm: null, hmac_secret: null, ...patch })
+      }
+      envSlot.field_hashes = hashes
+    })
+    setData(nextState)
+  }
+
   const value = {
     isEdit,
     data,
@@ -167,6 +339,10 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     handleTypeChange,
     handleSubmit,
     setData,
+    onTokenInsert,
+    onTokenRemove,
+    updateFieldMapping,
+    updateFieldHash,
   };
 
   return <IntegrationsContext.Provider value={value}>{children}</IntegrationsContext.Provider>;

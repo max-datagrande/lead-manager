@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\DB;
 
 class Integration extends Model
 {
@@ -18,7 +19,6 @@ class Integration extends Model
     'name',
     'type',
     'is_active',
-    'request_mapping_config',
     'payload_transformer',
     'use_custom_transformer',
     'user_id',
@@ -31,7 +31,6 @@ class Integration extends Model
    * @var array
    */
   protected $casts = [
-    'request_mapping_config' => 'array',
     'use_custom_transformer' => 'boolean',
   ];
 
@@ -52,11 +51,11 @@ class Integration extends Model
   }
 
   /**
-   * Get the field mappings for the integration.
+   * Get the token mappings for the integration (new {$field_id} token system).
    */
-  public function fieldMappings()
+  public function tokenMappings(): HasMany
   {
-    return $this->hasMany(FieldMapping::class);
+    return $this->hasMany(IntegrationFieldMapping::class);
   }
 
   /**

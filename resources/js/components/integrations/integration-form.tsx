@@ -8,11 +8,12 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
 import { Radio, Send } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
-import { MappingConfigurator } from './mapping-configurator';
+import { FieldMappingsModal } from './field-mappings-modal';
+import { IntegrationTypeCards } from './integration-type-selector';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { PingPostResponseConfig } from './ping-post-response-config';
-import { TokenInserter } from './token-inserter';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -104,47 +105,35 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
 
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleTokenSelect = (tokenName: string) => {
-    setData('request_mapping_config', { ...data.request_mapping_config, [tokenName]: {} });
-  };
-
-  const handleMappingChange = (token: string, field: string, fieldValue: any) => {
-    setData('request_mapping_config', {
-      ...data.request_mapping_config,
-      [token]: { ...data.request_mapping_config[token], [field]: fieldValue },
-    });
-  };
-
-  const handleRemoveToken = (tokenName: string) => {
-    const updated = { ...data.request_mapping_config };
-    delete updated[tokenName];
-    setData('request_mapping_config', updated);
-  };
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Form Header */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="flex-auto space-y-2">
+    <form ref={formRef} onSubmit={handleSubmit}>
+      {/* Type selector — interactive in create, read-only in edit */}
+      <div className="space-y-2">
+        <Label>Integration Type</Label>
+        <IntegrationTypeCards value={data.type} onChange={handleTypeChange} readonly={isEdit} />
+      </div>
+
+      {/* Name + Company */}
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
           {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
         </div>
-        <div className="flex-auto space-y-2">
-          <Label htmlFor="type">Integration Type</Label>
-          <Select value={data.type} onValueChange={handleTypeChange}>
-            <SelectTrigger id="type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="post-only">Post Only</SelectItem>
-              <SelectItem value="ping-post">Ping-Post</SelectItem>
-              <SelectItem value="offerwall">Offerwall</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex-auto space-y-2">
+        <div className="space-y-2">
           <Label htmlFor="company_id">Company</Label>
           <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
             <SelectTrigger id="company_id">
@@ -192,26 +181,8 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      {/* Production Payload Mapping — edit mode only */}
-      {isEdit && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Production Payload Mapping</CardTitle>
-            <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
-            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
-          </CardHeader>
-          <CardContent>
-            <MappingConfigurator
-              parsers={data.request_mapping_config}
-              onParserChange={handleMappingChange}
-              fields={fields}
-              onRemoveToken={handleRemoveToken}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mt-6 flex justify-end gap-2">
+      <div className="sticky bottom-0 mt-6 flex items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <FieldMappingsModal fields={fields} />
         <Button type="submit" disabled={processing}>
           {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
         </Button>

@@ -268,17 +268,12 @@ class DispatchOrchestrator
                 continue;
             }
 
-            $mappingConfig = $integration->request_mapping_config ?? [];
-            $replacements = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-            $finals = $replacements['finalReplacements'] ?? [];
-
-            $processor = new \App\Services\PayloadProcessorService;
-            $url = $processor->processUrl($pingEnv->url, $finals);
-            $payloadString = $processor->process($pingEnv->request_body ?? '{}', $finals);
-            $payload = json_decode($payloadString, true) ?? [];
-            $headersString = $processor->process($pingEnv->request_headers ?? '{}', $finals);
-            $headers = json_decode($headersString, true) ?? [];
-            $method = strtolower($pingEnv->method ?? 'post');
+            $processor    = new \App\Services\PayloadProcessorService;
+            $replacements = $processor->buildReplacements($integration, $pingEnv, $leadData);
+            $url     = $processor->applyReplacements($pingEnv->url ?? '', $replacements);
+            $payload = json_decode($processor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+            $headers = json_decode($processor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
+            $method  = strtolower($pingEnv->method ?? 'post');
 
             $requests[$integration->id] = compact('integration', 'config', 'pingEnv', 'url', 'payload', 'headers', 'method', 'dispatch');
         }
@@ -345,7 +340,7 @@ class DispatchOrchestrator
         $fallbackBuyers = $workflow->workflowBuyers()
             ->where('is_fallback', true)
             ->where('is_active', true)
-            ->with('integration.buyerConfig', 'integration.environments')
+            ->with('integration.buyerConfig', 'integration.environments.fieldHashes', 'integration.tokenMappings.field')
             ->get();
 
         if ($fallbackBuyers->isEmpty()) {
@@ -391,7 +386,7 @@ class DispatchOrchestrator
             ->where('buyer_group', $group)
             ->where('is_active', true)
             ->where('is_fallback', false)
-            ->with(['integration', 'integration.buyerConfig', 'integration.environments', 'integration.eligibilityRules', 'integration.capRules'])
+            ->with(['integration', 'integration.buyerConfig', 'integration.environments.fieldHashes', 'integration.tokenMappings.field', 'integration.eligibilityRules', 'integration.capRules'])
             ->get()
             ->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData): bool {
                 $integration = $wfBuyer->integration;

@@ -63,10 +63,27 @@ interface IntegrationBase {
   is_active: boolean;
   company_id: number;
 }
+interface TokenMapping {
+  id: number;
+  integration_id: number;
+  field_id: number;
+  data_type: string;
+  default_value: string | null;
+  value_mapping: Record<string, string> | null;
+}
+
+interface FieldMappingEntry {
+  field_id: number;
+  data_type: string;
+  default_value: string | null;
+  value_mapping?: Record<string, string> | null;
+}
+
 interface IntegrationDB extends IntegrationBase {
   id: number;
   environments: EnvironmentDB[];
   request_mapping_config?: Record<string, MappingEntry>;
+  token_mappings?: TokenMapping[];
   updated_at?: string;
 }
 
@@ -97,12 +114,14 @@ export type {
   EnvironmentDB,
   EnvironmentForm,
   EnvironmentType,
+  FieldMappingEntry,
   FlatEnvironments,
   IntegrationBase,
   IntegrationDB,
   IntegrationForm,
   MappingEntry,
   PingPostEnvironments,
+  TokenMapping,
   EnvironmentTabProps,
   OfferwallResponseConfig,
   PingResponseConfig,
