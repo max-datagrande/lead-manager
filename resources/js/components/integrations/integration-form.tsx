@@ -150,9 +150,12 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 pt-4">
-        <Label htmlFor="is_active">Active</Label>
-        <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="is_active">Active</Label>
+          <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
+        </div>
+        <FieldMappingsModal fields={fields} />
       </div>
 
       {/* Environment Tabs */}
@@ -181,8 +184,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      <div className="sticky bottom-0 mt-6 flex items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <FieldMappingsModal fields={fields} />
+      <div className="mt-6 flex justify-end">
         <Button type="submit" disabled={processing}>
           {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
         </Button>

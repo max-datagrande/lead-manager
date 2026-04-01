@@ -63,9 +63,15 @@ function buildDecorations(state, fieldMap) {
     let from = match.index
     let to = match.index + match[0].length
 
-    // If the token is wrapped in JSON string quotes ("{$N}"), extend the
-    // decoration to include them — the pill renders without visible quotes.
-    if (from > 0 && doc[from - 1] === '"' && to < doc.length && doc[to] === '"') {
+    // Extend the decoration to absorb surrounding quotes so the pill
+    // renders without visible quote characters.
+    // Escaped quotes first (\"{$N}\") for tokens inside nested JSON strings,
+    // then regular quotes ("{$N}") for normal JSON values.
+    if (from > 1 && doc[from - 2] === '\\' && doc[from - 1] === '"' &&
+        to + 1 < doc.length && doc[to] === '\\' && doc[to + 1] === '"') {
+      from -= 2
+      to += 2
+    } else if (from > 0 && doc[from - 1] === '"' && to < doc.length && doc[to] === '"') {
       from -= 1
       to += 1
     }
@@ -88,8 +94,11 @@ export const tokenDoubleQuoteLinter = linter((view) => {
   while ((match = BARE_TOKEN_REGEX.exec(doc)) !== null) {
     const pre = match.index > 1 ? doc[match.index - 2] : ''
     const post = doc[match.index + match[0].length + 1] ?? ''
-    const hasExtraLeading = pre === '"'
-    const hasExtraTrailing = post === '"'
+    // Ignore escaped quotes (\") — they're part of nested JSON strings, not extra wrappers
+    const preEscape = match.index > 2 ? doc[match.index - 3] : ''
+    const postEscape = doc[match.index + match[0].length] ?? ''
+    const hasExtraLeading = pre === '"' && preEscape !== '\\'
+    const hasExtraTrailing = post === '"' && postEscape !== '\\'
 
     if (hasExtraLeading || hasExtraTrailing) {
       diagnostics.push({

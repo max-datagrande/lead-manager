@@ -95,7 +95,7 @@ const DATA_TYPES = [
  * @param {{ fields: Array<{ id: number, name: string, label?: string, possible_values?: string[] }> }} props
  */
 export function FieldMappingsModal({ fields = [] }) {
-  const { data, updateFieldMapping } = useIntegrations()
+  const { data, setData } = useIntegrations()
   const [open, setOpen] = useState(false)
 
   // ── Local draft state (isolated from parent) ──────────────────────────────
@@ -117,13 +117,12 @@ export function FieldMappingsModal({ fields = [] }) {
   }
 
   const handleSave = () => {
-    draft.forEach((m) => {
-      updateFieldMapping(m.field_id, {
-        data_type: m.data_type,
-        default_value: m.default_value,
-        value_mapping: m.value_mapping,
-      })
+    const draftById = new Map(draft.map((m) => [m.field_id, m]))
+    const updated = (data.field_mappings ?? []).map((m) => {
+      const d = draftById.get(m.field_id)
+      return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m
     })
+    setData('field_mappings', updated)
     setOpen(false)
   }
 
@@ -163,7 +162,7 @@ export function FieldMappingsModal({ fields = [] }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" className="gap-2">
+        <Button type="button" variant="black" className="gap-2">
           <Settings2 className="size-4" />
           Field Mappings{totalMappings > 0 ? ` (${totalMappings})` : ''}
         </Button>
