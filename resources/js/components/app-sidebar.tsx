@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook, Layers, Globe } from 'lucide-react';
+import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook, Layers, Globe, Share2, Network, ClipboardList } from 'lucide-react';
 import AppLogo from './app-logo';
 import { NavGroup } from './nav-group';
 
@@ -119,7 +119,28 @@ const SystemGroup: NavGroupType = {
   ],
 };
 
-const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, PostbacksGroup, OfferwallGroup, SystemGroup];
+const ShareLeadsGroup: NavGroupType = {
+  title: 'Share Leads',
+  items: [
+    {
+      title: 'Buyers',
+      href: route('ping-post.buyers.index'),
+      icon: Users,
+    },
+    {
+      title: 'Workflows',
+      href: route('ping-post.workflows.index'),
+      icon: Network,
+    },
+    {
+      title: 'Dispatch Logs',
+      href: route('ping-post.dispatches.index'),
+      icon: ClipboardList,
+    },
+  ],
+};
+
+const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, PostbacksGroup, OfferwallGroup, ShareLeadsGroup, SystemGroup];
 
 const AdminGroup: NavGroupType = {
   title: 'Admin',

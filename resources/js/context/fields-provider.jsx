@@ -2,9 +2,10 @@ import { FormModal } from '@/components/fields/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { router, useForm } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { createContext, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export const FieldsContext = createContext(null);
 
@@ -21,7 +22,21 @@ export function FieldsProvider({ children, initialState }) {
     pageIndex: 0, //initial page index
     pageSize: 10, //default page size
   });
+  const { props: { flash } } = usePage();
   const { delete: destroy, processing } = useForm();
+
+  useEffect(() => {
+    if (!flash.deletable_errors?.length) return;
+    flash.deletable_errors.forEach(({ id, name }) => {
+      toast.error(`Cannot delete: field is used in integration "${name}"`, {
+        action: {
+          label: 'Go to integration',
+          onClick: () => router.visit(route('integrations.edit', id)),
+        },
+        duration: 8000,
+      });
+    });
+  }, [flash.deletable_errors]);
   const showCreateModal = async () => {
     try {
       const result = await modal.openAsync(<FormModal id={0} />);

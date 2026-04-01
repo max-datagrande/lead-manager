@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Field;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
 
 class FieldController extends Controller
 {
@@ -64,6 +65,9 @@ class FieldController extends Controller
         if (isset($field['possible_values']) && is_array($field['possible_values'])) {
           $field['possible_values'] = json_encode($field['possible_values']);
         }
+        //Check user id and updated_user_id
+        $field['user_id'] =  Auth::id();
+        $field['updated_user_id'] =  null;
         // Ensure 'created_at' and 'updated_at' are present, otherwise DB might complain
         $field['created_at'] = $field['created_at'] ?? now();
         $field['updated_at'] = $field['updated_at'] ?? now();

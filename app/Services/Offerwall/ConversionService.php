@@ -66,7 +66,7 @@ class ConversionService
         throw new Exception('Could not resolve conversion source.');
       }
 
-      $integration = \App\Models\Integration::find($parsedIntegrationId);
+      $integration = \App\Models\Integration::with('environments')->find($parsedIntegrationId);
       if (!$integration) {
           Logger::saveLog('Integration not found for a valid call log.', 'offerwall/conversion-service', 'error', ['parsedIntegrationId' => $parsedIntegrationId, 'callLogId' => $callLog->id, 'file' => __FILE__, 'line' => __LINE__]);
           $this->sendSlackAlert('Orphaned Call Log Data', 'Integration not found for a valid call log.', $data, [
@@ -90,14 +90,19 @@ class ConversionService
       $offerCompanyName = null;
       // Extract original offer data
       if (!empty($callLog->response_body)) {
-        $parserConfig = $integration->response_parser_config;
-        $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+        $offerwallEnv = $integration->environments
+          ->where('env_type', 'offerwall')
+          ->where('environment', 'production')
+          ->first();
+        $parserConfig = $offerwallEnv?->response_config;
+        $pathOfOffers = $parserConfig?->offer_list_path ?? '';
         $offers = data_get($callLog->response_body, $pathOfOffers);
 
         if (isset($offers[$offerIndex])) {
           $offerData = $offers[$offerIndex];
           // Get company name from the offer data using the mapping
-          $companyMappingPath = $parserConfig['mapping']['company'] ?? null;
+          $mapping = $parserConfig?->mapping ?? [];
+          $companyMappingPath = $mapping['company'] ?? null;
           if ($companyMappingPath) {
             $offerCompanyName = data_get($offerData, $companyMappingPath);
           }

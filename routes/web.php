@@ -6,19 +6,22 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\IntegrationController;
+use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\Logs\LeadDispatchLogController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\PingPost\BuyerController;
+use App\Http\Controllers\PingPost\WorkflowController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\PostbackExecutionsController;
 use App\Http\Controllers\PostbackQueueController;
+use App\Http\Controllers\VerticalController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\VerticalController;
-use App\Http\Controllers\LandingPageController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -83,11 +86,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
   Route::resource('offerwall', OfferwallController::class)->parameters(['offerwall' => 'offerwallMix']);
 
-  //Verticals
+  // Verticals
   Route::resource('verticals', VerticalController::class);
   Route::resource('landing_pages', LandingPageController::class);
 
-  //Forms
+  // Forms
   Route::prefix('forms')->group(function () {
     Route::resource('fields', FieldController::class);
   });
@@ -101,6 +104,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::resource('offerwall-mixes', OfferwallMixLogController::class)
         ->only(['index', 'show'])
         ->parameters(['offerwall-mixes' => 'offerwallMixLog']);
+      Route::resource('dispatches', LeadDispatchLogController::class)->only(['index', 'show']);
+    });
+
+  // Share Leads — Ping Post / Post Only
+  Route::prefix('ping-post')
+    ->name('ping-post.')
+    ->middleware(['role:admin,manager'])
+    ->group(function () {
+      Route::post('buyers/{buyer}/duplicate', [BuyerController::class, 'duplicate'])->name('buyers.duplicate');
+      Route::resource('buyers', BuyerController::class);
+      Route::post('workflows/{workflow}/duplicate', [WorkflowController::class, 'duplicate'])->name('workflows.duplicate');
+      Route::resource('workflows', WorkflowController::class);
+      Route::resource('dispatches', LeadDispatchLogController::class)->only(['index', 'show']);
     });
 });
 

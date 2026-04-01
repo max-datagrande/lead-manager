@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Form;
 
 use App\Models\Field;
+use App\Models\IntegrationFieldMapping;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Inertia\Inertia;
@@ -65,8 +66,22 @@ class FieldController extends Controller
    */
   public function destroy(Field $field)
   {
+    $affectedIntegrations = IntegrationFieldMapping::where('field_id', $field->id)
+      ->with('integration:id,name')
+      ->get()
+      ->pluck('integration')
+      ->unique('id')
+      ->values();
+
+    if ($affectedIntegrations->isNotEmpty()) {
+      return back()->with('deletable_errors', $affectedIntegrations->map(fn($i) => [
+        'id'   => $i->id,
+        'name' => $i->name,
+      ])->toArray());
+    }
+
     $field->delete();
     add_flash_message(type: "success", message: "Field deleted successfully.");
-    return  back();
+    return back();
   }
 }

@@ -48,7 +48,7 @@ class IntegrationController extends Controller
   {
     return Inertia::render('integrations/create', [
       'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
-      'fields' => Field::all(['id', 'name', 'possible_values']),
+      'fields' => Field::all(['id', 'name', 'label', 'possible_values']),
     ]);
   }
 
@@ -73,8 +73,11 @@ class IntegrationController extends Controller
    */
   public function show(Integration $integration)
   {
+    $integration->load('environments');
+    $integration->environments->each->append('response_config_fields');
+
     return Inertia::render('integrations/show', [
-      'integration' => $integration->load('environments'),
+      'integration' => $integration,
     ]);
   }
 
@@ -84,9 +87,9 @@ class IntegrationController extends Controller
   public function edit(Integration $integration)
   {
     return Inertia::render('integrations/edit', [
-      'integration' => $integration->load('environments'),
+      'integration' => $integration->load(['environments.fieldHashes', 'tokenMappings']),
       'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
-      'fields' => Field::all(['id', 'name', 'possible_values']),
+      'fields' => Field::all(['id', 'name', 'label', 'possible_values']),
     ]);
   }
 

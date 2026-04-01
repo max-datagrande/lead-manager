@@ -7,85 +7,63 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { Radio, Send } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
-import { MappingConfigurator } from './mapping-configurator';
+import { FieldMappingsModal } from './field-mappings-modal';
+import { IntegrationTypeCards } from './integration-type-selector';
 import { OfferwallParserConfig } from './offerwall-parser-config';
-import { TokenInserter } from './token-inserter';
+import { PingPostResponseConfig } from './ping-post-response-config';
 
-export function IntegrationForm({ companies = [], fields = [] }) {
-  const { isEdit, data, errors, processing, handleSubmit, setData } = useIntegrations();
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
-  const handleTokenSelect = (tokenName: string) => {
-    const newRequestMappingConfig = { ...data.request_mapping_config, [tokenName]: {} };
-    setData('request_mapping_config', newRequestMappingConfig);
-  };
-
-  const handleMappingChange = (token: string, field: string, fieldValue: any) => {
-    const newRequestMappingConfig = {
-      ...data.request_mapping_config,
-      [token]: {
-        ...data.request_mapping_config[token],
-        [field]: fieldValue,
-      },
-    };
-    setData('request_mapping_config', newRequestMappingConfig);
-  };
-
-  const handleRemoveToken = (tokenName: string) => {
-    const newRequestMappingConfig = { ...data.request_mapping_config };
-    delete newRequestMappingConfig[tokenName];
-    setData('request_mapping_config', newRequestMappingConfig);
-  };
-
+function PingPostEnvContent({ env, fields }: { env: 'development' | 'production'; fields: any[] }) {
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Form Header */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Name */}
-        <div className="flex-auto space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
-          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-        </div>
-        {/* Type */}
-        <div className="flex-auto space-y-2">
-          <Label htmlFor="type">Integration Type</Label>
-          <Select value={data.type} onValueChange={(value) => setData('type', value)}>
-            <SelectTrigger id="type">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="post-only">Post Only</SelectItem>
-              <SelectItem value="ping-post">Ping-Post</SelectItem>
-              <SelectItem value="offerwall">Offerwall</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Company */}
-        <div className="flex-auto space-y-2">
-          <Label htmlFor="company_id">Company</Label>
-          <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
-            <SelectTrigger id="company_id">
-              <SelectValue placeholder="Select a company" />
-            </SelectTrigger>
-            <SelectContent>
-              {companies.map((company) => (
-                <SelectItem key={company.value} value={company.value.toString()}>
-                  {company.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+    <Tabs defaultValue="ping" className="mt-3">
+      <TabsList className="h-8 gap-1 rounded-md px-1">
+        <TabsTrigger value="ping" className="h-6 gap-1.5 px-2.5 text-xs">
+          <Radio className="size-3 shrink-0" />
+          Ping
+        </TabsTrigger>
+        <TabsTrigger value="post" className="h-6 gap-1.5 px-2.5 text-xs">
+          <Send className="size-3 shrink-0" />
+          Post
+        </TabsTrigger>
+      </TabsList>
+      {(['ping', 'post'] as const).map((envType) => (
+        <TabsContent key={envType} value={envType} className="mt-4 flex flex-col gap-4">
+          <EnvironmentTab env={env} envType={envType} fields={fields} />
+          <PingPostResponseConfig envType={envType} env={env} />
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
 
-      {/* Active Switch */}
-      <div className="flex items-center space-x-2 pt-4">
-        <Label htmlFor="is_active">Active</Label>
-        <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
-      </div>
+function PingPostEnvironmentTabs({ fields }: { fields: any[] }) {
+  return (
+    <Tabs defaultValue="development" className="mt-6">
+      <TabsList className="flex w-full gap-2">
+        <TabsTrigger className="flex-auto" value="development">
+          Development
+        </TabsTrigger>
+        <TabsTrigger className="flex-auto" value="production">
+          Production
+        </TabsTrigger>
+      </TabsList>
+      {(['development', 'production'] as const).map((env) => (
+        <TabsContent key={env} value={env}>
+          <PingPostEnvContent env={env} fields={fields} />
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
 
-      {/* Environment Tabs */}
+function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
+  const { data } = useIntegrations();
+  return (
+    <>
       <Tabs defaultValue="development" className="mt-6">
         <TabsList className="flex w-full gap-2">
           <TabsTrigger className="flex-auto" value="development">
@@ -118,6 +96,70 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           </Card>
         </TabsContent>
       </Tabs>
+      {data.type === 'offerwall' && <OfferwallParserConfig env="production" />}
+    </>
+  );
+}
+
+// ─── Main form ────────────────────────────────────────────────────────────────
+
+export function IntegrationForm({ companies = [], fields = [] }) {
+  const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  return (
+    <form ref={formRef} onSubmit={handleSubmit}>
+      {/* Type selector — interactive in create, read-only in edit */}
+      <div className="space-y-2">
+        <Label>Integration Type</Label>
+        <IntegrationTypeCards value={data.type} onChange={handleTypeChange} readonly={isEdit} />
+      </div>
+
+      {/* Name + Company */}
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name</Label>
+          <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="e.g., Client A Offerwall" />
+          {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="company_id">Company</Label>
+          <Select value={data.company_id?.toString()} onValueChange={(value) => setData('company_id', parseInt(value, 10))}>
+            <SelectTrigger id="company_id">
+              <SelectValue placeholder="Select a company" />
+            </SelectTrigger>
+            <SelectContent>
+              {companies.map((company) => (
+                <SelectItem key={company.value} value={company.value.toString()}>
+                  {company.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="is_active">Active</Label>
+          <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
+        </div>
+        <FieldMappingsModal fields={fields} />
+      </div>
+
+      {/* Environment Tabs */}
+      {data.type === 'ping-post' ? <PingPostEnvironmentTabs fields={fields} /> : <FlatEnvironmentTabs fields={fields} />}
 
       {/* Custom Payload Transformer */}
       <Card className="mt-6">
@@ -142,28 +184,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      {/* Production Payload Mapping - ONLY IN EDIT MODE */}
-      {isEdit && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Production Payload Mapping</CardTitle>
-            <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
-            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
-          </CardHeader>
-          <CardContent>
-            <MappingConfigurator
-              parsers={data.request_mapping_config}
-              onParserChange={handleMappingChange}
-              fields={fields}
-              onRemoveToken={handleRemoveToken}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {data.type === 'offerwall' && <OfferwallParserConfig />}
-
-      <div className="mt-6 flex justify-end gap-2">
+      <div className="mt-6 flex justify-end">
         <Button type="submit" disabled={processing}>
           {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
         </Button>

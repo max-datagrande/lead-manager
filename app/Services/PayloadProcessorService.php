@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Integration;
+use App\Models\IntegrationEnvironment;
+use Maxidev\Logger\TailLogger;
+
 /**
  * Servicio PayloadProcessorService
  * * Este servicio se encarga de transformar plantillas JSON con tokens dinámicos en estructuras
@@ -71,6 +75,130 @@ class PayloadProcessorService
   }
 
   /**
+   * Resolve {$field_id} tokens in a template using the relational token system.
+   *
+   * Replaces each {$N} placeholder with the lead's field value, applying
+   * value_mapping, data_type casting and per-environment hash config in order.
+   *
+   * @param  string                  $template    request_body template with {$N} tokens
+   * @param  Integration             $integration With tokenMappings + field eager-loaded
+   * @param  IntegrationEnvironment  $environment With fieldHashes eager-loaded
+   * @param  array<string, mixed>    $leadData    Lead fields keyed by field name
+   */
+  /**
+   * Build the replacement map for all tokens in one pass.
+   *
+   * Returns an array keyed by both token formats:
+   *   '{$field_id}'  => watermarked_value   (new format)
+   *   '{field_name}' => watermarked_value   (legacy format — headers/URLs)
+   *
+   * Call this once per request, then pass the map to applyReplacements() for
+   * each template (body, headers, URL) to avoid redundant recalculation.
+   *
+   * @param  Integration             $integration  With tokenMappings.field eager-loaded
+   * @param  IntegrationEnvironment  $environment  With fieldHashes eager-loaded
+   * @param  array<string, mixed>    $leadData     Lead fields keyed by field name
+   * @return array<string, string>
+   */
+  public function buildReplacements(
+    Integration $integration,
+    IntegrationEnvironment $environment,
+    array $leadData,
+  ): array {
+    $replacements = [];
+    $hashConfigs  = $environment->fieldHashes->keyBy('field_id');
+
+    foreach ($integration->tokenMappings as $mapping) {
+      if (! $mapping->field) {
+        continue;
+      }
+
+      $raw   = $leadData[$mapping->field->name] ?? $mapping->default_value ?? '';
+      $value = $mapping->value_mapping[$raw] ?? $raw;
+
+      $hashConfig = $hashConfigs->get($mapping->field_id);
+      if ($hashConfig?->is_hashed && $hashConfig->hash_algorithm) {
+        $value = $this->hashValue((string) $value, $hashConfig->hash_algorithm, $hashConfig->hmac_secret);
+      }
+
+      $watermarked = match ($mapping->data_type) {
+        'integer' => '___INT___' . (int) $value,
+        'float'   => '___FLOAT___' . (float) $value,
+        'boolean' => '___BOOL___' . (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'),
+        default   => (string) $value,
+      };
+
+      $replacements['{$' . $mapping->field_id . '}'] = $watermarked;
+      $replacements['{' . $mapping->field->name . '}'] = $watermarked;
+    }
+
+    return $replacements;
+  }
+
+  /**
+   * Apply a precomputed replacement map to a template and release type watermarks.
+   *
+   * @param  string                $template     Body, headers JSON, or URL string
+   * @param  array<string, string> $replacements From buildReplacements()
+   */
+  public function applyReplacements(string $template, array $replacements): string
+  {
+    if (empty($template)) {
+      return '';
+    }
+
+    $afterReplace = str_replace(array_keys($replacements), array_values($replacements), $template);
+    TailLogger::saveLog('After str_replace (before releaseTypes)', 'debug/payload-processor', 'info', [
+      'replacements' => $replacements,
+      'result' => $afterReplace,
+    ]);
+
+    $afterRelease = $this->releaseTypes($afterReplace);
+    TailLogger::saveLog('After releaseTypes', 'debug/payload-processor', 'info', [
+      'result' => $afterRelease,
+    ]);
+
+    return $afterRelease;
+  }
+
+  /**
+   * Convenience wrapper: build replacements and apply them in one call.
+   * Use buildReplacements() + applyReplacements() directly when you need to
+   * apply the same map to multiple templates (body, headers, URL).
+   */
+  public function resolveTokens(
+    string $template,
+    Integration $integration,
+    IntegrationEnvironment $environment,
+    array $leadData,
+  ): string {
+    return $this->applyReplacements(
+      $template,
+      $this->buildReplacements($integration, $environment, $leadData),
+    );
+  }
+
+  /**
+   * Hash a string value using the configured algorithm.
+   *
+   * @param  string       $value      The raw value to hash
+   * @param  string       $algorithm  md5 | sha1 | sha256 | sha512 | base64 | hmac_sha256
+   * @param  string|null  $secret     Required for hmac_sha256
+   */
+  private function hashValue(string $value, string $algorithm, ?string $secret): string
+  {
+    return match ($algorithm) {
+      'md5'         => md5($value),
+      'sha1'        => sha1($value),
+      'sha256'      => hash('sha256', $value),
+      'sha512'      => hash('sha512', $value),
+      'base64'      => base64_encode($value),
+      'hmac_sha256' => hash_hmac('sha256', $value, $secret ?? ''),
+      default       => $value,
+    };
+  }
+
+  /**
    * Inyecta los valores en el string usando marcas de agua para tipos específicos.
    */
   private function injectTokens(string $template, array $data): string
@@ -125,21 +253,61 @@ class PayloadProcessorService
   }
 
   /**
-   * Elimina las comillas de los valores marcados con marcas de agua.
+   * Convierte valores con watermark a sus tipos reales quitando las comillas que los envuelven.
+   *
+   * El sistema de watermarks funciona así:
+   *   1. buildReplacements() marca los valores tipados: "age" → ___INT___25
+   *   2. str_replace() inserta esos valores en el template JSON
+   *   3. releaseTypes() (esta función) quita las comillas JSON que envuelven el valor,
+   *      convirtiendo "___INT___25" (string) → 25 (integer nativo en JSON)
+   *
+   * Los tokens pueden aparecer en 3 contextos distintos dentro del JSON:
+   *
+   *   Contexto 1 — Valor JSON directo (comillas regulares):
+   *     Template:  "age": "{$100}"
+   *     Después:   "age": "___INT___25"
+   *     Resultado: "age": 25
+   *
+   *   Contexto 2 — Dentro de un JSON anidado como string (comillas escapadas \"):
+   *     Template:  "data": "{\"age\":\"{$100}\"}"
+   *     Después:   "data": "{\"age\":\"___INT___25\"}"
+   *     Resultado: "data": "{\"age\":25}"
+   *
+   *   Contexto 3 — Sin comillas (token insertado sin wrapper):
+   *     Template:  "data": "{\"age\":{$100}}"
+   *     Después:   "data": "{\"age\":___INT___25}"
+   *     Resultado: "data": "{\"age\":25}"
    */
   private function releaseTypes(string $jsonString): string
   {
-    //Deprecated code (Replace with regex) to prevent complex and bad performance by multiple replacements
-    /*  $jsonString = preg_replace('/"___INT___(.*?)"/', '$1', $jsonString);
-    $jsonString = preg_replace('/"___BOOL___(.*?)"/', '$1', $jsonString);
-    $jsonString = preg_replace('/"___FLOAT___(.*?)"/', '$1', $jsonString);
+    $notEscaped = '(?<!\\\\)';
+    $escaped    = '\\\\"';
+    $capture    = '$1';
 
-    return $jsonString; */
-    return preg_replace(
-      ['/"___INT___(.*?)"/', '/"___BOOL___(.*?)"/', '/"___FLOAT___(.*?)"/'],
-      ['$1', '$1', '$1'],
-      $jsonString
-    );
+    $watermarks = [
+      'integer' => '-?\d+',
+      'boolean' => 'true|false',
+      'float'   => '-?[\d.]+',
+    ];
+
+    foreach ($watermarks as $type => $valuePattern) {
+      $marker = match ($type) {
+        'integer' => '___INT___',
+        'boolean' => '___BOOL___',
+        'float'   => '___FLOAT___',
+      };
+
+      // ── Contexto 1: comillas regulares "___INT___25" → 25
+      $jsonString = preg_replace("/{$notEscaped}\"{$marker}({$valuePattern}){$notEscaped}\"/", $capture, $jsonString);
+
+      // ── Contexto 2: comillas escapadas \"___INT___25\" → 25 (JSON anidado como string)
+      $jsonString = preg_replace("/{$escaped}{$marker}({$valuePattern}){$escaped}/", $capture, $jsonString);
+
+      // ── Contexto 3: sin comillas ___INT___25 → 25 (fallback)
+      $jsonString = preg_replace("/{$marker}({$valuePattern})/", $capture, $jsonString);
+    }
+
+    return $jsonString;
   }
 }
 

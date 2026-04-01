@@ -4,6 +4,11 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use App\Models\IntegrationFieldMapping;
+use App\Models\OfferwallResponseConfig;
+use App\Models\PingResponseConfig;
+use App\Models\PostResponseConfig;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -32,11 +37,21 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'response_parser_config' => 'required_if:type,offerwall|array',
-      'request_mapping_config' => 'nullable|array',
-      'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|string',
-      'environments.production.url' => 'required|string',
+      'field_mappings' => 'nullable|array',
+      'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
+      'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
+      'field_mappings.*.default_value' => 'nullable|string',
+      'field_mappings.*.value_mapping' => 'nullable|array',
+      'environments' => 'required|array',
+      'environments.*.env_type' => 'required|in:ping,post,offerwall',
+      'environments.*.environment' => 'required|in:development,production',
+      'environments.*.url' => 'required|string',
+      'environments.*.response_config' => 'nullable|array',
+      'environments.*.field_hashes' => 'nullable|array',
+      'environments.*.field_hashes.*.field_id' => 'required_with:environments.*.field_hashes|integer|exists:fields,id',
+      'environments.*.field_hashes.*.is_hashed' => 'nullable|boolean',
+      'environments.*.field_hashes.*.hash_algorithm' => 'nullable|in:md5,sha1,sha256,sha512,base64,hmac_sha256',
+      'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -54,22 +69,26 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'response_parser_config' => $data['response_parser_config'] ?? null,
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      foreach ($data['environments'] as $envName => $envData) {
-        $integration->environments()->create([
-          'environment' => $envName,
+      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
+
+      foreach ($data['environments'] as $envData) {
+        $env = $integration->environments()->create([
+          'env_type' => $envData['env_type'],
+          'environment' => $envData['environment'],
           'url' => $envData['url'],
           'method' => $envData['method'],
-          'request_headers' => $this->convertHeadersToJson($envData['request_headers']),
-          'request_body' => $envData['request_body'],
+          'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
+          'request_body' => $envData['request_body'] ?? null,
           'content_type' => $envData['content_type'] ?? 'application/json',
           'authentication_type' => $envData['authentication_type'] ?? 'none',
         ]);
+
+        $this->saveResponseConfig($env, $envData['response_config'] ?? null);
+        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
       }
 
       return $integration;
@@ -95,11 +114,21 @@ class IntegrationService
       'type' => 'required|in:ping-post,post-only,offerwall',
       'is_active' => 'required|boolean',
       'company_id' => 'required|exists:companies,id',
-      'response_parser_config' => 'required_if:type,offerwall|array',
-      'request_mapping_config' => 'nullable|array',
-      'environments' => 'required|array|size:2',
-      'environments.development.url' => 'required|string',
-      'environments.production.url' => 'required|string',
+      'field_mappings' => 'nullable|array',
+      'field_mappings.*.field_id' => 'required_with:field_mappings|integer|exists:fields,id',
+      'field_mappings.*.data_type' => 'nullable|in:string,integer,float,boolean',
+      'field_mappings.*.default_value' => 'nullable|string',
+      'field_mappings.*.value_mapping' => 'nullable|array',
+      'environments' => 'required|array',
+      'environments.*.env_type' => 'required|in:ping,post,offerwall',
+      'environments.*.environment' => 'required|in:development,production',
+      'environments.*.url' => 'required|string',
+      'environments.*.response_config' => 'nullable|array',
+      'environments.*.field_hashes' => 'nullable|array',
+      'environments.*.field_hashes.*.field_id' => 'required_with:environments.*.field_hashes|integer|exists:fields,id',
+      'environments.*.field_hashes.*.is_hashed' => 'nullable|boolean',
+      'environments.*.field_hashes.*.hash_algorithm' => 'nullable|in:md5,sha1,sha256,sha512,base64,hmac_sha256',
+      'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
     ]);
@@ -117,24 +146,27 @@ class IntegrationService
         'type' => $data['type'],
         'is_active' => $data['is_active'],
         'company_id' => $data['company_id'],
-        'response_parser_config' => $data['response_parser_config'] ?? null,
-        'request_mapping_config' => $data['request_mapping_config'] ?? null,
         'payload_transformer' => $data['payload_transformer'] ?? null,
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      foreach ($data['environments'] as $envName => $envData) {
-        $integration->environments()->updateOrCreate(
-          ['environment' => $envName], // Condiciones para buscar
-          [ // Datos para actualizar o crear
+      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
+
+      foreach ($data['environments'] as $envData) {
+        $env = $integration->environments()->updateOrCreate(
+          ['environment' => $envData['environment'], 'env_type' => $envData['env_type']],
+          [
             'url' => $envData['url'],
             'method' => $envData['method'],
-            'request_headers' => $this->convertHeadersToJson($envData['request_headers']),
-            'request_body' => $envData['request_body'],
+            'request_headers' => $this->convertHeadersToJson($envData['request_headers'] ?? []),
+            'request_body' => $envData['request_body'] ?? null,
             'content_type' => $envData['content_type'] ?? 'application/json',
             'authentication_type' => $envData['authentication_type'] ?? 'none',
           ]
         );
+
+        $this->saveResponseConfig($env, $envData['response_config'] ?? null);
+        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
       }
 
       return $integration;
@@ -161,17 +193,27 @@ class IntegrationService
    */
   public function duplicateIntegration(Integration $integration, ?string $newName = null)
   {
-    $integration->load('environments');
+    $integration->load([
+      'environments.offerwallResponseConfig',
+      'environments.pingResponseConfig',
+      'environments.postResponseConfig',
+      'environments.fieldHashes',
+      'tokenMappings',
+    ]);
 
     $data = [
       'name' => $newName ?? ($integration->name . ' (Copy)'),
       'type' => $integration->type,
-      'is_active' => false, // Set to inactive by default for safety
+      'is_active' => false,
       'company_id' => $integration->company_id,
-      'response_parser_config' => $integration->response_parser_config,
-      'request_mapping_config' => $integration->request_mapping_config,
       'payload_transformer' => $integration->payload_transformer,
       'use_custom_transformer' => $integration->use_custom_transformer,
+      'field_mappings' => $integration->tokenMappings->map(fn($m) => [
+        'field_id'      => $m->field_id,
+        'data_type'     => $m->data_type,
+        'default_value' => $m->default_value,
+        'value_mapping' => $m->value_mapping,
+      ])->toArray(),
       'environments' => [],
     ];
 
@@ -182,13 +224,42 @@ class IntegrationService
         $formattedHeaders[] = ['key' => $key, 'value' => $value];
       }
 
-      $data['environments'][$env->environment] = [
+      $responseConfig = match ($env->env_type) {
+        IntegrationEnvironment::ENV_TYPE_OFFERWALL => $env->offerwallResponseConfig ? [
+          'offer_list_path' => $env->offerwallResponseConfig->offer_list_path,
+          'mapping' => $env->offerwallResponseConfig->mapping,
+          'fallbacks' => $env->offerwallResponseConfig->fallbacks,
+        ] : null,
+        IntegrationEnvironment::ENV_TYPE_PING => $env->pingResponseConfig ? [
+          'bid_price_path' => $env->pingResponseConfig->bid_price_path,
+          'accepted_path' => $env->pingResponseConfig->accepted_path,
+          'accepted_value' => $env->pingResponseConfig->accepted_value,
+          'lead_id_path' => $env->pingResponseConfig->lead_id_path,
+        ] : null,
+        IntegrationEnvironment::ENV_TYPE_POST => $env->postResponseConfig ? [
+          'accepted_path' => $env->postResponseConfig->accepted_path,
+          'accepted_value' => $env->postResponseConfig->accepted_value,
+          'rejected_path' => $env->postResponseConfig->rejected_path,
+        ] : null,
+        default => null,
+      };
+
+      $data['environments'][] = [
+        'env_type' => $env->env_type,
+        'environment' => $env->environment,
         'url' => $env->url,
         'method' => $env->method,
         'request_headers' => $formattedHeaders,
         'request_body' => $env->request_body,
+        'response_config' => $responseConfig,
         'content_type' => $env->content_type,
         'authentication_type' => $env->authentication_type,
+        'field_hashes' => $env->fieldHashes->map(fn($h) => [
+          'field_id'       => $h->field_id,
+          'is_hashed'      => $h->is_hashed,
+          'hash_algorithm' => $h->hash_algorithm,
+          'hmac_secret'    => $h->hmac_secret,
+        ])->toArray(),
       ];
     }
 
@@ -242,6 +313,52 @@ class IntegrationService
   }
 
   /**
+   * Sync token mappings for an integration (delete + recreate).
+   *
+   * @param  array<int, array{field_id: int, data_type?: string, default_value?: string, value_mapping?: array}>  $mappings
+   */
+  private function syncTokenMappings(Integration $integration, array $mappings): void
+  {
+    $integration->tokenMappings()->delete();
+
+    if (empty($mappings)) {
+      return;
+    }
+
+    $integration->tokenMappings()->createMany(
+      collect($mappings)->map(fn($m) => [
+        'field_id'      => $m['field_id'],
+        'data_type'     => $m['data_type'] ?? 'string',
+        'default_value' => $m['default_value'] ?? null,
+        'value_mapping' => !empty($m['value_mapping']) ? $m['value_mapping'] : null,
+      ])->toArray()
+    );
+  }
+
+  /**
+   * Sync field hash configs for an environment (delete + recreate).
+   *
+   * @param  array<int, array{field_id: int, is_hashed?: bool, hash_algorithm?: string, hmac_secret?: string}>  $hashes
+   */
+  private function syncFieldHashes(IntegrationEnvironment $env, array $hashes): void
+  {
+    $env->fieldHashes()->delete();
+
+    if (empty($hashes)) {
+      return;
+    }
+
+    $env->fieldHashes()->createMany(
+      collect($hashes)->map(fn($h) => [
+        'field_id'       => $h['field_id'],
+        'is_hashed'      => $h['is_hashed'] ?? false,
+        'hash_algorithm' => $h['hash_algorithm'] ?? null,
+        'hmac_secret'    => $h['hmac_secret'] ?? null,
+      ])->toArray()
+    );
+  }
+
+  /**
    * Convert an array of key-value pairs to a JSON string.
    *
    * @param array $headers
@@ -286,7 +403,7 @@ class IntegrationService
    * @param  Integration  $integration  Modelo de integración con su configuración de parseo
    * @return array Lista de ofertas normalizadas
    */
-  public function parseOfferwallResponse(array $jsonResponse, Integration $integration): array
+  public function parseOfferwallResponse(array $jsonResponse, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
     TailLogger::saveLog(
       "Parsing offerwall response for Integration ID: {$integration->id}",
@@ -295,8 +412,12 @@ class IntegrationService
       ['integration_id' => $integration->id]
     );
 
-    $parserConfig = $integration->response_parser_config;
-    $pathOfOffers = $parserConfig['offer_list_path'] ?? '';
+    $env = $environment ?? $integration->environments
+      ->where('env_type', 'offerwall')
+      ->where('environment', 'production')
+      ->first();
+    $parserConfig = $env?->response_config;
+    $pathOfOffers = $parserConfig?->offer_list_path ?? '';
     $offers = data_get($jsonResponse, $pathOfOffers);
     TailLogger::saveLog(
       "Offers found at path: {$pathOfOffers}",
@@ -324,10 +445,11 @@ class IntegrationService
       return [];
     }
 
+    $mapping = $parserConfig?->mapping ?? [];
     $mappedOffers = [];
     foreach ($offers as $offer) {
       $mappedOffer = [];
-      foreach ($parserConfig['mapping'] as $key => $valuePath) {
+      foreach ($mapping as $key => $valuePath) {
         $mappedOffer[$key] = !empty($valuePath) ? data_get($offer, $valuePath) : null;
       }
       // Add integration id
@@ -358,10 +480,13 @@ class IntegrationService
    * @param  Integration  $integration  Integration model containing the fallback config
    * @return array<int, array<string, mixed>>
    */
-  public function applyOfferFallbacks(array $mappedOffers, Integration $integration): array
+  public function applyOfferFallbacks(array $mappedOffers, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
-    $parserConfig = $integration->response_parser_config;
-    $fallbacks = $parserConfig['fallbacks'] ?? [];
+    $env = $environment ?? $integration->environments
+      ->where('env_type', 'offerwall')
+      ->where('environment', 'production')
+      ->first();
+    $fallbacks = $env?->response_config?->fallbacks ?? [];
 
     if (empty($fallbacks)) {
       return $mappedOffers;
@@ -379,6 +504,48 @@ class IntegrationService
     unset($offer);
 
     return $mappedOffers;
+  }
+
+  /**
+   * Save or update the typed response config for an environment.
+   *
+   * Routes to the correct table based on `env_type` and uses
+   * `updateOrCreate` to handle both create and update flows.
+   */
+  private function saveResponseConfig(IntegrationEnvironment $env, ?array $configData): void
+  {
+    if (empty($configData)) {
+      return;
+    }
+
+    match ($env->env_type) {
+      IntegrationEnvironment::ENV_TYPE_OFFERWALL => OfferwallResponseConfig::updateOrCreate(
+        ['integration_environment_id' => $env->id],
+        [
+          'offer_list_path' => $configData['offer_list_path'] ?? null,
+          'mapping' => $configData['mapping'] ?? null,
+          'fallbacks' => $configData['fallbacks'] ?? null,
+        ]
+      ),
+      IntegrationEnvironment::ENV_TYPE_PING => PingResponseConfig::updateOrCreate(
+        ['integration_environment_id' => $env->id],
+        [
+          'bid_price_path' => $configData['bid_price_path'] ?? null,
+          'accepted_path' => $configData['accepted_path'] ?? null,
+          'accepted_value' => $configData['accepted_value'] ?? null,
+          'lead_id_path' => $configData['lead_id_path'] ?? null,
+        ]
+      ),
+      IntegrationEnvironment::ENV_TYPE_POST => PostResponseConfig::updateOrCreate(
+        ['integration_environment_id' => $env->id],
+        [
+          'accepted_path' => $configData['accepted_path'] ?? null,
+          'accepted_value' => $configData['accepted_value'] ?? null,
+          'rejected_path' => $configData['rejected_path'] ?? null,
+        ]
+      ),
+      default => null,
+    };
   }
 }
 
