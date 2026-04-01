@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
 import { Radio, Send } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
 import { FieldMappingsModal } from './field-mappings-modal';
 import { IntegrationTypeCards } from './integration-type-selector';
@@ -104,9 +105,21 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
 
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        formRef.current?.requestSubmit();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form ref={formRef} onSubmit={handleSubmit}>
       {/* Type selector — interactive in create, read-only in edit */}
       <div className="space-y-2">
         <Label>Integration Type</Label>
@@ -168,7 +181,7 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      <div className="mt-6 flex items-center justify-between gap-2">
+      <div className="sticky bottom-0 mt-6 flex items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <FieldMappingsModal fields={fields} />
         <Button type="submit" disabled={processing}>
           {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
