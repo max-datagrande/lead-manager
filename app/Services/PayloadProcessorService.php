@@ -84,31 +84,42 @@ class PayloadProcessorService
    * @param  IntegrationEnvironment  $environment With fieldHashes eager-loaded
    * @param  array<string, mixed>    $leadData    Lead fields keyed by field name
    */
-  public function resolveTokens(
-    string $template,
+  /**
+   * Build the replacement map for all tokens in one pass.
+   *
+   * Returns an array keyed by both token formats:
+   *   '{$field_id}'  => watermarked_value   (new format)
+   *   '{field_name}' => watermarked_value   (legacy format — headers/URLs)
+   *
+   * Call this once per request, then pass the map to applyReplacements() for
+   * each template (body, headers, URL) to avoid redundant recalculation.
+   *
+   * @param  Integration             $integration  With tokenMappings.field eager-loaded
+   * @param  IntegrationEnvironment  $environment  With fieldHashes eager-loaded
+   * @param  array<string, mixed>    $leadData     Lead fields keyed by field name
+   * @return array<string, string>
+   */
+  public function buildReplacements(
     Integration $integration,
     IntegrationEnvironment $environment,
-    array $leadData
-  ): string {
-    if (empty($template)) {
-      return '';
-    }
-
-    $hashConfigs = $environment->fieldHashes->keyBy('field_id');
+    array $leadData,
+  ): array {
+    $replacements = [];
+    $hashConfigs  = $environment->fieldHashes->keyBy('field_id');
 
     foreach ($integration->tokenMappings as $mapping) {
-      $raw = $leadData[$mapping->field->name] ?? $mapping->default_value ?? '';
+      if (! $mapping->field) {
+        continue;
+      }
 
-      // Apply value_mapping if configured
+      $raw   = $leadData[$mapping->field->name] ?? $mapping->default_value ?? '';
       $value = $mapping->value_mapping[$raw] ?? $raw;
 
-      // Apply hash before type watermarking
       $hashConfig = $hashConfigs->get($mapping->field_id);
       if ($hashConfig?->is_hashed && $hashConfig->hash_algorithm) {
         $value = $this->hashValue((string) $value, $hashConfig->hash_algorithm, $hashConfig->hmac_secret);
       }
 
-      // Watermark based on data_type so releaseTypes() strips quotes in JSON
       $watermarked = match ($mapping->data_type) {
         'integer' => '___INT___' . (int) $value,
         'float'   => '___FLOAT___' . (float) $value,
@@ -116,10 +127,45 @@ class PayloadProcessorService
         default   => (string) $value,
       };
 
-      $template = str_replace('{$' . $mapping->field_id . '}', $watermarked, $template);
+      $replacements['{$' . $mapping->field_id . '}'] = $watermarked;
+      $replacements['{' . $mapping->field->name . '}'] = $watermarked;
     }
 
-    return $this->releaseTypes($template);
+    return $replacements;
+  }
+
+  /**
+   * Apply a precomputed replacement map to a template and release type watermarks.
+   *
+   * @param  string                $template     Body, headers JSON, or URL string
+   * @param  array<string, string> $replacements From buildReplacements()
+   */
+  public function applyReplacements(string $template, array $replacements): string
+  {
+    if (empty($template)) {
+      return '';
+    }
+
+    return $this->releaseTypes(
+      str_replace(array_keys($replacements), array_values($replacements), $template)
+    );
+  }
+
+  /**
+   * Convenience wrapper: build replacements and apply them in one call.
+   * Use buildReplacements() + applyReplacements() directly when you need to
+   * apply the same map to multiple templates (body, headers, URL).
+   */
+  public function resolveTokens(
+    string $template,
+    Integration $integration,
+    IntegrationEnvironment $environment,
+    array $leadData,
+  ): string {
+    return $this->applyReplacements(
+      $template,
+      $this->buildReplacements($integration, $environment, $leadData),
+    );
   }
 
   /**
@@ -207,8 +253,10 @@ class PayloadProcessorService
     $jsonString = preg_replace('/"___FLOAT___(.*?)"/', '$1', $jsonString);
 
     return $jsonString; */
+    // Negative lookbehind (?<!\\) prevents matching escaped quotes (\") inside
+    // nested JSON strings, which would corrupt the outer JSON structure.
     return preg_replace(
-      ['/"___INT___(.*?)"/', '/"___BOOL___(.*?)"/', '/"___FLOAT___(.*?)"/'],
+      ['/(?<!\\\\)"___INT___(.*?)(?<!\\\\)"/', '/(?<!\\\\)"___BOOL___(.*?)(?<!\\\\)"/', '/(?<!\\\\)"___FLOAT___(.*?)(?<!\\\\)"/'],
       ['$1', '$1', '$1'],
       $jsonString
     );
