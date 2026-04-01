@@ -9,10 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
 import { Radio, Send } from 'lucide-react';
 import { EnvironmentTab } from './enviroments-tab';
-import { MappingConfigurator } from './mapping-configurator';
+import { FieldMappingsModal } from './field-mappings-modal';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { PingPostResponseConfig } from './ping-post-response-config';
-import { TokenInserter } from './token-inserter';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -105,23 +104,6 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
 
-  const handleTokenSelect = (tokenName: string) => {
-    setData('request_mapping_config', { ...data.request_mapping_config, [tokenName]: {} });
-  };
-
-  const handleMappingChange = (token: string, field: string, fieldValue: any) => {
-    setData('request_mapping_config', {
-      ...data.request_mapping_config,
-      [token]: { ...data.request_mapping_config[token], [field]: fieldValue },
-    });
-  };
-
-  const handleRemoveToken = (tokenName: string) => {
-    const updated = { ...data.request_mapping_config };
-    delete updated[tokenName];
-    setData('request_mapping_config', updated);
-  };
-
   return (
     <form onSubmit={handleSubmit}>
       {/* Form Header */}
@@ -192,26 +174,8 @@ export function IntegrationForm({ companies = [], fields = [] }) {
         )}
       </Card>
 
-      {/* Production Payload Mapping — edit mode only */}
-      {isEdit && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Production Payload Mapping</CardTitle>
-            <CardDescription>Insert dynamic fields and configure how they are parsed.</CardDescription>
-            <TokenInserter fields={fields} onTokenSelect={handleTokenSelect} />
-          </CardHeader>
-          <CardContent>
-            <MappingConfigurator
-              parsers={data.request_mapping_config}
-              onParserChange={handleMappingChange}
-              fields={fields}
-              onRemoveToken={handleRemoveToken}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mt-6 flex justify-end gap-2">
+      <div className="mt-6 flex items-center justify-between gap-2">
+        <FieldMappingsModal fields={fields} />
         <Button type="submit" disabled={processing}>
           {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Integration'}
         </Button>
