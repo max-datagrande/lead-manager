@@ -9,6 +9,7 @@ const defaultEnv = () => ({
   request_headers: [],
   request_body: { template: '', parsers: {} },
   response_config: null,
+  field_hashes: [],
 });
 
 // Helper to parse headers from a JSON string into a key-value array
@@ -32,6 +33,14 @@ const normalizeEnvRecord = (env) => ({
       ? JSON.parse(env.request_body || '{}')
       : (env.request_body ?? { template: '', parsers: {} }),
   response_config: env.response_config ?? null,
+  field_hashes: Array.isArray(env.field_hashes)
+    ? env.field_hashes.map((h) => ({
+        field_id: h.field_id,
+        is_hashed: h.is_hashed ?? false,
+        hash_algorithm: h.hash_algorithm ?? null,
+        hmac_secret: h.hmac_secret ?? null,
+      }))
+    : [],
 });
 
 // Helper to transform environments from the server for the form
@@ -79,6 +88,7 @@ const serializeEnvs = (type, environments) => {
     content_type: envData.content_type ?? 'application/json',
     authentication_type: envData.authentication_type ?? 'none',
     response_config: envData.response_config ?? null,
+    field_hashes: envData.field_hashes ?? [],
   });
 
   if (type === 'ping-post') {
@@ -286,6 +296,40 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     ))
   }
 
+  /**
+   * Update the hash config for a specific (envKey, fieldId) pair.
+   * envKey format: "${envType}-${env}" for ping-post, "${env}" for flat.
+   *
+   * @param {string} envKey
+   * @param {number} fieldId
+   * @param {Partial<{ is_hashed: boolean, hash_algorithm: string|null, hmac_secret: string|null }>} patch
+   */
+  const updateFieldHash = (envKey, fieldId, patch) => {
+    const nextState = produce(data, (draft) => {
+      // Resolve the env slot from the envKey
+      let envSlot
+      if (envKey.includes('-')) {
+        const dashIdx = envKey.indexOf('-')
+        const envType = envKey.substring(0, dashIdx)
+        const env = envKey.substring(dashIdx + 1)
+        envSlot = draft.environments[envType]?.[env]
+      } else {
+        envSlot = draft.environments[envKey]
+      }
+      if (!envSlot) return
+
+      const hashes = envSlot.field_hashes ?? []
+      const idx = hashes.findIndex((h) => h.field_id === fieldId)
+      if (idx >= 0) {
+        Object.assign(hashes[idx], patch)
+      } else {
+        hashes.push({ field_id: fieldId, is_hashed: false, hash_algorithm: null, hmac_secret: null, ...patch })
+      }
+      envSlot.field_hashes = hashes
+    })
+    setData(nextState)
+  }
+
   const value = {
     isEdit,
     data,
@@ -298,6 +342,7 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     onTokenInsert,
     onTokenRemove,
     updateFieldMapping,
+    updateFieldHash,
   };
 
   return <IntegrationsContext.Provider value={value}>{children}</IntegrationsContext.Provider>;

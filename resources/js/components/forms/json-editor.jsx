@@ -26,7 +26,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
  *   onTokenRemove?: (fieldId: number) => void,
  * }} props
  */
-const JsonEditor = ({ label, className = '', value, onChange, placeholder, fields = [], onTokenInsert = null, onTokenRemove = null, ...props }) => {
+const JsonEditor = ({ label, className = '', value, onChange, placeholder, fields = [], onTokenInsert = null, onTokenRemove = null, getHashConfig = null, onHashChange = null, ...props }) => {
   const theme = getCurrentTheme()
   const { addMessage } = useToast()
   const viewRef = useRef(null)
@@ -203,6 +203,8 @@ const JsonEditor = ({ label, className = '', value, onChange, placeholder, field
           fieldId={activePill.fieldId}
           field={activePill.field}
           position={activePill.position}
+          hashConfig={getHashConfig ? getHashConfig(activePill.fieldId) : null}
+          onHashChange={onHashChange ? (patch) => onHashChange(activePill.fieldId, patch) : null}
           onDelete={handlePillDelete}
           onClose={handlePillClose}
         />

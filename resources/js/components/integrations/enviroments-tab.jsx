@@ -10,7 +10,7 @@ import { useIntegrations } from '@/hooks/use-integrations';
  * @param {import('@/types/integrations').EnvironmentTabProps} props
  */
 export function EnvironmentTab({ env, envType = null, fields = [] }) {
-  const { data, handleEnvironmentChange, onTokenInsert, onTokenRemove } = useIntegrations();
+  const { data, handleEnvironmentChange, onTokenInsert, onTokenRemove, updateFieldHash } = useIntegrations();
   const headerFields = fields.map((field) => `{${field.name}}`);
   const headerValues = [...HEADER_VALUES, ...headerFields];
 
@@ -75,6 +75,8 @@ export function EnvironmentTab({ env, envType = null, fields = [] }) {
           fields={fields}
           onTokenInsert={(fieldId) => onTokenInsert(envKey, fieldId)}
           onTokenRemove={(fieldId) => onTokenRemove(envKey, fieldId)}
+          getHashConfig={(fieldId) => (envData?.field_hashes ?? []).find((h) => h.field_id === fieldId) ?? null}
+          onHashChange={(fieldId, patch) => updateFieldHash(envKey, fieldId, patch)}
         />
       </div>
     </div>
