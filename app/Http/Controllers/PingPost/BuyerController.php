@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\PingPost;
 
-use App\Enums\PricingType;
+use App\Enums\PriceSource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PingPost\StoreBuyerConfigRequest;
 use App\Models\Buyer;
+use App\Models\Field;
 use App\Models\Integration;
 use App\Services\PingPost\BuyerConfigService;
 use Inertia\Inertia;
@@ -40,7 +41,8 @@ class BuyerController extends Controller
 
     return Inertia::render('ping-post/buyers/create', [
       'integrations' => $integrations,
-      'pricingTypes' => PricingType::toArray(),
+      'priceSources' => PriceSource::toArray(),
+      'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
     ]);
   }
 
@@ -87,7 +89,8 @@ class BuyerController extends Controller
       'integrations' => Integration::whereIn('type', ['ping-post', 'post-only'])
         ->orderBy('name')
         ->get(['id', 'name', 'type']),
-      'pricingTypes' => PricingType::toArray(),
+      'priceSources' => PriceSource::toArray(),
+      'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
     ]);
   }
 
