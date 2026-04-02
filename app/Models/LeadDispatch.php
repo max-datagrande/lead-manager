@@ -15,6 +15,7 @@ class LeadDispatch extends Model
         'workflow_id',
         'lead_id',
         'fingerprint',
+        'lead_snapshot',
         'status',
         'strategy_used',
         'winner_integration_id',
@@ -27,6 +28,7 @@ class LeadDispatch extends Model
     ];
 
     protected $casts = [
+        'lead_snapshot' => 'array',
         'status' => DispatchStatus::class,
         'final_price' => 'decimal:4',
         'fallback_activated' => 'boolean',
