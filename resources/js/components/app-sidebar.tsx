@@ -216,7 +216,8 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navGroups.map((group) => {
-          if (group.title === 'Admin' && !isAdmin) {
+          const hasAdminAccess = group.title === 'Admin' && !isAdmin;
+          if (hasAdminAccess) {
             return null;
           }
           return <NavGroup key={group.title} title={group.title} items={group.items} currentHref={currentUrl} />;
