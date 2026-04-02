@@ -4,7 +4,26 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Bug, Coins, Cpu, Factory, FileText, FlaskConical, LayoutGrid, LayoutList, List, Shield, TextCursorInput, Users, Webhook, Layers, Globe, Share2, Network, ClipboardList } from 'lucide-react';
+import {
+  BookOpen,
+  Bug,
+  ClipboardList,
+  Coins,
+  Cpu,
+  Factory,
+  FileText,
+  FlaskConical,
+  Globe,
+  Layers,
+  LayoutGrid,
+  LayoutList,
+  List,
+  Network,
+  Shield,
+  TextCursorInput,
+  Users,
+  Webhook,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 import { NavGroup } from './nav-group';
 
@@ -140,7 +159,16 @@ const ShareLeadsGroup: NavGroupType = {
   ],
 };
 
-const navGroups: NavGroupType[] = [DashboardGroup, LeadManagementGroup, PostbacksGroup, OfferwallGroup, ShareLeadsGroup, SystemGroup];
+const DocumentationGroup: NavGroupType = {
+  title: 'Documentation',
+  items: [
+    {
+      title: 'Catalyst',
+      href: '/docs/catalyst/overview',
+      icon: BookOpen,
+    },
+  ],
+};
 
 const AdminGroup: NavGroupType = {
   title: 'Admin',
@@ -157,6 +185,17 @@ const AdminGroup: NavGroupType = {
     },
   ],
 };
+
+const navGroups: NavGroupType[] = [
+  DashboardGroup,
+  LeadManagementGroup,
+  PostbacksGroup,
+  OfferwallGroup,
+  ShareLeadsGroup,
+  SystemGroup,
+  DocumentationGroup,
+  AdminGroup
+];
 
 export function AppSidebar() {
   const page = usePage<SharedData>();
@@ -182,7 +221,6 @@ export function AppSidebar() {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        {isAdmin && <NavFooter items={AdminGroup.items} title={AdminGroup.title} className="mt-auto" />}
         <NavUser />
       </SidebarFooter>
     </Sidebar>
