@@ -49,10 +49,10 @@ const DispatchesShow = ({ dispatch }: Props) => {
                   <span className="font-medium text-green-600">${Number(dispatch.final_price).toFixed(2)}</span>
                 </div>
               )}
-              {dispatch.winnerIntegration && (
+              {dispatch.winner_integration && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Winner</span>
-                  <span>{dispatch.winnerIntegration.name}</span>
+                  <span>{dispatch.winner_integration.name}</span>
                 </div>
               )}
               {dispatch.total_duration_ms && (
