@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
 use Illuminate\Support\Facades\App;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -52,10 +53,13 @@ class WorkflowSyncController extends Controller
     try {
       $response = Http::get($productionEndpoint);
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch workflows from production.',
-          'details' => $response->body(),
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch workflows from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -77,7 +81,7 @@ class WorkflowSyncController extends Controller
           if (isset($workflow['id'])) {
             $model->id = $workflow['id'];
           }
-          $model->user_id = Auth::id();
+          $model->user_id = Auth::id() ?? User::first()?->id;
           $model->save();
         }
 
