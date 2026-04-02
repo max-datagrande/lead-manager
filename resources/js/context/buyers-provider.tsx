@@ -1,24 +1,14 @@
+import { useToast } from '@/hooks/use-toast'
 import { useForm } from '@inertiajs/react'
 import { createContext, useMemo } from 'react'
 import { route } from 'ziggy-js'
-import type { Buyer, CapRule, EligibilityRule } from '@/types/ping-post'
+import type { Buyer } from '@/types/ping-post'
+
+type BuyerFormData = ReturnType<typeof buildInitialData>
 
 interface BuyersContextValue {
   isEdit: boolean
-  data: {
-    name: string
-    integration_id: number | null
-    is_active: boolean
-    company_id: number | null
-    ping_timeout_ms: number | ''
-    post_timeout_ms: number | ''
-    pricing_type: string
-    fixed_price: string
-    min_bid: string
-    postback_pending_days: number | ''
-    eligibility_rules: EligibilityRule[]
-    caps: CapRule[]
-  }
+  data: BuyerFormData
   errors: Record<string, string>
   processing: boolean
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
@@ -28,7 +18,7 @@ interface BuyersContextValue {
 export const BuyersContext = createContext<BuyersContextValue | null>(null)
 
 function buildInitialData(buyer: Buyer | null) {
-  const cfg = buyer?.buyerConfig
+  const cfg = buyer?.buyer_config
   return {
     name: buyer?.name ?? '',
     integration_id: buyer?.integration_id ?? null,
@@ -40,8 +30,8 @@ function buildInitialData(buyer: Buyer | null) {
     fixed_price: String(cfg?.fixed_price ?? ''),
     min_bid: String(cfg?.min_bid ?? ''),
     postback_pending_days: cfg?.postback_pending_days ?? '',
-    eligibility_rules: buyer?.eligibilityRules ?? [],
-    caps: buyer?.capRules ?? [],
+    eligibility_rules: buyer?.eligibility_rules ?? [],
+    caps: buyer?.cap_rules ?? [],
   }
 }
 
@@ -53,12 +43,22 @@ interface Props {
 export function BuyersProvider({ children, buyer = null }: Props) {
   const isEdit = !!buyer
   const initialData = useMemo(() => buildInitialData(buyer), [buyer?.id])
+  const { addMessage } = useToast()
 
   const { data, setData, post, put, processing, errors } = useForm(initialData)
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const options = { preserveScroll: true }
+    const options = {
+      preserveScroll: true,
+      onSuccess: (page: any) => {
+        const flash = page.props?.flash
+        if (flash?.success) addMessage(flash.success, 'success')
+      },
+      onError: () => {
+        addMessage('Please fix the validation errors below.', 'error')
+      },
+    }
     if (isEdit && buyer?.id) {
       put(route('ping-post.buyers.update', buyer.id), options)
     } else {

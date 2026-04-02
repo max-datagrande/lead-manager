@@ -39,7 +39,7 @@ class StoreBuyerConfigRequest extends FormRequest
       'conditional_pricing_rules.*.conditions.*.op' => ['required', 'string', Rule::in(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in'])],
       'conditional_pricing_rules.*.conditions.*.value' => ['required'],
       'conditional_pricing_rules.*.price' => ['required', 'numeric', 'min:0'],
-      'postback_pending_days' => ['nullable', 'integer', 'min:1', 'max:90'],
+      'postback_pending_days' => $this->input('pricing_type') === 'postback' ? ['required', 'integer', 'min:1', 'max:90'] : ['exclude'],
     ];
   }
 }

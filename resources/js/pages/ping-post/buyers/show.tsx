@@ -49,7 +49,7 @@ interface Props {
 const BuyersShow = ({ buyer }: Props) => {
   const [deleteOpen, setDeleteOpen] = useState(false)
 
-  const cfg = buyer.buyerConfig
+  const cfg = buyer.buyer_config
   const environments = buyer.integration?.environments ?? []
 
   const getEnv = (envType: 'ping' | 'post', environment: 'production'): EnvironmentDB | undefined =>
@@ -223,12 +223,12 @@ const BuyersShow = ({ buyer }: Props) => {
           <Card>
             <CardHeader>
               <CardTitle>Eligibility Rules</CardTitle>
-              <CardDescription>{buyer.eligibilityRules?.length ?? 0} rules</CardDescription>
+              <CardDescription>{buyer.eligibility_rules?.length ?? 0} rules</CardDescription>
             </CardHeader>
             <CardContent>
-              {buyer.eligibilityRules?.length ? (
+              {buyer.eligibility_rules?.length ? (
                 <div className="space-y-2">
-                  {buyer.eligibilityRules.map((rule, i) => (
+                  {buyer.eligibility_rules.map((rule, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm">
                       <span className="font-mono text-xs font-medium">{rule.field}</span>
                       <Badge variant="secondary" className="shrink-0 font-mono text-xs">
@@ -250,12 +250,12 @@ const BuyersShow = ({ buyer }: Props) => {
           <Card>
             <CardHeader>
               <CardTitle>Volume Caps</CardTitle>
-              <CardDescription>{buyer.capRules?.length ?? 0} caps</CardDescription>
+              <CardDescription>{buyer.cap_rules?.length ?? 0} caps</CardDescription>
             </CardHeader>
             <CardContent>
-              {buyer.capRules?.length ? (
+              {buyer.cap_rules?.length ? (
                 <div className="space-y-2">
-                  {buyer.capRules.map((cap, i) => (
+                  {buyer.cap_rules.map((cap, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-md bg-muted px-3 py-2 text-sm">
                       <Badge variant="outline" className="shrink-0 capitalize">{cap.period}</Badge>
                       <div className="flex flex-wrap gap-3">
