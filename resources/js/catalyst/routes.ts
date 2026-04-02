@@ -10,6 +10,9 @@ export const API_ROUTES = {
     TRIGGER: '/v1/offerwall/mix/', // + ID
     CONVERSION: '/v1/offerwall/events/conversion',
   },
+  SHARE_LEADS: {
+    DISPATCH: '/v1/share-leads/dispatch/', // + workflow ID
+  },
   METRICS: {
     PERFORMANCE: '/v1/metrics/performance',
   },
