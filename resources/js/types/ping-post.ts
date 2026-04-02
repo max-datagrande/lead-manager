@@ -136,7 +136,7 @@ export interface PostResult {
   postback_received_at: string | null;
   postback_expires_at: string | null;
   integration?: Integration;
-  pingResult?: PingResult | null;
+  ping_result?: PingResult | null;
   created_at: string;
 }
 
@@ -157,9 +157,9 @@ export interface LeadDispatch {
   completed_at: string | null;
   workflow?: Workflow;
   lead?: Lead;
-  winnerIntegration?: Integration | null;
-  pingResults?: PingResult[];
-  postResults?: PostResult[];
+  winner_integration?: Integration | null;
+  ping_results?: PingResult[];
+  post_results?: PostResult[];
   created_at: string;
   updated_at: string;
 }
