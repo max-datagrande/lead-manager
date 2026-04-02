@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const JsonViewer = ({ data, title = null, className = "" }) => {
+const JsonViewer = ({ data, title = null, className = "", showCounts = true }) => {
   const [expanded, setExpanded] = useState({});
   const [copied, setCopied] = useState(false);
 
@@ -47,67 +47,116 @@ const JsonViewer = ({ data, title = null, className = "" }) => {
     }
 
     if (Array.isArray(value)) {
-      const isExpanded = expanded[path] !== false; // Default to expanded
+      const isExpanded = expanded[path] !== false;
       const isEmpty = value.length === 0;
+
+      if (isEmpty) return <span className="text-gray-600 dark:text-gray-300">[]</span>;
+
+      if (!isExpanded) {
+        return (
+          <button onClick={() => toggleExpanded(path)} className="text-gray-600 dark:text-gray-300 hover:text-gray-400 dark:hover:text-gray-100">
+            [{showCounts ? value.length : '…'}]
+          </button>
+        );
+      }
 
       return (
         <div className="inline-block">
-          <button
-            onClick={() => toggleExpanded(path)}
-            className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -ml-1"
-            disabled={isEmpty}
-          >
-            {!isEmpty && (
-              isExpanded ?
-                <ChevronDown className="h-3 w-3" /> :
-                <ChevronRight className="h-3 w-3" />
-            )}
-            <span className="text-gray-600 dark:text-gray-300">[{isEmpty ? '' : value.length}]</span>
-          </button>
-          {isExpanded && !isEmpty && (
-            <div className="ml-4 mt-1">
-              {value.map((item, index) => (
+          <span className="text-gray-600 dark:text-gray-300">[</span>
+          <div className="ml-4 mt-1">
+            {value.map((item, index) => {
+              const childPath = `${path}[${index}]`;
+              const isCollapsible = item !== null && typeof item === 'object';
+
+              return (
                 <div key={index} className="mb-1">
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">{index}: </span>
-                  {renderValue(item, `${path}[${index}]`, level + 1)}
+                  {isCollapsible ? (
+                    <>
+                      <button
+                        onClick={() => toggleExpanded(childPath)}
+                        className="relative inline-flex items-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1.5 py-0.5 -ml-1.5"
+                      >
+                        <span className="absolute right-full top-1/2 -translate-y-1/2">
+                          {expanded[childPath] === false
+                            ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          }
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">{index}</span>
+                      </button>
+                      <span className="text-gray-500 dark:text-gray-400">: </span>
+                      {renderValue(item, childPath, level + 1)}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">{index}: </span>
+                      {renderValue(item, childPath, level + 1)}
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+          <span className="text-gray-600 dark:text-gray-300">]</span>
         </div>
       );
     }
 
     if (typeof value === 'object') {
-      const isExpanded = expanded[path] !== false; // Default to expanded
+      const isExpanded = expanded[path] !== false;
       const keys = Object.keys(value);
       const isEmpty = keys.length === 0;
 
+      if (isEmpty) return <span className="text-gray-600 dark:text-gray-300">{'{}'}</span>;
+
+      if (!isExpanded) {
+        return (
+          <button onClick={() => toggleExpanded(path)} className="text-gray-600 dark:text-gray-300 hover:text-gray-400 dark:hover:text-gray-100">
+            {showCounts ? `{${keys.length}}` : '{…}'}
+          </button>
+        );
+      }
+
       return (
         <div className="inline-block">
-          <button
-            onClick={() => toggleExpanded(path)}
-            className="flex items-center gap-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -ml-1"
-            disabled={isEmpty}
-          >
-            {!isEmpty && (
-              isExpanded ?
-                <ChevronDown className="h-3 w-3" /> :
-                <ChevronRight className="h-3 w-3" />
-            )}
-            <span className="text-gray-600 dark:text-gray-300">{isEmpty ? '{}' : `{${keys.length}}`}</span>
-          </button>
-          {isExpanded && !isEmpty && (
-            <div className="ml-4 mt-1">
-              {keys.map((key) => (
+          <span className="text-gray-600 dark:text-gray-300">{'{'}</span>
+          <div className="ml-4 mt-1">
+            {keys.map((key) => {
+              const childPath = `${path}.${key}`;
+              const childValue = value[key];
+              const isCollapsible = childValue !== null && typeof childValue === 'object';
+
+              return (
                 <div key={key} className="mb-1">
-                  <span className="text-purple-600 dark:text-purple-400 font-medium">"{key}"</span>
-                  <span className="text-gray-500 dark:text-gray-400">: </span>
-                  {renderValue(value[key], `${path}.${key}`, level + 1)}
+                  {isCollapsible ? (
+                    <>
+                      <button
+                        onClick={() => toggleExpanded(childPath)}
+                        className="relative inline-flex items-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1.5 py-0.5 -ml-1.5"
+                      >
+                        <span className="absolute right-full top-1/2 -translate-y-1/2">
+                          {expanded[childPath] === false
+                            ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          }
+                        </span>
+                        <span className="text-purple-600 dark:text-purple-400 font-medium">"{key}"</span>
+                      </button>
+                      <span className="text-gray-500 dark:text-gray-400">: </span>
+                      {renderValue(childValue, childPath, level + 1)}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-purple-600 dark:text-purple-400 font-medium">"{key}"</span>
+                      <span className="text-gray-500 dark:text-gray-400">: </span>
+                      {renderValue(childValue, childPath, level + 1)}
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+          <span className="text-gray-600 dark:text-gray-300">{'}'}</span>
         </div>
       );
     }
