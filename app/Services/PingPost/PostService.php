@@ -18,9 +18,7 @@ use Throwable;
 
 class PostService
 {
-  public function __construct(
-    private readonly PayloadProcessorService $payloadProcessor,
-  ) {}
+  public function __construct(private readonly PayloadProcessorService $payloadProcessor) {}
 
   /**
    * Execute a post to a buyer and return the recorded PostResult.
@@ -33,12 +31,9 @@ class PostService
     ?PingResult $pingResult,
     float $offeredPrice,
   ): PostResult {
-    $postEnv = $integration->environments
-      ->where('env_type', 'post')
-      ->where('environment', 'production')
-      ->first();
+    $postEnv = $integration->environments->where('env_type', 'post')->where('environment', 'production')->first();
 
-    if (! $postEnv || ! $postEnv->url) {
+    if (!$postEnv || !$postEnv->url) {
       return $this->createRecord($dispatch, $integration, $pingResult, [
         'status' => PostResultStatus::SKIPPED,
         'price_offered' => $offeredPrice,
@@ -48,10 +43,7 @@ class PostService
     // Enrich leadData with the buyer's external lead_id from the ping response.
     // lead_id_path lives in the ping environment's response_config.
     if ($pingResult?->response_body) {
-      $pingEnv = $integration->environments
-        ->where('env_type', 'ping')
-        ->where('environment', 'production')
-        ->first();
+      $pingEnv = $integration->environments->where('env_type', 'ping')->where('environment', 'production')->first();
       $leadIdPath = $pingEnv?->response_config?->lead_id_path;
       if ($leadIdPath) {
         $leadData['ping_lead_id'] = Arr::get($pingResult->response_body, $leadIdPath, '');
@@ -59,13 +51,13 @@ class PostService
     }
 
     $replacements = $this->payloadProcessor->buildReplacements($integration, $postEnv, $leadData);
-    $requestUrl   = $this->payloadProcessor->applyReplacements($postEnv->url ?? '', $replacements);
-    $payload      = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_body ?? '{}', $replacements), true) ?? [];
-    $headers      = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
-    $method       = strtolower($postEnv->method ?? 'post');
+    $requestUrl = $this->payloadProcessor->applyReplacements($postEnv->url ?? '', $replacements);
+    $payload = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $headers = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
+    $method = strtolower($postEnv->method ?? 'post');
 
     // Async postback: create a pending record immediately
-    if ($config->pricing_type->isAsync()) {
+    if ($config->price_source->isAsync()) {
       return $this->createRecord($dispatch, $integration, $pingResult, [
         'status' => PostResultStatus::PENDING_POSTBACK,
         'price_offered' => $offeredPrice,
@@ -80,7 +72,9 @@ class PostService
 
     try {
       /** @var Response $response */
-      $response = Http::withHeaders($headers)->timeout($config->post_timeout_ms / 1000)->{$method}($requestUrl, $payload);
+      $response = Http::withHeaders($headers)
+        ->timeout($config->post_timeout_ms / 1000)
+        ->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
       $configUrl = $postEnv->response_config;
@@ -118,7 +112,7 @@ class PostService
       ]);
 
       // Queue retry for network/server errors
-      if (! $isTimeout) {
+      if (!$isTimeout) {
         RetryPostJob::dispatch($postResult->id)->delay(3);
       }
 
@@ -131,7 +125,7 @@ class PostService
     $acceptedPath = $config?->accepted_path;
     $acceptedValue = $config?->accepted_value;
 
-    if (! $acceptedPath) {
+    if (!$acceptedPath) {
       return $response->successful();
     }
 
@@ -144,7 +138,7 @@ class PostService
   {
     $rejectedPath = $config?->rejected_path;
 
-    if (! $rejectedPath) {
+    if (!$rejectedPath) {
       return null;
     }
 
@@ -156,16 +150,17 @@ class PostService
   /**
    * @param  array<string, mixed>  $data
    */
-  private function createRecord(
-    LeadDispatch $dispatch,
-    Integration $integration,
-    ?PingResult $pingResult,
-    array $data,
-  ): PostResult {
-    return PostResult::create(array_merge([
-      'lead_dispatch_id' => $dispatch->id,
-      'ping_result_id' => $pingResult?->id,
-      'integration_id' => $integration->id,
-    ], $data));
+  private function createRecord(LeadDispatch $dispatch, Integration $integration, ?PingResult $pingResult, array $data): PostResult
+  {
+    return PostResult::create(
+      array_merge(
+        [
+          'lead_dispatch_id' => $dispatch->id,
+          'ping_result_id' => $pingResult?->id,
+          'integration_id' => $integration->id,
+        ],
+        $data,
+      ),
+    );
   }
 }
