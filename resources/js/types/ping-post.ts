@@ -146,6 +146,7 @@ export interface LeadDispatch {
   workflow_id: number;
   lead_id: number;
   fingerprint: string;
+  lead_snapshot?: Record<string, string> | null;
   status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout';
   strategy_used: string;
   winner_integration_id: number | null;

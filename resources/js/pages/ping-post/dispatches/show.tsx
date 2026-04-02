@@ -7,12 +7,29 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import AppLayout from '@/layouts/app-layout'
 import type { LeadDispatch } from '@/types/ping-post'
 import { Head } from '@inertiajs/react'
+import { useMemo } from 'react'
+
+interface Field {
+  id: number
+  name: string
+  label: string
+}
 
 interface Props {
   dispatch: LeadDispatch
+  fields?: Field[]
 }
 
-const DispatchesShow = ({ dispatch }: Props) => {
+const DispatchesShow = ({ dispatch, fields = [] }: Props) => {
+  const snapshotRows = useMemo(() => {
+    if (!dispatch.lead_snapshot || !fields.length) return []
+    const fieldMap = new Map(fields.map((f) => [String(f.id), f]))
+    return Object.entries(dispatch.lead_snapshot).map(([fieldId, value]) => {
+      const field = fieldMap.get(fieldId)
+      return { label: field?.label ?? `Field #${fieldId}`, name: field?.name ?? fieldId, value }
+    })
+  }, [dispatch.lead_snapshot, fields])
+
   return (
     <>
       <Head title={`Dispatch #${dispatch.id}`} />
@@ -25,7 +42,8 @@ const DispatchesShow = ({ dispatch }: Props) => {
         </PageHeader>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Meta */}
+          {/* Meta + Snapshot */}
+          <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Details</CardTitle>
@@ -81,6 +99,29 @@ const DispatchesShow = ({ dispatch }: Props) => {
               )}
             </CardContent>
           </Card>
+
+          {snapshotRows.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Snapshot</CardTitle>
+                {dispatch.started_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Captured at {new Date(dispatch.started_at).toLocaleString()}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {snapshotRows.map((row) => (
+                  <div key={row.name} className="border-b pb-2 last:border-0 last:pb-0">
+                    <p className="text-xs text-muted-foreground/50">{row.name}</p>
+                    <p className="text-base text-muted-foreground">{row.label}</p>
+                    <p className="text-lg truncate">{row.value || '—'}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+          </div>
 
           {/* Timeline */}
           <div className="lg:col-span-2">

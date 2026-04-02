@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Logs;
 
 use App\Http\Controllers\Controller;
+use App\Models\Field;
 use App\Models\LeadDispatch;
 use App\Models\Workflow;
 use Inertia\Inertia;
@@ -36,6 +37,7 @@ class LeadDispatchLogController extends Controller
 
     return Inertia::render('ping-post/dispatches/show', [
       'dispatch' => $dispatch,
+      'fields' => Field::all(['id', 'name', 'label']),
     ]);
   }
 }
