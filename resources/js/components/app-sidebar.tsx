@@ -1,4 +1,3 @@
-import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import type { SharedData } from '@/types';
@@ -194,7 +193,7 @@ const navGroups: NavGroupType[] = [
   ShareLeadsGroup,
   SystemGroup,
   DocumentationGroup,
-  AdminGroup
+  AdminGroup,
 ];
 
 export function AppSidebar() {
@@ -216,9 +215,12 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {navGroups.map((group) => (
-          <NavGroup key={group.title} title={group.title} items={group.items} currentHref={currentUrl} />
-        ))}
+        {navGroups.map((group) => {
+          if (group.title === 'Admin' && !isAdmin) {
+            return null;
+          }
+          return <NavGroup key={group.title} title={group.title} items={group.items} currentHref={currentUrl} />;
+        })}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
