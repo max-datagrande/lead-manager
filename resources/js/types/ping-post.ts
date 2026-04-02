@@ -51,9 +51,9 @@ export interface Buyer {
   company_id: number | null
   company?: Company | null
   integration?: Integration | null
-  buyerConfig?: BuyerConfig | null
-  eligibilityRules?: EligibilityRule[]
-  capRules?: CapRule[]
+  buyer_config?: BuyerConfig | null
+  eligibility_rules?: EligibilityRule[]
+  cap_rules?: CapRule[]
   created_at: string
   updated_at: string
 }
