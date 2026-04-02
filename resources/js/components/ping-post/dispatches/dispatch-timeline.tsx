@@ -1,30 +1,14 @@
 import { StatusBadge } from '@/components/ping-post/status-badge'
+import JsonViewer from '@/components/ui/json-viewer'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { LeadDispatch, PingResult, PostResult } from '@/types/ping-post'
 import { ChevronDown, Trophy } from 'lucide-react'
 
-interface PayloadViewProps {
-  label: string
-  data: Record<string, unknown> | null
-}
-
-function PayloadView({ label, data }: PayloadViewProps) {
-  if (!data) return null
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <pre className="max-h-32 overflow-auto rounded bg-muted p-2 text-xs">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  )
-}
-
 function PingResultCard({ ping }: { ping: PingResult }) {
   return (
-    <div className="rounded border bg-card p-3 text-sm">
+    <div className="rounded border bg-card p-3 text-sm space-y-2">
       <div className="flex items-center justify-between">
         <span className="font-medium">Ping</span>
         <div className="flex items-center gap-2">
@@ -35,18 +19,21 @@ function PingResultCard({ ping }: { ping: PingResult }) {
         </div>
       </div>
       {ping.skip_reason && (
-        <p className="mt-1 text-xs text-muted-foreground">{ping.skip_reason}</p>
+        <p className="text-xs text-muted-foreground">{ping.skip_reason}</p>
       )}
       {ping.request_url && (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{ping.request_url}</p>
+        <p className="truncate text-xs text-muted-foreground">{ping.request_url}</p>
       )}
+      {ping.request_payload && <JsonViewer data={ping.request_payload} title="Request Payload" className="max-h-64" showCounts={false} />}
+      {ping.request_headers && <JsonViewer data={ping.request_headers} title="Request Headers" className="max-h-40" showCounts={false} />}
+      {ping.response_body && <JsonViewer data={ping.response_body} title="Response Body" className="max-h-64" showCounts={false} />}
     </div>
   )
 }
 
 function PostResultCard({ post }: { post: PostResult }) {
   return (
-    <div className="rounded border bg-card p-3 text-sm">
+    <div className="rounded border bg-card p-3 text-sm space-y-2">
       <div className="flex items-center justify-between">
         <span className="font-medium">Post</span>
         <div className="flex items-center gap-2">
@@ -57,13 +44,16 @@ function PostResultCard({ post }: { post: PostResult }) {
         </div>
       </div>
       {post.rejection_reason && (
-        <p className="mt-1 text-xs text-muted-foreground">{post.rejection_reason}</p>
+        <p className="text-xs text-muted-foreground">{post.rejection_reason}</p>
       )}
       {post.request_url && (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{post.request_url}</p>
+        <p className="truncate text-xs text-muted-foreground">{post.request_url}</p>
       )}
+      {post.request_payload && <JsonViewer data={post.request_payload} title="Request Payload" className="max-h-64" showCounts={false} />}
+      {post.request_headers && <JsonViewer data={post.request_headers} title="Request Headers" className="max-h-40" showCounts={false} />}
+      {post.response_body && <JsonViewer data={post.response_body} title="Response Body" className="max-h-64" showCounts={false} />}
       {post.postback_expires_at && post.status === 'pending_postback' && (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Postback expires: {new Date(post.postback_expires_at).toLocaleString()}
         </p>
       )}
@@ -81,7 +71,7 @@ interface BuyerTimelineItemProps {
 
 function BuyerTimelineItem({ buyerName, integrationId, isWinner, pingResult, postResult }: BuyerTimelineItemProps) {
   return (
-    <Collapsible defaultOpen={isWinner}>
+    <Collapsible defaultOpen>
       <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border bg-card px-4 py-3 text-sm hover:bg-accent">
         <div className="flex items-center gap-3">
           {isWinner && <Trophy className="h-4 w-4 text-yellow-500" />}
@@ -108,8 +98,8 @@ interface Props {
 }
 
 export function DispatchTimeline({ dispatch }: Props) {
-  const pingResults = dispatch.pingResults ?? []
-  const postResults = dispatch.postResults ?? []
+  const pingResults = dispatch.ping_results ?? []
+  const postResults = dispatch.post_results ?? []
 
   // Group post results by integration_id
   const postByIntegration = new Map<number, PostResult>()
