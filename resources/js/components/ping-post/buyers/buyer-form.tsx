@@ -12,9 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useBuyers } from '@/hooks/use-buyers';
 import { cn } from '@/lib/utils';
+import type { SharedData } from '@/types';
 import type { Integration } from '@/types/ping-post';
-import { Link } from '@inertiajs/react';
-import { type LucideIcon, AlertTriangle, DollarSign, GitBranch, RotateCcw, TrendingUp } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { type LucideIcon, AlertTriangle, DollarSign, ExternalLink, GitBranch, RotateCcw, TrendingUp } from 'lucide-react';
 import { route } from 'ziggy-js';
 
 const PRICING_META: Record<string, { icon: LucideIcon; description: string }> = {
@@ -32,7 +33,9 @@ interface Props {
 }
 
 export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [] }: Props) {
-  const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers();
+  const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers()
+  const { auth } = usePage<SharedData>().props
+  const isAdmin = auth.user?.role === 'admin';
 
   const selectedIntegration = integrations.find((i) => i.id === data.integration_id) ?? null;
   const isPingPost = selectedIntegration?.type === 'ping-post';
@@ -74,12 +77,21 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
               <FieldHint text="La integración define los endpoints (URLs) configurados para este buyer. Ping-post = el buyer recibe primero un ping con datos parciales y oferta un precio antes de recibir el lead completo. Post-only = el lead se envía directamente sin fase de ping previa. Cada integración solo puede tener un buyer asignado." />
             </Label>
             {isEdit ? (
-              <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/50 px-3 text-sm text-foreground">
-                <span className="flex-1 truncate">{selectedIntegration?.name ?? '—'}</span>
-                {selectedIntegration && (
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {selectedIntegration.type}
-                  </Badge>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 flex-1 items-center gap-2 rounded-md border bg-muted/50 px-3 text-sm text-foreground">
+                  <span className="flex-1 truncate">{selectedIntegration?.name ?? '—'}</span>
+                  {selectedIntegration && (
+                    <Badge variant="outline" className="shrink-0 text-xs">
+                      {selectedIntegration.type}
+                    </Badge>
+                  )}
+                </div>
+                {isAdmin && selectedIntegration && (
+                  <Button variant="outline" size="icon" className="shrink-0" asChild>
+                    <Link href={route('integrations.edit', selectedIntegration.id)}>
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 )}
               </div>
             ) : (
