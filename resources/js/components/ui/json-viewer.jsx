@@ -61,7 +61,7 @@ const JsonViewer = ({ data, title = null, className = "", showCounts = true }) =
       }
 
       return (
-        <div className="inline-block">
+        <div>
           <span className="text-gray-600 dark:text-gray-300">[</span>
           <div className="ml-4 mt-1">
             {value.map((item, index) => {
@@ -69,7 +69,7 @@ const JsonViewer = ({ data, title = null, className = "", showCounts = true }) =
               const isCollapsible = item !== null && typeof item === 'object';
 
               return (
-                <div key={index} className="mb-1">
+                <div key={index} className={"mb-1"}>
                   {isCollapsible ? (
                     <>
                       <button
@@ -118,7 +118,7 @@ const JsonViewer = ({ data, title = null, className = "", showCounts = true }) =
       }
 
       return (
-        <div className="inline-block">
+        <div>
           <span className="text-gray-600 dark:text-gray-300">{'{'}</span>
           <div className="ml-4 mt-1">
             {keys.map((key) => {
@@ -127,7 +127,7 @@ const JsonViewer = ({ data, title = null, className = "", showCounts = true }) =
               const isCollapsible = childValue !== null && typeof childValue === 'object';
 
               return (
-                <div key={key} className="mb-1">
+                <div key={key} className={"mb-1"}>
                   {isCollapsible ? (
                     <>
                       <button
