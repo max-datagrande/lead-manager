@@ -73,30 +73,16 @@ export const buyerColumns: ColumnDef<Buyer>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: 'type',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-    cell: ({ cell }) => {
-      const v = cell.getValue<string>()
-      return (
-        <Badge variant="outline" className="text-xs">
-          {v === 'ping-post' ? 'Ping-Post' : 'Post-Only'}
-        </Badge>
-      )
-    },
-    filterFn: (row, _, filterValue: string[]) => !filterValue?.length || filterValue.includes(row.original.type),
-    enableSorting: true,
-  },
-  {
     accessorKey: 'company',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
     cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.company?.name ?? '—'}</span>,
     enableSorting: false,
   },
   {
-    accessorKey: 'buyerConfig',
+    accessorKey: 'buyer_config',
     header: 'Pricing',
     cell: ({ row }) => {
-      const cfg = row.original.buyerConfig
+      const cfg = row.original.buyer_config
       if (!cfg) return <span className="text-muted-foreground text-xs">—</span>
       const label = { fixed: 'Fixed', min_bid: 'Min Bid', conditional: 'Conditional', postback: 'Postback' }[cfg.pricing_type] ?? cfg.pricing_type
       const price = cfg.fixed_price ? `$${Number(cfg.fixed_price).toFixed(2)}` : ''
