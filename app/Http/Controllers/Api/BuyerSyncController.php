@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\Buyer;
 use App\Models\BuyerCapRule;
 use App\Models\BuyerConfig;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 
 class BuyerSyncController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all buyers with their configs, eligibility rules and cap rules.
    * Only available in production.
@@ -55,10 +57,13 @@ class BuyerSyncController extends Controller
     try {
       $response = Http::get($productionEndpoint);
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch buyers from production.',
-          'details' => $response->body(),
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch buyers from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -105,6 +110,11 @@ class BuyerSyncController extends Controller
         }
 
         DB::commit();
+
+        $this->resetSequence('buyers');
+        $this->resetSequence('buyer_configs');
+        $this->resetSequence('buyer_eligibility_rules');
+        $this->resetSequence('buyer_cap_rules');
 
         return response()->json([
           'message' => 'Buyers synchronized successfully from production.',

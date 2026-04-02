@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\User;
 use App\Models\Vertical;
 use Illuminate\Support\Facades\App;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class VerticalController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all verticals for synchronization.
    * This action is only available in the production environment.
@@ -49,10 +51,13 @@ class VerticalController extends Controller
       $response = Http::get($productionEndpoint);
 
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch verticals from production.',
-          'details' => $response->body()
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch verticals from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -73,6 +78,8 @@ class VerticalController extends Controller
 
       Vertical::truncate();
       Vertical::insert($processedVerticals);
+
+      $this->resetSequence('verticals');
 
       return response()->json(['message' => 'Verticals synchronized successfully from production.']);
     } catch (\Throwable $th) {

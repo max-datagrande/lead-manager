@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
 use Illuminate\Support\Facades\App;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 
 class WorkflowSyncController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all workflows with their buyer assignments.
    * Only available in production.
@@ -95,6 +97,9 @@ class WorkflowSyncController extends Controller
         }
 
         DB::commit();
+
+        $this->resetSequence('workflows');
+        $this->resetSequence('workflow_buyers');
 
         return response()->json([
           'message' => 'Workflows synchronized successfully from production.',

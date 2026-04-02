@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Support\Facades\App;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class CompanyController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all companies for synchronization.
    * This action is only available in the production environment.
@@ -34,7 +36,6 @@ class CompanyController extends Controller
       return response()->json(['error' => 'This action is only available in the local environment.'], 403);
     }
 
-
     $app = config('app');
     $localUrl = $app['url'];
     $productionUrl = $app['production_url'];
@@ -50,10 +51,13 @@ class CompanyController extends Controller
       $response = Http::get($productionEndpoint);
 
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch companies from production.',
-          'details' => $response->body()
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch companies from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -74,6 +78,8 @@ class CompanyController extends Controller
 
       Company::truncate();
       Company::insert($processedCompanies);
+
+      $this->resetSequence('companies');
 
       return response()->json(['message' => 'Companies synchronized successfully from production.']);
     } catch (\Throwable $th) {
