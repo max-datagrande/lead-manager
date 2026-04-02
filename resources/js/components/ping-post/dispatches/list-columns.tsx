@@ -1,9 +1,11 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { StatusBadge } from '@/components/ping-post/status-badge'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { LeadDispatch } from '@/types/ping-post'
 import { Link } from '@inertiajs/react'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Eye } from 'lucide-react'
 import { route } from 'ziggy-js'
 
 const STRATEGY_LABELS: Record<string, string> = {
@@ -63,10 +65,10 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: 'winnerIntegration',
+    accessorKey: 'winner_integration',
     header: 'Winner',
     cell: ({ row }) => (
-      <span className="text-sm">{row.original.winnerIntegration?.name ?? '—'}</span>
+      <span className="text-sm">{row.original.winner_integration?.name ?? '—'}</span>
     ),
     enableSorting: false,
   },
@@ -94,5 +96,17 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
       </span>
     ),
     enableSorting: true,
+  },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => (
+      <Button variant="ghost" size="icon" asChild>
+        <Link href={route('ping-post.dispatches.show', row.original.id)}>
+          <Eye className="h-4 w-4" />
+        </Link>
+      </Button>
+    ),
+    enableSorting: false,
   },
 ]
