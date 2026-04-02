@@ -34,7 +34,7 @@ class DispatchOrchestrator
   public function dispatch(Workflow $workflow, Lead $lead, string $fingerprint): LeadDispatch
   {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
-
+    $leadSnapshot = $lead->leadFieldResponses->pluck('value', 'field_id')->toArray();
     TailLogger::saveLog('Orchestrator START', 'dispatch/debug', 'info', [
       'workflow_id' => $workflow->id,
       'strategy' => $workflow->strategy?->value,
@@ -44,10 +44,12 @@ class DispatchOrchestrator
       'leadData' => $leadData,
     ]);
 
+
     $dispatch = LeadDispatch::create([
       'workflow_id' => $workflow->id,
       'lead_id' => $lead->id,
       'fingerprint' => $fingerprint,
+      'lead_snapshot' => $leadSnapshot,
       'status' => DispatchStatus::RUNNING,
       'strategy_used' => $workflow->strategy->value,
       'started_at' => now(),
