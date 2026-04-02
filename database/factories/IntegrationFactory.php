@@ -83,12 +83,17 @@ class IntegrationFactory extends Factory
         ]);
       }
 
-      $integration->buyerConfig()->create(array_merge([
-        'ping_timeout_ms' => 3000,
-        'post_timeout_ms' => 5000,
-        'pricing_type' => 'fixed',
-        'fixed_price' => 10.00,
-      ], $configOverrides));
+      $integration->buyerConfig()->create(
+        array_merge(
+          [
+            'ping_timeout_ms' => 3000,
+            'post_timeout_ms' => 5000,
+            'price_source' => 'fixed',
+            'fixed_price' => 10.0,
+          ],
+          $configOverrides,
+        ),
+      );
     });
   }
 }
