@@ -13,6 +13,7 @@ use App\Models\PingResult;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
 use Illuminate\Http\Client\Pool;
+use Maxidev\Logger\TailLogger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -34,6 +35,15 @@ class DispatchOrchestrator
   {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
 
+    TailLogger::saveLog('Orchestrator START', 'dispatch/debug', 'info', [
+      'workflow_id' => $workflow->id,
+      'strategy' => $workflow->strategy?->value,
+      'strategy_type' => gettype($workflow->strategy),
+      'lead_id' => $lead->id,
+      'fingerprint' => $fingerprint,
+      'leadData' => $leadData,
+    ]);
+
     $dispatch = LeadDispatch::create([
       'workflow_id' => $workflow->id,
       'lead_id' => $lead->id,
@@ -44,12 +54,19 @@ class DispatchOrchestrator
     ]);
 
     try {
+      TailLogger::saveLog('Running strategy: ' . ($workflow->strategy?->value ?? 'NULL'), 'dispatch/debug');
       match ($workflow->strategy) {
         WorkflowStrategy::BEST_BID => $this->runBestBid($workflow, $dispatch, $leadData),
         WorkflowStrategy::WATERFALL => $this->runWaterfall($workflow, $dispatch, $leadData),
         WorkflowStrategy::COMBINED => $this->runCombined($workflow, $dispatch, $leadData),
       };
+      TailLogger::saveLog('Strategy completed OK', 'dispatch/debug');
     } catch (Throwable $e) {
+      TailLogger::saveLog('Strategy FAILED', 'dispatch/debug', 'error', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile() . ':' . $e->getLine(),
+        'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10),
+      ]);
       $dispatch->markAsError($e->getMessage());
     }
 
