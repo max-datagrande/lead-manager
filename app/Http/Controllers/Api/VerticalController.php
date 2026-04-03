@@ -66,7 +66,7 @@ class VerticalController extends Controller
       if (empty($verticalsToInsert)) {
         return response()->json(['message' => 'No verticals to import from production.']);
       }
-      $userId = Auth::id() ?? User::where('role', 'admin')->first()?->id;
+      $userId = User::where('role', 'admin')->first()->id;
 
       $processedVerticals = array_map(function ($vertical) use ($userId) {
         $vertical['user_id'] = $userId;
