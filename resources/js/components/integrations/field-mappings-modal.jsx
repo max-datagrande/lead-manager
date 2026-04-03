@@ -106,10 +106,36 @@ export function FieldMappingsModal({ fields = [] }) {
 
   const fieldById = (fieldId) => fields.find((f) => f.id === fieldId)
 
+  // ── Scan all request bodies for active {$N} tokens ────────────────────────
+  const getActiveTokenIds = () => {
+    const ids = new Set()
+    const regex = /\{\$(\d+)\}/g
+
+    const scanBody = (body) => {
+      if (!body) return
+      const text = typeof body === 'object' ? JSON.stringify(body) : String(body)
+      let m
+      while ((m = regex.exec(text)) !== null) ids.add(parseInt(m[1], 10))
+    }
+
+    // Walk environments — flat (offerwall/post-only) or nested (ping-post)
+    for (const val of Object.values(data.environments ?? {})) {
+      if (val?.request_body !== undefined) {
+        scanBody(val.request_body)
+      } else if (typeof val === 'object') {
+        for (const inner of Object.values(val)) {
+          if (inner?.request_body !== undefined) scanBody(inner.request_body)
+        }
+      }
+    }
+    return ids
+  }
+
   // ── Dialog lifecycle ──────────────────────────────────────────────────────
   const handleOpenChange = (next) => {
     if (next) {
-      setDraft((data.field_mappings ?? []).map((m) => ({ ...m })))
+      const activeIds = getActiveTokenIds()
+      setDraft((data.field_mappings ?? []).filter((m) => activeIds.has(m.field_id)).map((m) => ({ ...m })))
       setExpandedMappings({})
       setRawModes({})
       setSearch('')
