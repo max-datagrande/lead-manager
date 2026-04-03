@@ -53,6 +53,7 @@ class PostService
     $replacements = $this->payloadProcessor->buildReplacements($integration, $postEnv, $leadData);
     $requestUrl = $this->payloadProcessor->applyReplacements($postEnv->url ?? '', $replacements);
     $payload = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $payload = $this->payloadProcessor->applyTwigTransformer($integration, $payload);
     $headers = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
     $method = strtolower($postEnv->method ?? 'post');
 

@@ -12,13 +12,13 @@ use function Pest\Laravel\postJson;
 // Helper: make an allowed host header so auth.host passes
 function hostHeader(): array
 {
-    // In tests the middleware is usually bypassed; if not, add the test host.
-    return ['X-Postman-Auth-Token' => config('services.postman_auth_token', 'test-token')];
+  // In tests the middleware is usually bypassed; if not, add the test host.
+  return ['X-Postman-Auth-Token' => config('services.postman_auth_token', 'test-token')];
 }
 
 beforeEach(function () {
-    // Allow API requests without real host validation in tests
-    config(['app.postman_auth_enabled' => true, 'services.postman_auth_token' => 'test-token']);
+  // Allow API requests without real host validation in tests
+  config(['app.postman_auth_enabled' => true, 'services.postman_auth_token' => 'test-token']);
 });
 
 // ─── Sync dispatch ────────────────────────────────────────────────────────────

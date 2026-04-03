@@ -13,6 +13,7 @@ use App\Models\PingResult;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
 use Illuminate\Http\Client\Pool;
+use Maxidev\Logger\TailLogger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -33,23 +34,41 @@ class DispatchOrchestrator
   public function dispatch(Workflow $workflow, Lead $lead, string $fingerprint): LeadDispatch
   {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
+    $leadSnapshot = $lead->leadFieldResponses->pluck('value', 'field_id')->toArray();
+    TailLogger::saveLog('Orchestrator START', 'dispatch/debug', 'info', [
+      'workflow_id' => $workflow->id,
+      'strategy' => $workflow->strategy?->value,
+      'strategy_type' => gettype($workflow->strategy),
+      'lead_id' => $lead->id,
+      'fingerprint' => $fingerprint,
+      'leadData' => $leadData,
+    ]);
+
 
     $dispatch = LeadDispatch::create([
       'workflow_id' => $workflow->id,
       'lead_id' => $lead->id,
       'fingerprint' => $fingerprint,
+      'lead_snapshot' => $leadSnapshot,
       'status' => DispatchStatus::RUNNING,
       'strategy_used' => $workflow->strategy->value,
       'started_at' => now(),
     ]);
 
     try {
+      TailLogger::saveLog('Running strategy: ' . ($workflow->strategy?->value ?? 'NULL'), 'dispatch/debug');
       match ($workflow->strategy) {
         WorkflowStrategy::BEST_BID => $this->runBestBid($workflow, $dispatch, $leadData),
         WorkflowStrategy::WATERFALL => $this->runWaterfall($workflow, $dispatch, $leadData),
         WorkflowStrategy::COMBINED => $this->runCombined($workflow, $dispatch, $leadData),
       };
+      TailLogger::saveLog('Strategy completed OK', 'dispatch/debug');
     } catch (Throwable $e) {
+      TailLogger::saveLog('Strategy FAILED', 'dispatch/debug', 'error', [
+        'error' => $e->getMessage(),
+        'file' => $e->getFile() . ':' . $e->getLine(),
+        'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10),
+      ]);
       $dispatch->markAsError($e->getMessage());
     }
 
@@ -59,7 +78,7 @@ class DispatchOrchestrator
     }
 
     $dispatch->update([
-      'total_duration_ms' => (int) round(now()->diffInMilliseconds($dispatch->started_at)),
+      'total_duration_ms' => (int) round($dispatch->started_at->diffInMilliseconds(now(), true)),
     ]);
 
     return $dispatch->fresh();
@@ -304,6 +323,7 @@ class DispatchOrchestrator
       $replacements = $processor->buildReplacements($integration, $pingEnv, $leadData);
       $url = $processor->applyReplacements($pingEnv->url ?? '', $replacements);
       $payload = json_decode($processor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+      $payload = $processor->applyTwigTransformer($integration, $payload);
       $headers = json_decode($processor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
       $method = strtolower($pingEnv->method ?? 'post');
 

@@ -48,6 +48,7 @@ class PingService
     $replacements = $this->payloadProcessor->buildReplacements($integration, $pingEnv, $leadData);
     $requestUrl   = $this->payloadProcessor->applyReplacements($pingEnv->url ?? '', $replacements);
     $payload      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $payload      = $this->payloadProcessor->applyTwigTransformer($integration, $payload);
     $headers      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
     $method       = strtolower($pingEnv->method ?? 'post');
 

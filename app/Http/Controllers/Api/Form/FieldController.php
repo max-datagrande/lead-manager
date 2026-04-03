@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Form;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\Field;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class FieldController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all fields for synchronization.
    * This action is only available in the production environment.
@@ -44,10 +46,13 @@ class FieldController extends Controller
     try {
       $response = Http::get($productionEndpoint);
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch fields from production.',
-          'details' => $response->body()
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch fields from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -66,8 +71,8 @@ class FieldController extends Controller
           $field['possible_values'] = json_encode($field['possible_values']);
         }
         //Check user id and updated_user_id
-        $field['user_id'] =  Auth::id();
-        $field['updated_user_id'] =  null;
+        $field['user_id'] = Auth::id();
+        $field['updated_user_id'] = null;
         // Ensure 'created_at' and 'updated_at' are present, otherwise DB might complain
         $field['created_at'] = $field['created_at'] ?? now();
         $field['updated_at'] = $field['updated_at'] ?? now();
@@ -77,6 +82,8 @@ class FieldController extends Controller
       //Truncate table
       Field::truncate();
       Field::insert($processedFields);
+
+      $this->resetSequence('fields');
 
       return response()->json(['message' => 'Fields synchronized successfully from production.']);
     } catch (\Throwable $th) {

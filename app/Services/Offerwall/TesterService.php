@@ -18,9 +18,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Maxidev\Logger\TailLogger;
 use Throwable;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
-use Twig\TwigFunction;
 
 class TesterService
 {
@@ -227,9 +224,7 @@ class TesterService
 
         $payloadArray = json_decode($processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements), true) ?? [];
 
-        if ($integration->use_custom_transformer && ! empty($integration->payload_transformer)) {
-            $payloadArray = $this->applyTwigTransformer($integration, $payloadArray);
-        }
+        $payloadArray = $processor->applyTwigTransformer($integration, $payloadArray);
 
         $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
         $url     = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
@@ -350,37 +345,6 @@ class TesterService
             'original_field_values' => $originalValues,
             'mapped_field_values' => $mappedValues,
         ]);
-    }
-
-    /**
-     * Apply Twig custom transformer to the payload (mirrors MixService logic).
-     */
-    private function applyTwigTransformer(Integration $integration, array $payloadArray): array
-    {
-        try {
-            $loader = new ArrayLoader([
-                'index.html' => $integration->payload_transformer,
-            ]);
-            $twig = new Environment($loader);
-
-            $twig->addFunction(new TwigFunction('output_json', function ($data) {
-                return json_encode($data);
-            }, ['is_safe' => ['html']]));
-
-            $rendered = $twig->render('index.html', ['data' => $payloadArray]);
-            $transformed = json_decode($rendered, true);
-
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $transformed;
-            }
-        } catch (Throwable $e) {
-            TailLogger::saveLog('Twig payload transformation failed in tester', 'offerwall/tester', 'error', [
-                'integration_id' => $integration->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        return $payloadArray;
     }
 
     /**

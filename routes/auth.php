@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
 
   Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])
+    ->whereNumber('id')
     ->name('verification.verify');
 
   Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])

@@ -12,6 +12,10 @@ class PriceResolverService
    */
   public function resolvePrice(BuyerConfig $config, float $bidPrice): ?float
   {
+    if ($config->price_source === null) {
+      throw new \RuntimeException("Buyer config #{$config->id} (integration #{$config->integration_id}) has no price_source configured.");
+    }
+
     return match ($config->price_source) {
       PriceSource::FIXED => (float) $config->fixed_price,
       PriceSource::RESPONSE_BID => $this->isPriceAcceptable($config, $bidPrice) ? $bidPrice : null,

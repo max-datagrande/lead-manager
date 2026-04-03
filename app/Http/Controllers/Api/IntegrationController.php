@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResetsSequences;
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
 use Illuminate\Support\Facades\App;
@@ -10,9 +11,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
-
 class IntegrationController extends Controller
 {
+  use ResetsSequences;
   /**
    * Export all fields for synchronization.
    * This action is only available in the production environment.
@@ -53,10 +54,13 @@ class IntegrationController extends Controller
     try {
       $response = Http::get($productionEndpoint);
       if ($response->failed()) {
-        return response()->json([
-          'error' => 'Failed to fetch integrations from production.',
-          'details' => $response->body()
-        ], $response->status());
+        return response()->json(
+          [
+            'error' => 'Failed to fetch integrations from production.',
+            'details' => $response->body(),
+          ],
+          $response->status(),
+        );
       }
 
       $data = $response->json();
@@ -82,14 +86,10 @@ class IntegrationController extends Controller
             $newIntegration->updated_user_id = null;
           }
           $newIntegration->save();
-          $environments = collect($environmentsToInsert)
-            ->filter(fn($env) => $env['integration_id'] == $newIntegration->id);
+          $environments = collect($environmentsToInsert)->filter(fn($env) => $env['integration_id'] == $newIntegration->id);
           //Insert environments
           foreach ($environments as $environment) {
-            $data = [
-              ...$environment,
-              'integration_id' => $newIntegration->id,
-            ];
+            $data = [...$environment, 'integration_id' => $newIntegration->id];
             IntegrationEnvironment::create($data);
           }
           DB::commit();
@@ -107,9 +107,13 @@ class IntegrationController extends Controller
           $errors++;
         }
       }
-      $statusMessage = $errors > 0
-        ? 'Integrations synchronized successfully from production with errors.'
-        : 'Integrations synchronized successfully from production.';
+      $this->resetSequence('integrations');
+      $this->resetSequence('integration_environments');
+
+      $statusMessage =
+        $errors > 0
+          ? 'Integrations synchronized successfully from production with errors.'
+          : 'Integrations synchronized successfully from production.';
 
       $response = [
         'message' => $statusMessage,
@@ -118,7 +122,10 @@ class IntegrationController extends Controller
       ];
       return response()->json($response);
     } catch (\Throwable $th) {
-      return response()->json(['error' => 'An unexpected error occurred: ' . $th->getMessage(), 'file' => $th->getFile(), 'line' => $th->getLine()], 500);
+      return response()->json(
+        ['error' => 'An unexpected error occurred: ' . $th->getMessage(), 'file' => $th->getFile(), 'line' => $th->getLine()],
+        500,
+      );
     }
   }
 }
