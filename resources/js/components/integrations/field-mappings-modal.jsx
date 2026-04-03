@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { useDebouncedFunction } from '@/hooks/use-debounce'
 import { useIntegrations } from '@/hooks/use-integrations'
-import { Settings2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Search, Settings2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 /**
  * Isolated textarea with local display state + debounced draft update.
@@ -102,19 +102,35 @@ export function FieldMappingsModal({ fields = [] }) {
   const [draft, setDraft] = useState([])
   const [expandedMappings, setExpandedMappings] = useState({})
   const [rawModes, setRawModes] = useState({})
+  const [search, setSearch] = useState('')
 
   const fieldById = (fieldId) => fields.find((f) => f.id === fieldId)
 
   // ── Dialog lifecycle ──────────────────────────────────────────────────────
   const handleOpenChange = (next) => {
     if (next) {
-      // Deep-copy current mappings into draft on open
       setDraft((data.field_mappings ?? []).map((m) => ({ ...m })))
       setExpandedMappings({})
       setRawModes({})
+      setSearch('')
     }
     setOpen(next)
   }
+
+  // Sort alphabetically by field name, then filter by search term
+  const filteredDraft = useMemo(() => {
+    const sorted = [...draft].sort((a, b) => {
+      const nameA = fieldById(a.field_id)?.name ?? ''
+      const nameB = fieldById(b.field_id)?.name ?? ''
+      return nameA.localeCompare(nameB)
+    })
+    if (!search) return sorted
+    const q = search.toLowerCase()
+    return sorted.filter((m) => {
+      const field = fieldById(m.field_id)
+      return (field?.name ?? '').toLowerCase().includes(q) || (field?.label ?? '').toLowerCase().includes(q)
+    })
+  }, [draft, search, fields])
 
   const handleSave = () => {
     const draftById = new Map(draft.map((m) => [m.field_id, m]))
@@ -171,6 +187,17 @@ export function FieldMappingsModal({ fields = [] }) {
       <DialogContent className="flex max-h-[85vh] max-w-none flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Field Mappings</DialogTitle>
+          {draft.length > 0 && (
+            <div className="relative mt-2">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-8 pl-8 text-xs"
+                placeholder="Search fields..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          )}
         </DialogHeader>
 
         {draft.length === 0 ? (
@@ -189,7 +216,7 @@ export function FieldMappingsModal({ fields = [] }) {
             </div>
 
             <div className="divide-y">
-              {draft.map((mapping) => {
+              {filteredDraft.map((mapping) => {
                 const field = fieldById(mapping.field_id)
                 const label = field?.label ?? field?.name ?? `Field #${mapping.field_id}`
                 const technicalName = field?.name ?? null
