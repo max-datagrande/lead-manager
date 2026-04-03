@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\VerticalController as ApiVerticalController;
 use App\Http\Controllers\Api\BuyerSyncController;
 use App\Http\Controllers\Api\WorkflowSyncController;
 
-
 //Sync routes
 Route::prefix('fields')->group(function () {
   Route::get('/export', [ApiFieldController::class, 'export'])->name('api.fields.export');

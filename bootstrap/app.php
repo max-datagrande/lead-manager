@@ -40,9 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
   ->withExceptions(function (Exceptions $exceptions) {
     $exceptions->render(function (NotFoundHttpException $e, Request $request) {
       $previous = $e->getPrevious();
-      $controlledModels = [
-        \App\Models\OfferwallMix::class,
-      ];
+      $controlledModels = [\App\Models\OfferwallMix::class];
 
       if ($previous instanceof ModelNotFoundException) {
         $modelClass = $previous->getModel();
@@ -50,12 +48,15 @@ return Application::configure(basePath: dirname(__DIR__))
           $ids = $previous->getIds();
           $id = is_array($ids) ? $ids[0] : $ids;
           $modelName = class_basename($modelClass);
-          return response()->json([
-            'message' => "$modelName with ID $id was not found.",
-            'errors' => [
-              'id' => ["No record with ID $id exists in $modelName."]
+          return response()->json(
+            [
+              'message' => "$modelName with ID $id was not found.",
+              'errors' => [
+                'id' => ["No record with ID $id exists in $modelName."],
+              ],
             ],
-          ], 404);
+            404,
+          );
         }
       }
     });

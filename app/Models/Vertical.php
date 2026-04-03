@@ -8,13 +8,7 @@ use App\Models\LandingPage;
 
 class Vertical extends Model
 {
-  protected $fillable = [
-    'name',
-    'description',
-    'active',
-    'user_id',
-    'updated_user_id',
-  ];
+  protected $fillable = ['name', 'description', 'active', 'user_id', 'updated_user_id'];
 
   private function getAuthUserId()
   {

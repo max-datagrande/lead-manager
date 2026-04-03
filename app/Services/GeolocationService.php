@@ -50,17 +50,15 @@ class GeolocationService
 
     // IPs de prueba para diferentes ubicaciones
     $testIps = [
-      'new_york' => "216.131.83.235",
-      'miami' => "216.131.87.237",
-      'chicago' => "216.131.77.230",
-      'california' => "216.239.32.10",
-      'colombia' => "190.60.47.250"
+      'new_york' => '216.131.83.235',
+      'miami' => '216.131.87.237',
+      'chicago' => '216.131.77.230',
+      'california' => '216.239.32.10',
+      'colombia' => '190.60.47.250',
     ];
 
     // Cachear la IP para futuras llamadas en el mismo request
-    $this->cachedIpAddress = app()->environment('production')
-      ? $this->request->ip()
-      : $testIps['new_york'];
+    $this->cachedIpAddress = app()->environment('production') ? $this->request->ip() : $testIps['new_york'];
 
     return $this->cachedIpAddress;
   }
@@ -116,7 +114,7 @@ class GeolocationService
   {
     $data = $this->getGeolocation();
     $this->request->attributes->set('geolocation', $data);
-    $this->saveGeolocationServiceLog("Geolocation data captured and stored in request attributes");
+    $this->saveGeolocationServiceLog('Geolocation data captured and stored in request attributes');
 
     return $data;
   }
@@ -156,7 +154,7 @@ class GeolocationService
    */
   private function saveGeolocationServiceLog(string $message): void
   {
-    TailLogger::saveLog($message, "api/geolocation/", 'info');
+    TailLogger::saveLog($message, 'api/geolocation/', 'info');
   }
 
   /**

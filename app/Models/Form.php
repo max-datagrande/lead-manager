@@ -7,10 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 class Form extends Model
 {
-  protected $fillable = [
-    'name',
-    'description',
-  ];
+  protected $fillable = ['name', 'description'];
   protected static function booted(): void
   {
     static::creating(function ($form) {
@@ -24,7 +21,6 @@ class Form extends Model
   }
   public function fields()
   {
-    return $this->belongsToMany(Field::class)
-      ->withTimestamps();
+    return $this->belongsToMany(Field::class)->withTimestamps();
   }
 }

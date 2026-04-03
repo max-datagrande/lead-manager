@@ -67,7 +67,7 @@ class LeadService
 
     return $lead;
   }
-    /**
+  /**
    * Find an existing lead based on fingerprint.
    *
    * @param TrafficLog $visitorLog
@@ -181,9 +181,7 @@ class LeadService
       return 0;
     }
 
-    $deletedCount = LeadFieldResponse::where('lead_id', $lead->id)
-      ->whereIn('field_id', $fieldIds)
-      ->delete();
+    $deletedCount = LeadFieldResponse::where('lead_id', $lead->id)->whereIn('field_id', $fieldIds)->delete();
 
     TailLogger::saveLog('Lead fields removed', 'leads/service', 'info', [
       'lead_id' => $lead->id,

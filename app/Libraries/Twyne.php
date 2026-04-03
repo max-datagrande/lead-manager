@@ -43,7 +43,7 @@ class Twyne
     TailLogger::saveLog('Twyne library initialized', $this->loggerFolder, 'info', [
       'payload_keys' => array_keys($payload),
       'mapping_exists' => $mapping !== null,
-      'mapping_keys' => $mapping ? array_keys($mapping) : []
+      'mapping_keys' => $mapping ? array_keys($mapping) : [],
     ]);
 
     $this->buildRequest();
@@ -70,7 +70,7 @@ class Twyne
         TailLogger::saveLog("Field '{$field}' transformed", $this->loggerFolder, 'debug', [
           'source_key' => $sourceKey,
           'original_value' => $originalValue,
-          'transformed_value' => $value
+          'transformed_value' => $value,
         ]);
       }
 
@@ -100,10 +100,7 @@ class Twyne
     }
 
     if (!empty($missingFields)) {
-      throw new \App\Exceptions\MissingRequiredFieldsException(
-        'Required fields are missing or empty.',
-        $missingFields
-      );
+      throw new \App\Exceptions\MissingRequiredFieldsException('Required fields are missing or empty.', $missingFields);
     }
   }
   public function submit()
@@ -111,26 +108,28 @@ class Twyne
     TailLogger::saveLog('Submitting Twyne lead', $this->loggerFolder, 'info', [
       'form_data_keys' => array_keys($this->formData),
       'environment' => app()->environment(),
-      'base_url' => $this->baseUrl
+      'base_url' => $this->baseUrl,
     ]);
 
     try {
-      $response = Http::asForm()->withHeaders([
-        'Accept' => 'application/json',
-      ])->post($this->baseUrl . '/lead/submit', $this->formData);
+      $response = Http::asForm()
+        ->withHeaders([
+          'Accept' => 'application/json',
+        ])
+        ->post($this->baseUrl . '/lead/submit', $this->formData);
 
       $responseData = $response->json();
 
       if ($response->successful()) {
         TailLogger::saveLog('Twyne lead submitted successfully', $this->loggerFolder, 'info', [
           'status_code' => $response->status(),
-          'response_data' => $responseData
+          'response_data' => $responseData,
         ]);
       } else {
         TailLogger::saveLog('Twyne lead submission failed', $this->loggerFolder, 'warning', [
           'status_code' => $response->status(),
           'response_data' => $responseData,
-          'form_data' => $this->formData
+          'form_data' => $this->formData,
         ]);
       }
 
@@ -140,7 +139,7 @@ class Twyne
         'error_message' => $e->getMessage(),
         'error_code' => $e->getCode(),
         'form_data' => $this->formData,
-        'trace' => $e->getTraceAsString()
+        'trace' => $e->getTraceAsString(),
       ]);
 
       throw $e;

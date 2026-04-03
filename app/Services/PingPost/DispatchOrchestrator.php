@@ -44,7 +44,6 @@ class DispatchOrchestrator
       'leadData' => $leadData,
     ]);
 
-
     $dispatch = LeadDispatch::create([
       'workflow_id' => $workflow->id,
       'lead_id' => $lead->id,

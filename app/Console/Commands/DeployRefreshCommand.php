@@ -12,10 +12,7 @@ class DeployRefreshCommand extends Command
 
   public function handle(): int
   {
-    $steps = [
-      ['optimize:clear', 'Clearing caches'],
-      ['optimize', 'Caching config, routes, views & events'],
-    ];
+    $steps = [['optimize:clear', 'Clearing caches'], ['optimize', 'Caching config, routes, views & events']];
 
     foreach ($steps as [$command, $label]) {
       $this->info("→ {$label}...");

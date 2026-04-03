@@ -19,10 +19,7 @@ class AppServiceProvider extends ServiceProvider
     // 2. Evita múltiples llamadas a API externa por request
     // 3. La IP es la misma para todo el request
     $this->app->singleton(\App\Services\GeolocationService::class, function ($app) {
-      return new \App\Services\GeolocationService(
-        $app->make('request'),
-        $app->make(\App\Libraries\IpApi::class)
-      );
+      return new \App\Services\GeolocationService($app->make('request'), $app->make(\App\Libraries\IpApi::class));
     });
 
     // DeviceDetectionService como singleton porque:

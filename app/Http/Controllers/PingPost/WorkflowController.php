@@ -14,17 +14,11 @@ use Inertia\Response;
 
 class WorkflowController extends Controller
 {
-  public function __construct(
-    private readonly WorkflowService $workflowService,
-  ) {}
+  public function __construct(private readonly WorkflowService $workflowService) {}
 
   public function index(): Response
   {
-    $workflows = Workflow::query()
-      ->with('user')
-      ->withCount('workflowBuyers')
-      ->latest()
-      ->paginate(25);
+    $workflows = Workflow::query()->with('user')->withCount('workflowBuyers')->latest()->paginate(25);
 
     return Inertia::render('ping-post/workflows/index', [
       'workflows' => $workflows,
@@ -34,7 +28,9 @@ class WorkflowController extends Controller
   public function create(): Response
   {
     return Inertia::render('ping-post/workflows/create', [
-      'buyers' => Buyer::with('integration')->where('is_active', true)->get(['id', 'name', 'integration_id']),
+      'buyers' => Buyer::with('integration')
+        ->where('is_active', true)
+        ->get(['id', 'name', 'integration_id']),
       'strategies' => WorkflowStrategy::toArray(),
     ]);
   }
@@ -47,8 +43,7 @@ class WorkflowController extends Controller
     $workflow = $this->workflowService->create($data);
     $this->workflowService->syncBuyers($workflow, $buyers);
 
-    return redirect()->route('ping-post.workflows.index')
-      ->with('success', 'Workflow created successfully.');
+    return redirect()->route('ping-post.workflows.index')->with('success', 'Workflow created successfully.');
   }
 
   public function show(Workflow $workflow): Response
@@ -66,7 +61,9 @@ class WorkflowController extends Controller
 
     return Inertia::render('ping-post/workflows/edit', [
       'workflow' => $workflow,
-      'buyers' => Buyer::with('integration')->where('is_active', true)->get(['id', 'name', 'integration_id']),
+      'buyers' => Buyer::with('integration')
+        ->where('is_active', true)
+        ->get(['id', 'name', 'integration_id']),
       'strategies' => WorkflowStrategy::toArray(),
     ]);
   }
@@ -82,23 +79,20 @@ class WorkflowController extends Controller
       $this->workflowService->syncBuyers($workflow, $buyers);
     }
 
-    return redirect()->route('ping-post.workflows.show', $workflow)
-      ->with('success', 'Workflow updated successfully.');
+    return redirect()->route('ping-post.workflows.show', $workflow)->with('success', 'Workflow updated successfully.');
   }
 
   public function duplicate(Workflow $workflow): \Illuminate\Http\RedirectResponse
   {
     $clone = $this->workflowService->duplicate($workflow);
 
-    return redirect()->route('ping-post.workflows.edit', $clone)
-      ->with('success', 'Workflow duplicated successfully.');
+    return redirect()->route('ping-post.workflows.edit', $clone)->with('success', 'Workflow duplicated successfully.');
   }
 
   public function destroy(Workflow $workflow): \Illuminate\Http\RedirectResponse
   {
     $workflow->delete();
 
-    return redirect()->route('ping-post.workflows.index')
-      ->with('success', 'Workflow deleted successfully.');
+    return redirect()->route('ping-post.workflows.index')->with('success', 'Workflow deleted successfully.');
   }
 }

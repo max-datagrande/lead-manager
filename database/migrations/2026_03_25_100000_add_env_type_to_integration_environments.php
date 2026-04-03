@@ -5,16 +5,14 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
   public function up(): void
   {
     // 1. Add env_type column if it doesn't exist yet
     $columnAdded = false;
     if (!Schema::hasColumn('integration_environments', 'env_type')) {
       Schema::table('integration_environments', function (Blueprint $table) {
-        $table->string('env_type', 20)->default('offerwall')->after('environment')
-          ->comment('ping|post|offerwall');
+        $table->string('env_type', 20)->default('offerwall')->after('environment')->comment('ping|post|offerwall');
       });
       $columnAdded = true;
     }

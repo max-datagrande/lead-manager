@@ -73,10 +73,10 @@ class MaxconvService
 
     // Solo los parámetros que corresponden a los placeholders de la URL de postback
     $postbackData = [
-      'clid' => $postback->click_id,        // {click_id} -> clid en la URL
-      'payout' => $postback->payout,        // {payout}
-      'txid' => $postback->transaction_id,  // {transaction_id} -> txid en la URL
-      'currency' => 'USD',                  // {currency}
+      'clid' => $postback->click_id, // {click_id} -> clid en la URL
+      'payout' => $postback->payout, // {payout}
+      'txid' => $postback->transaction_id, // {transaction_id} -> txid en la URL
+      'currency' => 'USD', // {currency}
       'event' => $postback->event ?? 'conversion', // {event}
     ];
 
@@ -209,7 +209,7 @@ class MaxconvService
     return [
       'url' => $postbackUrl,
       'data' => $postbackData,
-      'response' => $response
+      'response' => $response,
     ];
   }
 
@@ -225,16 +225,20 @@ class MaxconvService
     // Si es entorno local, simular respuesta exitosa
     if (app()->environment('local')) {
       return new Response(
-        new Psr7Response(200, [], json_encode([
-          'success' => true,
-          'message' => 'Simulated response for local environment',
-          'data' => $postbackData
-        ]))
+        new Psr7Response(
+          200,
+          [],
+          json_encode([
+            'success' => true,
+            'message' => 'Simulated response for local environment',
+            'data' => $postbackData,
+          ]),
+        ),
       );
     }
     $response = Http::timeout(30)->get($postbackUrl, $postbackData);
     //Logging to update taillogger after
-    TailLogger::saveLog("Postback redirigido exitosamente", 'services/postback-redirect', 'success', [
+    TailLogger::saveLog('Postback redirigido exitosamente', 'services/postback-redirect', 'success', [
       'postbackData' => $postbackData,
       'postbackUrl' => $postbackUrl,
       'body' => $response->body(),

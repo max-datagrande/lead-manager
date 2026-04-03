@@ -17,17 +17,12 @@ class UpdateRequest extends FormRequest
     $landingPage = $this->route('landing_page');
 
     return [
-      'name'        => ['required', 'string', 'max:150'],
-      'url'         => [
-        'required',
-        'string',
-        'max:255',
-        Rule::unique('landing_pages', 'url')->ignore($landingPage?->id),
-      ],
+      'name' => ['required', 'string', 'max:150'],
+      'url' => ['required', 'string', 'max:255', Rule::unique('landing_pages', 'url')->ignore($landingPage?->id)],
       'is_external' => ['boolean'],
       'vertical_id' => ['required', 'exists:verticals,id'],
-      'company_id' => ['nullable', 'exists:companies,id', Rule::requiredIf(fn () => $this->boolean('is_external'))],
-      'active'      => ['boolean'],
+      'company_id' => ['nullable', 'exists:companies,id', Rule::requiredIf(fn() => $this->boolean('is_external'))],
+      'active' => ['boolean'],
     ];
   }
 }

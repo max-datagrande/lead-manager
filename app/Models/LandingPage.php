@@ -7,16 +7,7 @@ use Illuminate\Support\Facades\Auth;
 
 class LandingPage extends Model
 {
-  protected $fillable = [
-    'name',
-    'url',
-    'is_external',
-    'vertical_id',
-    'company_id',
-    'active',
-    'user_id',
-    'updated_user_id',
-  ];
+  protected $fillable = ['name', 'url', 'is_external', 'vertical_id', 'company_id', 'active', 'user_id', 'updated_user_id'];
   private function getAuthUserId()
   {
     return Auth::id();

@@ -11,11 +11,10 @@ use App\Http\Controllers\Controller;
 
 class FormController extends Controller
 {
-
   public function index()
   {
     $data = [
-      'forms'  => Form::with('fields:id,name')->get(),
+      'forms' => Form::with('fields:id,name')->get(),
       'fields' => Field::all(),
     ];
     return Inertia::render('Forms/Index', $data);
@@ -33,12 +32,12 @@ class FormController extends Controller
   {
     try {
       $validated = $request->validate([
-        'name'         => 'required|string|max:255',
-        'description'  => 'required|string|max:255',
-        'fields'       => 'array',                 // debe llegar un array
+        'name' => 'required|string|max:255',
+        'description' => 'required|string|max:255',
+        'fields' => 'array', // debe llegar un array
       ]);
       $form = Form::create(Arr::only($validated, ['name', 'description']));
-      $form->fields()->sync($validated['fields'] ?? []);  // attach / detach automático
+      $form->fields()->sync($validated['fields'] ?? []); // attach / detach automático
       addFlashMessage('success', 'Form created successfully.');
       return back();
     } catch (\Throwable $th) {
@@ -71,12 +70,12 @@ class FormController extends Controller
   {
     try {
       $validated = $request->validate([
-        'name'         => 'required|string|max:255',
-        'description'  => 'required|string|max:255',
-        'fields'       => 'array',                 // debe llegar un array
+        'name' => 'required|string|max:255',
+        'description' => 'required|string|max:255',
+        'fields' => 'array', // debe llegar un array
       ]);
       $form->update(Arr::only($validated, ['name', 'description']));
-      $form->fields()->sync($validated['fields'] ?? []);  // attach / detach automático
+      $form->fields()->sync($validated['fields'] ?? []); // attach / detach automático
       addFlashMessage('success', 'Form updated successfully.');
       return back();
     } catch (\Throwable $th) {

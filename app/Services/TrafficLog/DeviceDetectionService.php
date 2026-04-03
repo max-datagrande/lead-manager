@@ -12,7 +12,6 @@ use Jenssegers\Agent\Agent;
  */
 class DeviceDetectionService
 {
-
   public function __construct(protected Agent $agent) {}
 
   /**
@@ -25,8 +24,8 @@ class DeviceDetectionService
   {
     // Configurar el user agent en el agente
     $this->agent->setUserAgent($userAgent);
-    $browser    = $this->agent->browser();
-    $os         = $this->agent->platform();
+    $browser = $this->agent->browser();
+    $os = $this->agent->platform();
     $deviceType = $this->agent->isMobile() ? 'mobile' : 'desktop';
     $result = compact('deviceType', 'browser', 'os');
     return $result;

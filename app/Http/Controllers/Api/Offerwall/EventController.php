@@ -42,17 +42,23 @@ class EventController extends Controller
       ]);
       $conversion = $this->conversionService->createConversion($data);
 
-      return new JsonResponse([
-        'status' => 'success',
-        'message' => 'Conversion created successfully',
-        'data' => $conversion
-      ], 201);
+      return new JsonResponse(
+        [
+          'status' => 'success',
+          'message' => 'Conversion created successfully',
+          'data' => $conversion,
+        ],
+        201,
+      );
     } catch (Exception $e) {
       // Log the exception details if needed (the service already does this)
-      return new JsonResponse([
-        'status' => 'error',
-        'message' => 'Failed to create conversion: ' . $e->getMessage()
-      ], 500);
+      return new JsonResponse(
+        [
+          'status' => 'error',
+          'message' => 'Failed to create conversion: ' . $e->getMessage(),
+        ],
+        500,
+      );
     }
   }
 }
