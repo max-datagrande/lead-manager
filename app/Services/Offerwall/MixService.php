@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
 use App\Services\IntegrationService;
 use Throwable;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
-use Twig\TwigFunction;
 
 class MixService
 {
