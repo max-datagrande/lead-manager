@@ -159,11 +159,14 @@ export function FieldMappingsModal({ fields = [] }) {
   }, [draft, search, fields])
 
   const handleSave = () => {
+    const activeIds = getActiveTokenIds()
     const draftById = new Map(draft.map((m) => [m.field_id, m]))
-    const updated = (data.field_mappings ?? []).map((m) => {
-      const d = draftById.get(m.field_id)
-      return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m
-    })
+    const updated = (data.field_mappings ?? [])
+      .filter((m) => activeIds.has(m.field_id))
+      .map((m) => {
+        const d = draftById.get(m.field_id)
+        return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m
+      })
     setData('field_mappings', updated)
     setOpen(false)
   }
