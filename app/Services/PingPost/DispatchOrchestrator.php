@@ -78,7 +78,7 @@ class DispatchOrchestrator
     }
 
     $dispatch->update([
-      'total_duration_ms' => (int) round(now()->diffInMilliseconds($dispatch->started_at)),
+      'total_duration_ms' => (int) round($dispatch->started_at->diffInMilliseconds(now(), true)),
     ]);
 
     return $dispatch->fresh();
@@ -323,6 +323,7 @@ class DispatchOrchestrator
       $replacements = $processor->buildReplacements($integration, $pingEnv, $leadData);
       $url = $processor->applyReplacements($pingEnv->url ?? '', $replacements);
       $payload = json_decode($processor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+      $payload = $processor->applyTwigTransformer($integration, $payload);
       $headers = json_decode($processor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
       $method = strtolower($pingEnv->method ?? 'post');
 
