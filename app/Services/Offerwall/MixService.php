@@ -83,9 +83,7 @@ class MixService
             'payload' => $payload,
           ]);
 
-          if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
-            $payload = $this->applyTwigTransformer($integration, $payload);
-          }
+          $payload = $processor->applyTwigTransformer($integration, $payload);
 
           $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
           $method  = strtolower($prodEnv->method ?? 'post');
@@ -232,34 +230,6 @@ class MixService
   private function prepareLeadData(Lead $lead): array
   {
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
-  }
-
-  private function applyTwigTransformer($integration, array $payload): array
-  {
-    try {
-      $loader = new ArrayLoader([
-        'index.html' => $integration->payload_transformer,
-      ]);
-      $twig = new Environment($loader);
-
-      $twig->addFunction(new TwigFunction('output_json', function ($data) {
-        return json_encode($data);
-      }, ['is_safe' => ['html']]));
-
-      $rendered = $twig->render('index.html', ['data' => $payload]);
-      $transformed = json_decode($rendered, true);
-
-      if (json_last_error() === JSON_ERROR_NONE) {
-        return $transformed;
-      }
-    } catch (Throwable $e) {
-      TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
-        'integration_id' => $integration->id,
-        'error' => $e->getMessage(),
-      ]);
-    }
-
-    return $payload;
   }
 
   private function logIntegrationCall(

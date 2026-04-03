@@ -309,6 +309,47 @@ class PayloadProcessorService
 
     return $jsonString;
   }
+
+  /**
+   * Apply a Twig payload transformer to an already-resolved payload array.
+   * Returns the original payload if no transformer is configured or if transformation fails.
+   */
+  public function applyTwigTransformer(Integration $integration, array $payload): array
+  {
+    if (! $integration->use_custom_transformer || empty($integration->payload_transformer)) {
+      return $payload;
+    }
+
+    try {
+      $loader = new \Twig\Loader\ArrayLoader([
+        'index.html' => $integration->payload_transformer,
+      ]);
+      $twig = new \Twig\Environment($loader);
+
+      $twig->addFunction(new \Twig\TwigFunction('output_json', function ($data) {
+        return json_encode($data);
+      }, ['is_safe' => ['html']]));
+
+      $rendered = $twig->render('index.html', ['data' => $payload]);
+      $transformed = json_decode($rendered, true);
+
+      if (json_last_error() === JSON_ERROR_NONE && is_array($transformed)) {
+        return $transformed;
+      }
+
+      TailLogger::saveLog('Twig transformer produced invalid JSON', 'payload-processor', 'warning', [
+        'integration_id' => $integration->id,
+        'rendered' => $rendered,
+      ]);
+    } catch (\Throwable $e) {
+      TailLogger::saveLog('Twig payload transformation failed', 'payload-processor', 'error', [
+        'integration_id' => $integration->id,
+        'error' => $e->getMessage(),
+      ]);
+    }
+
+    return $payload;
+  }
 }
 
 
