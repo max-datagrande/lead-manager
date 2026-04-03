@@ -107,7 +107,7 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 auto-rows-auto">
         {/* Status & Fire Mode */}
         <Card className={`gap-2 ${data.is_active ? 'bg-green-500/10' : 'bg-muted/50'}`}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -172,7 +172,7 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
         </Card>
 
         {/* Parameter Mappings — spans both rows on col 2 */}
-        <Card className="gap-2 lg:row-span-3">
+        <Card className="row-span-2 flex flex-col gap-0">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -191,11 +191,11 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className='flex-1 flex items-center justify-center'>
             {detectedParams.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
-                <Shuffle className="h-8 w-8 opacity-30" />
-                <p className="text-sm">Paste a postback URL to detect parameters</p>
+                <Shuffle className="size-10 opacity-30" />
+                <p className="text-muted-foreground">Paste a postback URL to detect parameters</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -345,7 +345,7 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
       )}
 
       {/* Actions */}
-      <div className="flex items-center justify-end gap-3 border-t pt-4">
+      <div className="flex items-center justify-end gap-3">
         <Link href={route('postbacks.index')}>
           <Button type="button" variant="outline">
             Cancel
