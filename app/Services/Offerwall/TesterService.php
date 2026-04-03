@@ -18,9 +18,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Maxidev\Logger\TailLogger;
 use Throwable;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
-use Twig\TwigFunction;
 
 class TesterService
 {
