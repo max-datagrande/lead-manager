@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\DispatchPostbackJob;
 use App\Models\Postback;
 use App\Models\PostbackExecution;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\getJson;
 
@@ -30,6 +32,8 @@ it('fires realtime postback and returns completed execution', function () {
 });
 
 it('fires deferred postback and returns pending execution without dispatching', function () {
+  Queue::fake();
+
   $postback = Postback::factory()->deferred()->create();
 
   $response = getJson("/v1/postback/fire/{$postback->uuid}?click_id=CLK-123");
@@ -42,6 +46,8 @@ it('fires deferred postback and returns pending execution without dispatching', 
   ]);
 
   $this->assertDatabaseCount('postback_dispatch_logs', 0);
+
+  Queue::assertPushed(DispatchPostbackJob::class);
 });
 
 it('returns 404 when uuid does not exist', function () {
