@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ExecutionStatus;
 use App\Enums\FireMode;
+use App\Jobs\DispatchPostbackJob;
 use App\Models\Postback;
 use App\Models\PostbackExecution;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -60,6 +61,8 @@ class PostbackFireService
 
     if ($postback->fire_mode === FireMode::REALTIME) {
       $this->processExecution($execution);
+    } else {
+      DispatchPostbackJob::dispatch($execution);
     }
 
     return $execution->fresh();
@@ -88,7 +91,7 @@ class PostbackFireService
 
     foreach ($executions as $execution) {
       $execution->update(['status' => ExecutionStatus::PENDING]);
-      $this->processExecution($execution);
+      DispatchPostbackJob::dispatch($execution);
     }
 
     return $executions->count();
