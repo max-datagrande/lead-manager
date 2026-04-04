@@ -1,14 +1,28 @@
 <?php
 
+use App\Services\PostbackFireService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
   $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// ─── Comandos manuales recomendados (correr desde VPS) ────────────────────────
-//
-// ping-post:expire-postbacks   → Expira postbacks pendientes vencidos y cierra
-//                                dispatches sin venta. Correr diariamente.
-//                                php artisan ping-post:expire-postbacks
+// ─── Scheduled Tasks ──────────────────────────────────────────────────────────
+
+$retryInterval = config('schedule.postback_retry_interval', 30);
+
+Schedule::call(function () {
+  app(PostbackFireService::class)->processRetryableExecutions();
+})
+  ->cron("*/{$retryInterval} * * * *")
+  ->name('postback:retry-failed')
+  ->withoutOverlapping()
+  ->onOneServer();
+
+Schedule::command('ping-post:expire-postbacks')
+  ->daily()
+  ->name('ping-post:expire-postbacks')
+  ->withoutOverlapping()
+  ->onOneServer();
