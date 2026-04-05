@@ -11,7 +11,7 @@ Artisan::command('inspire', function () {
 
 // ─── Scheduled Tasks ──────────────────────────────────────────────────────────
 
-$retryInterval = config('schedule.postback_retry_interval', 30);
+$retryInterval = config('postbacks.retry_interval', 30);
 
 Schedule::call(function () {
   app(PostbackFireService::class)->processRetryableExecutions();
