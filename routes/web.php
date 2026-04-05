@@ -15,6 +15,7 @@ use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowController;
 use App\Http\Controllers\PlatformController;
+use App\Http\Controllers\InternalPostbackController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\PostbackExecutionsController;
 use App\Http\Controllers\PostbackQueueController;
@@ -47,6 +48,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::delete('/{postback}', [PostbackController::class, 'destroy'])
         ->whereNumber('postback')
         ->name('destroy');
+      // Internal fire (manual trigger)
+      Route::prefix('internal')
+        ->name('internal.')
+        ->group(function () {
+          Route::get('/{postback}/fire', [InternalPostbackController::class, 'fireForm'])
+            ->whereNumber('postback')
+            ->name('fire-form');
+          Route::post('/resolve-tokens', [InternalPostbackController::class, 'resolveTokens'])
+            ->name('resolve-tokens');
+          Route::post('/{postback}/fire', [InternalPostbackController::class, 'fire'])
+            ->whereNumber('postback')
+            ->name('fire');
+        });
       // Executions (new fire system)
       Route::prefix('executions')
         ->name('executions.')
