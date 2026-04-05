@@ -23,7 +23,7 @@ describe('getGeneratedUrlAttribute', function () {
     config(['app.url' => 'https://internal.example.com']);
 
     $postback = Postback::factory()
-      ->asInternal()
+      ->asPrivate()
       ->create(['param_mappings' => []]);
 
     expect($postback->generated_url)->toStartWith('https://internal.example.com/v1/postback/fire/');
