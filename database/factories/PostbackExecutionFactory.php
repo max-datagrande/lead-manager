@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ExecutionStatus;
+use App\Enums\PostbackSource;
 use App\Models\Postback;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ class PostbackExecutionFactory extends Factory
     return [
       'execution_uuid' => (string) Str::uuid(),
       'postback_id' => PostbackFactory::new(),
+      'source' => PostbackSource::EXTERNAL_API,
       'status' => ExecutionStatus::PENDING,
       'inbound_params' => ['click_id' => 'CLK-' . $this->faker->numerify('######')],
       'resolved_tokens' => ['click_id' => 'CLK-' . $this->faker->numerify('######')],
@@ -84,5 +86,20 @@ class PostbackExecutionFactory extends Factory
       'max_attempts' => 5,
       'next_retry_at' => null,
     ]);
+  }
+
+  public function fromOfferwall(): static
+  {
+    return $this->state(['source' => PostbackSource::OFFERWALL]);
+  }
+
+  public function fromPingPost(): static
+  {
+    return $this->state(['source' => PostbackSource::PING_POST]);
+  }
+
+  public function manual(): static
+  {
+    return $this->state(['source' => PostbackSource::MANUAL]);
   }
 }
