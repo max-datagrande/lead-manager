@@ -7,6 +7,7 @@ enum PostbackSource: string
   case EXTERNAL_API = 'external_api';
   case OFFERWALL = 'offerwall';
   case PING_POST = 'ping_post';
+  case WORKFLOW = 'workflow';
   case MANUAL = 'manual';
   case COMMAND = 'command';
   case SYSTEM = 'system';
@@ -17,6 +18,7 @@ enum PostbackSource: string
       self::EXTERNAL_API => 'External API',
       self::OFFERWALL => 'Offerwall',
       self::PING_POST => 'Ping Post',
+      self::WORKFLOW => 'Workflow',
       self::MANUAL => 'Manual',
       self::COMMAND => 'Command',
       self::SYSTEM => 'System',
