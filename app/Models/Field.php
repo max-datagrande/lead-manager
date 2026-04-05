@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class Field extends Model
@@ -18,14 +19,21 @@ class Field extends Model
   ];
   protected static function booted(): void
   {
+    $clearTokenCache = fn() => Cache::forget('internal_postback_tokens');
+
     static::creating(function (Field $field) {
       $field->user_id = Auth::id();
       $field->updated_user_id = Auth::id();
     });
 
+    static::created($clearTokenCache);
+
     static::updating(function (Field $field) {
       $field->updated_user_id = Auth::id();
     });
+
+    static::updated($clearTokenCache);
+    static::deleted($clearTokenCache);
   }
   public function leadFieldResponses()
   {
