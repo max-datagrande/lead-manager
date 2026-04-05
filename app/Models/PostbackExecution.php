@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ExecutionStatus;
+use App\Enums\PostbackSource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,8 @@ class PostbackExecution extends Model
   protected $fillable = [
     'execution_uuid',
     'postback_id',
+    'source',
+    'source_reference',
     'status',
     'inbound_params',
     'resolved_tokens',
@@ -34,6 +37,7 @@ class PostbackExecution extends Model
 
   protected $casts = [
     'status' => ExecutionStatus::class,
+    'source' => PostbackSource::class,
     'inbound_params' => 'array',
     'resolved_tokens' => 'array',
     'attempts' => 'integer',
@@ -144,10 +148,16 @@ class PostbackExecution extends Model
   /**
    * @param  array<string, string>  $params
    */
-  public static function generateIdempotencyKey(int $postbackId, array $params): string
+  public static function generateIdempotencyKey(int $postbackId, array $params, ?string $source = null): string
   {
     ksort($params);
 
-    return hash('sha256', $postbackId . '|' . json_encode($params));
+    $base = $postbackId . '|' . json_encode($params);
+
+    if ($source) {
+      $base .= '|' . $source;
+    }
+
+    return hash('sha256', $base);
   }
 }
