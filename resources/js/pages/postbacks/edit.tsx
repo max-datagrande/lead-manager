@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { type Platform } from '@/types/models/platform';
-import { type FireModeOption, DomainOption, Postback } from '@/types/models/postback';
+import { type FireModeOption, type DomainOption, type Postback, type PostbackTypeOption } from '@/types/models/postback';
 import { Head, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
@@ -17,15 +17,18 @@ interface Props {
   postback: Postback;
   platforms: Platform[];
   fireModes: FireModeOption[];
+  postbackTypes: PostbackTypeOption[];
+  internalTokens: string[];
   domains: DomainOption[];
 }
 
-const Edit = ({ postback, platforms, fireModes, domains }: Props) => {
+const Edit = ({ postback, platforms, fireModes, postbackTypes, internalTokens, domains }: Props) => {
   const { addMessage } = useToast();
 
   const { data, setData, put, processing, errors } = useForm({
     name: postback.name,
-    platform_id: postback.platform_id as number | '',
+    type: postback.type ?? 'external',
+    platform_id: (postback.platform_id ?? '') as number | '',
     base_url: postback.base_url,
     param_mappings: postback.param_mappings ?? {},
     result_url: postback.result_url ?? '',
@@ -55,6 +58,8 @@ const Edit = ({ postback, platforms, fireModes, domains }: Props) => {
           processing={processing}
           platforms={platforms}
           fireModes={fireModes}
+          postbackTypes={postbackTypes}
+          internalTokens={internalTokens}
           domains={domains}
           onSubmit={handleSubmit}
           isEdit

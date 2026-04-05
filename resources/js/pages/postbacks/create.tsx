@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { type Platform } from '@/types/models/platform';
-import { type FireModeOption, DomainOption } from '@/types/models/postback';
+import { type FireModeOption, type DomainOption, type PostbackTypeOption } from '@/types/models/postback';
 import { Head, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
@@ -16,14 +16,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Props {
   platforms: Platform[];
   fireModes: FireModeOption[];
+  postbackTypes: PostbackTypeOption[];
+  internalTokens: string[];
   domains: DomainOption[];
 }
 
-const Create = ({ platforms, fireModes, domains }: Props) => {
+const Create = ({ platforms, fireModes, postbackTypes, internalTokens, domains }: Props) => {
   const { addMessage } = useToast();
 
   const { data, setData, post, processing, errors } = useForm({
     name: '',
+    type: 'external' as 'external' | 'internal',
     platform_id: '' as number | '',
     base_url: '',
     param_mappings: {} as Record<string, string>,
@@ -57,6 +60,8 @@ const Create = ({ platforms, fireModes, domains }: Props) => {
           processing={processing}
           platforms={platforms}
           fireModes={fireModes}
+          postbackTypes={postbackTypes}
+          internalTokens={internalTokens}
           domains={domains}
           onSubmit={handleSubmit}
           isEdit={false}

@@ -1,3 +1,4 @@
+import { TokenCombobox } from '@/components/postbacks/token-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,16 +11,19 @@ import { Link } from '@inertiajs/react';
 import { ArrowRight, Check, Copy, Globe, Link2, Lock, Settings2, Shuffle, Trash2, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-export default function PostbackForm({ data, setData, errors, processing, platforms, fireModes = [], domains = [], onSubmit, isEdit = false }) {
+export default function PostbackForm({ data, setData, errors, processing, platforms, fireModes = [], postbackTypes = [], internalTokens = [], domains = [], onSubmit, isEdit = false }) {
+  const isInternal = data.type === 'internal';
   const [availableTokens, setAvailableTokens] = useState([]);
   const [detectedParams, setDetectedParams] = useState([]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const platform = platforms.find((p) => p.id === Number(data.platform_id));
-    const mappings = platform?.token_mappings ?? {};
-    setAvailableTokens([...new Set(Object.values(mappings))].sort());
-  }, [data.platform_id, platforms]);
+    if (!isInternal) {
+      const platform = platforms.find((p) => p.id === Number(data.platform_id));
+      const mappings = platform?.token_mappings ?? {};
+      setAvailableTokens([...new Set(Object.values(mappings))].sort());
+    }
+  }, [data.platform_id, data.type, platforms]);
 
   useEffect(() => {
     if (data.base_url) {
@@ -107,6 +111,29 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {/* Postback Type Selector */}
+      {postbackTypes.length > 0 && (
+        <div className="flex gap-1">
+          {postbackTypes.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => {
+                setData('type', t.value);
+                if (t.value === 'internal') {
+                  setData('platform_id', '');
+                  setData('is_public', false);
+                }
+              }}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                data.type === t.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 auto-rows-auto">
         {/* Status & Fire Mode */}
         <Card className={`gap-2 ${data.is_active ? 'bg-green-500/10' : 'bg-muted/50'}`}>
@@ -143,27 +170,29 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
                 </Select>
                 {errors.fire_mode && <p className="text-xs text-destructive">{errors.fire_mode}</p>}
               </div>
-              <div className="space-y-1.5">
-                <Label>Exposure</Label>
-                <Select value={data.is_public ? 'public' : 'internal'} onValueChange={(val) => setData('is_public', val === 'public')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {domains.map((d) => (
-                      <SelectItem key={d.value} value={d.value}>
-                        <span className="flex items-center gap-1.5">
-                          {d.value === 'public' ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                          {d.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.is_public && <p className="text-xs text-destructive">{errors.is_public}</p>}
-              </div>
+              {!isInternal && (
+                <div className="space-y-1.5">
+                  <Label>Exposure</Label>
+                  <Select value={data.is_public ? 'public' : 'internal'} onValueChange={(val) => setData('is_public', val === 'public')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {domains.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>
+                          <span className="flex items-center gap-1.5">
+                            {d.value === 'public' ? <Globe className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                            {d.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.is_public && <p className="text-xs text-destructive">{errors.is_public}</p>}
+                </div>
+              )}
             </div>
-            {domains.length > 0 && (
+            {!isInternal && domains.length > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
                 Domain: <span className="font-mono font-medium text-foreground">{domains.find((d) => d.value === (data.is_public ? 'public' : 'internal'))?.url}</span>
               </p>
@@ -191,14 +220,14 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
               )}
             </div>
           </CardHeader>
-          <CardContent className='flex-1 flex items-center justify-center'>
+          <CardContent className='flex-1 flex items-center'>
             {detectedParams.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
+              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground w-full">
                 <Shuffle className="size-10 opacity-30" />
                 <p className="text-muted-foreground">Paste a postback URL to detect parameters</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 {/* Column headers */}
                 <div className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2 px-1 pb-1">
                   <span className="text-xs font-medium text-muted-foreground">URL Param</span>
@@ -215,18 +244,29 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
                         {key}
                       </code>
                       <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${isMapped ? 'text-primary' : 'text-muted-foreground/40'}`} />
-                      <Select value={data.param_mappings?.[key] ?? ''} onValueChange={(val) => updateMapping(key, val)}>
-                        <SelectTrigger className="font-mono text-xs">
-                          <SelectValue placeholder="Select token" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableTokens.map((token) => (
-                            <SelectItem key={token} value={token}>
-                              {token}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isInternal ? (
+                        <TokenCombobox
+                          value={data.param_mappings?.[key] ?? ''}
+                          onChange={(val) => updateMapping(key, val)}
+                          tokens={internalTokens}
+                          usedTokens={Object.values(data.param_mappings ?? {}).filter((v) => v && v !== data.param_mappings?.[key])}
+                          placeholder="Select token"
+                          className="font-mono text-xs"
+                        />
+                      ) : (
+                        <Select value={data.param_mappings?.[key] ?? ''} onValueChange={(val) => updateMapping(key, val)}>
+                          <SelectTrigger className="font-mono text-xs">
+                            <SelectValue placeholder="Select token" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTokens.map((token) => (
+                              <SelectItem key={token} value={token}>
+                                {token}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -266,16 +306,18 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Platform</Label>
-              <SearchableSelect
-                options={platforms.map((p) => ({ value: String(p.id), label: p.name }))}
-                value={data.platform_id ? String(data.platform_id) : ''}
-                onValueChange={(val) => setData('platform_id', val ? Number(val) : '')}
-                placeholder="Select a platform"
-              />
-              {errors.platform_id && <p className="text-xs text-destructive">{errors.platform_id}</p>}
-            </div>
+            {!isInternal && (
+              <div className="space-y-1.5">
+                <Label>Platform</Label>
+                <SearchableSelect
+                  options={platforms.map((p) => ({ value: String(p.id), label: p.name }))}
+                  value={data.platform_id ? String(data.platform_id) : ''}
+                  onValueChange={(val) => setData('platform_id', val ? Number(val) : '')}
+                  placeholder="Select a platform"
+                />
+                {errors.platform_id && <p className="text-xs text-destructive">{errors.platform_id}</p>}
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label htmlFor="base_url">Postback URL</Label>
@@ -301,8 +343,8 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
         </Card>
       </div>
 
-      {/* Parsed URL preview */}
-      {parsedUrl && (
+      {/* Parsed URL preview (external only) */}
+      {!isInternal && parsedUrl && (
         <Card className="gap-2">
           <CardHeader>
             <div className="flex items-center gap-2">
