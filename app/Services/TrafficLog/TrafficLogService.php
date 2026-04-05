@@ -101,7 +101,7 @@ class TrafficLogService
         //Query Params on page
         $rawQueryParams = $data['query_params'] ?? null;
         $newTraffic->query_params = $rawQueryParams;
-        $queryParams = $rawQueryParams ? array_change_key_case($rawQueryParams, CASE_LOWER) : null;
+        $queryParams = is_array($rawQueryParams) ? array_change_key_case($rawQueryParams, CASE_LOWER) : null;
         // S1-S4
         $newTraffic->s1 = $data['s1'] ?? ($queryParams['s1'] ?? null);
         $newTraffic->s2 = $data['s2'] ?? ($queryParams['s2'] ?? null);
