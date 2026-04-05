@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ExecutionStatus;
 use App\Enums\FireMode;
+use App\Enums\PostbackSource;
 use App\Models\Postback;
 use App\Models\PostbackExecution;
 use App\Traits\DatatableTrait;
@@ -35,6 +36,7 @@ class PostbackExecutionsController extends Controller
       searchableColumns: ['execution_uuid', 'outbound_url', 'ip_address'],
       filterConfig: [
         'status' => ['type' => 'lower'],
+        'source' => ['type' => 'exact'],
         'postback_id' => ['type' => 'exact'],
         'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
         'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
@@ -49,6 +51,7 @@ class PostbackExecutionsController extends Controller
       'state' => $table['state'],
       'data' => [
         'statusOptions' => ExecutionStatus::toArray(),
+        'sourceOptions' => PostbackSource::toArray(),
         'fireModeOptions' => FireMode::toArray(),
         'postbacks' => Postback::query()->active()->select('id', 'name')->orderBy('name')->get(),
       ],
