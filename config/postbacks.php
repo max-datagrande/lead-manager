@@ -13,6 +13,6 @@ return [
   |
   */
 
-  'postback_retry_interval' => (int) env('POSTBACK_RETRY_INTERVAL', 30),
+  'retry_interval' => (int) env('POSTBACK_RETRY_INTERVAL', 30),
 
 ];
