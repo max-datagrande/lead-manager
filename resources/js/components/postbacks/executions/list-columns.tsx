@@ -69,6 +69,16 @@ export const createExecutionColumns = (): ColumnDef<PostbackExecution>[] => [
     maxSize: 0,
   },
   {
+    id: 'source_filter',
+    accessorKey: 'source',
+    header: () => null,
+    cell: () => null,
+    enableHiding: false,
+    size: 0,
+    minSize: 0,
+    maxSize: 0,
+  },
+  {
     accessorKey: 'execution_uuid',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Execution UUID" />,
     cell: ({ row }) => {
@@ -107,6 +117,37 @@ export const createExecutionColumns = (): ColumnDef<PostbackExecution>[] => [
             </Badge>
           )}
         </div>
+      );
+    },
+    enableSorting: false,
+    enableHiding: true,
+  },
+  {
+    id: 'source',
+    accessorKey: 'source',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Source" />,
+    cell: ({ row }) => {
+      const source = row.original.source;
+      const labels: Record<string, string> = {
+        external_api: 'API',
+        offerwall: 'Offerwall',
+        ping_post: 'Ping Post',
+        manual: 'Manual',
+        command: 'Command',
+        system: 'System',
+      };
+      const colors: Record<string, string> = {
+        external_api: 'border-blue-200 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+        offerwall: 'border-purple-200 bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300',
+        ping_post: 'border-indigo-200 bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
+        manual: 'border-orange-200 bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+        command: 'border-gray-200 bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+        system: 'border-gray-200 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+      };
+      return (
+        <Badge variant="outline" className={colors[source] ?? ''}>
+          {labels[source] ?? source}
+        </Badge>
       );
     },
     enableSorting: false,
