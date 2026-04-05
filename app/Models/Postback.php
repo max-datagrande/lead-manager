@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\FireMode;
+use App\Enums\PostbackType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ class Postback extends Model
   protected $fillable = [
     'uuid',
     'name',
+    'type',
     'platform_id',
     'base_url',
     'param_mappings',
@@ -34,6 +36,7 @@ class Postback extends Model
 
   protected $casts = [
     'param_mappings' => 'array',
+    'type' => PostbackType::class,
     'fire_mode' => FireMode::class,
     'is_active' => 'boolean',
     'is_public' => 'boolean',
@@ -68,6 +71,32 @@ class Postback extends Model
   public function getGeneratedUrlAttribute(): string
   {
     $domain = $this->is_public ? config('app.api_url') : config('app.url');
+
+    if ($this->type === PostbackType::INTERNAL) {
+      $base = rtrim($domain, '/') . '/v1/postback/fire/' . $this->uuid . '/{fingerprint}';
+
+      if (empty($this->param_mappings)) {
+        return $base;
+      }
+
+      $params = [];
+
+      foreach ($this->param_mappings as $destParam => $tokenName) {
+        if (str_starts_with($tokenName, 'traffic.')) {
+          continue;
+        }
+        $params[$tokenName] = '{' . $tokenName . '}';
+      }
+
+      if (empty($params)) {
+        return $base;
+      }
+
+      $query = str_replace(['%7B', '%7D'], ['{', '}'], http_build_query($params));
+
+      return $base . '?' . $query;
+    }
+
     $base = rtrim($domain, '/') . '/v1/postback/fire/' . $this->uuid;
 
     if (empty($this->param_mappings)) {
@@ -119,6 +148,29 @@ class Postback extends Model
   public function scopeActive(Builder $query): Builder
   {
     return $query->where('is_active', true);
+  }
+
+  /**
+   * @param  Builder<self>  $query
+   * @return Builder<self>
+   */
+  public function scopeInternal(Builder $query): Builder
+  {
+    return $query->where('type', PostbackType::INTERNAL);
+  }
+
+  /**
+   * @param  Builder<self>  $query
+   * @return Builder<self>
+   */
+  public function scopeExternal(Builder $query): Builder
+  {
+    return $query->where('type', PostbackType::EXTERNAL);
+  }
+
+  public function isInternal(): bool
+  {
+    return $this->type === PostbackType::INTERNAL;
   }
 
   public function executions(): HasMany
