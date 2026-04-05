@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\MaxconvController;
 use App\Http\Controllers\Api\PingPost\PostbackWebhookController;
 use App\Http\Controllers\Api\PostbackController;
+use App\Http\Controllers\Api\InternalPostbackFireController;
 use App\Http\Controllers\Api\PostbackFireController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,12 @@ Route::prefix('postback')->group(function () {
   // Postback fire endpoint (recibe callbacks de partners externos)
   Route::get('/fire/{uuid}', [PostbackFireController::class, 'fire'])
     ->name('api.postback.fire')
+    ->where('uuid', '[0-9a-f-]{36}')
+    ->middleware('throttle:60,1');
+
+  // Internal postback fire endpoint (recibe fingerprint + params, guarda en lead y dispara)
+  Route::get('/fire/{uuid}/{fingerprint}', [InternalPostbackFireController::class, 'fire'])
+    ->name('api.postback.fire-internal')
     ->where('uuid', '[0-9a-f-]{36}')
     ->middleware('throttle:60,1');
 
