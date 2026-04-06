@@ -69,6 +69,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::post('/associations/fire-for-dispatch', [PostbackAssociationController::class, 'fireForDispatch'])->name(
         'associations.fire-for-dispatch',
       );
+      Route::post('/associations/preview-for-dispatch', [PostbackAssociationController::class, 'previewForDispatch'])->name(
+        'associations.preview-for-dispatch',
+      );
       // Executions (new fire system)
       Route::prefix('executions')
         ->name('executions.')

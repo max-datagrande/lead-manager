@@ -108,6 +108,34 @@ class PostbackAssociationController extends Controller
   }
 
   /**
+   * Preview resolved outbound URLs for a dispatch without firing.
+   */
+  public function previewForDispatch(Request $request, InternalTokenResolverService $tokenResolver): JsonResponse
+  {
+    $data = $request->validate([
+      'dispatch_id' => ['required', 'integer', 'exists:lead_dispatches,id'],
+    ]);
+
+    $dispatch = LeadDispatch::with(['workflow.postbacks', 'winnerIntegration'])->findOrFail($data['dispatch_id']);
+
+    $postbacks = $dispatch->workflow?->postbacks()->internal()->active()->get() ?? collect();
+
+    $resolvedTokens = $tokenResolver->resolveFromFingerprint($dispatch->fingerprint);
+    $saleParams = $tokenResolver->buildSaleParams($dispatch);
+    $params = array_merge($resolvedTokens, $saleParams);
+
+    $preview = $postbacks->map(
+      fn(Postback $p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'resolved_url' => $p->buildOutboundUrl($params),
+      ],
+    );
+
+    return response()->json(['success' => true, 'data' => $preview]);
+  }
+
+  /**
    * Resolve the source enum to the owning model's postbacks relationship.
    */
   private function resolveRelation(PostbackSource $source, int $sourceId): BelongsToMany
