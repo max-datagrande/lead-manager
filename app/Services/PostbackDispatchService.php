@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\PostbackDispatchLog;
 use App\Models\PostbackExecution;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Maxidev\Logger\TailLogger;
 
 class PostbackDispatchService
 {
@@ -59,7 +59,7 @@ class PostbackDispatchService
 
       $execution->markAsFailed($e->getMessage());
 
-      Log::warning('Postback dispatch failed', [
+      TailLogger::saveLog('Postback dispatch FAILED', 'postback/dispatch', 'error', [
         'execution_id' => $execution->id,
         'outbound_url' => $execution->outbound_url,
         'error' => $e->getMessage(),
@@ -84,7 +84,7 @@ class PostbackDispatchService
 
     $execution->markAsCompleted();
 
-    Log::info('Postback dispatch simulated (local)', [
+    TailLogger::saveLog('Postback dispatch simulated (local)', 'postback/dispatch', 'info', [
       'execution_id' => $execution->id,
       'outbound_url' => $execution->outbound_url,
     ]);
