@@ -12,10 +12,11 @@ class Field extends Model
 {
   use HasFactory;
 
-  protected $fillable = ['name', 'label', 'validation_rules', 'possible_values', 'user_id', 'updated_user_id'];
+  protected $fillable = ['name', 'label', 'validation_rules', 'possible_values', 'is_array', 'user_id', 'updated_user_id'];
 
   protected $casts = [
     'possible_values' => 'array',
+    'is_array' => 'boolean',
   ];
   protected static function booted(): void
   {
