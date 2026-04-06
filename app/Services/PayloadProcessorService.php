@@ -32,7 +32,7 @@ class PayloadProcessorService
     $arrayData = json_decode($processed, true);
 
     if (json_last_error() !== JSON_ERROR_NONE) {
-      throw new \Exception("Error processing JSON: " . json_last_error_msg());
+      throw new \Exception('Error processing JSON: ' . json_last_error_msg());
     }
 
     return json_encode($arrayData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -50,7 +50,7 @@ class PayloadProcessorService
     $finalReplacements = [];
 
     foreach ($mappingConfig as $tokenName => $config) {
-      $value = $leadData[$tokenName] ?? $config['defaultValue'] ?? '';
+      $value = $leadData[$tokenName] ?? ($config['defaultValue'] ?? '');
 
       $originalValues[$tokenName] = $value;
 
@@ -100,20 +100,17 @@ class PayloadProcessorService
    * @param  array<string, mixed>    $leadData     Lead fields keyed by field name
    * @return array<string, string>
    */
-  public function buildReplacements(
-    Integration $integration,
-    IntegrationEnvironment $environment,
-    array $leadData,
-  ): array {
+  public function buildReplacements(Integration $integration, IntegrationEnvironment $environment, array $leadData): array
+  {
     $replacements = [];
-    $hashConfigs  = $environment->fieldHashes->keyBy('field_id');
+    $hashConfigs = $environment->fieldHashes->keyBy('field_id');
 
     foreach ($integration->tokenMappings as $mapping) {
-      if (! $mapping->field) {
+      if (!$mapping->field) {
         continue;
       }
 
-      $raw   = $leadData[$mapping->field->name] ?? $mapping->default_value ?? '';
+      $raw = $leadData[$mapping->field->name] ?? ($mapping->default_value ?? '');
       $value = $mapping->value_mapping[$raw] ?? $raw;
 
       $hashConfig = $hashConfigs->get($mapping->field_id);
@@ -123,9 +120,9 @@ class PayloadProcessorService
 
       $watermarked = match ($mapping->data_type) {
         'integer' => '___INT___' . (int) $value,
-        'float'   => '___FLOAT___' . (float) $value,
+        'float' => '___FLOAT___' . (float) $value,
         'boolean' => '___BOOL___' . (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'),
-        default   => (string) $value,
+        default => (string) $value,
       };
 
       $replacements['{$' . $mapping->field_id . '}'] = $watermarked;
@@ -166,16 +163,9 @@ class PayloadProcessorService
    * Use buildReplacements() + applyReplacements() directly when you need to
    * apply the same map to multiple templates (body, headers, URL).
    */
-  public function resolveTokens(
-    string $template,
-    Integration $integration,
-    IntegrationEnvironment $environment,
-    array $leadData,
-  ): string {
-    return $this->applyReplacements(
-      $template,
-      $this->buildReplacements($integration, $environment, $leadData),
-    );
+  public function resolveTokens(string $template, Integration $integration, IntegrationEnvironment $environment, array $leadData): string
+  {
+    return $this->applyReplacements($template, $this->buildReplacements($integration, $environment, $leadData));
   }
 
   /**
@@ -188,13 +178,13 @@ class PayloadProcessorService
   private function hashValue(string $value, string $algorithm, ?string $secret): string
   {
     return match ($algorithm) {
-      'md5'         => md5($value),
-      'sha1'        => sha1($value),
-      'sha256'      => hash('sha256', $value),
-      'sha512'      => hash('sha512', $value),
-      'base64'      => base64_encode($value),
+      'md5' => md5($value),
+      'sha1' => sha1($value),
+      'sha256' => hash('sha256', $value),
+      'sha512' => hash('sha512', $value),
+      'base64' => base64_encode($value),
       'hmac_sha256' => hash_hmac('sha256', $value, $secret ?? ''),
-      default       => $value,
+      default => $value,
     };
   }
 
@@ -237,18 +227,18 @@ class PayloadProcessorService
 
         switch ($modifier) {
           case 'int:':
-            return "___INT___" . (int)$value;
+            return '___INT___' . (int) $value;
           case 'bool:':
             $boolVal = filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false';
-            return "___BOOL___" . $boolVal;
+            return '___BOOL___' . $boolVal;
           case 'float:':
-            return "___FLOAT___" . (float)$value;
+            return '___FLOAT___' . (float) $value;
           default:
             // Para strings y otros tipos, se inyecta como string literal
-            return (string)$value;
+            return (string) $value;
         }
       },
-      $template
+      $template,
     );
   }
 
@@ -281,20 +271,20 @@ class PayloadProcessorService
   private function releaseTypes(string $jsonString): string
   {
     $notEscaped = '(?<!\\\\)';
-    $escaped    = '\\\\"';
-    $capture    = '$1';
+    $escaped = '\\\\"';
+    $capture = '$1';
 
     $watermarks = [
       'integer' => '-?\d+',
       'boolean' => 'true|false',
-      'float'   => '-?[\d.]+',
+      'float' => '-?[\d.]+',
     ];
 
     foreach ($watermarks as $type => $valuePattern) {
       $marker = match ($type) {
         'integer' => '___INT___',
         'boolean' => '___BOOL___',
-        'float'   => '___FLOAT___',
+        'float' => '___FLOAT___',
       };
 
       // ── Contexto 1: comillas regulares "___INT___25" → 25
@@ -309,8 +299,54 @@ class PayloadProcessorService
 
     return $jsonString;
   }
-}
 
+  /**
+   * Apply a Twig payload transformer to an already-resolved payload array.
+   * Returns the original payload if no transformer is configured or if transformation fails.
+   */
+  public function applyTwigTransformer(Integration $integration, array $payload): array
+  {
+    if (!$integration->use_custom_transformer || empty($integration->payload_transformer)) {
+      return $payload;
+    }
+
+    try {
+      $loader = new \Twig\Loader\ArrayLoader([
+        'index.html' => $integration->payload_transformer,
+      ]);
+      $twig = new \Twig\Environment($loader);
+
+      $twig->addFunction(
+        new \Twig\TwigFunction(
+          'output_json',
+          function ($data) {
+            return json_encode($data);
+          },
+          ['is_safe' => ['html']],
+        ),
+      );
+
+      $rendered = $twig->render('index.html', ['data' => $payload]);
+      $transformed = json_decode($rendered, true);
+
+      if (json_last_error() === JSON_ERROR_NONE && is_array($transformed)) {
+        return $transformed;
+      }
+
+      TailLogger::saveLog('Twig transformer produced invalid JSON', 'payload-processor', 'warning', [
+        'integration_id' => $integration->id,
+        'rendered' => $rendered,
+      ]);
+    } catch (\Throwable $e) {
+      TailLogger::saveLog('Twig payload transformation failed', 'payload-processor', 'error', [
+        'integration_id' => $integration->id,
+        'error' => $e->getMessage(),
+      ]);
+    }
+
+    return $payload;
+  }
+}
 
 /**
  * --- EJEMPLO DE INTEGRACIÓN CON TU FUNCIÓN ACTUAL ---

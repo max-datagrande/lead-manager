@@ -18,17 +18,15 @@ class OfferwallMixLogController extends Controller
     $search = $request->input('search');
     if ($search) {
       $query->where(function ($q) use ($search) {
-        $q->where('fingerprint', 'like', '%' . $search . '%')
-          ->orWhereHas('offerwallMix', function ($q2) use ($search) {
-            $q2->where('name', 'like', '%' . $search . '%');
-          });
+        $q->where('fingerprint', 'like', '%' . $search . '%')->orWhereHas('offerwallMix', function ($q2) use ($search) {
+          $q2->where('name', 'like', '%' . $search . '%');
+        });
       });
     }
     $perPage = $request->input('per_page', 15);
 
-    $logs = $query->orderBy($col, $dir)
-      ->paginate($perPage)->withQueryString();
-    $state =  [
+    $logs = $query->orderBy($col, $dir)->paginate($perPage)->withQueryString();
+    $state = [
       'filters' => $columnFilters,
       'sort' => $sort,
       'search' => $search,
@@ -42,9 +40,9 @@ class OfferwallMixLogController extends Controller
     ];
     return Inertia::render('logs/mixes/index', [
       'rows' => $logs,
-      'state' =>  $state,
+      'state' => $state,
       'meta' => $meta,
-      'data' => []
+      'data' => [],
     ]);
   }
 
@@ -54,7 +52,7 @@ class OfferwallMixLogController extends Controller
       'offerwallMix:id,name',
       'integrationCallLogs' => function ($query) {
         $query->with(['integration:id,name,company_id', 'integration.company:id,name'])->orderBy('created_at', 'asc');
-      }
+      },
     ]);
     return Inertia::render('logs/mixes/show', [
       'log' => $offerwallMixLog,

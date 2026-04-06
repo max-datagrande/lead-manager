@@ -1,29 +1,36 @@
-import { showBreadcrumbs } from '@/components/ping-post/buyers/breadcrumbs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import AppLayout from '@/layouts/app-layout'
-import PageHeader from '@/components/page-header'
-import type { Buyer } from '@/types/ping-post'
-import type { EnvironmentDB } from '@/types/integrations'
-import { Head, Link, router } from '@inertiajs/react'
-import { Check, Copy, Edit, Trash2 } from 'lucide-react'
-import { useState } from 'react'
-import { route } from 'ziggy-js'
+import PageHeader from '@/components/page-header';
+import { showBreadcrumbs } from '@/components/ping-post/buyers/breadcrumbs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AppLayout from '@/layouts/app-layout';
+import type { EnvironmentDB } from '@/types/integrations';
+import type { Buyer } from '@/types/ping-post';
+import { Head, Link, router } from '@inertiajs/react';
+import { Check, Copy, Edit, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { route } from 'ziggy-js';
 
 const OP_LABEL: Record<string, string> = {
-  eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', in: 'in', not_in: 'not in',
-}
+  eq: '=',
+  neq: '≠',
+  gt: '>',
+  gte: '≥',
+  lt: '<',
+  lte: '≤',
+  in: 'in',
+  not_in: 'not in',
+};
 
 function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <Button
@@ -34,34 +41,31 @@ function CopyButton({ text }: { text: string }) {
       type="button"
       aria-label="Copy to clipboard"
     >
-      {copied
-        ? <Check className="h-3 w-3 text-emerald-500" />
-        : <Copy className="h-3 w-3" />
-      }
+      {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
     </Button>
-  )
+  );
 }
 
 interface Props {
-  buyer: Buyer
+  buyer: Buyer;
 }
 
 const BuyersShow = ({ buyer }: Props) => {
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const cfg = buyer.buyerConfig
-  const environments = buyer.integration?.environments ?? []
+  const cfg = buyer.buyer_config;
+  const environments = buyer.integration?.environments ?? [];
 
   const getEnv = (envType: 'ping' | 'post', environment: 'production'): EnvironmentDB | undefined =>
-    environments.find((e) => e.env_type === envType && e.environment === environment)
+    environments.find((e) => e.env_type === envType && e.environment === environment);
 
-  const pingProd = getEnv('ping', 'production')
-  const postProd = getEnv('post', 'production')
+  const pingProd = getEnv('ping', 'production');
+  const postProd = getEnv('post', 'production');
 
   const confirmDelete = () => {
-    router.delete(route('ping-post.buyers.destroy', buyer.id))
-    setDeleteOpen(false)
-  }
+    router.delete(route('ping-post.buyers.destroy', buyer.id));
+    setDeleteOpen(false);
+  };
 
   return (
     <>
@@ -91,7 +95,9 @@ const BuyersShow = ({ buyer }: Props) => {
           {buyer.integration && (
             <>
               <span className="font-medium">{buyer.integration.name}</span>
-              <Badge variant="outline" className="text-xs">{buyer.integration.type}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {buyer.integration.type}
+              </Badge>
             </>
           )}
           {buyer.company && (
@@ -101,20 +107,22 @@ const BuyersShow = ({ buyer }: Props) => {
             </>
           )}
           <span className="h-4 w-px bg-border" />
-          {buyer.is_active
-            ? <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white text-xs">Active</Badge>
-            : <Badge variant="secondary" className="text-xs">Inactive</Badge>
-          }
+          {buyer.is_active ? (
+            <Badge className="bg-emerald-500 text-xs text-white hover:bg-emerald-500">Active</Badge>
+          ) : (
+            <Badge variant="secondary" className="text-xs">
+              Inactive
+            </Badge>
+          )}
           {cfg && (
             <>
               <span className="h-4 w-px bg-border" />
-              <span className="capitalize text-muted-foreground">{cfg.pricing_type.replace('_', ' ')} pricing</span>
+              <span className="text-muted-foreground capitalize">{cfg.price_source.replace('_', ' ')} pricing</span>
             </>
           )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
           {/* ── Basic Info ──────────────────────────────────────────────────── */}
           <Card>
             <CardHeader>
@@ -131,10 +139,11 @@ const BuyersShow = ({ buyer }: Props) => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>
-                {buyer.is_active
-                  ? <Badge className="bg-emerald-500 hover:bg-emerald-500 text-white">Active</Badge>
-                  : <Badge variant="secondary">Inactive</Badge>
-                }
+                {buyer.is_active ? (
+                  <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">Active</Badge>
+                ) : (
+                  <Badge variant="secondary">Inactive</Badge>
+                )}
               </div>
               {buyer.company && (
                 <div className="flex justify-between">
@@ -154,9 +163,11 @@ const BuyersShow = ({ buyer }: Props) => {
             <CardContent className="space-y-4 text-sm">
               {pingProd && (
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ping URL</span>
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Ping URL</span>
                   <div className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1.5">
-                    <Badge variant="outline" className="shrink-0 font-mono text-xs">{pingProd.method}</Badge>
+                    <Badge variant="outline" className="shrink-0 font-mono text-xs">
+                      {pingProd.method}
+                    </Badge>
                     <p className="flex-1 truncate font-mono text-xs">{pingProd.url}</p>
                     <CopyButton text={`${pingProd.method} ${pingProd.url}`} />
                   </div>
@@ -164,17 +175,17 @@ const BuyersShow = ({ buyer }: Props) => {
               )}
               {postProd && (
                 <div className="space-y-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Post URL</span>
+                  <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Post URL</span>
                   <div className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1.5">
-                    <Badge variant="outline" className="shrink-0 font-mono text-xs">{postProd.method}</Badge>
+                    <Badge variant="outline" className="shrink-0 font-mono text-xs">
+                      {postProd.method}
+                    </Badge>
                     <p className="flex-1 truncate font-mono text-xs">{postProd.url}</p>
                     <CopyButton text={`${postProd.method} ${postProd.url}`} />
                   </div>
                 </div>
               )}
-              {!pingProd && !postProd && (
-                <p className="text-muted-foreground">No production environments configured on the integration.</p>
-              )}
+              {!pingProd && !postProd && <p className="text-muted-foreground">No production environments configured on the integration.</p>}
             </CardContent>
           </Card>
 
@@ -187,7 +198,9 @@ const BuyersShow = ({ buyer }: Props) => {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Pricing Type</span>
-                  <Badge variant="outline" className="capitalize">{cfg.pricing_type.replace('_', ' ')}</Badge>
+                  <Badge variant="outline" className="capitalize">
+                    {cfg.price_source.replace('_', ' ')}
+                  </Badge>
                 </div>
                 {cfg.fixed_price != null && (
                   <div className="flex justify-between">
@@ -201,12 +214,46 @@ const BuyersShow = ({ buyer }: Props) => {
                     <span className="font-medium">${Number(cfg.min_bid).toFixed(2)}</span>
                   </div>
                 )}
-                {cfg.pricing_type === 'postback' && (
+                {cfg.price_source === 'postback' && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Postback Window</span>
                     <span>{cfg.postback_pending_days} days</span>
                   </div>
                 )}
+                {cfg.price_source === 'conditional' && cfg.conditional_pricing_rules?.length ? (
+                  <div className="space-y-2 border-t pt-3">
+                    <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                      Pricing Rules ({cfg.conditional_pricing_rules.length})
+                    </span>
+                    {cfg.conditional_pricing_rules.map((rule, i) => (
+                      <div key={i} className="rounded-md bg-muted/50 px-3 py-2 text-xs">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-0.5">
+                            {rule.conditions.map((cond, j) => (
+                              <div key={j} className="flex items-center gap-1.5">
+                                <span className="font-medium text-muted-foreground">{j === 0 ? 'IF' : 'AND'}</span>
+                                <span className="font-mono font-medium">{cond.field}</span>
+                                <Badge variant="secondary" className="shrink-0 font-mono text-xs">
+                                  {OP_LABEL[cond.op] ?? cond.op}
+                                </Badge>
+                                <span className="font-mono text-muted-foreground">
+                                  {Array.isArray(cond.value) ? cond.value.join(', ') : cond.value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="shrink-0 font-semibold text-foreground">${Number(rule.price).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="flex justify-between border-t pt-3">
+                  <span className="text-muted-foreground">Sell on Zero Price</span>
+                  <Badge variant={cfg.sell_on_zero_price ? 'default' : 'secondary'} className="text-xs">
+                    {cfg.sell_on_zero_price ? 'Yes' : 'No'}
+                  </Badge>
+                </div>
                 <div className="flex justify-between border-t pt-3">
                   <span className="text-muted-foreground">Ping Timeout</span>
                   <span className="font-mono text-xs">{cfg.ping_timeout_ms} ms</span>
@@ -223,12 +270,12 @@ const BuyersShow = ({ buyer }: Props) => {
           <Card>
             <CardHeader>
               <CardTitle>Eligibility Rules</CardTitle>
-              <CardDescription>{buyer.eligibilityRules?.length ?? 0} rules</CardDescription>
+              <CardDescription>{buyer.eligibility_rules?.length ?? 0} rules</CardDescription>
             </CardHeader>
             <CardContent>
-              {buyer.eligibilityRules?.length ? (
+              {buyer.eligibility_rules?.length ? (
                 <div className="space-y-2">
-                  {buyer.eligibilityRules.map((rule, i) => (
+                  {buyer.eligibility_rules.map((rule, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm">
                       <span className="font-mono text-xs font-medium">{rule.field}</span>
                       <Badge variant="secondary" className="shrink-0 font-mono text-xs">
@@ -250,14 +297,16 @@ const BuyersShow = ({ buyer }: Props) => {
           <Card>
             <CardHeader>
               <CardTitle>Volume Caps</CardTitle>
-              <CardDescription>{buyer.capRules?.length ?? 0} caps</CardDescription>
+              <CardDescription>{buyer.cap_rules?.length ?? 0} caps</CardDescription>
             </CardHeader>
             <CardContent>
-              {buyer.capRules?.length ? (
+              {buyer.cap_rules?.length ? (
                 <div className="space-y-2">
-                  {buyer.capRules.map((cap, i) => (
+                  {buyer.cap_rules.map((cap, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-md bg-muted px-3 py-2 text-sm">
-                      <Badge variant="outline" className="shrink-0 capitalize">{cap.period}</Badge>
+                      <Badge variant="outline" className="shrink-0 capitalize">
+                        {cap.period}
+                      </Badge>
                       <div className="flex flex-wrap gap-3">
                         {cap.max_leads != null && (
                           <span className="text-xs text-muted-foreground">
@@ -278,7 +327,6 @@ const BuyersShow = ({ buyer }: Props) => {
               )}
             </CardContent>
           </Card>
-
         </div>
       </div>
 
@@ -288,20 +336,25 @@ const BuyersShow = ({ buyer }: Props) => {
           <DialogHeader>
             <DialogTitle>Delete buyer</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <strong>{buyer.name}</strong>? This action cannot be undone
-              and will remove the buyer from all workflows.
+              Are you sure you want to delete <strong>{buyer.name}</strong>? This action cannot be undone and will remove the buyer from all
+              workflows.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
-  )
-}
+  );
+};
 
-BuyersShow.layout = (page: React.ReactNode & { props: { buyer: Buyer } }) =>
+BuyersShow.layout = (page: React.ReactNode & { props: { buyer: Buyer } }) => (
   <AppLayout children={page} breadcrumbs={showBreadcrumbs(page.props.buyer)} />
-export default BuyersShow
+);
+export default BuyersShow;

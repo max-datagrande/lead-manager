@@ -41,10 +41,10 @@ class UtmService
     $clickId = null;
     $platform = null;
     // Buscar el primer parámetro de ads presente
-    foreach ($this->adPlatforms as $param => $platform) {
+    foreach ($this->adPlatforms as $param => $platformName) {
       if (isset($urlParams[$param]) && !empty($urlParams[$param])) {
         $clickId = $urlParams[$param];
-        $platform = $this->adPlatforms[$param];
+        $platform = $platformName;
         break;
       }
     }
@@ -87,7 +87,7 @@ class UtmService
       'source' => $source,
       'platform' => $platform, // Ahora solo contiene la plataforma detectada
       'channel' => $channel,
-      'click_id' => $clickId
+      'click_id' => $clickId,
     ];
   }
 
@@ -126,9 +126,7 @@ class UtmService
    */
   public function getTrafficLogsByFingerprint($fingerprint)
   {
-    return TrafficLog::where('fingerprint', $fingerprint)
-      ->orderBy('created_at', 'desc')
-      ->get();
+    return TrafficLog::where('fingerprint', $fingerprint)->orderBy('created_at', 'desc')->get();
   }
 
   /**
@@ -139,9 +137,7 @@ class UtmService
    */
   public function getTrafficLogsByClickId($clickId)
   {
-    return TrafficLog::where('click_id', $clickId)
-      ->orderBy('created_at', 'desc')
-      ->get();
+    return TrafficLog::where('click_id', $clickId)->orderBy('created_at', 'desc')->get();
   }
 
   /**
@@ -154,8 +150,8 @@ class UtmService
   {
     $query = TrafficLog::query();
 
-    if (isset($params['campaign_id']) && !empty($params['campaign_id'])) {
-      $query->where('campaign_id', $params['campaign_id']);
+    if (isset($params['utm_campaign_id']) && !empty($params['utm_campaign_id'])) {
+      $query->where('utm_campaign_id', $params['utm_campaign_id']);
     }
 
     if (isset($params['campaign_code']) && !empty($params['campaign_code'])) {
@@ -189,19 +185,19 @@ class UtmService
     }
 
     // Estadísticas por fuente de tráfico
-    $bySource = $query->selectRaw('utm_source, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')
-      ->groupBy('utm_source')
-      ->get();
+    $bySource = $query->selectRaw('utm_source, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')->groupBy('utm_source')->get();
 
     // Estadísticas por medium
-    $byMedium = $query->selectRaw('traffic_medium, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')
-      ->whereNotNull('traffic_medium')
-      ->where('traffic_medium', '!=', '')
-      ->groupBy('traffic_medium')
+    $byMedium = $query
+      ->selectRaw('utm_medium, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')
+      ->whereNotNull('utm_medium')
+      ->where('utm_medium', '!=', '')
+      ->groupBy('utm_medium')
       ->get();
 
     // Estadísticas por país
-    $byCountry = $query->selectRaw('country_code, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')
+    $byCountry = $query
+      ->selectRaw('country_code, COUNT(*) as total, COUNT(DISTINCT fingerprint) as unique_visitors')
       ->whereNotNull('country_code')
       ->groupBy('country_code')
       ->orderByDesc('total')
@@ -228,7 +224,7 @@ class UtmService
     $utmParams = [
       'utm_source' => $urlParams['utm_source'] ?? null,
       'utm_medium' => $urlParams['utm_medium'] ?? null,
-      'utm_campaign_id' => $urlParams['campaign_id'] ?? $urlParams['utm_id'] ?? $urlParams['cid'] ?? null,
+      'utm_campaign_id' => $urlParams['campaign_id'] ?? ($urlParams['utm_id'] ?? ($urlParams['cid'] ?? null)),
       'utm_campaign_name' => $urlParams['utm_campaign'] ?? null,
       'utm_term' => $urlParams['utm_term'] ?? null,
       'utm_content' => $urlParams['utm_content'] ?? null,
@@ -248,9 +244,7 @@ class UtmService
    */
   public function getLatestTrafficLog($fingerprint)
   {
-    return TrafficLog::where('fingerprint', $fingerprint)
-      ->latest('created_at')
-      ->first();
+    return TrafficLog::where('fingerprint', $fingerprint)->latest('created_at')->first();
   }
 
   /**
@@ -289,8 +283,8 @@ class UtmService
         'has_utm_params' => !empty($utmParams),
         'has_click_id' => !empty($sourceData['click_id']),
         'is_paid_traffic' => !empty($sourceData['click_id']),
-        'traffic_type' => $sourceData['channel']
-      ]
+        'traffic_type' => $sourceData['channel'],
+      ],
     ];
   }
 }

@@ -35,7 +35,7 @@ class AuthHost
     $postmanConfig = config('auth.postman');
     // Si es Postman, validar token personalizado
     if ($isPostman && $postmanConfig['enabled']) {
-      $token = $request->header('x-postman-auth-token');
+      $token = $request->header($postmanConfig['key']);
       // Aquí podrías validar el token con una lista blanca o contra la base de datos
       if (!$token || $token !== $postmanConfig['secret']) {
         return response()->json(['message' => 'Unauthorized: Invalid Postman token'], 401);
@@ -61,9 +61,7 @@ class AuthHost
     }
 
     $parts = explode('.', $targetHost);
-    $rootDomain = count($parts) > 2
-        ? implode('.', array_slice($parts, -2))
-        : $targetHost;
+    $rootDomain = count($parts) > 2 ? implode('.', array_slice($parts, -2)) : $targetHost;
     // Validar el host usando ambos métodos
 
     if (!$this->hostValidationService->validateFromJson($rootDomain)) {
@@ -72,7 +70,7 @@ class AuthHost
         'target_host' => $targetHost,
         'origin' => $origin,
         'ip' => $request->ip(),
-        'url' => $request->fullUrl()
+        'url' => $request->fullUrl(),
       ]);
       return response()->json(['message' => 'Forbidden'], 403);
     }

@@ -1,8 +1,10 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { EligibilityRule } from '@/types/ping-post'
-import { Plus, Trash2 } from 'lucide-react'
+import { FieldCombobox } from '@/components/ping-post/field-combobox';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { EligibilityRule } from '@/types/ping-post';
+import { Plus, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
 
 const OPERATORS = [
   { value: 'eq', label: 'equals' },
@@ -13,36 +15,45 @@ const OPERATORS = [
   { value: 'lte', label: 'less than or equal' },
   { value: 'in', label: 'in (comma-separated)' },
   { value: 'not_in', label: 'not in (comma-separated)' },
-]
+];
 
 interface Props {
-  rules: EligibilityRule[]
-  onChange: (rules: EligibilityRule[]) => void
+  rules: EligibilityRule[];
+  onChange: (rules: EligibilityRule[]) => void;
+  fields?: { id: number; name: string }[];
 }
 
-export function EligibilityRuleEditor({ rules, onChange }: Props) {
+export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
+  const usedFields = useMemo(() => rules.map((r) => r.field).filter(Boolean), [rules]);
+
   const addRule = () => {
-    onChange([...rules, { field: '', operator: 'eq', value: '', sort_order: rules.length }])
-  }
+    onChange([...rules, { field: '', operator: 'eq', value: '', sort_order: rules.length }]);
+  };
 
   const removeRule = (index: number) => {
-    onChange(rules.filter((_, i) => i !== index))
-  }
+    onChange(rules.filter((_, i) => i !== index));
+  };
 
   const updateRule = (index: number, key: keyof EligibilityRule, value: any) => {
-    onChange(rules.map((r, i) => (i === index ? { ...r, [key]: value } : r)))
-  }
+    onChange(rules.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
+  };
 
   return (
     <div className="space-y-2">
       {rules.map((rule, i) => (
         <div key={i} className="flex items-center gap-2">
-          <Input
-            placeholder="field (e.g. state)"
-            value={rule.field}
-            onChange={(e) => updateRule(i, 'field', e.target.value)}
-            className="w-36"
-          />
+          {fields.length > 0 ? (
+            <FieldCombobox
+              value={rule.field}
+              onChange={(v) => updateRule(i, 'field', v)}
+              fields={fields}
+              usedFields={usedFields}
+              placeholder="Select field..."
+              className="w-36"
+            />
+          ) : (
+            <Input placeholder="field (e.g. state)" value={rule.field} onChange={(e) => updateRule(i, 'field', e.target.value)} className="w-36" />
+          )}
           <Select value={rule.operator} onValueChange={(v) => updateRule(i, 'operator', v)}>
             <SelectTrigger className="w-44">
               <SelectValue />
@@ -59,9 +70,9 @@ export function EligibilityRuleEditor({ rules, onChange }: Props) {
             placeholder="value"
             value={Array.isArray(rule.value) ? rule.value.join(',') : (rule.value as string)}
             onChange={(e) => {
-              const v = e.target.value
-              const isMulti = rule.operator === 'in' || rule.operator === 'not_in'
-              updateRule(i, 'value', isMulti ? v.split(',').map((s) => s.trim()) : v)
+              const v = e.target.value;
+              const isMulti = rule.operator === 'in' || rule.operator === 'not_in';
+              updateRule(i, 'value', isMulti ? v.split(',').map((s) => s.trim()) : v);
             }}
             className="flex-1"
           />
@@ -75,5 +86,5 @@ export function EligibilityRuleEditor({ rules, onChange }: Props) {
         Add Rule
       </Button>
     </div>
-  )
+  );
 }

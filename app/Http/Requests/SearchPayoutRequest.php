@@ -9,7 +9,8 @@ class SearchPayoutRequest extends FormRequest
   /**
    * Determine if the user is authorized to make this request.
    */
-  public function authorize(): bool {
+  public function authorize(): bool
+  {
     return true;
   }
 
@@ -24,7 +25,7 @@ class SearchPayoutRequest extends FormRequest
       'clid' => 'required|string|max:255',
       'vendor' => 'required|string',
       'fromDate' => 'nullable|date|date_format:Y-m-d|before_or_equal:toDate',
-      'toDate' => 'nullable|date|date_format:Y-m-d|after_or_equal:fromDate|before_or_equal:today'
+      'toDate' => 'nullable|date|date_format:Y-m-d|after_or_equal:fromDate|before_or_equal:today',
     ];
   }
 
@@ -49,7 +50,7 @@ class SearchPayoutRequest extends FormRequest
       'toDate.date' => 'The to date must be a valid date.',
       'toDate.date_format' => 'The to date must have the format Y-m-d.',
       'toDate.after_or_equal' => 'The to date must be after or equal to the from date.',
-      'toDate.before_or_equal' => 'The to date cannot be after today.'
+      'toDate.before_or_equal' => 'The to date cannot be after today.',
     ];
   }
 }

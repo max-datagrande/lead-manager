@@ -1,30 +1,14 @@
-import { StatusBadge } from '@/components/ping-post/status-badge'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import type { LeadDispatch, PingResult, PostResult } from '@/types/ping-post'
-import { ChevronDown, Trophy } from 'lucide-react'
-
-interface PayloadViewProps {
-  label: string
-  data: Record<string, unknown> | null
-}
-
-function PayloadView({ label, data }: PayloadViewProps) {
-  if (!data) return null
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <pre className="max-h-32 overflow-auto rounded bg-muted p-2 text-xs">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  )
-}
+import { StatusBadge } from '@/components/ping-post/status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import JsonViewer from '@/components/ui/json-viewer';
+import type { LeadDispatch, PingResult, PostResult } from '@/types/ping-post';
+import { ChevronDown, Trophy } from 'lucide-react';
 
 function PingResultCard({ ping }: { ping: PingResult }) {
   return (
-    <div className="rounded border bg-card p-3 text-sm">
+    <div className="space-y-2 rounded border bg-card p-3 text-sm">
       <div className="flex items-center justify-between">
         <span className="font-medium">Ping</span>
         <div className="flex items-center gap-2">
@@ -34,19 +18,18 @@ function PingResultCard({ ping }: { ping: PingResult }) {
           {ping.duration_ms && <span className="text-xs text-muted-foreground">{ping.duration_ms}ms</span>}
         </div>
       </div>
-      {ping.skip_reason && (
-        <p className="mt-1 text-xs text-muted-foreground">{ping.skip_reason}</p>
-      )}
-      {ping.request_url && (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{ping.request_url}</p>
-      )}
+      {ping.skip_reason && <p className="text-xs text-muted-foreground">{ping.skip_reason}</p>}
+      {ping.request_url && <p className="truncate text-xs text-muted-foreground">{ping.request_url}</p>}
+      {ping.request_payload && <JsonViewer data={ping.request_payload} title="Request Payload" className="max-h-64" showCounts={false} />}
+      {ping.request_headers && <JsonViewer data={ping.request_headers} title="Request Headers" className="max-h-40" showCounts={false} />}
+      {ping.response_body && <JsonViewer data={ping.response_body} title="Response Body" className="max-h-64" showCounts={false} />}
     </div>
-  )
+  );
 }
 
 function PostResultCard({ post }: { post: PostResult }) {
   return (
-    <div className="rounded border bg-card p-3 text-sm">
+    <div className="space-y-2 rounded border bg-card p-3 text-sm">
       <div className="flex items-center justify-between">
         <span className="font-medium">Post</span>
         <div className="flex items-center gap-2">
@@ -56,32 +39,29 @@ function PostResultCard({ post }: { post: PostResult }) {
           {post.duration_ms && <span className="text-xs text-muted-foreground">{post.duration_ms}ms</span>}
         </div>
       </div>
-      {post.rejection_reason && (
-        <p className="mt-1 text-xs text-muted-foreground">{post.rejection_reason}</p>
-      )}
-      {post.request_url && (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{post.request_url}</p>
-      )}
+      {post.rejection_reason && <p className="text-xs text-muted-foreground">{post.rejection_reason}</p>}
+      {post.request_url && <p className="truncate text-xs text-muted-foreground">{post.request_url}</p>}
+      {post.request_payload && <JsonViewer data={post.request_payload} title="Request Payload" className="max-h-64" showCounts={false} />}
+      {post.request_headers && <JsonViewer data={post.request_headers} title="Request Headers" className="max-h-40" showCounts={false} />}
+      {post.response_body && <JsonViewer data={post.response_body} title="Response Body" className="max-h-64" showCounts={false} />}
       {post.postback_expires_at && post.status === 'pending_postback' && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Postback expires: {new Date(post.postback_expires_at).toLocaleString()}
-        </p>
+        <p className="text-xs text-muted-foreground">Postback expires: {new Date(post.postback_expires_at).toLocaleString()}</p>
       )}
     </div>
-  )
+  );
 }
 
 interface BuyerTimelineItemProps {
-  buyerName: string
-  integrationId: number
-  isWinner: boolean
-  pingResult?: PingResult | null
-  postResult?: PostResult | null
+  buyerName: string;
+  integrationId: number;
+  isWinner: boolean;
+  pingResult?: PingResult | null;
+  postResult?: PostResult | null;
 }
 
 function BuyerTimelineItem({ buyerName, integrationId, isWinner, pingResult, postResult }: BuyerTimelineItemProps) {
   return (
-    <Collapsible defaultOpen={isWinner}>
+    <Collapsible defaultOpen>
       <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border bg-card px-4 py-3 text-sm hover:bg-accent">
         <div className="flex items-center gap-3">
           {isWinner && <Trophy className="h-4 w-4 text-yellow-500" />}
@@ -94,38 +74,35 @@ function BuyerTimelineItem({ buyerName, integrationId, isWinner, pingResult, pos
         </div>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-2 space-y-2 pl-4">
+        <div className="mt-2 space-y-2">
           {pingResult && <PingResultCard ping={pingResult} />}
           {postResult && <PostResultCard post={postResult} />}
         </div>
       </CollapsibleContent>
     </Collapsible>
-  )
+  );
 }
 
 interface Props {
-  dispatch: LeadDispatch
+  dispatch: LeadDispatch;
 }
 
 export function DispatchTimeline({ dispatch }: Props) {
-  const pingResults = dispatch.pingResults ?? []
-  const postResults = dispatch.postResults ?? []
+  const pingResults = dispatch.ping_results ?? [];
+  const postResults = dispatch.post_results ?? [];
 
   // Group post results by integration_id
-  const postByIntegration = new Map<number, PostResult>()
-  postResults.forEach((pr) => postByIntegration.set(pr.integration_id, pr))
+  const postByIntegration = new Map<number, PostResult>();
+  postResults.forEach((pr) => postByIntegration.set(pr.integration_id, pr));
 
   // Build a unified list of buyers that participated
-  const buyerIds = new Set<number>([
-    ...pingResults.map((pr) => pr.integration_id),
-    ...postResults.map((pr) => pr.integration_id),
-  ])
+  const buyerIds = new Set<number>([...pingResults.map((pr) => pr.integration_id), ...postResults.map((pr) => pr.integration_id)]);
 
   const getBuyerName = (id: number) => {
-    const ping = pingResults.find((p) => p.integration_id === id)
-    const post = postResults.find((p) => p.integration_id === id)
-    return ping?.integration?.name ?? post?.integration?.name ?? `Buyer #${id}`
-  }
+    const ping = pingResults.find((p) => p.integration_id === id);
+    const post = postResults.find((p) => p.integration_id === id);
+    return ping?.integration?.name ?? post?.integration?.name ?? `Buyer #${id}`;
+  };
 
   return (
     <Card>
@@ -139,16 +116,12 @@ export function DispatchTimeline({ dispatch }: Props) {
                 ${Number(dispatch.final_price).toFixed(2)}
               </Badge>
             )}
-            {dispatch.total_duration_ms && (
-              <span className="text-sm font-normal text-muted-foreground">{dispatch.total_duration_ms}ms</span>
-            )}
+            {dispatch.total_duration_ms && <span className="text-sm font-normal text-muted-foreground">{dispatch.total_duration_ms}ms</span>}
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {buyerIds.size === 0 && (
-          <p className="text-sm text-muted-foreground">No buyer interactions recorded.</p>
-        )}
+        {buyerIds.size === 0 && <p className="text-sm text-muted-foreground">No buyer interactions recorded.</p>}
         {[...buyerIds].map((id) => (
           <BuyerTimelineItem
             key={id}
@@ -161,11 +134,9 @@ export function DispatchTimeline({ dispatch }: Props) {
         ))}
 
         {dispatch.error_message && (
-          <div className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-            {dispatch.error_message}
-          </div>
+          <div className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">{dispatch.error_message}</div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

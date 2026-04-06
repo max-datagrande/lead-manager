@@ -10,14 +10,7 @@ class WhitelistEntry extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'type',
-    'name',
-    'value',
-    'is_active',
-    'user_id',
-    'updated_user_id',
-  ];
+  protected $fillable = ['type', 'name', 'value', 'is_active', 'user_id', 'updated_user_id'];
 
   protected static function booted()
   {

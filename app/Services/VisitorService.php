@@ -51,7 +51,7 @@ class VisitorService
       'postal_code',
       'is_bot',
       'created_at',
-      'updated_at'
+      'updated_at',
     ]);
 
     // Columnas disponibles para búsqueda global
@@ -70,7 +70,7 @@ class VisitorService
       'click_id',
       'platform',
       'channel',
-      's10'
+      's10',
     ];
 
     // Configuración de filtros por columna
@@ -114,14 +114,14 @@ class VisitorService
       'click_id',
       'platform',
       'channel',
-      's10'
+      's10',
     ];
 
     return [
       'query' => $query,
       'searchableColumns' => $searchableColumns,
       'filterConfig' => $filterConfig,
-      'allowedSort' => $allowedSort
+      'allowedSort' => $allowedSort,
     ];
   }
   public function getExistingStates()
@@ -141,11 +141,14 @@ class VisitorService
   }
   public function getExistingHosts()
   {
-    return TrafficLog::select('host')->distinct()->get()->map(function ($item) {
-      return [
-        'value' => $item->host,
-        'label' => $item->host
-      ];
-    });
+    return TrafficLog::select('host')
+      ->distinct()
+      ->get()
+      ->map(function ($item) {
+        return [
+          'value' => $item->host,
+          'label' => $item->host,
+        ];
+      });
   }
 }

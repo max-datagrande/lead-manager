@@ -6,25 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class PerformanceMetric extends Model
 {
-    protected $table = 'performance_metrics';
+  protected $table = 'performance_metrics';
 
-    public $incrementing = false;
+  public $incrementing = false;
 
-    protected $keyType = 'string';
+  protected $keyType = 'string';
 
-    public $timestamps = false;
+  public $timestamps = false;
 
-    protected $fillable = [
-        'id',
-        'fingerprint',
-        'host',
-        'load_time_ms',
-        'device_type',
-        'recorded_at',
-    ];
+  protected $fillable = ['id', 'fingerprint', 'host', 'load_time_ms', 'device_type', 'recorded_at'];
 
-    protected $casts = [
-        'recorded_at' => 'date',
-        'load_time_ms' => 'integer',
-    ];
+  protected $casts = [
+    'recorded_at' => 'date',
+    'load_time_ms' => 'integer',
+  ];
 }

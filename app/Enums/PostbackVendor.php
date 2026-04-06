@@ -36,7 +36,7 @@ enum PostbackVendor: string
         'value' => $vendor->value(),
         'label' => $vendor->label(),
       ],
-      self::cases()
+      self::cases(),
     );
   }
 

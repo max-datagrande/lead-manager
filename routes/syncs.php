@@ -5,7 +5,8 @@ use App\Http\Controllers\Api\Form\FieldController as ApiFieldController;
 use App\Http\Controllers\Api\IntegrationController as ApiIntegrationController;
 use App\Http\Controllers\Api\CompanyController as ApiCompanyController;
 use App\Http\Controllers\Api\VerticalController as ApiVerticalController;
-
+use App\Http\Controllers\Api\BuyerSyncController;
+use App\Http\Controllers\Api\WorkflowSyncController;
 
 //Sync routes
 Route::prefix('fields')->group(function () {
@@ -26,4 +27,14 @@ Route::prefix('companies')->group(function () {
 Route::prefix('verticals')->group(function () {
   Route::get('/export', [ApiVerticalController::class, 'export'])->name('api.verticals.export');
   Route::post('/import', [ApiVerticalController::class, 'import'])->name('api.verticals.import');
+});
+
+Route::prefix('buyers')->group(function () {
+  Route::get('/export', [BuyerSyncController::class, 'export'])->name('api.buyers.export');
+  Route::post('/import', [BuyerSyncController::class, 'import'])->name('api.buyers.import');
+});
+
+Route::prefix('workflows')->group(function () {
+  Route::get('/export', [WorkflowSyncController::class, 'export'])->name('api.workflows.export');
+  Route::post('/import', [WorkflowSyncController::class, 'import'])->name('api.workflows.import');
 });

@@ -1,7 +1,7 @@
 <?php
 
 return [
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Catalyst Service Status
     |--------------------------------------------------------------------------
@@ -12,9 +12,9 @@ return [
     | environment variable for quick toggling.
     |
     */
-    'active' => env('CATALYST_ACTIVE', true),
+  'active' => env('CATALYST_ACTIVE', true),
 
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Catalyst API URL
     |--------------------------------------------------------------------------
@@ -24,5 +24,5 @@ return [
     | recommended to set this via an environment variable.
     |
     */
-    'api_url' => env('CATALYST_API_URL'),
+  'api_url' => env('CATALYST_API_URL'),
 ];

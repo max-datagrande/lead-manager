@@ -11,7 +11,6 @@ use Maxidev\Logger\TailLogger;
 use App\Http\Traits\ApiResponseTrait;
 use App\Support\SlackMessageBundler;
 
-
 /**
  * Controlador para manejo de traffic logs
  *
@@ -73,7 +72,8 @@ class TrafficLogController extends Controller
   private function notifySlack(string $message, array $data): void
   {
     $slack = new SlackMessageBundler();
-    $slack->addTitle('Critical Traffic Log Failure', '🚨')
+    $slack
+      ->addTitle('Critical Traffic Log Failure', '🚨')
       ->addSection('The traffic log processing failed due to an unexpected error.')
       ->addKeyValue('Ip', $this->request->ip(), true)
       ->addKeyValue('Path', $data['current_page'])
@@ -107,7 +107,7 @@ class TrafficLogController extends Controller
       'code' => $e->getCode(),
       'type' => get_class($e),
       'request_data' => $data,
-      'trace' => $e->getTrace()
+      'trace' => $e->getTrace(),
     ];
   }
 }

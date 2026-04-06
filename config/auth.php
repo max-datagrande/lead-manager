@@ -113,6 +113,7 @@ return [
 
   'postman' => [
     'enabled' => env('POSTMAN_ENABLED', false),
+    'key' => env('POSTMAN_AUTH_KEY'),
     'secret' => env('POSTMAN_AUTH_TOKEN'),
   ],
 

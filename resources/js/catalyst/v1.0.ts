@@ -8,6 +8,8 @@ import {
   OfferwallConversionRequest,
   OfferwallConversionResponse,
   OfferwallResponse,
+  ShareLeadOptions,
+  ShareLeadResponse,
   VisitorData,
   visitorRegisterResponse,
 } from './types';
@@ -408,6 +410,75 @@ class CatalystCore {
     return this.visitorData?.fingerprint || null;
   }
 
+  // ===================================================================================
+  // SHARE LEADS (Ping-Post Dispatch)
+  // ===================================================================================
+
+  /**
+   * Dispatches the current lead to a share-leads workflow.
+   * Uses the build-in-one mode: sends fingerprint + fields + create_on_miss
+   * so the backend creates/updates the lead and dispatches in a single request.
+   *
+   * @param options.workflowId  The workflow ID to dispatch to
+   * @param options.fields      Optional lead fields to create/update before dispatching
+   * @param options.createOnMiss If true, creates the lead if it doesn't exist yet
+   */
+  async shareLead({ workflowId, fields, createOnMiss = true }: ShareLeadOptions): Promise<ShareLeadResponse> {
+    if (!this.visitorData?.fingerprint) {
+      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.'
+      this.dispatch('share:status', { success: false, workflowId, error })
+      throw new Error(`Catalyst SDK: ${error}`)
+    }
+
+    const payload: Record<string, any> = {
+      fingerprint: this.visitorData.fingerprint,
+    }
+
+    if (fields && Object.keys(fields).length > 0) {
+      payload.fields = fields
+      payload.create_on_miss = createOnMiss
+    }
+
+    try {
+      const baseUrl = this.getEndpoint('SHARE_LEADS.DISPATCH')
+      const url = `${baseUrl}${workflowId}`
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const errorBody = await res.text()
+        throw new Error(`HTTP ${res.status}: ${errorBody}`)
+      }
+
+      const json: ShareLeadResponse = await res.json()
+
+      if (this.config.debug) console.log('Catalyst SDK: Lead dispatched successfully.', json)
+
+      this.dispatch('share:status', {
+        success: true,
+        workflowId,
+        data: json.data,
+      })
+
+      return json
+    } catch (error) {
+      console.error(`Catalyst SDK: Error dispatching lead to workflow ${workflowId}:`, error)
+      this.dispatch('share:status', {
+        success: false,
+        workflowId,
+        error: error instanceof Error ? error.message : error,
+      })
+      throw error
+    }
+  }
+
   /**
    * Registra una conversión de Offerwall.
    * @param data Datos de la conversión
@@ -588,7 +659,7 @@ async function init(): Promise<void> {
         item.length === 4 &&
         typeof possibleResolve === 'function' &&
         typeof possibleReject === 'function' &&
-        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall'].includes(method);
+        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead'].includes(method);
 
       if (isPromiseProxy) {
         const args = Array.from((item[1] as ArrayLike<any>) || []);

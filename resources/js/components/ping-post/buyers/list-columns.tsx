@@ -1,25 +1,25 @@
-import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import type { Buyer } from '@/types/ping-post'
-import { Link, router } from '@inertiajs/react'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Copy, Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react'
-import { route } from 'ziggy-js'
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import type { Buyer } from '@/types/ping-post';
+import { Link, router } from '@inertiajs/react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Copy, Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 function ActionsCell({ row }: { row: { original: Buyer } }) {
-  const buyer = row.original
+  const buyer = row.original;
 
   const handleDelete = () => {
     if (confirm(`Delete buyer "${buyer.name}"? This cannot be undone.`)) {
-      router.delete(route('ping-post.buyers.destroy', buyer.id))
+      router.delete(route('ping-post.buyers.destroy', buyer.id));
     }
-  }
+  };
 
   const handleDuplicate = () => {
-    router.post(route('ping-post.buyers.duplicate', buyer.id))
-  }
+    router.post(route('ping-post.buyers.duplicate', buyer.id));
+  };
 
   return (
     <DropdownMenu>
@@ -52,14 +52,14 @@ function ActionsCell({ row }: { row: { original: Buyer } }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
 export const buyerColumns: ColumnDef<Buyer>[] = [
   {
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
-    cell: ({ cell }) => <span className="text-muted-foreground text-sm">#{cell.getValue<number>()}</span>,
+    cell: ({ cell }) => <span className="text-sm text-muted-foreground">#{cell.getValue<number>()}</span>,
     enableSorting: true,
   },
   {
@@ -73,39 +73,36 @@ export const buyerColumns: ColumnDef<Buyer>[] = [
     enableSorting: true,
   },
   {
-    accessorKey: 'type',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
-    cell: ({ cell }) => {
-      const v = cell.getValue<string>()
-      return (
-        <Badge variant="outline" className="text-xs">
-          {v === 'ping-post' ? 'Ping-Post' : 'Post-Only'}
-        </Badge>
-      )
-    },
-    filterFn: (row, _, filterValue: string[]) => !filterValue?.length || filterValue.includes(row.original.type),
-    enableSorting: true,
-  },
-  {
     accessorKey: 'company',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
     cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.company?.name ?? '—'}</span>,
     enableSorting: false,
   },
   {
-    accessorKey: 'buyerConfig',
+    accessorKey: 'buyer_config',
     header: 'Pricing',
     cell: ({ row }) => {
-      const cfg = row.original.buyerConfig
-      if (!cfg) return <span className="text-muted-foreground text-xs">—</span>
-      const label = { fixed: 'Fixed', min_bid: 'Min Bid', conditional: 'Conditional', postback: 'Postback' }[cfg.pricing_type] ?? cfg.pricing_type
-      const price = cfg.fixed_price ? `$${Number(cfg.fixed_price).toFixed(2)}` : ''
+      const cfg = row.original.buyer_config;
+      if (!cfg) return <span className="text-xs text-muted-foreground">—</span>;
+      const label =
+        { fixed: 'Fixed', response_bid: 'Response Bid', conditional: 'Conditional', postback: 'Postback' }[cfg.price_source] ?? cfg.price_source;
+
+      let detail = '';
+      if (cfg.price_source === 'fixed' && cfg.fixed_price != null) {
+        detail = `$${Number(cfg.fixed_price).toFixed(2)}`;
+      } else if (cfg.price_source === 'response_bid' && cfg.min_bid != null) {
+        detail = `min $${Number(cfg.min_bid).toFixed(2)}`;
+      } else if (cfg.price_source === 'conditional') {
+        const count = cfg.conditional_pricing_rules?.length ?? 0;
+        detail = `${count} ${count === 1 ? 'rule' : 'rules'}`;
+      }
+
       return (
         <span className="text-sm">
           {label}
-          {price && <span className="ml-1 text-muted-foreground">{price}</span>}
+          {detail && <span className="ml-1 text-muted-foreground">{detail}</span>}
         </span>
-      )
+      );
     },
     enableSorting: false,
   },
@@ -127,4 +124,4 @@ export const buyerColumns: ColumnDef<Buyer>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-]
+];

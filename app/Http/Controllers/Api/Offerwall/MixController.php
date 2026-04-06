@@ -44,7 +44,12 @@ class MixController extends Controller
 
     // Optional: Update or remove lead fields if provided
     if (!empty($fields) || !empty($removeFields)) {
-      TailLogger::saveLog('Received request to update lead fields within offerwall mix trigger', 'offerwall/mix/trigger', 'info', compact('fingerprint', 'fields', 'removeFields', 'createOnMiss'));
+      TailLogger::saveLog(
+        'Received request to update lead fields within offerwall mix trigger',
+        'offerwall/mix/trigger',
+        'info',
+        compact('fingerprint', 'fields', 'removeFields', 'createOnMiss'),
+      );
       try {
         $visitorLog = $this->leadService->validateTrafficLog($fingerprint);
 
@@ -86,11 +91,7 @@ class MixController extends Controller
       }
     }
 
-    $result = $this->mixService->fetchAndAggregateOffers(
-      $offerwallMix,
-      $fingerprint,
-      $placement,
-    );
+    $result = $this->mixService->fetchAndAggregateOffers($offerwallMix, $fingerprint, $placement);
 
     // Extraer información de la respuesta del servicio
     $success = $result['success'] ?? false;

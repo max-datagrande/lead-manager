@@ -3,7 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { usePostbacks } from '@/hooks/use-postbacks';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
-import { Copy, Edit, Eye, Trash2 } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Copy, Edit, Eye, Play, Trash2 } from 'lucide-react';
 
 const ActionsCell = ({ row }) => {
   const { showModalDetails, copyUrl, showEditModal, showDeleteModal } = usePostbacks();
@@ -14,9 +15,16 @@ const ActionsCell = ({ row }) => {
       <Button variant="ghost" size="sm" onClick={() => showModalDetails(entry)} className="h-8 w-8 p-0">
         <Eye className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => copyUrl(entry)} className="h-8 w-8 p-0">
-        <Copy className="h-4 w-4" />
-      </Button>
+      {entry.type !== 'internal' && (
+        <Button variant="ghost" size="sm" onClick={() => copyUrl(entry)} className="h-8 w-8 p-0">
+          <Copy className="h-4 w-4" />
+        </Button>
+      )}
+      {entry.type === 'internal' && (
+        <Button variant="ghost" size="sm" onClick={() => router.visit(route('postbacks.internal.fire-form', entry.id))} className="h-8 w-8 p-0 text-primary hover:text-primary">
+          <Play className="h-4 w-4" />
+        </Button>
+      )}
       <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
@@ -39,6 +47,20 @@ export const columns = [
     accessorKey: 'name',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'type',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
+    cell: ({ row }) => {
+      const type = row.original.type;
+      return (
+        <Badge variant={type === 'internal' ? 'secondary' : 'outline'} className="capitalize">
+          {type}
+        </Badge>
+      );
+    },
     enableSorting: true,
     enableHiding: true,
   },

@@ -154,6 +154,32 @@ interface OfferwallConversionResponse {
 }
 
 /**
+ * Options for the shareLead method.
+ */
+interface ShareLeadOptions {
+  workflowId: number | string
+  fields?: Record<string, any>
+  createOnMiss?: boolean
+}
+
+/**
+ * Response from the share-leads dispatch endpoint.
+ */
+interface ShareLeadResponse {
+  success: boolean
+  data: {
+    dispatch_uuid?: string
+    status?: string
+    strategy_used?: string
+    final_price?: number | null
+    total_duration_ms?: number | null
+    queued?: boolean
+    workflow_id?: number
+  }
+  message: string
+}
+
+/**
  * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
  */
 interface CatalystPlaceholder {
@@ -175,6 +201,8 @@ export {
   type OfferwallConversionRequest,
   type OfferwallConversionResponse,
   type OfferwallResponse,
+  type ShareLeadOptions,
+  type ShareLeadResponse,
   type VisitorData,
   type visitorRegisterResponse,
 };

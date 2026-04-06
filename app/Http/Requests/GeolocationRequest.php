@@ -31,7 +31,7 @@ class GeolocationRequest extends FormRequest
   public function rules()
   {
     return [
-      'ip' => ['required', 'string', 'ip']
+      'ip' => ['required', 'string', 'ip'],
     ];
   }
 
@@ -45,7 +45,7 @@ class GeolocationRequest extends FormRequest
     return [
       'ip.required' => 'The IP parameter is mandatory.',
       'ip.string' => 'The IP parameter must be a string.',
-      'ip.ip' => 'The IP parameter must be a valid IP address (IPv4 or IPv6).'
+      'ip.ip' => 'The IP parameter must be a valid IP address (IPv4 or IPv6).',
     ];
   }
 
@@ -57,7 +57,7 @@ class GeolocationRequest extends FormRequest
   public function attributes()
   {
     return [
-      'ip' => 'IP address'
+      'ip' => 'IP address',
     ];
   }
 
@@ -72,12 +72,15 @@ class GeolocationRequest extends FormRequest
   protected function failedValidation(Validator $validator)
   {
     throw new HttpResponseException(
-      response()->json([
-        'error' => 'Validation failed',
-        'message' => 'The provided parameters are invalid.',
-        'errors' => $validator->errors(),
-        'code' => 'VALIDATION_ERROR'
-      ], 422)
+      response()->json(
+        [
+          'error' => 'Validation failed',
+          'message' => 'The provided parameters are invalid.',
+          'errors' => $validator->errors(),
+          'code' => 'VALIDATION_ERROR',
+        ],
+        422,
+      ),
     );
   }
 
@@ -90,7 +93,7 @@ class GeolocationRequest extends FormRequest
   {
     if ($this->has('ip')) {
       $this->merge([
-        'ip' => trim($this->input('ip'))
+        'ip' => trim($this->input('ip')),
       ]);
     }
   }

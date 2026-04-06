@@ -29,7 +29,8 @@ class OfferwallResponseConfig extends Model
    * When the frontend sends null, these defaults are persisted instead.
    */
   protected $attributes = [
-    'mapping' => '{"title":null,"description":null,"logo_url":null,"click_url":null,"impression_url":null,"cpc":null,"display_name":null,"company":null}',
+    'mapping' =>
+      '{"title":null,"description":null,"logo_url":null,"click_url":null,"impression_url":null,"cpc":null,"display_name":null,"company":null}',
     'fallbacks' => '{"title":null,"description":null}',
   ];
 

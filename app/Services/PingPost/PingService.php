@@ -17,45 +17,35 @@ use Throwable;
 
 class PingService
 {
-  public function __construct(
-    private readonly PayloadProcessorService $payloadProcessor,
-  ) {}
+  public function __construct(private readonly PayloadProcessorService $payloadProcessor) {}
 
   /**
    * Execute a ping to a buyer and return the recorded PingResult.
    */
-  public function ping(
-    Integration $integration,
-    BuyerConfig $config,
-    LeadDispatch $dispatch,
-    array $leadData,
-  ): PingResult {
-    $idempotencyKey = LeadDispatch::generateIdempotencyKey(
-      $dispatch->id,
-      $integration->id,
-      $dispatch->fingerprint,
-    );
+  public function ping(Integration $integration, BuyerConfig $config, LeadDispatch $dispatch, array $leadData): PingResult
+  {
+    $idempotencyKey = LeadDispatch::generateIdempotencyKey($dispatch->id, $integration->id, $dispatch->fingerprint);
 
-    $pingEnv = $integration->environments
-      ->where('env_type', 'ping')
-      ->where('environment', 'production')
-      ->first();
+    $pingEnv = $integration->environments->where('env_type', 'ping')->where('environment', 'production')->first();
 
-    if (! $pingEnv || ! $pingEnv->url) {
+    if (!$pingEnv || !$pingEnv->url) {
       return $this->createSkippedResult($dispatch, $integration, $idempotencyKey, 'No ping URL configured');
     }
 
     $replacements = $this->payloadProcessor->buildReplacements($integration, $pingEnv, $leadData);
-    $requestUrl   = $this->payloadProcessor->applyReplacements($pingEnv->url ?? '', $replacements);
-    $payload      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
-    $headers      = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
-    $method       = strtolower($pingEnv->method ?? 'post');
+    $requestUrl = $this->payloadProcessor->applyReplacements($pingEnv->url ?? '', $replacements);
+    $payload = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_body ?? '{}', $replacements), true) ?? [];
+    $payload = $this->payloadProcessor->applyTwigTransformer($integration, $payload);
+    $headers = json_decode($this->payloadProcessor->applyReplacements($pingEnv->request_headers ?? '{}', $replacements), true) ?? [];
+    $method = strtolower($pingEnv->method ?? 'post');
 
     $startMs = microtime(true);
 
     try {
       /** @var Response $response */
-      $response = Http::withHeaders($headers)->timeout($config->ping_timeout_ms / 1000)->{$method}($requestUrl, $payload);
+      $response = Http::withHeaders($headers)
+        ->timeout($config->ping_timeout_ms / 1000)
+        ->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
       $config = $pingEnv->response_config;
@@ -100,7 +90,7 @@ class PingService
   {
     $path = $config?->bid_price_path;
 
-    if (! $path) {
+    if (!$path) {
       return null;
     }
 
@@ -114,7 +104,7 @@ class PingService
     $acceptedPath = $config?->accepted_path;
     $acceptedValue = $config?->accepted_value;
 
-    if (! $acceptedPath) {
+    if (!$acceptedPath) {
       return $response->successful();
     }
 
@@ -123,12 +113,8 @@ class PingService
     return (string) $actual === (string) $acceptedValue;
   }
 
-  private function createSkippedResult(
-    LeadDispatch $dispatch,
-    Integration $integration,
-    string $idempotencyKey,
-    string $reason,
-  ): PingResult {
+  private function createSkippedResult(LeadDispatch $dispatch, Integration $integration, string $idempotencyKey, string $reason): PingResult
+  {
     return PingResult::create([
       'lead_dispatch_id' => $dispatch->id,
       'integration_id' => $integration->id,

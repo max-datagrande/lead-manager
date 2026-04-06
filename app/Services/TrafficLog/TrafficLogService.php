@@ -46,12 +46,11 @@ class TrafficLogService
   public function createTrafficLog(array $data): TrafficLog
   {
     try {
-
       // Generar fingerprint único
       $userAgent = $data['user_agent'];
       $ip = $this->request->geoService()->getIpAddress();
       $landingOrigin = $this->getOrigin();
-      $landingHost = parse_url($landingOrigin, PHP_URL_HOST) ?? "";
+      $landingHost = parse_url($landingOrigin, PHP_URL_HOST) ?? '';
       $fingerprint = $this->fingerprintGenerator->generate($userAgent, $ip, $landingHost);
 
       // Usar Atomic Lock para prevenir condiciones de carrera
@@ -62,11 +61,16 @@ class TrafficLogService
 
         $existingTraffic = $this->getExistingTraffic($fingerprint);
         if ($existingTraffic) {
-          TailLogger::saveLog("Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}", 'traffic-log/store', 'info', [
-            'fingerprint' => $fingerprint,
-            'visit_count' => $existingTraffic->visit_count,
-            'id' => $existingTraffic->id
-          ]);
+          TailLogger::saveLog(
+            "Traffic log duplicado actualizado para $fingerprint, nuevo visit_count: {$existingTraffic->visit_count}",
+            'traffic-log/store',
+            'info',
+            [
+              'fingerprint' => $fingerprint,
+              'visit_count' => $existingTraffic->visit_count,
+              'id' => $existingTraffic->id,
+            ],
+          );
           $this->currentVisitor = $existingTraffic;
           return $this->incrementVisitCount($existingTraffic);
         }
@@ -95,14 +99,15 @@ class TrafficLogService
         //Page visited
         $newTraffic->path_visited = $data['current_page'];
         //Query Params on page
-        $queryParams = $data['query_params'] ?? null;
-        $newTraffic->query_params = $queryParams;
+        $rawQueryParams = $data['query_params'] ?? null;
+        $newTraffic->query_params = $rawQueryParams;
+        $queryParams = is_array($rawQueryParams) ? array_change_key_case($rawQueryParams, CASE_LOWER) : null;
         // S1-S4
-        $newTraffic->s1 = $data['s1'] ?? $queryParams['s1'] ?? null;
-        $newTraffic->s2 = $data['s2'] ?? $queryParams['s2'] ?? null;
-        $newTraffic->s3 = $data['s3'] ?? $queryParams['s3'] ?? null;
-        $newTraffic->s4 = $data['s4'] ?? $queryParams['s4'] ?? null;
-        $newTraffic->s10 = $data['s10'] ?? $queryParams['s10'] ?? null;
+        $newTraffic->s1 = $data['s1'] ?? ($queryParams['s1'] ?? null);
+        $newTraffic->s2 = $data['s2'] ?? ($queryParams['s2'] ?? null);
+        $newTraffic->s3 = $data['s3'] ?? ($queryParams['s3'] ?? null);
+        $newTraffic->s4 = $data['s4'] ?? ($queryParams['s4'] ?? null);
+        $newTraffic->s10 = $data['s10'] ?? ($queryParams['s10'] ?? null);
 
         //Campaign Code
         $newTraffic->campaign_code = $queryParams['cptype'] ?? null;
@@ -169,7 +174,7 @@ class TrafficLogService
   private function getReferer($data): ?string
   {
     $origin = $this->getOrigin();
-    $originHost = parse_url($origin, PHP_URL_HOST) ?? "";
+    $originHost = parse_url($origin, PHP_URL_HOST) ?? '';
     $referer = $data['referer'] ?? null;
     if ($referer && strpos($referer, $originHost) !== false) {
       $referer = null;
@@ -192,8 +197,7 @@ class TrafficLogService
   private function getExistingTraffic(string $fingerprint): ?TrafficLog
   {
     try {
-      return TrafficLog::where('fingerprint', $fingerprint)
-        ->first();
+      return TrafficLog::where('fingerprint', $fingerprint)->first();
     } catch (\Exception $e) {
       TailLogger::saveLog("Error verificando tráfico duplicado de: $fingerprint" . $e->getMessage(), 'traffic-log/store', 'warning');
       return null;

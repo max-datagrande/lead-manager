@@ -10,10 +10,8 @@ use Illuminate\Http\Request;
 use App\Services\GeolocationService;
 use Maxidev\Logger\TailLogger;
 
-
 class GeolocationController extends Controller
 {
-
   public function __construct(private GeolocationService $geolocationService, protected Request $request) {}
 
   /**
@@ -33,7 +31,7 @@ class GeolocationController extends Controller
         'ip_client' => $this->request->ip(),
         'user_agent' => $this->request->userAgent(),
         'origin' => $this->request->header('Origin'),
-        'referer' => $this->request->header('Referer')
+        'referer' => $this->request->header('Referer'),
       ]);
 
       // Obtener datos de geolocalización usando IpApi
@@ -44,14 +42,14 @@ class GeolocationController extends Controller
         'data' => $locationData,
         'meta' => [
           'timestamp' => now()->toISOString(),
-          'request_id' => uniqid('geo_', true)
-        ]
+          'request_id' => uniqid('geo_', true),
+        ],
       ];
 
       TailLogger::saveLog('Respuesta de geolocalización enviada', 'clients/geolocation', 'info', [
         'ip_requested' => $ipRequested,
         'success' => true,
-        'request_id' => $response['meta']['request_id']
+        'request_id' => $response['meta']['request_id'],
       ]);
       return response()->json($response, Response::HTTP_OK);
     } catch (\Exception $e) {
@@ -60,22 +58,25 @@ class GeolocationController extends Controller
         'ip_requested' => $ipRequested,
         'error_message' => $e->getMessage(),
         'error_trace' => $e->getTraceAsString(),
-        'client_ip' => $this->request->ip()
+        'client_ip' => $this->request->ip(),
       ]);
       // Respuesta de error estructurada
-      return response()->json([
-        'success' => false,
-        'error' => [
-          'code' => 'GEOLOCATION_ERROR',
-          'message' => 'Error interno del servidor al procesar la geolocalización',
-          'details' => config('app.debug') ? $e->getMessage() : 'Contacte al administrador del sistema'
+      return response()->json(
+        [
+          'success' => false,
+          'error' => [
+            'code' => 'GEOLOCATION_ERROR',
+            'message' => 'Error interno del servidor al procesar la geolocalización',
+            'details' => config('app.debug') ? $e->getMessage() : 'Contacte al administrador del sistema',
+          ],
+          'meta' => [
+            'timestamp' => now()->toISOString(),
+            'api_version' => '1.0',
+            'request_id' => uniqid('geo_error_', true),
+          ],
         ],
-        'meta' => [
-          'timestamp' => now()->toISOString(),
-          'api_version' => '1.0',
-          'request_id' => uniqid('geo_error_', true)
-        ]
-      ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        Response::HTTP_INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -86,18 +87,21 @@ class GeolocationController extends Controller
    */
   public function status(): JsonResponse
   {
-    return response()->json([
-      'success' => true,
-      'message' => 'Geolocation API is operational',
-      'data' => [
-        'service' => 'Geolocation API',
-        'status' => 'active',
-        'version' => '1.0'
+    return response()->json(
+      [
+        'success' => true,
+        'message' => 'Geolocation API is operational',
+        'data' => [
+          'service' => 'Geolocation API',
+          'status' => 'active',
+          'version' => '1.0',
+        ],
+        'meta' => [
+          'timestamp' => now()->toISOString(),
+          'server_time' => now()->format('Y-m-d H:i:s T'),
+        ],
       ],
-      'meta' => [
-        'timestamp' => now()->toISOString(),
-        'server_time' => now()->format('Y-m-d H:i:s T')
-      ]
-    ], Response::HTTP_OK);
+      Response::HTTP_OK,
+    );
   }
 }

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\FireMode;
+use App\Enums\PostbackType;
 use App\Models\Platform;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -18,6 +19,7 @@ class PostbackFactory extends Factory
     return [
       'uuid' => (string) Str::uuid(),
       'name' => $this->faker->words(3, true),
+      'type' => PostbackType::EXTERNAL,
       'platform_id' => PlatformFactory::new(),
       'base_url' => 'https://dest.example.com/cv?click_id=&payout=',
       'param_mappings' => [
@@ -57,9 +59,17 @@ class PostbackFactory extends Factory
     return $this->state(['is_public' => true]);
   }
 
-  public function asInternal(): static
+  public function asPrivate(): static
   {
     return $this->state(['is_public' => false]);
+  }
+
+  public function internal(): static
+  {
+    return $this->state([
+      'type' => PostbackType::INTERNAL,
+      'platform_id' => null,
+    ]);
   }
 
   /**

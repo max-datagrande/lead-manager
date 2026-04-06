@@ -9,20 +9,20 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ProjectFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-use App\Models\User;
+  /**
+   * Define the model's default state.
+   *
+   * @return array<string, mixed>
+   */
+  use App\Models\User;
 
-    public function definition(): array
-    {
-        return [
-            'name' => $this->faker->company,
-            'description' => $this->faker->optional()->paragraph,
-            'user_id' => User::factory(),
-            'updated_user_id' => User::factory(),
-        ];
-    }
+  public function definition(): array
+  {
+    return [
+      'name' => $this->faker->company,
+      'description' => $this->faker->optional()->paragraph,
+      'user_id' => User::factory(),
+      'updated_user_id' => User::factory(),
+    ];
+  }
 }

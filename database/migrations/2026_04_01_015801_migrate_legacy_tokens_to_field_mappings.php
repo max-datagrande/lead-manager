@@ -22,16 +22,15 @@ use Maxidev\Logger\TailLogger;
  *  4. Crear fila en integration_field_mappings (insertOrIgnore para idempotencia).
  *  5. En cada request_body: reemplazar {int:field_name} y {field_name} por {$field_id}.
  */
-return new class extends Migration
-{
+return new class extends Migration {
   /** Mapeo camelCase dataType → columna data_type del modelo */
   private const TYPE_MAP = [
     'integer' => 'integer',
-    'int'     => 'integer',
-    'float'   => 'float',
+    'int' => 'integer',
+    'float' => 'float',
     'boolean' => 'boolean',
-    'bool'    => 'boolean',
-    'string'  => 'string',
+    'bool' => 'boolean',
+    'string' => 'string',
   ];
 
   public function up(): void
@@ -41,8 +40,7 @@ return new class extends Migration
       ->get(['id', 'name'])
       ->keyBy('name');
 
-    $integrations = DB::table('integrations')
-      ->get(['id', 'name', 'request_mapping_config']);
+    $integrations = DB::table('integrations')->get(['id', 'name', 'request_mapping_config']);
 
     foreach ($integrations as $integration) {
       $this->migrateIntegration($integration, $fieldsByName);
@@ -59,9 +57,7 @@ return new class extends Migration
 
   private function migrateIntegration(object $integration, \Illuminate\Support\Collection $fieldsByName): void
   {
-    $mappingConfig = $integration->request_mapping_config
-      ? json_decode($integration->request_mapping_config, true)
-      : [];
+    $mappingConfig = $integration->request_mapping_config ? json_decode($integration->request_mapping_config, true) : [];
 
     $environments = DB::table('integration_environments')
       ->where('integration_id', $integration->id)
@@ -74,7 +70,9 @@ return new class extends Migration
     $allFieldNames = [];
 
     foreach ($environments as $env) {
-      if (!$env->request_body) continue;
+      if (!$env->request_body) {
+        continue;
+      }
       $body = $env->request_body;
 
       // {int:field_name}
@@ -96,7 +94,9 @@ return new class extends Migration
       $allFieldNames[$name] = true;
     }
 
-    if (empty($allFieldNames)) return;
+    if (empty($allFieldNames)) {
+      return;
+    }
 
     // ── Paso 2-4: resolver cada field name y crear fila en la tabla ───────
     // fieldIdMap: field_name → field_id (solo los que existen)
@@ -106,59 +106,50 @@ return new class extends Migration
       $field = $fieldsByName->get($fieldName);
 
       if (!$field) {
-        TailLogger::saveLog(
-          "Token migration: field '{$fieldName}' not found in fields table — skipped",
-          'migrations/token-refactor',
-          'warning',
-          [
-            'integration_id'   => $integration->id,
-            'integration_name' => $integration->name,
-            'field_name'       => $fieldName,
-          ]
-        );
+        TailLogger::saveLog("Token migration: field '{$fieldName}' not found in fields table — skipped", 'migrations/token-refactor', 'warning', [
+          'integration_id' => $integration->id,
+          'integration_name' => $integration->name,
+          'field_name' => $fieldName,
+        ]);
         continue;
       }
 
-      $config     = $mappingConfig[$fieldName] ?? [];
-      $dataType   = $this->resolveDataType($fieldName, $config, $intFieldNames);
+      $config = $mappingConfig[$fieldName] ?? [];
+      $dataType = $this->resolveDataType($fieldName, $config, $intFieldNames);
       $defaultVal = isset($config['defaultValue']) ? (string) $config['defaultValue'] : null;
-      $valueMap   = !empty($config['value_mapping']) ? json_encode($config['value_mapping']) : null;
+      $valueMap = !empty($config['value_mapping']) ? json_encode($config['value_mapping']) : null;
 
       DB::table('integration_field_mappings')->insertOrIgnore([
         'integration_id' => $integration->id,
-        'field_id'       => $field->id,
-        'data_type'      => $dataType,
-        'default_value'  => $defaultVal,
-        'value_mapping'  => $valueMap,
-        'created_at'     => now(),
-        'updated_at'     => now(),
+        'field_id' => $field->id,
+        'data_type' => $dataType,
+        'default_value' => $defaultVal,
+        'value_mapping' => $valueMap,
+        'created_at' => now(),
+        'updated_at' => now(),
       ]);
 
       $fieldIdMap[$fieldName] = $field->id;
     }
 
-    if (empty($fieldIdMap)) return;
+    if (empty($fieldIdMap)) {
+      return;
+    }
 
     // ── Paso 5: reemplazar tokens en cada request_body ────────────────────
     foreach ($environments as $env) {
-      if (!$env->request_body) continue;
+      if (!$env->request_body) {
+        continue;
+      }
 
-      $body    = $env->request_body;
+      $body = $env->request_body;
       $updated = $body;
 
       foreach ($fieldIdMap as $fieldName => $fieldId) {
         // Primero el formato con prefijo (más específico)
-        $updated = str_replace(
-          '{int:' . $fieldName . '}',
-          '{$' . $fieldId . '}',
-          $updated
-        );
+        $updated = str_replace('{int:' . $fieldName . '}', '{$' . $fieldId . '}', $updated);
         // Luego el formato plano
-        $updated = str_replace(
-          '{' . $fieldName . '}',
-          '{$' . $fieldId . '}',
-          $updated
-        );
+        $updated = str_replace('{' . $fieldName . '}', '{$' . $fieldId . '}', $updated);
       }
 
       if ($updated !== $body) {

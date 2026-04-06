@@ -18,7 +18,7 @@ final class NaturalIntelligence
   private const DATA_TYPE = 'payout';
   private const UNAUTHORIZED_RESPONSE = [
     'STATUS' => 403,
-    'MESSAGE' => 'Unauthorized'
+    'MESSAGE' => 'Unauthorized',
   ];
 
   public readonly string $reportUrl;
@@ -162,11 +162,11 @@ final class NaturalIntelligence
   public function buildPayload(?string $fromDate = null, ?string $toDate = null)
   {
     return [
-      'FromDate'     => $fromDate ?? now()->subDays(3)->format('Y-m-d'),
-      'ToDate'       => $toDate   ?? now()->format('Y-m-d'),
+      'FromDate' => $fromDate ?? now()->subDays(3)->format('Y-m-d'),
+      'ToDate' => $toDate ?? now()->format('Y-m-d'),
       'ReportFormat' => self::REPORT_FORMAT,
-      'ReportType'   => self::REPORT_TYPE,
-      'DataType'     => self::DATA_TYPE,
+      'ReportType' => self::REPORT_TYPE,
+      'DataType' => self::DATA_TYPE,
     ];
   }
 
@@ -236,11 +236,7 @@ final class NaturalIntelligence
 
   private function retryReportOnce(array $payload): array
   {
-    $response = Http::timeout(60)
-      ->retry(2, 250, throw: false)
-      ->withHeaders($this->authHeader())
-      ->acceptJson()
-      ->post($this->reportUrl, $payload);
+    $response = Http::timeout(60)->retry(2, 250, throw: false)->withHeaders($this->authHeader())->acceptJson()->post($this->reportUrl, $payload);
 
     // Almacenar la respuesta del reintento
     $this->lastResponse = $response;
@@ -264,7 +260,6 @@ final class NaturalIntelligence
 
   private function handleReportResponse(Response $response): array
   {
-
     // Si llegas aquí, ya es 2xx por ->throw()
     $this->lastResponse = $response;
     $json = $response->json();
@@ -291,16 +286,20 @@ final class NaturalIntelligence
   public function filterResponse(?array $data): ?array
   {
     // Si es un array de arrays (como las conversiones), filtrar cada elemento
-    return collect($data)->map(function ($item) {
-      // Si el item es un array asociativo, filtrar sus campos
-      if (is_array($item)) {
-        return collect($item)->filter(function ($value, $key) {
-          return in_array($key, $this->relevantFields);
-        })->toArray();
-      }
-      // Si no es un array, devolver tal como está
-      return $item;
-    })->toArray();
+    return collect($data)
+      ->map(function ($item) {
+        // Si el item es un array asociativo, filtrar sus campos
+        if (is_array($item)) {
+          return collect($item)
+            ->filter(function ($value, $key) {
+              return in_array($key, $this->relevantFields);
+            })
+            ->toArray();
+        }
+        // Si no es un array, devolver tal como está
+        return $item;
+      })
+      ->toArray();
   }
 
   private function log(string $message, string $level = 'info', array $context = []): void

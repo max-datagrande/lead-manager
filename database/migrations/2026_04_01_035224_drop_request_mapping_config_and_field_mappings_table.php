@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Schema;
  * Prerequisites: S7 data migration must have run first so no active data lives
  * in these structures.
  */
-return new class extends Migration
-{
+return new class extends Migration {
   public function up(): void
   {
     Schema::table('integrations', function (Blueprint $table) {

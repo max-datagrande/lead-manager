@@ -301,6 +301,9 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+  label {
+    @apply text-sm font-medium text-muted-foreground block;
+  }
 
   /* Prevent focus zoom on mobile devices */
   @media screen and (max-width: 767px) {

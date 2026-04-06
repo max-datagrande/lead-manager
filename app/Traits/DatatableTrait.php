@@ -545,7 +545,7 @@ trait DatatableTrait
         'sort' => $sort,
         'page' => (int) $request->input('page', 1),
         'per_page' => (int) $request->input('per_page', self::DEFAULT_PER_PAGE),
-      ]
+      ],
     ];
   }
 }

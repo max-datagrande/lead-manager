@@ -38,17 +38,17 @@ class IpApi
       // Make the HTTP request
       $response = Http::timeout(10)->get($url, ['key' => $this->apiToken]);
       if (!$response->successful()) {
-        TailLogger::saveLog('IpApi request failed', "api/geolocation/", 'warning', [
+        TailLogger::saveLog('IpApi request failed', 'api/geolocation/', 'warning', [
           'status' => $response->status(),
           'ip' => $ip,
-          'url' => $url
+          'url' => $url,
         ]);
         return $this->getDefaultLocationData($ip);
       }
       $data = $response->json();
       // Check if API returned an error
       if (!empty($data['error'])) {
-        TailLogger::saveLog('IpApi returned error', "api/geolocation/", 'warning', [
+        TailLogger::saveLog('IpApi returned error', 'api/geolocation/', 'warning', [
           'status' => $response->status(),
           'ip' => $ip,
           'url' => $url,
@@ -60,9 +60,9 @@ class IpApi
       }
       return self::parseResponse($data);
     } catch (\Exception $e) {
-      TailLogger::saveLog('IpApi exception', "api/geolocation/", 'error', [
+      TailLogger::saveLog('IpApi exception', 'api/geolocation/', 'error', [
         'message' => $e->getMessage(),
-        'ip' => $ip ?? 'unknown'
+        'ip' => $ip ?? 'unknown',
       ]);
       return $this->getDefaultLocationData($ip);
     }
@@ -97,12 +97,12 @@ class IpApi
       'postal' => '33323',
       'timezone' => 'America/Los_Angeles',
       'latitude' => 37.4419,
-      'longitude' => -122.1430,
+      'longitude' => -122.143,
       'isp' => null,
       'asn' => null,
       'threat' => null,
       'currency' => 'USD',
-      'currency_name' => 'US Dollar'
+      'currency_name' => 'US Dollar',
     ];
   }
 
@@ -129,7 +129,7 @@ class IpApi
       'region' => $data['region'] ?? null,
       'region_code' => $data['region_code'] ?? null,
       'country' => $data['country_code'] ?? null,
-      'postal' => $data['postal'] ?? "",
+      'postal' => $data['postal'] ?? '',
       'timezone' => $data['timezone'] ?? null,
       'latitude' => $data['latitude'] ?? null,
       'longitude' => $data['longitude'] ?? null,
@@ -137,7 +137,7 @@ class IpApi
       'asn' => $data['asn'] ?? null,
       'threat' => $data['threat'] ?? null,
       'currency' => $data['currency'] ?? null,
-      'currency_name' => $data['currency_name'] ?? null
+      'currency_name' => $data['currency_name'] ?? null,
     ];
   }
 }

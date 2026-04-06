@@ -55,12 +55,13 @@ class BotDetectorService
    */
   public function isCrawlerBot(): bool
   {
-    $userAgent = $this->userAgent ?? $this->request->userAgent() ?? null;
-    if (empty($userAgent)) { //Is bot because of missing user agent
+    $userAgent = $this->userAgent ?? ($this->request->userAgent() ?? null);
+    if (empty($userAgent)) {
+      //Is bot because of missing user agent
       $this->isBot = true;
       $this->botName = 'MISSING_USER_AGENT';
       $this->botType = 'Crawler';
-      $this->botMessage = "Missing user agent";
+      $this->botMessage = 'Missing user agent';
       return true;
     }
     //Device detector
@@ -87,11 +88,13 @@ class BotDetectorService
     return false;
   }
 
-  private function getBotCrawlerName(): string
+  private function getBotCrawlerName(string $userAgent): string
   {
     $crawlerDetect = new CrawlerDetect();
-    $botName = $crawlerDetect->getMatches();
-    return $botName ?? 'UNKNOWN';
+    if ($crawlerDetect->isCrawler($userAgent)) {
+      return $crawlerDetect->getMatches() ?? 'UNKNOWN';
+    }
+    return 'UNKNOWN';
   }
 
   /**

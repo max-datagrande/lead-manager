@@ -2,80 +2,84 @@
 
 namespace App\Services\PingPost;
 
-use App\Enums\PricingType;
+use App\Enums\PriceSource;
 use App\Models\BuyerConfig;
 
 class PriceResolverService
 {
-    /**
-     * Resolve the final price for a given bid, returning null if the bid should be rejected.
-     */
-    public function resolvePrice(BuyerConfig $config, float $bidPrice): ?float
-    {
-        return match ($config->pricing_type) {
-            PricingType::FIXED => (float) $config->fixed_price,
-            PricingType::MIN_BID => $this->isPriceAcceptable($config, $bidPrice) ? $bidPrice : null,
-            PricingType::CONDITIONAL => null, // resolved separately via resolveConditionalPrice
-            PricingType::POSTBACK => null, // resolved asynchronously
-        };
+  /**
+   * Resolve the final price for a given bid, returning null if the bid should be rejected.
+   */
+  public function resolvePrice(BuyerConfig $config, float $bidPrice): ?float
+  {
+    if ($config->price_source === null) {
+      throw new \RuntimeException("Buyer config #{$config->id} (integration #{$config->integration_id}) has no price_source configured.");
     }
 
-    /**
-     * Check if the bid meets or exceeds the minimum threshold.
-     */
-    public function isPriceAcceptable(BuyerConfig $config, float $bidPrice): bool
-    {
-        if ($config->pricing_type !== PricingType::MIN_BID) {
-            return true;
-        }
+    return match ($config->price_source) {
+      PriceSource::FIXED => (float) $config->fixed_price,
+      PriceSource::RESPONSE_BID => $this->isPriceAcceptable($config, $bidPrice) ? $bidPrice : null,
+      PriceSource::CONDITIONAL => null, // resolved separately via resolveConditionalPrice
+      PriceSource::POSTBACK => null, // resolved asynchronously
+    };
+  }
 
-        return $bidPrice >= (float) ($config->min_bid ?? 0);
+  /**
+   * Check if the bid meets or exceeds the minimum threshold.
+   */
+  public function isPriceAcceptable(BuyerConfig $config, float $bidPrice): bool
+  {
+    if ($config->price_source !== PriceSource::RESPONSE_BID) {
+      return true;
     }
 
-    /**
-     * Evaluate conditional pricing rules and return the matched price, or null.
-     *
-     * @param  array<int, array{conditions: array<int, array{field: string, op: string, value: mixed}>, price: float}>  $rules
-     */
-    public function resolveConditionalPrice(BuyerConfig $config, array $leadData): ?float
-    {
-        $rules = $config->conditional_pricing_rules ?? [];
+    return $bidPrice >= (float) ($config->min_bid ?? 0);
+  }
 
-        foreach ($rules as $rule) {
-            if ($this->evaluateConditions($rule['conditions'] ?? [], $leadData)) {
-                return (float) $rule['price'];
-            }
-        }
+  /**
+   * Evaluate conditional pricing rules and return the matched price, or null.
+   *
+   * @param  array<int, array{conditions: array<int, array{field: string, op: string, value: mixed}>, price: float}>  $rules
+   */
+  public function resolveConditionalPrice(BuyerConfig $config, array $leadData): ?float
+  {
+    $rules = $config->conditional_pricing_rules ?? [];
 
-        return null;
+    foreach ($rules as $rule) {
+      if ($this->evaluateConditions($rule['conditions'] ?? [], $leadData)) {
+        return (float) $rule['price'];
+      }
     }
 
-    /**
-     * @param  array<int, array{field: string, op: string, value: mixed}>  $conditions
-     */
-    private function evaluateConditions(array $conditions, array $leadData): bool
-    {
-        foreach ($conditions as $condition) {
-            $fieldValue = $leadData[$condition['field']] ?? null;
-            $ruleValue = $condition['value'];
+    return null;
+  }
 
-            $passes = match ($condition['op']) {
-                'eq' => $fieldValue == $ruleValue,
-                'neq' => $fieldValue != $ruleValue,
-                'gt' => is_numeric($fieldValue) && $fieldValue > $ruleValue,
-                'gte' => is_numeric($fieldValue) && $fieldValue >= $ruleValue,
-                'lt' => is_numeric($fieldValue) && $fieldValue < $ruleValue,
-                'lte' => is_numeric($fieldValue) && $fieldValue <= $ruleValue,
-                'in' => in_array($fieldValue, (array) $ruleValue),
-                'not_in' => ! in_array($fieldValue, (array) $ruleValue),
-                default => false,
-            };
+  /**
+   * @param  array<int, array{field: string, op: string, value: mixed}>  $conditions
+   */
+  private function evaluateConditions(array $conditions, array $leadData): bool
+  {
+    foreach ($conditions as $condition) {
+      $fieldValue = $leadData[$condition['field']] ?? null;
+      $ruleValue = $condition['value'];
 
-            if (! $passes) {
-                return false;
-            }
-        }
+      $passes = match ($condition['op']) {
+        'eq' => $fieldValue == $ruleValue,
+        'neq' => $fieldValue != $ruleValue,
+        'gt' => is_numeric($fieldValue) && $fieldValue > $ruleValue,
+        'gte' => is_numeric($fieldValue) && $fieldValue >= $ruleValue,
+        'lt' => is_numeric($fieldValue) && $fieldValue < $ruleValue,
+        'lte' => is_numeric($fieldValue) && $fieldValue <= $ruleValue,
+        'in' => in_array($fieldValue, (array) $ruleValue),
+        'not_in' => !in_array($fieldValue, (array) $ruleValue),
+        default => false,
+      };
 
-        return true;
+      if (!$passes) {
+        return false;
+      }
     }
+
+    return true;
+  }
 }

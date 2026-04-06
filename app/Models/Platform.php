@@ -12,13 +12,7 @@ class Platform extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'name',
-    'company_id',
-    'token_mappings',
-    'user_id',
-    'updated_user_id',
-  ];
+  protected $fillable = ['name', 'company_id', 'token_mappings', 'user_id', 'updated_user_id'];
 
   protected $casts = [
     'token_mappings' => 'array',

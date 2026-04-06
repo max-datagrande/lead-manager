@@ -57,10 +57,7 @@ class IntegrationService
     ]);
 
     if ($validator->fails()) {
-      throw new IntegrationServiceException(
-        $validator->errors()->first(),
-        ['validation_errors' => $validator->errors()->toArray()]
-      );
+      throw new IntegrationServiceException($validator->errors()->first(), ['validation_errors' => $validator->errors()->toArray()]);
     }
 
     DB::transaction(function () use ($data) {
@@ -134,10 +131,10 @@ class IntegrationService
     ]);
 
     if ($validator->fails()) {
-      throw new IntegrationServiceException(
-        $validator->errors()->first(),
-        ['validation_errors' => $validator->errors()->toArray(), 'integration_id' => $integration->id]
-      );
+      throw new IntegrationServiceException($validator->errors()->first(), [
+        'validation_errors' => $validator->errors()->toArray(),
+        'integration_id' => $integration->id,
+      ]);
     }
 
     DB::transaction(function () use ($integration, $data) {
@@ -162,7 +159,7 @@ class IntegrationService
             'request_body' => $envData['request_body'] ?? null,
             'content_type' => $envData['content_type'] ?? 'application/json',
             'authentication_type' => $envData['authentication_type'] ?? 'none',
-          ]
+          ],
         );
 
         $this->saveResponseConfig($env, $envData['response_config'] ?? null);
@@ -181,10 +178,7 @@ class IntegrationService
     try {
       $integration->delete();
     } catch (\Throwable $th) {
-      throw new IntegrationServiceException(
-        'Failed to delete integration: ' . $th->getMessage(),
-        ['integration_id' => $integration->id]
-      );
+      throw new IntegrationServiceException('Failed to delete integration: ' . $th->getMessage(), ['integration_id' => $integration->id]);
     }
   }
 
@@ -202,18 +196,22 @@ class IntegrationService
     ]);
 
     $data = [
-      'name' => $newName ?? ($integration->name . ' (Copy)'),
+      'name' => $newName ?? $integration->name . ' (Copy)',
       'type' => $integration->type,
       'is_active' => false,
       'company_id' => $integration->company_id,
       'payload_transformer' => $integration->payload_transformer,
       'use_custom_transformer' => $integration->use_custom_transformer,
-      'field_mappings' => $integration->tokenMappings->map(fn($m) => [
-        'field_id'      => $m->field_id,
-        'data_type'     => $m->data_type,
-        'default_value' => $m->default_value,
-        'value_mapping' => $m->value_mapping,
-      ])->toArray(),
+      'field_mappings' => $integration->tokenMappings
+        ->map(
+          fn($m) => [
+            'field_id' => $m->field_id,
+            'data_type' => $m->data_type,
+            'default_value' => $m->default_value,
+            'value_mapping' => $m->value_mapping,
+          ],
+        )
+        ->toArray(),
       'environments' => [],
     ];
 
@@ -225,22 +223,28 @@ class IntegrationService
       }
 
       $responseConfig = match ($env->env_type) {
-        IntegrationEnvironment::ENV_TYPE_OFFERWALL => $env->offerwallResponseConfig ? [
-          'offer_list_path' => $env->offerwallResponseConfig->offer_list_path,
-          'mapping' => $env->offerwallResponseConfig->mapping,
-          'fallbacks' => $env->offerwallResponseConfig->fallbacks,
-        ] : null,
-        IntegrationEnvironment::ENV_TYPE_PING => $env->pingResponseConfig ? [
-          'bid_price_path' => $env->pingResponseConfig->bid_price_path,
-          'accepted_path' => $env->pingResponseConfig->accepted_path,
-          'accepted_value' => $env->pingResponseConfig->accepted_value,
-          'lead_id_path' => $env->pingResponseConfig->lead_id_path,
-        ] : null,
-        IntegrationEnvironment::ENV_TYPE_POST => $env->postResponseConfig ? [
-          'accepted_path' => $env->postResponseConfig->accepted_path,
-          'accepted_value' => $env->postResponseConfig->accepted_value,
-          'rejected_path' => $env->postResponseConfig->rejected_path,
-        ] : null,
+        IntegrationEnvironment::ENV_TYPE_OFFERWALL => $env->offerwallResponseConfig
+          ? [
+            'offer_list_path' => $env->offerwallResponseConfig->offer_list_path,
+            'mapping' => $env->offerwallResponseConfig->mapping,
+            'fallbacks' => $env->offerwallResponseConfig->fallbacks,
+          ]
+          : null,
+        IntegrationEnvironment::ENV_TYPE_PING => $env->pingResponseConfig
+          ? [
+            'bid_price_path' => $env->pingResponseConfig->bid_price_path,
+            'accepted_path' => $env->pingResponseConfig->accepted_path,
+            'accepted_value' => $env->pingResponseConfig->accepted_value,
+            'lead_id_path' => $env->pingResponseConfig->lead_id_path,
+          ]
+          : null,
+        IntegrationEnvironment::ENV_TYPE_POST => $env->postResponseConfig
+          ? [
+            'accepted_path' => $env->postResponseConfig->accepted_path,
+            'accepted_value' => $env->postResponseConfig->accepted_value,
+            'rejected_path' => $env->postResponseConfig->rejected_path,
+          ]
+          : null,
         default => null,
       };
 
@@ -254,12 +258,16 @@ class IntegrationService
         'response_config' => $responseConfig,
         'content_type' => $env->content_type,
         'authentication_type' => $env->authentication_type,
-        'field_hashes' => $env->fieldHashes->map(fn($h) => [
-          'field_id'       => $h->field_id,
-          'is_hashed'      => $h->is_hashed,
-          'hash_algorithm' => $h->hash_algorithm,
-          'hmac_secret'    => $h->hmac_secret,
-        ])->toArray(),
+        'field_hashes' => $env->fieldHashes
+          ->map(
+            fn($h) => [
+              'field_id' => $h->field_id,
+              'is_hashed' => $h->is_hashed,
+              'hash_algorithm' => $h->hash_algorithm,
+              'hmac_secret' => $h->hmac_secret,
+            ],
+          )
+          ->toArray(),
       ];
     }
 
@@ -275,8 +283,7 @@ class IntegrationService
     try {
       $headers = json_decode($environment->request_headers, true) ?? [];
       $body = json_decode($environment->request_body, true) ?? [];
-      $response = Http::withHeaders($headers)
-        ->{$environment->method}($environment->url, $body);
+      $response = Http::withHeaders($headers)->{$environment->method}($environment->url, $body);
       $duration = round((microtime(true) - $startTime) * 1000);
       $body = $response->body();
       $result = json_decode($body, true) ?? $body;
@@ -288,27 +295,21 @@ class IntegrationService
         'body' => $result,
       ];
     } catch (ConnectionException $e) {
-      throw new IntegrationServiceException(
-        'Connection failed: ' . $e->getMessage(),
-        [
-          'environment_id' => $environment->id,
-          'integration_id' => $environment->integration_id,
-          'url' => $environment->url,
-          'method' => $environment->method,
-        ]
-      );
+      throw new IntegrationServiceException('Connection failed: ' . $e->getMessage(), [
+        'environment_id' => $environment->id,
+        'integration_id' => $environment->integration_id,
+        'url' => $environment->url,
+        'method' => $environment->method,
+      ]);
     } catch (\Throwable $th) {
-      throw new IntegrationServiceException(
-        'An unexpected error occurred: ' . $th->getMessage(),
-        [
-          'environment_id' => $environment->id,
-          'integration_id' => $environment->integration_id,
-          'url' => $environment->url,
-          'method' => $environment->method,
-          'file' => $th->getFile(),
-          'line' => $th->getLine(),
-        ]
-      );
+      throw new IntegrationServiceException('An unexpected error occurred: ' . $th->getMessage(), [
+        'environment_id' => $environment->id,
+        'integration_id' => $environment->integration_id,
+        'url' => $environment->url,
+        'method' => $environment->method,
+        'file' => $th->getFile(),
+        'line' => $th->getLine(),
+      ]);
     }
   }
 
@@ -326,12 +327,16 @@ class IntegrationService
     }
 
     $integration->tokenMappings()->createMany(
-      collect($mappings)->map(fn($m) => [
-        'field_id'      => $m['field_id'],
-        'data_type'     => $m['data_type'] ?? 'string',
-        'default_value' => $m['default_value'] ?? null,
-        'value_mapping' => !empty($m['value_mapping']) ? $m['value_mapping'] : null,
-      ])->toArray()
+      collect($mappings)
+        ->map(
+          fn($m) => [
+            'field_id' => $m['field_id'],
+            'data_type' => $m['data_type'] ?? 'string',
+            'default_value' => $m['default_value'] ?? null,
+            'value_mapping' => !empty($m['value_mapping']) ? $m['value_mapping'] : null,
+          ],
+        )
+        ->toArray(),
     );
   }
 
@@ -349,12 +354,16 @@ class IntegrationService
     }
 
     $env->fieldHashes()->createMany(
-      collect($hashes)->map(fn($h) => [
-        'field_id'       => $h['field_id'],
-        'is_hashed'      => $h['is_hashed'] ?? false,
-        'hash_algorithm' => $h['hash_algorithm'] ?? null,
-        'hmac_secret'    => $h['hmac_secret'] ?? null,
-      ])->toArray()
+      collect($hashes)
+        ->map(
+          fn($h) => [
+            'field_id' => $h['field_id'],
+            'is_hashed' => $h['is_hashed'] ?? false,
+            'hash_algorithm' => $h['hash_algorithm'] ?? null,
+            'hmac_secret' => $h['hmac_secret'] ?? null,
+          ],
+        )
+        ->toArray(),
     );
   }
 
@@ -389,7 +398,7 @@ class IntegrationService
       return $template;
     }
 
-    $processor = new \App\Services\PayloadProcessorService;
+    $processor = new \App\Services\PayloadProcessorService();
     // $oldData =  str_replace(array_keys($replacements), array_values($replacements), $template);// (DEPRECATED)
     $processedTemplate = $processor->process($template, $finalReplacements);
 
@@ -405,42 +414,26 @@ class IntegrationService
    */
   public function parseOfferwallResponse(array $jsonResponse, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
-    TailLogger::saveLog(
-      "Parsing offerwall response for Integration ID: {$integration->id}",
-      'integrations/parsing',
-      'info',
-      ['integration_id' => $integration->id]
-    );
+    TailLogger::saveLog("Parsing offerwall response for Integration ID: {$integration->id}", 'integrations/parsing', 'info', [
+      'integration_id' => $integration->id,
+    ]);
 
-    $env = $environment ?? $integration->environments
-      ->where('env_type', 'offerwall')
-      ->where('environment', 'production')
-      ->first();
+    $env = $environment ?? $integration->environments->where('env_type', 'offerwall')->where('environment', 'production')->first();
     $parserConfig = $env?->response_config;
     $pathOfOffers = $parserConfig?->offer_list_path ?? '';
     $offers = data_get($jsonResponse, $pathOfOffers);
-    TailLogger::saveLog(
-      "Offers found at path: {$pathOfOffers}",
-      'integrations/parsing',
-      'info',
-      [
-        'raw_response' => $jsonResponse,
+    TailLogger::saveLog("Offers found at path: {$pathOfOffers}", 'integrations/parsing', 'info', [
+      'raw_response' => $jsonResponse,
+      'integration_id' => $integration->id,
+      'path_of_offers' => $pathOfOffers,
+      'number_of_offers' => $offers ? count($offers) : 0,
+    ]);
+    if (!is_array($offers)) {
+      TailLogger::saveLog("Offers not found or not an array at path: {$pathOfOffers}", 'integrations/parsing', 'warning', [
         'integration_id' => $integration->id,
         'path_of_offers' => $pathOfOffers,
         'number_of_offers' => $offers ? count($offers) : 0,
-      ]
-    );
-    if (!is_array($offers)) {
-      TailLogger::saveLog(
-        "Offers not found or not an array at path: {$pathOfOffers}",
-        'integrations/parsing',
-        'warning',
-        [
-          'integration_id' => $integration->id,
-          'path_of_offers' => $pathOfOffers,
-          'number_of_offers' => $offers ? count($offers) : 0,
-        ]
-      );
+      ]);
 
       return [];
     }
@@ -457,15 +450,10 @@ class IntegrationService
       $mappedOffers[] = $mappedOffer;
     }
 
-    TailLogger::saveLog(
-      'Parsed ' . count($mappedOffers) . ' offers.',
-      'integrations/parsing',
-      'info',
-      [
-        'integration_id' => $integration->id,
-        'offers_count' => count($mappedOffers),
-      ]
-    );
+    TailLogger::saveLog('Parsed ' . count($mappedOffers) . ' offers.', 'integrations/parsing', 'info', [
+      'integration_id' => $integration->id,
+      'offers_count' => count($mappedOffers),
+    ]);
 
     return $mappedOffers;
   }
@@ -482,10 +470,7 @@ class IntegrationService
    */
   public function applyOfferFallbacks(array $mappedOffers, Integration $integration, ?IntegrationEnvironment $environment = null): array
   {
-    $env = $environment ?? $integration->environments
-      ->where('env_type', 'offerwall')
-      ->where('environment', 'production')
-      ->first();
+    $env = $environment ?? $integration->environments->where('env_type', 'offerwall')->where('environment', 'production')->first();
     $fallbacks = $env?->response_config?->fallbacks ?? [];
 
     if (empty($fallbacks)) {
@@ -525,7 +510,7 @@ class IntegrationService
           'offer_list_path' => $configData['offer_list_path'] ?? null,
           'mapping' => $configData['mapping'] ?? null,
           'fallbacks' => $configData['fallbacks'] ?? null,
-        ]
+        ],
       ),
       IntegrationEnvironment::ENV_TYPE_PING => PingResponseConfig::updateOrCreate(
         ['integration_environment_id' => $env->id],
@@ -534,7 +519,7 @@ class IntegrationService
           'accepted_path' => $configData['accepted_path'] ?? null,
           'accepted_value' => $configData['accepted_value'] ?? null,
           'lead_id_path' => $configData['lead_id_path'] ?? null,
-        ]
+        ],
       ),
       IntegrationEnvironment::ENV_TYPE_POST => PostResponseConfig::updateOrCreate(
         ['integration_environment_id' => $env->id],
@@ -542,7 +527,7 @@ class IntegrationService
           'accepted_path' => $configData['accepted_path'] ?? null,
           'accepted_value' => $configData['accepted_value'] ?? null,
           'rejected_path' => $configData['rejected_path'] ?? null,
-        ]
+        ],
       ),
       default => null,
     };
@@ -559,12 +544,7 @@ class IntegrationServiceException extends Exception
   public function __construct(string $message, array $context = [], int $code = 0, ?\Throwable $previous = null)
   {
     parent::__construct($message, $code, $previous);
-    TailLogger::saveLog(
-      $message,
-      'integrations/services',
-      'error',
-      array_merge(['error' => $message], $context)
-    );
+    TailLogger::saveLog($message, 'integrations/services', 'error', array_merge(['error' => $message], $context));
   }
 
   public function getContext(): array

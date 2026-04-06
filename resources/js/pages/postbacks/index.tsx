@@ -3,7 +3,7 @@ import { PostbacksActions, TablePostbacks } from '@/components/postbacks/index';
 import { PostbacksProvider } from '@/context/postbacks-provider';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Postbacks', href: '/postbacks' }];
 
@@ -15,7 +15,8 @@ interface Platform {
 interface Postback {
   id: number;
   name: string;
-  platform_id: number;
+  type: 'external' | 'internal';
+  platform_id: number | null;
   base_url: string;
   param_mappings: Record<string, string>;
   result_url: string | null;
@@ -27,11 +28,31 @@ interface Postback {
   updated_at: string;
 }
 
-interface Props {
-  rows: Postback[];
+interface PostbackTypeOption {
+  value: string;
+  label: string;
 }
 
-const Index = ({ rows }: Props) => {
+interface Props {
+  rows: Postback[];
+  postback_types: PostbackTypeOption[];
+  active_type: string;
+}
+
+const typeFilters = [
+  { value: 'all', label: 'All' },
+  { value: 'external', label: 'External' },
+  { value: 'internal', label: 'Internal' },
+];
+
+const Index = ({ rows, active_type }: Props) => {
+  const handleTypeFilter = (type: string) => {
+    router.visit(route('postbacks.index', type === 'all' ? {} : { type }), {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
   return (
     <PostbacksProvider>
       <Head title="Postbacks" />
@@ -39,6 +60,21 @@ const Index = ({ rows }: Props) => {
         <PageHeader title="Postbacks" description="Manage postback URLs for your platforms.">
           <PostbacksActions />
         </PageHeader>
+        <div className="flex gap-1">
+          {typeFilters.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => handleTypeFilter(f.value)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                active_type === f.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
         <TablePostbacks entries={rows} />
       </div>
     </PostbacksProvider>

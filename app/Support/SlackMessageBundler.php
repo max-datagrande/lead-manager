@@ -51,10 +51,7 @@ class SlackMessageBundler
    */
   public function addBlock(array $block): self
   {
-    if (
-      $this->openAttachmentIndex !== null
-      && isset($this->attachments[$this->openAttachmentIndex])
-    ) {
+    if ($this->openAttachmentIndex !== null && isset($this->attachments[$this->openAttachmentIndex])) {
       $this->attachments[$this->openAttachmentIndex]['blocks'][] = $block;
       return $this;
     }
@@ -239,7 +236,11 @@ class SlackMessageBundler
     $enabledChannels = config('slack-alerts.webhook_urls');
     $url = $enabledChannels[$channel] ?? null;
     if (empty($url)) {
-      Logger::saveLog("No se encontró URL de webhook para el canal '{$channel}'. Configura slack-alerts.webhook_urls.{$channel}", 'notifications', 'error');
+      Logger::saveLog(
+        "No se encontró URL de webhook para el canal '{$channel}'. Configura slack-alerts.webhook_urls.{$channel}",
+        'notifications',
+        'error',
+      );
       return false;
     }
 
@@ -247,7 +248,8 @@ class SlackMessageBundler
     // Si existen blocks sin attachments, los envolvemos en un attachment final sin color (gris por defecto)
     $attachmentsPayload = $this->attachments;
     $hasBlocks = count($this->blocks) > 0;
-    if ($hasBlocks) { //Add a last attachment with no color
+    if ($hasBlocks) {
+      //Add a last attachment with no color
       $attachmentsPayload[] = [
         'blocks' => $this->blocks,
       ];
@@ -262,9 +264,7 @@ class SlackMessageBundler
       CURLOPT_URL => $url,
       CURLOPT_POST => true,
       CURLOPT_POSTFIELDS => json_encode($payload),
-      CURLOPT_HTTPHEADER => [
-        'Content-Type: application/json',
-      ],
+      CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
       CURLOPT_RETURNTRANSFER => true,
       CURLOPT_TIMEOUT => 10,
     ]);
@@ -320,16 +320,11 @@ class SlackMessageBundler
     ];
 
     // Registrar en logs
-    Logger::saveLog(
-      'Slack bundler debug output',
-      'notifications',
-      'info',
-      [
-        'channel' => $channel,
-        'attachments_count' => count($attachmentsPayload),
-        'payload' => $payload,
-      ]
-    );
+    Logger::saveLog('Slack bundler debug output', 'notifications', 'info', [
+      'channel' => $channel,
+      'attachments_count' => count($attachmentsPayload),
+      'payload' => $payload,
+    ]);
 
     // Limpiar estado interno
     $this->blocks = [];
