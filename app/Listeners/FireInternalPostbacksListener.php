@@ -7,7 +7,6 @@ use App\Events\LeadSold;
 use App\Services\InternalTokenResolverService;
 use App\Services\PostbackFireService;
 use App\Support\SlackMessageBundler;
-use Illuminate\Support\Facades\Log;
 use Maxidev\Logger\TailLogger;
 use Throwable;
 
@@ -78,11 +77,6 @@ class FireInternalPostbacksListener
           TailLogger::saveLog('Postback fire FAILED', 'postback/internal', 'error', [
             'postback_id' => $postback->id,
             'postback_name' => $postback->name,
-            'error' => $e->getMessage(),
-          ]);
-
-          Log::error('Failed to fire internal postback for sale', [
-            'postback_id' => $postback->id,
             'dispatch_uuid' => $dispatch->dispatch_uuid,
             'error' => $e->getMessage(),
           ]);
@@ -100,9 +94,10 @@ class FireInternalPostbacksListener
         'file' => $e->getFile() . ':' . $e->getLine(),
       ]);
 
-      Log::error('FireInternalPostbacksListener failed', [
+      TailLogger::saveLog('Listener FAILED globally', 'postback/internal', 'error', [
         'dispatch_id' => $event->dispatch->id ?? null,
         'error' => $e->getMessage(),
+        'file' => $e->getFile() . ':' . $e->getLine(),
       ]);
 
       try {
@@ -114,8 +109,12 @@ class FireInternalPostbacksListener
           ->addKeyValue('Error', $e->getMessage(), true, '💥')
           ->closeAttachment()
           ->sendDirect('error');
-      } catch (Throwable) {
-        // Slack must never break the flow
+      } catch (Throwable $slackError) {
+        TailLogger::saveLog('Slack notification failed', 'notifications/slack', 'error', [
+          'original_error' => $e->getMessage(),
+          'slack_error' => $slackError->getMessage(),
+          'dispatch_id' => $event->dispatch->id ?? null,
+        ]);
       }
     }
   }
