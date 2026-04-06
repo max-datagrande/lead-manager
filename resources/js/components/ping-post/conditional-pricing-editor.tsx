@@ -121,18 +121,18 @@ export function ConditionalPricingEditor({ rules, onChange, fields = [] }: Props
                       fields={fields}
                       usedFields={usedFieldsInRule}
                       placeholder="Select field..."
-                      className="w-32"
+                      className="w-48"
                     />
                   ) : (
                     <Input
                       placeholder="field (e.g. state)"
                       value={cond.field}
                       onChange={(e) => updateCondition(ruleIndex, condIndex, 'field', e.target.value)}
-                      className="w-32"
+                      className="w-48"
                     />
                   )}
                   <Select value={cond.op} onValueChange={(v) => updateCondition(ruleIndex, condIndex, 'op', v)}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-60">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

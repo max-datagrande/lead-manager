@@ -53,7 +53,7 @@ export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
               fields={fields}
               usedFields={usedFields}
               placeholder="Select field..."
-              className="w-36"
+              className="w-60"
             />
           ) : (
             <Input placeholder="field (e.g. state)" value={rule.field} onChange={(e) => updateRule(i, 'field', e.target.value)} className="w-36" />
@@ -65,7 +65,7 @@ export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
               if (VALUE_LESS_OPERATORS.includes(v)) updateRule(i, 'value', null);
             }}
           >
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-60">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
