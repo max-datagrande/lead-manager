@@ -81,12 +81,7 @@ class PostbackAssociationController extends Controller
     }
 
     $resolvedTokens = $tokenResolver->resolveFromFingerprint($dispatch->fingerprint);
-
-    $saleParams = [
-      'lead_price' => (string) $dispatch->final_price,
-      'event_name' => 'sale',
-      'buyer_name' => $dispatch->winnerIntegration?->name ?? '',
-    ];
+    $saleParams = $tokenResolver->buildSaleParams($dispatch);
 
     $params = array_merge($resolvedTokens, $saleParams);
     $fired = 0;
