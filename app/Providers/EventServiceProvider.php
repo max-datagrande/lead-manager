@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\LeadSold;
+use App\Listeners\FireInternalPostbacksListener;
 use App\Listeners\StoreOutgoingEmailHtml;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Mail\Events\MessageSent;
@@ -15,6 +17,7 @@ class EventServiceProvider extends ServiceProvider
    */
   protected $listen = [
     MessageSent::class => [StoreOutgoingEmailHtml::class],
+    LeadSold::class => [FireInternalPostbacksListener::class],
   ];
 
   /**

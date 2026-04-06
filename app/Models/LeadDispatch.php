@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DispatchStatus;
+use App\Events\LeadSold;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -76,6 +77,8 @@ class LeadDispatch extends Model
       'final_price' => $price,
       'completed_at' => now(),
     ]);
+
+    LeadSold::dispatch($this);
   }
 
   public function markAsNotSold(): void
