@@ -31,8 +31,8 @@ export interface EligibilityRule {
   id?: number;
   integration_id?: number;
   field: string;
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in';
-  value: string | string[];
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty';
+  value: string | string[] | null;
   sort_order: number;
 }
 

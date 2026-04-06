@@ -35,6 +35,8 @@ class BuyerEligibilityRule extends Model
       'lte' => is_numeric($fieldValue) && $fieldValue <= $ruleValue,
       'in' => in_array($fieldValue, (array) $ruleValue),
       'not_in' => !in_array($fieldValue, (array) $ruleValue),
+      'is_empty' => $fieldValue === null || $fieldValue === '',
+      'is_not_empty' => $fieldValue !== null && $fieldValue !== '',
       default => false,
     };
   }

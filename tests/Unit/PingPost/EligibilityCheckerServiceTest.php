@@ -37,6 +37,12 @@ dataset('operator_pass', [
   'lte fail' => ['lte', 25, 30, false],
   'in  missing' => ['in', ['CA', 'TX'], 'FL', false],
   'not_in found' => ['not_in', ['CA', 'TX'], 'CA', false],
+  'is_empty with null' => ['is_empty', null, null, true],
+  'is_empty with empty string' => ['is_empty', null, '', true],
+  'is_empty with value' => ['is_empty', null, 'something', false],
+  'is_not_empty with value' => ['is_not_empty', null, 'something', true],
+  'is_not_empty with null' => ['is_not_empty', null, null, false],
+  'is_not_empty with empty string' => ['is_not_empty', null, '', false],
 ]);
 
 it('evaluates operator correctly', function (string $op, mixed $ruleValue, mixed $leadValue, bool $expected) {
@@ -118,4 +124,28 @@ it('returns null skip reason when all rules pass', function () {
   $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['state' => 'CA']);
 
   expect($reason)->toBeNull();
+});
+
+// ─── is_empty / is_not_empty with missing field ─────────────────────────────
+
+it('is_empty passes when field is missing from lead data', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_empty', 'value' => null, 'sort_order' => 0]);
+
+  $integration->load('eligibilityRules');
+  $checker = app(EligibilityCheckerService::class);
+
+  expect($checker->isEligible($integration, []))->toBeTrue();
+});
+
+it('is_not_empty fails when field is missing from lead data', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_not_empty', 'value' => null, 'sort_order' => 0]);
+
+  $integration->load('eligibilityRules');
+  $checker = app(EligibilityCheckerService::class);
+
+  expect($checker->isEligible($integration, []))->toBeFalse();
 });
