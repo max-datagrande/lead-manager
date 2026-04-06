@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import TagInput from '@/components/ui/tag-input.jsx';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useForm } from '@inertiajs/react';
@@ -17,6 +18,7 @@ export default function FormModal({ entry, isEdit = false }) {
     name: entry?.name ?? '',
     label: entry?.label ?? '',
     possible_values: entry?.possible_values ?? [],
+    is_array: entry?.is_array ?? false,
   });
 
   /**
@@ -98,6 +100,12 @@ export default function FormModal({ entry, isEdit = false }) {
           <Label htmlFor="possible_values">Possible Values</Label>
           <TagInput id="possible_values" value={data.possible_values} onChange={(values) => setData('possible_values', values)} />
           {errors.possible_values && <p className="text-sm text-destructive">{errors.possible_values}</p>}
+        </div>
+
+        {/* Array Field */}
+        <div className="flex items-center gap-2">
+          <Switch id="is_array" checked={data.is_array} onCheckedChange={(checked) => setData('is_array', checked)} />
+          <Label htmlFor="is_array">Array field (values separated by ;)</Label>
         </div>
 
         {/* Form Actions */}
