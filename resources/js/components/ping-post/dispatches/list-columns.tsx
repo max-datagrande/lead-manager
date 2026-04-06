@@ -33,6 +33,13 @@ function ActionsCell({ row, table }: CellContext<LeadDispatch, unknown>) {
 
   return (
     <div className="flex items-center gap-0.5">
+      {/* Persist view */}
+      <Button variant="ghost" size="icon" asChild>
+        <Link href={route('ping-post.dispatches.show', d.id)}>
+          <Eye className="h-4 w-4" />
+        </Link>
+      </Button>
+      {/* Opcional buttons */}
       {showFire && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -53,11 +60,6 @@ function ActionsCell({ row, table }: CellContext<LeadDispatch, unknown>) {
           <TooltipContent>Fire postbacks</TooltipContent>
         </Tooltip>
       )}
-      <Button variant="ghost" size="icon" asChild>
-        <Link href={route('ping-post.dispatches.show', d.id)}>
-          <Eye className="h-4 w-4" />
-        </Link>
-      </Button>
     </div>
   );
 }
