@@ -1,13 +1,20 @@
 import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import type { InternalPostbackSummary } from '@/types/ping-post';
 import axios from 'axios';
 import { CheckCircle2, Loader2, XCircle, Zap } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 
-type ModalState = 'confirm' | 'firing' | 'success' | 'error';
+type ModalState = 'loading' | 'confirm' | 'firing' | 'success' | 'error';
+
+interface ResolvedPostback {
+  id: number;
+  name: string;
+  resolved_url: string;
+}
 
 interface Props {
   dispatchId: number;
@@ -17,9 +24,23 @@ interface Props {
 export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
   const modalId = useCurrentModalId();
   const modal = useModal();
-  const [state, setState] = useState<ModalState>('confirm');
+  const [state, setState] = useState<ModalState>('loading');
+  const [resolved, setResolved] = useState<ResolvedPostback[]>([]);
   const [message, setMessage] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    axios
+      .post(route('postbacks.associations.preview-for-dispatch'), { dispatch_id: dispatchId })
+      .then(({ data }) => {
+        setResolved(data.data);
+        setState('confirm');
+      })
+      .catch(() => {
+        setMessage('Failed to resolve postback URLs.');
+        setState('error');
+      });
+  }, [dispatchId]);
 
   const lockHeight = useCallback(() => {
     if (contentRef.current) {
@@ -49,6 +70,7 @@ export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
       <DialogHeader>
         <DialogTitle>Fire Internal Postbacks</DialogTitle>
         <DialogDescription>
+          {state === 'loading' && 'Resolving postback URLs...'}
           {state === 'confirm' && 'The following postbacks will be fired for this dispatch.'}
           {state === 'firing' && 'Firing postbacks...'}
           {state === 'success' && 'Postbacks fired successfully.'}
@@ -57,14 +79,28 @@ export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
       </DialogHeader>
 
       <div ref={contentRef} className="flex items-center justify-center overflow-hidden">
-        {state === 'confirm' && (
+        {state === 'loading' && (
           <div className="w-full space-y-1.5">
             {postbacks.map((p) => (
+              <div key={p.id} className="flex items-center gap-2.5 rounded-md border px-3 py-2">
+                <Skeleton className="h-4 w-4 shrink-0 rounded" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {state === 'confirm' && (
+          <div className="w-full space-y-1.5">
+            {resolved.map((p) => (
               <div key={p.id} className="flex items-center gap-2.5 rounded-md border px-3 py-2">
                 <Zap className="h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="truncate font-mono text-xs text-muted-foreground">{p.base_url}</p>
+                  <p className="truncate font-mono text-xs text-muted-foreground">{p.resolved_url}</p>
                 </div>
               </div>
             ))}
@@ -96,7 +132,7 @@ export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
             </Button>
             <Button onClick={handleFire}>
               <Zap className="mr-1.5 h-4 w-4" />
-              Fire {postbacks.length} postback{postbacks.length !== 1 ? 's' : ''}
+              Fire {resolved.length} postback{resolved.length !== 1 ? 's' : ''}
             </Button>
           </>
         )}
