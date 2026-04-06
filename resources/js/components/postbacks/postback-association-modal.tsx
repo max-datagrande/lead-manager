@@ -30,16 +30,24 @@ export function PostbackAssociationModal({ source, sourceId, postbacks, associat
 
   const available = postbacks.filter((p) => !associatedIds.includes(p.id) && p.name.toLowerCase().includes(search.toLowerCase()));
 
+  console.log('[PostbackAssociation] render', { source, sourceId, total: postbacks.length, available: available.length, associatedIds, saving });
+
   const handleSelect = async (postback: InternalPostback) => {
+    console.log('[PostbackAssociation] handleSelect called', { postback, source, sourceId, saving });
+    if (saving) {
+      console.log('[PostbackAssociation] blocked — already saving');
+      return;
+    }
     setSaving(true);
     try {
-      await axios.post(route('postbacks.associations.store'), {
-        source,
-        source_id: sourceId,
-        postback_id: postback.id,
-      });
+      const url = route('postbacks.associations.store');
+      const payload = { source, source_id: sourceId, postback_id: postback.id };
+      console.log('[PostbackAssociation] POST', url, payload);
+      const res = await axios.post(url, payload);
+      console.log('[PostbackAssociation] success', res.data);
       modal.resolve(modalId, postback);
-    } catch {
+    } catch (err) {
+      console.error('[PostbackAssociation] error', err);
       setSaving(false);
     }
   };
@@ -67,7 +75,10 @@ export function PostbackAssociationModal({ source, sourceId, postbacks, associat
               key={p.id}
               type="button"
               disabled={saving}
-              onClick={() => handleSelect(p)}
+              onClick={(e) => {
+                console.log('[PostbackAssociation] button clicked', { id: p.id, name: p.name, event: e.type });
+                handleSelect(p);
+              }}
               className="flex w-full items-center gap-3 rounded-md border border-transparent px-3 py-2.5 text-left text-sm transition-colors hover:border-border hover:bg-muted/50 disabled:opacity-50"
             >
               <Zap className="h-4 w-4 shrink-0 text-primary" />
