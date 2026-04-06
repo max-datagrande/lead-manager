@@ -9,6 +9,7 @@ use App\Enums\WorkflowStrategy;
 use App\Models\Integration;
 use App\Models\Lead;
 use App\Models\LeadDispatch;
+use App\Support\SlackMessageBundler;
 use App\Models\PingResult;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
@@ -69,6 +70,7 @@ class DispatchOrchestrator
         'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10),
       ]);
       $dispatch->markAsError($e->getMessage());
+      $this->notifySlackError($dispatch, $workflow, $e);
     }
 
     $dispatch->refresh();
@@ -514,5 +516,27 @@ class DispatchOrchestrator
     $actual = \Illuminate\Support\Arr::get($response->json() ?? [], $acceptedPath);
 
     return (string) $actual === (string) $acceptedValue;
+  }
+
+  private function notifySlackError(LeadDispatch $dispatch, Workflow $workflow, Throwable $e): void
+  {
+    try {
+      (new SlackMessageBundler())
+        ->createAttachment('#dc3545')
+        ->addTitle('Dispatch Strategy Failed', '🚨')
+        ->addSection("Workflow *{$workflow->name}* (#{$workflow->id}) failed during `{$dispatch->strategy_used}` strategy.")
+        ->addField('Dispatch', "#{$dispatch->id} — `{$dispatch->dispatch_uuid}`", '📋')
+        ->addField('Lead', "#{$dispatch->lead_id} — `{$dispatch->fingerprint}`", '👤')
+        ->addKeyValue('Error', $e->getMessage(), true, '💥')
+        ->addFooter("_{$e->getFile()}:{$e->getLine()}_")
+        ->closeAttachment()
+        ->sendDirect('error');
+    } catch (Throwable $slackError) {
+      TailLogger::saveLog('Slack notification failed', 'notifications/slack', 'error', [
+        'original_error' => $e->getMessage(),
+        'slack_error' => $slackError->getMessage(),
+        'dispatch_id' => $dispatch->id,
+      ]);
+    }
   }
 }
