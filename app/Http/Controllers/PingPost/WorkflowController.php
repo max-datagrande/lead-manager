@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\PingPost;
 
+use App\Enums\PostbackType;
 use App\Enums\WorkflowStrategy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PingPost\StoreWorkflowRequest;
 use App\Http\Requests\PingPost\UpdateWorkflowRequest;
 use App\Models\Buyer;
+use App\Models\Postback;
 use App\Models\Workflow;
 use App\Services\PingPost\WorkflowService;
 use Inertia\Inertia;
@@ -57,7 +59,7 @@ class WorkflowController extends Controller
 
   public function edit(Workflow $workflow): Response
   {
-    $workflow->load(['workflowBuyers.integration']);
+    $workflow->load(['workflowBuyers.integration', 'postbacks']);
 
     return Inertia::render('ping-post/workflows/edit', [
       'workflow' => $workflow,
@@ -65,6 +67,11 @@ class WorkflowController extends Controller
         ->where('is_active', true)
         ->get(['id', 'name', 'integration_id']),
       'strategies' => WorkflowStrategy::toArray(),
+      'internal_postbacks' => Postback::query()
+        ->where('type', PostbackType::INTERNAL)
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'uuid', 'name', 'base_url', 'is_active']),
     ]);
   }
 

@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { type Platform } from '@/types/models/platform';
-import { type FireModeOption, type DomainOption, type PostbackTypeOption } from '@/types/models/postback';
+import { type DomainOption, type FireModeOption, type PostbackTypeOption } from '@/types/models/postback';
 import { Head, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 

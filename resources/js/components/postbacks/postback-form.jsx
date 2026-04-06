@@ -11,7 +11,19 @@ import { Link } from '@inertiajs/react';
 import { ArrowRight, Check, Copy, Globe, Link2, Lock, Settings2, Shuffle, Trash2, Zap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-export default function PostbackForm({ data, setData, errors, processing, platforms, fireModes = [], postbackTypes = [], internalTokens = [], domains = [], onSubmit, isEdit = false }) {
+export default function PostbackForm({
+  data,
+  setData,
+  errors,
+  processing,
+  platforms,
+  fireModes = [],
+  postbackTypes = [],
+  internalTokens = [],
+  domains = [],
+  onSubmit,
+  isEdit = false,
+}) {
   const isInternal = data.type === 'internal';
   const [availableTokens, setAvailableTokens] = useState([]);
   const [detectedParams, setDetectedParams] = useState([]);
@@ -134,7 +146,7 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
           ))}
         </div>
       )}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 auto-rows-auto">
+      <div className="grid auto-rows-auto grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Status & Fire Mode */}
         <Card className={`gap-2 ${data.is_active ? 'bg-green-500/10' : 'bg-muted/50'}`}>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -194,7 +206,10 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
             </div>
             {!isInternal && domains.length > 0 && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Domain: <span className="font-mono font-medium text-foreground">{domains.find((d) => d.value === (data.is_public ? 'public' : 'internal'))?.url}</span>
+                Domain:{' '}
+                <span className="font-mono font-medium text-foreground">
+                  {domains.find((d) => d.value === (data.is_public ? 'public' : 'internal'))?.url}
+                </span>
               </p>
             )}
           </CardContent>
@@ -220,14 +235,14 @@ export default function PostbackForm({ data, setData, errors, processing, platfo
               )}
             </div>
           </CardHeader>
-          <CardContent className='flex-1 flex items-center'>
+          <CardContent className="flex flex-1 items-center">
             {detectedParams.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground w-full">
+              <div className="flex w-full flex-col items-center justify-center gap-2 py-8 text-center text-muted-foreground">
                 <Shuffle className="size-10 opacity-30" />
                 <p className="text-muted-foreground">Paste a postback URL to detect parameters</p>
               </div>
             ) : (
-              <div className="space-y-2 w-full">
+              <div className="w-full space-y-2">
                 {/* Column headers */}
                 <div className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2 px-1 pb-1">
                   <span className="text-xs font-medium text-muted-foreground">URL Param</span>
