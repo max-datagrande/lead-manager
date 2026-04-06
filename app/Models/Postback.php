@@ -83,10 +83,11 @@ class Postback extends Model
       $params = [];
 
       foreach ($this->param_mappings as $destParam => $tokenName) {
-        if (str_starts_with($tokenName, 'traffic.')) {
-          continue;
+        if (str_starts_with($tokenName, 'literal:')) {
+          $params[$destParam] = substr($tokenName, 8);
+        } elseif (!str_starts_with($tokenName, 'traffic.')) {
+          $params[$tokenName] = '{' . $tokenName . '}';
         }
-        $params[$tokenName] = '{' . $tokenName . '}';
       }
 
       if (empty($params)) {
@@ -134,7 +135,11 @@ class Postback extends Model
     $params = [];
 
     foreach ($this->param_mappings as $destParam => $internalToken) {
-      $params[$destParam] = $internalValues[$internalToken] ?? '';
+      if (str_starts_with($internalToken, 'literal:')) {
+        $params[$destParam] = substr($internalToken, 8);
+      } else {
+        $params[$destParam] = $internalValues[$internalToken] ?? '';
+      }
     }
 
     $base = ($parsed['scheme'] ?? 'https') . '://' . ($parsed['host'] ?? '') . ($parsed['path'] ?? '');
