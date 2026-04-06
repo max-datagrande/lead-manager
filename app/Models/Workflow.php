@@ -68,6 +68,11 @@ class Workflow extends Model
     return $this->hasMany(LeadDispatch::class);
   }
 
+  public function postbacks(): BelongsToMany
+  {
+    return $this->belongsToMany(Postback::class, 'postback_workflow')->withTimestamps();
+  }
+
   public function scopeActive(Builder $query): Builder
   {
     return $query->where('is_active', true);
