@@ -97,7 +97,7 @@ export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
           <div className="w-full space-y-3">
             {resolved.map((p) => (
               <div key={p.id} className="space-y-2 rounded-lg border p-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <Zap className="h-4 w-4 shrink-0 text-primary" />
                   <p className="text-sm font-semibold">{p.name}</p>
                 </div>
