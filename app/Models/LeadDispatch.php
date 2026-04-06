@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DispatchStatus;
 use App\Events\LeadSold;
 use Illuminate\Database\Eloquent\Model;
+use Maxidev\Logger\TailLogger;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -76,6 +77,14 @@ class LeadDispatch extends Model
       'winner_integration_id' => $winner->id,
       'final_price' => $price,
       'completed_at' => now(),
+    ]);
+
+    TailLogger::saveLog('markAsSold → dispatching LeadSold event', 'postback/internal', 'info', [
+      'dispatch_id' => $this->id,
+      'dispatch_uuid' => $this->dispatch_uuid,
+      'workflow_id' => $this->workflow_id,
+      'winner' => $winner->name,
+      'price' => $price,
     ]);
 
     LeadSold::dispatch($this);
