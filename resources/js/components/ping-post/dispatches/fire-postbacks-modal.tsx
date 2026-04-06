@@ -80,27 +80,29 @@ export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
 
       <div ref={contentRef} className="flex items-center justify-center overflow-hidden">
         {state === 'loading' && (
-          <div className="w-full space-y-1.5">
+          <div className="w-full space-y-3">
             {postbacks.map((p) => (
-              <div key={p.id} className="flex items-center gap-2.5 rounded-md border px-3 py-2">
-                <Skeleton className="h-4 w-4 shrink-0 rounded" />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-full" />
+              <div key={p.id} className="space-y-2 rounded-lg border p-4">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-40" />
                 </div>
+                <Skeleton className="h-8 w-full rounded-md" />
               </div>
             ))}
           </div>
         )}
 
         {state === 'confirm' && (
-          <div className="w-full space-y-1.5">
+          <div className="w-full space-y-3">
             {resolved.map((p) => (
-              <div key={p.id} className="flex items-center gap-2.5 rounded-md border px-3 py-2">
-                <Zap className="h-4 w-4 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{p.name}</p>
-                  <p className="truncate font-mono text-xs text-muted-foreground">{p.resolved_url}</p>
+              <div key={p.id} className="space-y-2 rounded-lg border p-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-4 w-4 shrink-0 text-primary" />
+                  <p className="text-sm font-semibold">{p.name}</p>
+                </div>
+                <div className="overflow-x-auto rounded-md bg-muted px-3 py-2">
+                  <p className="font-mono text-xs whitespace-nowrap text-muted-foreground">{p.resolved_url}</p>
                 </div>
               </div>
             ))}
