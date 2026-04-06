@@ -48,7 +48,9 @@ function ActionsCell({ row, table }: CellContext<LeadDispatch, unknown>) {
               size="icon"
               className="h-8 w-8 text-amber-500 hover:text-amber-600"
               onClick={async () => {
-                const fired = await modal.openAsync<boolean>(<FirePostbacksModal dispatchId={d.id} postbacks={postbacks} />);
+                const fired = await modal.openAsync<boolean>(<FirePostbacksModal dispatchId={d.id} postbacks={postbacks} />, {
+                  maxWidth: 'sm:max-w-2xl',
+                });
                 if (fired) {
                   meta?.markAsFired?.(d.dispatch_uuid);
                 }
