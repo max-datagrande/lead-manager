@@ -28,13 +28,7 @@ class IntegrationFieldMapping extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'integration_id',
-    'field_id',
-    'data_type',
-    'default_value',
-    'value_mapping',
-  ];
+  protected $fillable = ['integration_id', 'field_id', 'data_type', 'default_value', 'value_mapping'];
 
   protected $casts = [
     'value_mapping' => 'array',

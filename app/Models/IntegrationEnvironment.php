@@ -51,15 +51,9 @@ class IntegrationEnvironment extends Model
     'authentication_type',
   ];
 
-  protected $with = [
-    'offerwallResponseConfig',
-    'pingResponseConfig',
-    'postResponseConfig',
-  ];
+  protected $with = ['offerwallResponseConfig', 'pingResponseConfig', 'postResponseConfig'];
 
-  protected $appends = [
-    'response_config',
-  ];
+  protected $appends = ['response_config'];
 
   /**
    * Returns a structured field map for the show view: { key => { label, hint, value } }.
@@ -75,20 +69,38 @@ class IntegrationEnvironment extends Model
 
       $schema = match ($this->env_type) {
         self::ENV_TYPE_PING => [
-          'bid_price_path' => ['label' => 'Bid Price Path', 'hint' => 'JSON path to extract the buyer\'s bid price from the response (e.g. "data.bid")'],
-          'accepted_path'  => ['label' => 'Accepted Path',  'hint' => 'JSON path to the field that signals whether the lead was accepted (e.g. "status")'],
-          'accepted_value' => ['label' => 'Accepted Value', 'hint' => 'The value at accepted_path that means the lead was accepted (e.g. "accepted", "true", "1")'],
-          'lead_id_path'   => ['label' => 'Lead ID Path',   'hint' => 'JSON path to extract the external lead ID assigned by the buyer (e.g. "data.lead_id")'],
+          'bid_price_path' => [
+            'label' => 'Bid Price Path',
+            'hint' => 'JSON path to extract the buyer\'s bid price from the response (e.g. "data.bid")',
+          ],
+          'accepted_path' => [
+            'label' => 'Accepted Path',
+            'hint' => 'JSON path to the field that signals whether the lead was accepted (e.g. "status")',
+          ],
+          'accepted_value' => [
+            'label' => 'Accepted Value',
+            'hint' => 'The value at accepted_path that means the lead was accepted (e.g. "accepted", "true", "1")',
+          ],
+          'lead_id_path' => [
+            'label' => 'Lead ID Path',
+            'hint' => 'JSON path to extract the external lead ID assigned by the buyer (e.g. "data.lead_id")',
+          ],
         ],
         self::ENV_TYPE_POST => [
-          'accepted_path'  => ['label' => 'Accepted Path',  'hint' => 'JSON path to the field that signals the post was accepted (e.g. "result")'],
-          'accepted_value' => ['label' => 'Accepted Value', 'hint' => 'The value at accepted_path that means the lead was accepted (e.g. "success", "true", "1")'],
-          'rejected_path'  => ['label' => 'Rejected Path',  'hint' => 'JSON path to extract the rejection reason from the response (e.g. "error_message")'],
+          'accepted_path' => ['label' => 'Accepted Path', 'hint' => 'JSON path to the field that signals the post was accepted (e.g. "result")'],
+          'accepted_value' => [
+            'label' => 'Accepted Value',
+            'hint' => 'The value at accepted_path that means the lead was accepted (e.g. "success", "true", "1")',
+          ],
+          'rejected_path' => [
+            'label' => 'Rejected Path',
+            'hint' => 'JSON path to extract the rejection reason from the response (e.g. "error_message")',
+          ],
         ],
         self::ENV_TYPE_OFFERWALL => [
           'offer_list_path' => ['label' => 'Offer List Path', 'hint' => 'JSON path to the array of offers in the response (e.g. "data.offers")'],
-          'mapping'         => ['label' => 'Field Mapping',   'hint' => 'Maps normalized field names to their JSON paths in each offer object'],
-          'fallbacks'       => ['label' => 'Fallbacks',       'hint' => 'Default values used when a field is missing or empty in the offer response'],
+          'mapping' => ['label' => 'Field Mapping', 'hint' => 'Maps normalized field names to their JSON paths in each offer object'],
+          'fallbacks' => ['label' => 'Fallbacks', 'hint' => 'Default values used when a field is missing or empty in the offer response'],
         ],
         default => [],
       };
@@ -97,7 +109,7 @@ class IntegrationEnvironment extends Model
       foreach ($schema as $key => $meta) {
         $fields[$key] = [
           'label' => $meta['label'],
-          'hint'  => $meta['hint'],
+          'hint' => $meta['hint'],
           'value' => $config?->$key ?? null,
         ];
       }
@@ -116,12 +128,14 @@ class IntegrationEnvironment extends Model
    */
   protected function responseConfig(): Attribute
   {
-    return Attribute::get(fn () => match ($this->env_type) {
-      self::ENV_TYPE_OFFERWALL => $this->offerwallResponseConfig,
-      self::ENV_TYPE_PING => $this->pingResponseConfig,
-      self::ENV_TYPE_POST => $this->postResponseConfig,
-      default => null,
-    });
+    return Attribute::get(
+      fn() => match ($this->env_type) {
+        self::ENV_TYPE_OFFERWALL => $this->offerwallResponseConfig,
+        self::ENV_TYPE_PING => $this->pingResponseConfig,
+        self::ENV_TYPE_POST => $this->postResponseConfig,
+        default => null,
+      },
+    );
   }
 
   /**

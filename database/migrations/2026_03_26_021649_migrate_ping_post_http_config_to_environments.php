@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
   public function up(): void
   {
     // 1. Backup (solo PostgreSQL — producción)
@@ -21,21 +20,32 @@ return new class extends Migration
       ->whereNotNull('integration_id')
       ->get([
         'integration_id',
-        'ping_url', 'ping_method', 'ping_headers', 'ping_body', 'ping_response_config',
-        'post_url', 'post_method', 'post_headers', 'post_body', 'post_response_config',
+        'ping_url',
+        'ping_method',
+        'ping_headers',
+        'ping_body',
+        'ping_response_config',
+        'post_url',
+        'post_method',
+        'post_headers',
+        'post_body',
+        'post_response_config',
       ]);
 
     foreach ($configs as $cfg) {
-      foreach ([
-        ['ping', $cfg->ping_url, $cfg->ping_method, $cfg->ping_headers, $cfg->ping_body, $cfg->ping_response_config],
-        ['post', $cfg->post_url, $cfg->post_method, $cfg->post_headers, $cfg->post_body, $cfg->post_response_config],
-      ] as [$envType, $url, $method, $headers, $body, $responseConfig]) {
+      foreach (
+        [
+          ['ping', $cfg->ping_url, $cfg->ping_method, $cfg->ping_headers, $cfg->ping_body, $cfg->ping_response_config],
+          ['post', $cfg->post_url, $cfg->post_method, $cfg->post_headers, $cfg->post_body, $cfg->post_response_config],
+        ]
+        as [$envType, $url, $method, $headers, $body, $responseConfig]
+      ) {
         if ($url) {
           DB::table('integration_environments')
             ->where('integration_id', $cfg->integration_id)
             ->where('env_type', $envType)
             ->where('environment', 'production')
-            ->where(fn ($q) => $q->whereNull('url')->orWhere('url', ''))
+            ->where(fn($q) => $q->whereNull('url')->orWhere('url', ''))
             ->update([
               'url' => $url,
               'method' => $method ?? 'POST',
@@ -60,8 +70,16 @@ return new class extends Migration
     // 3. Drop columnas de buyer_configs
     Schema::table('buyer_configs', function (Blueprint $table) {
       $table->dropColumn([
-        'ping_url', 'ping_method', 'ping_headers', 'ping_body', 'ping_response_config',
-        'post_url', 'post_method', 'post_headers', 'post_body', 'post_response_config',
+        'ping_url',
+        'ping_method',
+        'ping_headers',
+        'ping_body',
+        'ping_response_config',
+        'post_url',
+        'post_method',
+        'post_headers',
+        'post_body',
+        'post_response_config',
       ]);
     });
   }

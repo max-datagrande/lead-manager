@@ -13,12 +13,14 @@ class LandingPageController extends Controller
 {
   public function index()
   {
-    $landingPages = LandingPage::with(['vertical', 'company'])->latest()->get();
+    $landingPages = LandingPage::with(['vertical', 'company'])
+      ->latest()
+      ->get();
 
     return Inertia::render('landings/index', [
       'landingPages' => $landingPages,
-      'verticals'    => Vertical::where('active', true)->get(['id', 'name']),
-      'companies'    => Company::all(['id', 'name']),
+      'verticals' => Vertical::where('active', true)->get(['id', 'name']),
+      'companies' => Company::all(['id', 'name']),
     ]);
   }
 
@@ -34,16 +36,15 @@ class LandingPageController extends Controller
   {
     LandingPage::create($request->validated());
 
-    return redirect()->route('landing_pages.index')
-      ->with('success', 'Landing page created successfully.');
+    return redirect()->route('landing_pages.index')->with('success', 'Landing page created successfully.');
   }
 
   public function edit(LandingPage $landingPage)
   {
     return Inertia::render('landings/edit', [
       'landingPage' => $landingPage,
-      'verticals'   => Vertical::where('active', true)->get(['id', 'name']),
-      'companies'   => Company::all(['id', 'name']),
+      'verticals' => Vertical::where('active', true)->get(['id', 'name']),
+      'companies' => Company::all(['id', 'name']),
     ]);
   }
 
@@ -52,19 +53,16 @@ class LandingPageController extends Controller
     try {
       $data = $request->validated();
       $landingPage->update($data);
-      return redirect()->route('landing_pages.index')
-        ->with('success', 'Landing page updated successfully.');
+      return redirect()->route('landing_pages.index')->with('success', 'Landing page updated successfully.');
     } catch (\Throwable $th) {
       $error = $th->getMessage();
-      return redirect()->back()
-        ->with('error', $error);
+      return redirect()->back()->with('error', $error);
     }
   }
 
   public function destroy(LandingPage $landingPage)
   {
     $landingPage->delete();
-    return redirect()->route('landing_pages.index')
-      ->with('success', 'Landing page deleted successfully.');
+    return redirect()->route('landing_pages.index')->with('success', 'Landing page deleted successfully.');
   }
 }

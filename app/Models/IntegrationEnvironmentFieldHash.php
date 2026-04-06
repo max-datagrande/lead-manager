@@ -27,13 +27,7 @@ class IntegrationEnvironmentFieldHash extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'integration_environment_id',
-    'field_id',
-    'is_hashed',
-    'hash_algorithm',
-    'hmac_secret',
-  ];
+  protected $fillable = ['integration_environment_id', 'field_id', 'is_hashed', 'hash_algorithm', 'hmac_secret'];
 
   protected $casts = [
     'is_hashed' => 'boolean',

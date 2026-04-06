@@ -21,7 +21,7 @@ class Slack
    */
   public function __construct(?string $webhookUrl = null, string $defaultUsername = 'Bot', string $defaultIcon = ':robot_face:')
   {
-    $this->webhookUrl = $webhookUrl ?? env('SLACK_WEBHOOK_URL') ?? null;
+    $this->webhookUrl = $webhookUrl ?? (env('SLACK_WEBHOOK_URL') ?? null);
     $this->defaultUsername = $defaultUsername;
     $this->defaultIcon = $defaultIcon;
   }
@@ -51,9 +51,7 @@ class Slack
 
     $username = $options['username'] ?? $this->defaultUsername;
     $icon = $options['icon'] ?? $this->defaultIcon;
-    $attachments = isset($options['attachments'])
-      ? $this->parseAttachments($options['attachments'])
-      : [];
+    $attachments = isset($options['attachments']) ? $this->parseAttachments($options['attachments']) : [];
 
     $payload = [
       'text' => $message,
@@ -85,9 +83,11 @@ class Slack
     }
     // Lógica global para formatear Fingerprint
     if (!empty($attachments)) {
-      foreach ($attachments as &$attachment) { // Usar referencia para modificar el array original
+      foreach ($attachments as &$attachment) {
+        // Usar referencia para modificar el array original
         if (isset($attachment['fields']) && is_array($attachment['fields'])) {
-          foreach ($attachment['fields'] as &$field) { // Usar referencia
+          foreach ($attachment['fields'] as &$field) {
+            // Usar referencia
             if (isset($field['title']) && $field['title'] === 'Fingerprint' && isset($field['value'])) {
               $field['value'] = '`' . $field['value'] . '`'; // Añadir '>' para blockquote
               $field['short'] = false; // Asegurar ancho completo
@@ -131,13 +131,13 @@ class Slack
   private function sendHtmlMessage(string $htmlContent, array $options = []): bool
   {
     // Extract page title if it exists
-    $title = "HTML Content";
+    $title = 'HTML Content';
     if (preg_match('/<title>(.*?)<\/title>/i', $htmlContent, $matches)) {
       $title = $matches[1];
     }
 
     // Extract error message if it exists
-    $textContent = "Could not extract specific text";
+    $textContent = 'Could not extract specific text';
     if (preg_match('/<body>(.*?)<\/body>/is', $htmlContent, $matches)) {
       $bodyContent = $matches[1];
       // Try to extract meaningful text (first 500 characters)
@@ -181,10 +181,10 @@ class Slack
           [
             'title' => 'Content Type',
             'value' => 'HTML',
-          ]
+          ],
         ],
-        'footer' => 'HTML content detected'
-      ]
+        'footer' => 'HTML content detected',
+      ],
     ];
 
     // Merge with existing attachments if any
@@ -193,9 +193,7 @@ class Slack
     }
 
     $options['attachments'] = $attachments;
-    $message = $this->title
-      ? "*{$this->title}:* HTML content detected"
-      : "HTML content detected";
+    $message = $this->title ? "*{$this->title}:* HTML content detected" : 'HTML content detected';
     return $this->sendMessage($message, $options);
   }
 
@@ -213,10 +211,7 @@ class Slack
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
     curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Content-Type: application/json',
-      'Content-Length: ' . strlen($jsonPayload)
-    ]);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Content-Length: ' . strlen($jsonPayload)]);
 
     $result = curl_exec($ch);
     $error = curl_error($ch);
@@ -253,8 +248,8 @@ class Slack
     foreach ($fields as $key => $value) {
       $attachmentFields[] = [
         'title' => $key,
-        'value' => is_array($value) || is_object($value) ? json_encode($value) : (string)$value,
-        'short' => strlen((string)$value) < 50
+        'value' => is_array($value) || is_object($value) ? json_encode($value) : (string) $value,
+        'short' => strlen((string) $value) < 50,
       ];
     }
 
@@ -265,8 +260,8 @@ class Slack
         'text' => $message,
         'fields' => $attachmentFields,
         'footer' => 'Error detected - ' . date('Y-m-d H:i:s'),
-        'ts' => time()
-      ]
+        'ts' => time(),
+      ],
     ];
 
     // Merge with existing attachments if any
@@ -275,6 +270,6 @@ class Slack
     }
 
     $options['attachments'] = $attachments;
-    return $this->sendMessage("An error has been detected", $options);
+    return $this->sendMessage('An error has been detected', $options);
   }
 }

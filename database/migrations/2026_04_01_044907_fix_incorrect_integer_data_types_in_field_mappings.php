@@ -13,8 +13,7 @@ use Illuminate\Support\Facades\DB;
  *  - homeowner   (field_id=31): values like "own"/"rent", not numeric
  *  - age         (field_id=28): default "18-24" is a range string, not an integer
  */
-return new class extends Migration
-{
+return new class extends Migration {
   public function up(): void
   {
     // user_agent — field_id 32, all integrations

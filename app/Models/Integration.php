@@ -14,16 +14,7 @@ class Integration extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'company_id',
-    'name',
-    'type',
-    'is_active',
-    'payload_transformer',
-    'use_custom_transformer',
-    'user_id',
-    'updated_user_id',
-  ];
+  protected $fillable = ['company_id', 'name', 'type', 'is_active', 'payload_transformer', 'use_custom_transformer', 'user_id', 'updated_user_id'];
 
   /**
    * The attributes that should be cast.

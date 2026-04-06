@@ -15,11 +15,19 @@ class StorePostbackRequest extends FormRequest
   /**
    * @return array<string, mixed>
    */
+  protected function prepareForValidation(): void
+  {
+    if ($this->input('type') === 'internal') {
+      $this->merge(['platform_id' => null]);
+    }
+  }
+
   public function rules(): array
   {
     return [
       'name' => ['required', 'string', 'max:255'],
-      'platform_id' => ['required', 'integer', 'exists:platforms,id'],
+      'type' => ['required', 'string', Rule::in(['external', 'internal'])],
+      'platform_id' => ['required_if:type,external', 'nullable', 'integer', 'exists:platforms,id'],
       'base_url' => ['required', 'url', 'max:2000'],
       'param_mappings' => ['required', 'array'],
       'param_mappings.*' => ['nullable', 'string', 'max:100'],

@@ -75,7 +75,7 @@ class OfferwallController extends Controller
         'current_page' => $conversions->currentPage(),
         'last_page' => $conversions->lastPage(),
       ],
-      'data' => Inertia::defer(fn () => $this->getConversionFilterOptions()),
+      'data' => Inertia::defer(fn() => $this->getConversionFilterOptions()),
       'totalPayout' => $totalPayout,
     ]);
   }
@@ -156,26 +156,19 @@ class OfferwallController extends Controller
    */
   private function getConversionFilterOptions(): array
   {
-    $toOptions = fn ($value) => ['value' => $value, 'label' => $value];
+    $toOptions = fn($value) => ['value' => $value, 'label' => $value];
 
-    $integrations = Integration::select('id', 'name')
-      ->get()
-      ->map(fn ($i) => ['value' => (string) $i->id, 'label' => $i->name]);
+    $integrations = Integration::select('id', 'name')->get()->map(fn($i) => ['value' => (string) $i->id, 'label' => $i->name]);
 
     $companies = Integration::with('company')
       ->where('type', 'offerwall')
       ->whereNotNull('company_id')
       ->get()
       ->unique('company_id')
-      ->map(fn ($i) => ['value' => (string) $i->company_id, 'label' => $i->company->name])
+      ->map(fn($i) => ['value' => (string) $i->company_id, 'label' => $i->company->name])
       ->values();
 
-    $paths = OfferwallConversion::select('pathname')
-      ->distinct()
-      ->whereNotNull('pathname')
-      ->orderBy('pathname')
-      ->pluck('pathname')
-      ->map($toOptions);
+    $paths = OfferwallConversion::select('pathname')->distinct()->whereNotNull('pathname')->orderBy('pathname')->pluck('pathname')->map($toOptions);
 
     // Cache hosts for 10 minutes — this query joins traffic_logs (2.5M rows)
     $hosts = Cache::remember('ow_conversion_hosts', 600, function () use ($toOptions) {

@@ -40,8 +40,7 @@ class SlackNotification extends Notification
   public function toSlack($notifiable): SlackMessage
   {
     $message = new SlackMessage();
-    $message->from('Datagrande-BOT', ':robot_face:')
-      ->to('#top-car-errors');
+    $message->from('Datagrande-BOT', ':robot_face:')->to('#top-car-errors');
 
     // Setear color según nivel
     match ($this->level) {
@@ -54,28 +53,32 @@ class SlackNotification extends Notification
     $message->content(":warning: *$title*");
 
     $message->attachment(function ($attachment) use ($body) {
-      $attachment->title($this->title)
-        ->content($body)->color('#f34235');
+      $attachment->title($this->title)->content($body)->color('#f34235');
     });
-    $message->attachment(function ($attachment) {
-      foreach ($this->fields as $title => $value) {
-        $attachment->field(function ($field) use ($title, $value) {
-          $field->title($title)->content("`$value`")->long();
-        });
-      }
-      // Footer opcional
-      if ($this->footer) {
-        $attachment->footer($this->footer);
-      }
-    })->info();
+    $message
+      ->attachment(function ($attachment) {
+        foreach ($this->fields as $title => $value) {
+          $attachment->field(function ($field) use ($title, $value) {
+            $field
+              ->title($title)
+              ->content("`$value`")
+              ->long();
+          });
+        }
+        // Footer opcional
+        if ($this->footer) {
+          $attachment->footer($this->footer);
+        }
+      })
+      ->info();
 
     return $message;
   }
   public function formatHtml(string $htmlContent): string
   {
     // Extract page title if it exists
-    $title = "HTML Content";
-    $textContent = "Could not extract specific text";
+    $title = 'HTML Content';
+    $textContent = 'Could not extract specific text';
     if (preg_match('/<title>(.*?)<\/title>/i', $htmlContent, $matches)) {
       $title = $matches[1];
       $this->title = $title; // Guardar el título para posteriormente

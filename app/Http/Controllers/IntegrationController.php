@@ -29,15 +29,13 @@ class IntegrationController extends Controller
     [$col, $dir] = get_sort_data($sort);
     $data = $request->all();
     $integrations = $this->integrationService->getIntegrations($data);
-    $entries = $integrations->with('company')
-      ->orderBy($col, $dir)
-      ->get();
+    $entries = $integrations->with('company')->orderBy($col, $dir)->get();
     return Inertia::render('integrations/index', [
       'rows' => $entries,
       'state' => [
         'sort' => $sort,
-        'filters' => []
-      ]
+        'filters' => [],
+      ],
     ]);
   }
 
@@ -60,10 +58,10 @@ class IntegrationController extends Controller
     try {
       $data = $request->all();
       $this->integrationService->createIntegration($data);
-      add_flash_message(type: "success", message: "Integration created successfully.");
+      add_flash_message(type: 'success', message: 'Integration created successfully.');
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      add_flash_message(type: "error", message: $e->getMessage());
+      add_flash_message(type: 'error', message: $e->getMessage());
       return back();
     }
   }
@@ -101,10 +99,10 @@ class IntegrationController extends Controller
     try {
       $data = $request->all();
       $this->integrationService->updateIntegration($integration, $data);
-      add_flash_message(type: "success", message: "Integration updated successfully.");
+      add_flash_message(type: 'success', message: 'Integration updated successfully.');
       return back();
     } catch (IntegrationServiceException $e) {
-      add_flash_message(type: "error", message: $e->getMessage());
+      add_flash_message(type: 'error', message: $e->getMessage());
       return back();
     }
   }
@@ -116,10 +114,10 @@ class IntegrationController extends Controller
   {
     try {
       $this->integrationService->deleteIntegration($integration);
-      add_flash_message(type: "success", message: "Integration deleted successfully.");
+      add_flash_message(type: 'success', message: 'Integration deleted successfully.');
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      add_flash_message(type: "error", message: $e->getMessage());
+      add_flash_message(type: 'error', message: $e->getMessage());
       return back();
     }
   }
@@ -132,10 +130,10 @@ class IntegrationController extends Controller
     try {
       $newName = $request->input('name');
       $this->integrationService->duplicateIntegration($integration, $newName);
-      add_flash_message(type: "success", message: "Integration duplicated successfully.");
+      add_flash_message(type: 'success', message: 'Integration duplicated successfully.');
       return redirect()->route('integrations.index');
     } catch (IntegrationServiceException $e) {
-      add_flash_message(type: "error", message: $e->getMessage());
+      add_flash_message(type: 'error', message: $e->getMessage());
       return back();
     }
   }
@@ -155,34 +153,27 @@ class IntegrationController extends Controller
     }
   }
 
-
-
   /**
    * Handle unexpected exceptions with detailed logging and response
    */
-  private function handleUnexpectedException(
-    \Throwable $e,
-    Integration $integration,
-    IntegrationEnvironment $environment
-  ) {
-    TailLogger::saveLog(
-      'Unexpected error testing integration',
-      'integrations/services',
-      'errors',
-      [
-        'integration_id' => $integration->id,
-        'environment_id' => $environment->id,
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-        'trace' => $e->getTraceAsString()
-      ]
-    );
-
-    return response()->json([
-      'error' => 'Unexpected error when testing integration: ' . $e->getMessage(),
+  private function handleUnexpectedException(\Throwable $e, Integration $integration, IntegrationEnvironment $environment)
+  {
+    TailLogger::saveLog('Unexpected error testing integration', 'integrations/services', 'errors', [
+      'integration_id' => $integration->id,
+      'environment_id' => $environment->id,
+      'error' => $e->getMessage(),
       'file' => $e->getFile(),
       'line' => $e->getLine(),
-    ], 500);
+      'trace' => $e->getTraceAsString(),
+    ]);
+
+    return response()->json(
+      [
+        'error' => 'Unexpected error when testing integration: ' . $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ],
+      500,
+    );
   }
 }

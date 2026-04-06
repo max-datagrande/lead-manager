@@ -28,20 +28,20 @@ class VisitorController extends Controller
       searchableColumns: $config['searchableColumns'],
       filterConfig: $config['filterConfig'],
       allowedSort: $config['allowedSort'],
-      defaultSort: 'created_at:desc'
+      defaultSort: 'created_at:desc',
     );
 
     // Datos adicionales para filtros
     $data = [
       'hosts' => $this->visitorService->getExistingHosts(),
-      'states' => $this->visitorService->getExistingStates()
+      'states' => $this->visitorService->getExistingStates(),
     ];
 
     return Inertia::render('visitors/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],
       'state' => $result['state'],
-      'data' => $data
+      'data' => $data,
     ]);
   }
 

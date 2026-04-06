@@ -47,12 +47,16 @@ Route::prefix('offerwall')
     // Receives callback events when conversions fire from offerwall networks.
     Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])->name('events.conversion');
     // Triggers a Mix workflow defined for a specific offerwall integration.
-    Route::post('/mix/{offerwallMix}', [OfferwallMixController::class, 'trigger'])->whereNumber('offerwallMix')->name('mix.trigger');
+    Route::post('/mix/{offerwallMix}', [OfferwallMixController::class, 'trigger'])
+      ->whereNumber('offerwallMix')
+      ->name('mix.trigger');
   });
 
 // Share Leads — dispatch endpoint (host authenticated)
 Route::middleware(['auth.host'])->group(function () {
-  Route::post('share-leads/dispatch/{workflow}', [DispatchController::class, 'dispatch'])->whereNumber('workflow')->name('api.share-leads.dispatch');
+  Route::post('share-leads/dispatch/{workflow}', [DispatchController::class, 'dispatch'])
+    ->whereNumber('workflow')
+    ->name('api.share-leads.dispatch');
 });
 
 // Other file routes

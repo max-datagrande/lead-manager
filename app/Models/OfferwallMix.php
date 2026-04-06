@@ -12,12 +12,7 @@ class OfferwallMix extends Model
 {
   use HasFactory;
 
-  protected $fillable = [
-    'name',
-    'description',
-    'user_id',
-    'is_active',
-  ];
+  protected $fillable = ['name', 'description', 'user_id', 'is_active'];
 
   protected $casts = [
     'is_active' => 'boolean',
@@ -26,7 +21,7 @@ class OfferwallMix extends Model
   protected static function booted(): void
   {
     static::creating(function (OfferwallMix $mix) {
-      $mix->user_id         = Auth::id();
+      $mix->user_id = Auth::id();
       /* $mix->updated_user_id = Auth::id(); */
     });
 
@@ -48,7 +43,6 @@ class OfferwallMix extends Model
    */
   public function integrations(): BelongsToMany
   {
-    return $this->belongsToMany(Integration::class, 'offerwall_mix_integrations')
-      ->withTimestamps();
+    return $this->belongsToMany(Integration::class, 'offerwall_mix_integrations')->withTimestamps();
   }
 }

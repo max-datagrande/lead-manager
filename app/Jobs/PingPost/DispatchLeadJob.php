@@ -15,11 +15,7 @@ class DispatchLeadJob implements ShouldQueue
 
   public int $tries = 1;
 
-  public function __construct(
-    public readonly int $workflowId,
-    public readonly int $leadId,
-    public readonly string $fingerprint,
-  ) {}
+  public function __construct(public readonly int $workflowId, public readonly int $leadId, public readonly string $fingerprint) {}
 
   public function handle(DispatchOrchestrator $orchestrator): void
   {

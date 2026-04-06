@@ -9,15 +9,15 @@ use Illuminate\Queue\SerializesModels;
 
 class PostbackProcessed
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+  use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public PostbackQueue $postback;
+  public PostbackQueue $postback;
 
-    /**
-     * Create a new event instance.
-     */
-    public function __construct(PostbackQueue $postback)
-    {
-        $this->postback = $postback;
-    }
+  /**
+   * Create a new event instance.
+   */
+  public function __construct(PostbackQueue $postback)
+  {
+    $this->postback = $postback;
+  }
 }

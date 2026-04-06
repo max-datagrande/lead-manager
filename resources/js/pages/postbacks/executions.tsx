@@ -41,6 +41,7 @@ interface IndexProps {
   }
   data: {
     statusOptions: Array<{ value: string; label: string }>
+    sourceOptions: Array<{ value: string; label: string }>
     fireModeOptions: Array<{ value: string; label: string }>
     postbacks: Array<{ id: number; name: string }>
   }
@@ -78,6 +79,11 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
                 columnId: 'status',
                 title: 'Status',
                 options: data.statusOptions,
+              },
+              {
+                columnId: 'source_filter',
+                title: 'Source',
+                options: data.sourceOptions,
               },
               {
                 columnId: 'fire_mode',

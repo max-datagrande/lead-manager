@@ -4,7 +4,8 @@ use phpDocumentor\Reflection\Types\Boolean;
 
 if (!function_exists('get_error_stack')) {
   function get_error_stack(Exception $e, bool $isDev = false): array
-  {//obtener pila de errores
+  {
+    //obtener pila de errores
     $errors = [];
     $current = $e;
     while ($current) {

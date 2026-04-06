@@ -51,20 +51,26 @@ export default function ModalDetails({ postback }) {
           </div>
         )}
 
-        <Card className="mt-10 bg-muted">
-          <CardHeader className="py-4 text-muted-foreground">
-            <CardTitle className="block text-center text-xl">Generated URL</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-2 flex gap-2">
-              <Input readOnly value={postback.generated_url} className="font-mono" onClick={(e) => e.target.select()} />
-              <Button type="button" size="icon" onClick={copyUrl} disabled={isCopied}>
-                {isCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-            <p className="text-center text-sm text-muted-foreground">Share this URL with your platform to receive postback notifications.</p>
-          </CardContent>
-        </Card>
+        {postback.generated_url && (
+          <Card className="mt-10 bg-muted">
+            <CardHeader className="py-4 text-muted-foreground">
+              <CardTitle className="block text-center text-xl">Generated URL</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-2 flex gap-2">
+                <Input readOnly value={postback.generated_url} className="font-mono" onClick={(e) => e.target.select()} />
+                <Button type="button" size="icon" onClick={copyUrl} disabled={isCopied}>
+                  {isCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-center text-sm text-muted-foreground">
+                {postback.type === 'internal'
+                  ? 'Append field names as query params to update their values for the lead identified by the fingerprint.'
+                  : 'Share this URL with your platform to receive postback notifications.'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end pt-2">
           <Button variant="outline" onClick={() => modal.resolve(modalId, false)}>

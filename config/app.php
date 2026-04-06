@@ -124,7 +124,7 @@ return [
 
   'vps' => [
     'admin' => [
-      'id'           => env('HOSTINGER_VPS_ADMIN_ID', '652988'),
+      'id' => env('HOSTINGER_VPS_ADMIN_ID', '652988'),
       'bearer_token' => env('HOSTINGER_VPS_ADMIN_BEARER_TOKEN'),
     ],
   ],

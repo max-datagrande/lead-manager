@@ -61,9 +61,7 @@ class AuthHost
     }
 
     $parts = explode('.', $targetHost);
-    $rootDomain = count($parts) > 2
-        ? implode('.', array_slice($parts, -2))
-        : $targetHost;
+    $rootDomain = count($parts) > 2 ? implode('.', array_slice($parts, -2)) : $targetHost;
     // Validar el host usando ambos métodos
 
     if (!$this->hostValidationService->validateFromJson($rootDomain)) {
@@ -72,7 +70,7 @@ class AuthHost
         'target_host' => $targetHost,
         'origin' => $origin,
         'ip' => $request->ip(),
-        'url' => $request->fullUrl()
+        'url' => $request->fullUrl(),
       ]);
       return response()->json(['message' => 'Forbidden'], 403);
     }

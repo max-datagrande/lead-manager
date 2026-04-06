@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\MaxconvController;
 use App\Http\Controllers\Api\PingPost\PostbackWebhookController;
 use App\Http\Controllers\Api\PostbackController;
+use App\Http\Controllers\Api\InternalPostbackFireController;
 use App\Http\Controllers\Api\PostbackFireController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,12 @@ Route::prefix('postback')->group(function () {
     ->where('uuid', '[0-9a-f-]{36}')
     ->middleware('throttle:60,1');
 
+  // Internal postback fire endpoint (recibe fingerprint + params, guarda en lead y dispara)
+  Route::get('/fire/{uuid}/{fingerprint}', [InternalPostbackFireController::class, 'fire'])
+    ->name('api.postback.fire-internal')
+    ->where('uuid', '[0-9a-f-]{36}')
+    ->middleware('throttle:60,1');
+
   // Consultar estado de una ejecución
   Route::get('/execution/{executionUuid}', [PostbackFireController::class, 'executionStatus'])
     ->name('api.postback.execution-status')
@@ -35,7 +42,9 @@ Route::prefix('postback')->group(function () {
 });
 
 // Ping-Post postback webhook (no auth — external buyer callback)
-Route::post('ping-post/postback/{dispatch}/{integration}', [PostbackWebhookController::class, 'receive'])->whereNumber(['dispatch', 'integration'])->name('api.ping-post.postback');
+Route::post('ping-post/postback/{dispatch}/{integration}', [PostbackWebhookController::class, 'receive'])
+  ->whereNumber(['dispatch', 'integration'])
+  ->name('api.ping-post.postback');
 
 // Rutas para Maxconv Service
 Route::prefix('maxconv')->group(function () {
@@ -43,7 +52,9 @@ Route::prefix('maxconv')->group(function () {
   Route::get('/offers', [MaxconvController::class, 'getOffers'])->name('api.maxconv.offers');
 
   // Obtener una oferta específica
-  Route::get('/offers/{offerId}', [MaxconvController::class, 'getOffer'])->whereNumber('offerId')->name('api.maxconv.offer');
+  Route::get('/offers/{offerId}', [MaxconvController::class, 'getOffer'])
+    ->whereNumber('offerId')
+    ->name('api.maxconv.offer');
 
   // Construir URL de oferta con placeholders
   Route::post('/build-offer-url', [MaxconvController::class, 'buildOfferUrl'])->name('api.maxconv.build-offer-url');
@@ -52,5 +63,7 @@ Route::prefix('maxconv')->group(function () {
   Route::post('/validate-placeholders', [MaxconvController::class, 'validatePlaceholders'])->name('api.maxconv.validate-placeholders');
 
   // Preview de datos de postback
-  Route::get('/postback/{postbackId}/preview', [MaxconvController::class, 'previewPostbackData'])->whereNumber('postbackId')->name('api.maxconv.postback-preview');
+  Route::get('/postback/{postbackId}/preview', [MaxconvController::class, 'previewPostbackData'])
+    ->whereNumber('postbackId')
+    ->name('api.maxconv.postback-preview');
 });

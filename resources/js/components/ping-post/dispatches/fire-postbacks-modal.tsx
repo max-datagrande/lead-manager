@@ -1,0 +1,111 @@
+import { Button } from '@/components/ui/button';
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCurrentModalId, useModal } from '@/hooks/use-modal';
+import type { InternalPostbackSummary } from '@/types/ping-post';
+import axios from 'axios';
+import { CheckCircle2, Loader2, XCircle, Zap } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { route } from 'ziggy-js';
+
+type ModalState = 'confirm' | 'firing' | 'success' | 'error';
+
+interface Props {
+  dispatchId: number;
+  postbacks: InternalPostbackSummary[];
+}
+
+export function FirePostbacksModal({ dispatchId, postbacks }: Props) {
+  const modalId = useCurrentModalId();
+  const modal = useModal();
+  const [state, setState] = useState<ModalState>('confirm');
+  const [message, setMessage] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const lockHeight = useCallback(() => {
+    if (contentRef.current) {
+      const h = contentRef.current.offsetHeight;
+      contentRef.current.style.minHeight = `${h}px`;
+      contentRef.current.style.maxHeight = `${h}px`;
+    }
+  }, []);
+
+  const handleFire = async () => {
+    lockHeight();
+    setState('firing');
+    try {
+      const { data } = await axios.post(route('postbacks.associations.fire-for-dispatch'), {
+        dispatch_id: dispatchId,
+      });
+      setMessage(data.message);
+      setState('success');
+    } catch (err: any) {
+      setMessage(err.response?.data?.message ?? 'An unexpected error occurred.');
+      setState('error');
+    }
+  };
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Fire Internal Postbacks</DialogTitle>
+        <DialogDescription>
+          {state === 'confirm' && 'The following postbacks will be fired for this dispatch.'}
+          {state === 'firing' && 'Firing postbacks...'}
+          {state === 'success' && 'Postbacks fired successfully.'}
+          {state === 'error' && 'Something went wrong.'}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div ref={contentRef} className="flex items-center justify-center overflow-hidden">
+        {state === 'confirm' && (
+          <div className="w-full space-y-1.5">
+            {postbacks.map((p) => (
+              <div key={p.id} className="flex items-center gap-2.5 rounded-md border px-3 py-2">
+                <Zap className="h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{p.name}</p>
+                  <p className="truncate font-mono text-xs text-muted-foreground">{p.base_url}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {state === 'firing' && <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />}
+
+        {state === 'success' && (
+          <div className="flex flex-col items-center gap-2">
+            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            <p className="text-sm text-muted-foreground">{message}</p>
+          </div>
+        )}
+
+        {state === 'error' && (
+          <div className="flex flex-col items-center gap-2">
+            <XCircle className="h-10 w-10 text-destructive" />
+            <p className="text-sm text-muted-foreground">{message}</p>
+          </div>
+        )}
+      </div>
+
+      <DialogFooter>
+        {state === 'confirm' && (
+          <>
+            <Button variant="outline" onClick={() => modal.resolve(modalId, false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleFire}>
+              <Zap className="mr-1.5 h-4 w-4" />
+              Fire {postbacks.length} postback{postbacks.length !== 1 ? 's' : ''}
+            </Button>
+          </>
+        )}
+        {(state === 'success' || state === 'error') && (
+          <Button variant="outline" onClick={() => modal.resolve(modalId, state === 'success')}>
+            Close
+          </Button>
+        )}
+      </DialogFooter>
+    </>
+  );
+}

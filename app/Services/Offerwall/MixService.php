@@ -37,7 +37,8 @@ class MixService
       ];
     }
 
-    $integrations = $mix->integrations()
+    $integrations = $mix
+      ->integrations()
       ->where('is_active', true)
       ->with(['tokenMappings.field', 'environments.fieldHashes'])
       ->get();
@@ -68,11 +69,11 @@ class MixService
           if (!$prodEnv) {
             continue;
           }
-          $processor    = new \App\Services\PayloadProcessorService;
+          $processor = new \App\Services\PayloadProcessorService();
           $replacements = $processor->buildReplacements($integration, $prodEnv, $leadData);
 
           $payloadString = $processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements);
-          $payload       = json_decode($payloadString, true) ?? [];
+          $payload = json_decode($payloadString, true) ?? [];
 
           TailLogger::saveLog('MixService payload after json_decode', 'debug/payload-processor', 'info', [
             'integration' => $integration->name,
@@ -83,8 +84,8 @@ class MixService
           $payload = $processor->applyTwigTransformer($integration, $payload);
 
           $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
-          $method  = strtolower($prodEnv->method ?? 'post');
-          $url     = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
+          $method = strtolower($prodEnv->method ?? 'post');
+          $url = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
 
           $requestsData[$integration->id] = [
             'integration' => $integration,
@@ -116,14 +117,7 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall(
-            $mixLog,
-            $integration,
-            $response,
-            $requestData['method'],
-            $requestData['headers'],
-            $requestData['payload'],
-          );
+          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
 
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
@@ -164,7 +158,7 @@ class MixService
         $totalOffers = count($aggregatedOffers);
 
         // Si hay más de 5 ofertas, exigir mínimo 1 centavo.
-        $minimumCpc = $totalOffers > 5 ? 0.01 : 0.00;
+        $minimumCpc = $totalOffers > 5 ? 0.01 : 0.0;
 
         $filteredOffers = array_filter($aggregatedOffers, function ($offer) use ($minimumCpc) {
           $cpc = (float) ($offer['cpc'] ?? 0);
@@ -194,9 +188,15 @@ class MixService
 
       return $result;
     } catch (Throwable $e) {
-      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
-      $slack = new SlackMessageBundler;
-      $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
+      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', [
+        'error' => $e->getMessage(),
+        'fingerprint' => $fingerprint,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ]);
+      $slack = new SlackMessageBundler();
+      $slack
+        ->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
         ->addDivider()
         ->addKeyValue('Fingerprint', $fingerprint, true, '🆔');
@@ -205,8 +205,7 @@ class MixService
         $slack->addKeyValue('Mix Log ID', $mixLog->id, false, '📋');
       }
 
-      $slack->addKeyValue('Error Message', $e->getMessage(), true, '📄')
-        ->addButton('View Admin', route('home'), 'primary');
+      $slack->addKeyValue('Error Message', $e->getMessage(), true, '📄')->addButton('View Admin', route('home'), 'primary');
 
       // Registrar en logs en modo debug, no enviar a Slack
       if (app()->environment('local')) {
@@ -229,16 +228,10 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function logIntegrationCall(
-    OfferwallMixLog $mixLog,
-    $integration,
-    $response,
-    string $method,
-    array $headers,
-    array $payload,
-  ): void {
+  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, array $payload): void
+  {
     $isResponse = $response instanceof Response;
-    $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
+    $duration = $isResponse && $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
 
     $status = 'failed';
     $statusCode = 500;
@@ -306,7 +299,7 @@ class MixService
       }
 
       // Orden descendente (mayor a menor)
-      return ($cpcA > $cpcB) ? -1 : 1;
+      return $cpcA > $cpcB ? -1 : 1;
     });
 
     // Asignar posición

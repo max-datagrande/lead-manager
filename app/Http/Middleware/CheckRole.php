@@ -17,7 +17,7 @@ class CheckRole
   public function handle(Request $request, Closure $next, ...$roles): Response
   {
     // Check if user is logged in and has one of the required roles
-    if (! $request->user() || ! in_array($request->user()->role, $roles)) {
+    if (!$request->user() || !in_array($request->user()->role, $roles)) {
       // This will render resources/views/errors/403.blade.php
       abort(403, 'Unauthorized action.');
     }

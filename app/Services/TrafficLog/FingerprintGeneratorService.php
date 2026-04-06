@@ -22,18 +22,19 @@ class FingerprintGeneratorService
    */
   public function generate(string $userAgent, string $ipAddress, string $originHost): string
   {
-    $isPostman = str_contains(request()->header('user_agent'), 'PostmanRuntime');
+    $isPostman = str_contains(request()->userAgent() ?? '', 'PostmanRuntime');
     if (empty($originHost) && !$isPostman) {
       throw new \Exception('Origin host is empty or not valid');
-    } else if ($isPostman) {
+    } elseif ($isPostman) {
       $originHost = 'postman';
     }
     // Normalizar datos para consistencia
+    $normalizedUA = $this->normalizeUserAgent($userAgent);
+    $normalizedIP = $this->normalizeIpAddress($ipAddress);
     $normalizedHost = $this->normalizeHost($originHost);
-    //Current now
     $now = now()->format('Y-m-d');
     // Crear string base para el hash
-    $baseString = implode('|', [$userAgent, $ipAddress, $normalizedHost, $now]);
+    $baseString = implode('|', [$normalizedUA, $normalizedIP, $normalizedHost, $now]);
     // Generar hash SHA-256
     return hash('sha256', $baseString);
   }
