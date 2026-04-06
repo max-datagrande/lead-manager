@@ -31,13 +31,7 @@ class FireInternalPostbacksListener
 
       $resolvedTokens = $this->tokenResolver->resolveFromFingerprint($dispatch->fingerprint);
 
-      $winnerIntegration = $dispatch->winnerIntegration;
-
-      $saleParams = [
-        'lead_price' => (string) $dispatch->final_price,
-        'event_name' => 'sale',
-        'buyer_name' => $winnerIntegration?->name ?? '',
-      ];
+      $saleParams = $this->tokenResolver->buildSaleParams($dispatch);
 
       $params = array_merge($resolvedTokens, $saleParams);
 

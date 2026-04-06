@@ -4,11 +4,24 @@ namespace App\Services;
 
 use App\Models\Field;
 use App\Models\Lead;
+use App\Models\LeadDispatch;
 use App\Models\TrafficLog;
 use Illuminate\Support\Facades\Cache;
 
 class InternalTokenResolverService
 {
+  /**
+   * Tokens inyectados automaticamente en el flujo de venta (LeadSold event).
+   * Estos valores no vienen del lead ni del traffic, sino del dispatch.
+   *
+   * @var array<string, string>  name => label
+   */
+  public const SALE_TOKENS = [
+    'lead_price' => 'Lead Price',
+    'event_name' => 'Event Name',
+    'buyer_name' => 'Buyer Name',
+  ];
+
   /**
    * Columnas de TrafficLog expuestas como tokens internos.
    *
@@ -56,28 +69,45 @@ class InternalTokenResolverService
       $fields = Field::query()
         ->orderBy('name')
         ->get(['id', 'name', 'label'])
-        ->map(fn(Field $f) => [
-          'id' => $f->id,
-          'name' => $f->name,
-          'label' => $f->label ?? $f->name,
-          'group' => 'Lead Fields',
-        ])
+        ->map(
+          fn(Field $f) => [
+            'id' => $f->id,
+            'name' => $f->name,
+            'label' => $f->label ?? $f->name,
+            'group' => 'Lead Fields',
+          ],
+        )
         ->values()
         ->all();
 
       $traffic = collect(self::TRAFFIC_LOG_TOKENS)
-        ->map(fn(string $col, int $i) => [
-          'id' => 10000 + $i,
-          'name' => "traffic.{$col}",
-          'label' => str_replace('_', ' ', ucfirst($col)),
-          'group' => 'Traffic Log',
-        ])
+        ->map(
+          fn(string $col, int $i) => [
+            'id' => 10000 + $i,
+            'name' => "traffic.{$col}",
+            'label' => str_replace('_', ' ', ucfirst($col)),
+            'group' => 'Traffic Log',
+          ],
+        )
+        ->values()
+        ->all();
+
+      $sale = collect(self::SALE_TOKENS)
+        ->map(
+          fn(string $label, string $name) => [
+            'id' => 20000 + crc32($name),
+            'name' => $name,
+            'label' => $label,
+            'group' => 'Sale Data',
+          ],
+        )
         ->values()
         ->all();
 
       return [
         'fields' => $fields,
         'traffic' => $traffic,
+        'sale' => $sale,
       ];
     });
   }
@@ -91,7 +121,24 @@ class InternalTokenResolverService
   {
     $tokens = $this->getAvailableTokens();
 
-    return array_merge($tokens['fields'], $tokens['traffic']);
+    return array_merge($tokens['fields'], $tokens['traffic'], $tokens['sale']);
+  }
+
+  /**
+   * Construye los params de venta desde un LeadDispatch.
+   * Los keys corresponden a SALE_TOKENS.
+   *
+   * @return array<string, string>
+   */
+  public function buildSaleParams(LeadDispatch $dispatch): array
+  {
+    [$price, $event, $buyer] = array_keys(self::SALE_TOKENS);
+
+    return [
+      $price => (string) $dispatch->final_price,
+      $event => 'sale',
+      $buyer => $dispatch->winnerIntegration?->name ?? '',
+    ];
   }
 
   /**
@@ -113,10 +160,7 @@ class InternalTokenResolverService
       }
     }
 
-    $trafficLog = TrafficLog::query()
-      ->where('fingerprint', $fingerprint)
-      ->latest()
-      ->first();
+    $trafficLog = TrafficLog::query()->where('fingerprint', $fingerprint)->latest()->first();
 
     if ($trafficLog) {
       foreach (self::TRAFFIC_LOG_TOKENS as $col) {
