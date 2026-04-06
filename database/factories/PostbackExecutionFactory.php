@@ -98,6 +98,11 @@ class PostbackExecutionFactory extends Factory
     return $this->state(['source' => PostbackSource::PING_POST]);
   }
 
+  public function fromWorkflow(): static
+  {
+    return $this->state(['source' => PostbackSource::WORKFLOW]);
+  }
+
   public function manual(): static
   {
     return $this->state(['source' => PostbackSource::MANUAL]);

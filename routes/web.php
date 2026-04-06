@@ -16,6 +16,7 @@ use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\InternalPostbackController;
+use App\Http\Controllers\PostbackAssociationController;
 use App\Http\Controllers\PostbackController;
 use App\Http\Controllers\PostbackExecutionsController;
 use App\Http\Controllers\PostbackQueueController;
@@ -55,12 +56,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
           Route::get('/{postback}/fire', [InternalPostbackController::class, 'fireForm'])
             ->whereNumber('postback')
             ->name('fire-form');
-          Route::post('/resolve-tokens', [InternalPostbackController::class, 'resolveTokens'])
-            ->name('resolve-tokens');
+          Route::post('/resolve-tokens', [InternalPostbackController::class, 'resolveTokens'])->name('resolve-tokens');
           Route::post('/{postback}/fire', [InternalPostbackController::class, 'fire'])
             ->whereNumber('postback')
             ->name('fire');
         });
+      // Associations (agnostic: workflow ↔ postback, etc.)
+      Route::post('/associations', [PostbackAssociationController::class, 'store'])->name('associations.store');
+      Route::delete('/associations/{source}/{sourceId}/{postbackId}', [PostbackAssociationController::class, 'destroy'])
+        ->whereNumber(['sourceId', 'postbackId'])
+        ->name('associations.destroy');
       // Executions (new fire system)
       Route::prefix('executions')
         ->name('executions.')
