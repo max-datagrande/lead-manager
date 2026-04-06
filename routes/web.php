@@ -66,6 +66,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::delete('/associations/{source}/{sourceId}/{postbackId}', [PostbackAssociationController::class, 'destroy'])
         ->whereNumber(['sourceId', 'postbackId'])
         ->name('associations.destroy');
+      Route::post('/associations/fire-for-dispatch', [PostbackAssociationController::class, 'fireForDispatch'])->name(
+        'associations.fire-for-dispatch',
+      );
       // Executions (new fire system)
       Route::prefix('executions')
         ->name('executions.')
