@@ -1,15 +1,14 @@
-import { indexBreadcrumbs } from '@/components/ping-post/dispatches/breadcrumbs'
-import { dispatchColumns } from '@/components/ping-post/dispatches/list-columns'
-import { StatusBadge } from '@/components/ping-post/status-badge'
-import PageHeader from '@/components/page-header'
-import { DataTableContent } from '@/components/data-table/table-content'
-import { DataTableHeader } from '@/components/data-table/table-header'
-import { DataTablePagination } from '@/components/data-table/table-pagination'
-import { DataTableToolbar } from '@/components/data-table/toolbar'
-import { Table, TableBody } from '@/components/ui/table'
-import AppLayout from '@/layouts/app-layout'
-import type { LeadDispatch } from '@/types/ping-post'
-import { Head } from '@inertiajs/react'
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTableHeader } from '@/components/data-table/table-header';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { DataTableToolbar } from '@/components/data-table/toolbar';
+import PageHeader from '@/components/page-header';
+import { indexBreadcrumbs } from '@/components/ping-post/dispatches/breadcrumbs';
+import { dispatchColumns } from '@/components/ping-post/dispatches/list-columns';
+import { Table, TableBody } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import type { LeadDispatch } from '@/types/ping-post';
+import { Head } from '@inertiajs/react';
 import {
   getCoreRowModel,
   getFacetedRowModel,
@@ -18,8 +17,8 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useState } from 'react'
+} from '@tanstack/react-table';
+import { useState } from 'react';
 
 const toolbarConfig = {
   dateRange: { column: 'created_at', label: 'Created At' },
@@ -45,17 +44,27 @@ const toolbarConfig = {
       ],
     },
   ],
+};
+
+interface WorkflowPostback {
+  id: number;
+  uuid: string;
+  name: string;
+  base_url: string;
 }
 
 interface Props {
-  dispatches: { data: LeadDispatch[] }
+  dispatches: { data: LeadDispatch[] };
+  dispatches_with_executions: string[];
+  workflow_postbacks: Record<number, WorkflowPostback[]>;
 }
 
-const DispatchesIndex = ({ dispatches }: Props) => {
-  const [sorting, setSorting] = useState([{ id: 'created_at', desc: true }])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 50 })
-  const [columnFilters, setColumnFilters] = useState<any[]>([])
+const DispatchesIndex = ({ dispatches, dispatches_with_executions, workflow_postbacks }: Props) => {
+  const [sorting, setSorting] = useState([{ id: 'created_at', desc: true }]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 50 });
+  const [columnFilters, setColumnFilters] = useState<any[]>([]);
+  const [firedDispatches, setFiredDispatches] = useState<string[]>(dispatches_with_executions);
 
   const table = useReactTable({
     data: dispatches.data,
@@ -72,7 +81,12 @@ const DispatchesIndex = ({ dispatches }: Props) => {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: 'includesString',
-  })
+    meta: {
+      workflowPostbacks: workflow_postbacks,
+      firedDispatches,
+      markAsFired: (uuid: string) => setFiredDispatches((prev) => [...prev, uuid]),
+    },
+  });
 
   return (
     <>
@@ -91,8 +105,8 @@ const DispatchesIndex = ({ dispatches }: Props) => {
         </div>
       </div>
     </>
-  )
-}
+  );
+};
 
-DispatchesIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />
-export default DispatchesIndex
+DispatchesIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />;
+export default DispatchesIndex;
