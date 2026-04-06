@@ -87,9 +87,18 @@ export interface Workflow {
   advance_on_error: boolean;
   workflow_buyers?: WorkflowBuyer[];
   workflow_buyers_count?: number;
+  postbacks?: InternalPostbackSummary[];
   user?: { id: number; name: string };
   created_at: string;
   updated_at: string;
+}
+
+export interface InternalPostbackSummary {
+  id: number;
+  uuid: string;
+  name: string;
+  base_url: string;
+  is_active: boolean;
 }
 
 export interface Lead {
