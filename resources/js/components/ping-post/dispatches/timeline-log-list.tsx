@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import type { DispatchTimelineLog } from '@/types/ping-post'
 import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { ResultDetailButton } from './result-detail-modal'
 import { getDotColor, TimelineEventBadge } from './timeline-event-badge'
 
 function formatRelativeMs(ms: number): string {
@@ -23,6 +24,8 @@ interface EntryProps {
 function TimelineLogEntry({ log, relativeMs }: EntryProps) {
   const [expanded, setExpanded] = useState(false)
   const hasContext = log.context !== null && Object.keys(log.context).length > 0
+  const pingResultId = log.context?.ping_result_id as number | undefined
+  const postResultId = log.context?.post_result_id as number | undefined
 
   return (
     <div className="relative pb-6 pl-8 last:pb-0">
@@ -40,6 +43,10 @@ function TimelineLogEntry({ log, relativeMs }: EntryProps) {
 
         {/* Message */}
         <span className="flex-1 text-sm">{log.message}</span>
+
+        {/* Result detail buttons */}
+        {pingResultId && <ResultDetailButton type="ping" resultId={pingResultId} />}
+        {postResultId && <ResultDetailButton type="post" resultId={postResultId} />}
 
         {/* Context expand toggle */}
         {hasContext && (
