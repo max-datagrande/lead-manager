@@ -65,4 +65,18 @@ class LeadDispatchLogController extends Controller
       'fields' => Field::all(['id', 'name', 'label']),
     ]);
   }
+
+  public function timeline(LeadDispatch $dispatch): Response
+  {
+    $dispatch->load(['workflow', 'winnerIntegration']);
+
+    $timelineLogs = $dispatch->timelineLogs()
+      ->orderBy('logged_at')
+      ->get();
+
+    return Inertia::render('ping-post/dispatches/timeline', [
+      'dispatch' => $dispatch,
+      'timelineLogs' => $timelineLogs,
+    ]);
+  }
 }

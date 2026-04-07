@@ -179,6 +179,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::resource('dispatches', LeadDispatchLogController::class)
         ->only(['index', 'show'])
         ->whereNumber('dispatch');
+      Route::get('dispatches/{dispatch}/timeline', [LeadDispatchLogController::class, 'timeline'])
+        ->whereNumber('dispatch')
+        ->name('dispatches.timeline');
     });
 });
 
