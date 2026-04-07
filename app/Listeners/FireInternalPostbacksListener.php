@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Enums\PostbackSource;
 use App\Events\LeadSold;
 use App\Services\InternalTokenResolverService;
+use App\Services\PingPost\DispatchTimelineService;
 use App\Services\PostbackFireService;
 use App\Support\SlackMessageBundler;
 use Maxidev\Logger\TailLogger;
@@ -16,9 +17,13 @@ class FireInternalPostbacksListener
 
   public function handle(LeadSold $event): void
   {
+    $timeline = app(DispatchTimelineService::class);
+
     try {
       $dispatch = $event->dispatch;
       $workflow = $dispatch->workflow;
+
+      $timeline->bind($dispatch->fingerprint, $dispatch->id);
 
       TailLogger::saveLog('LeadSold event received', 'postback/internal', 'info', [
         'dispatch_id' => $dispatch->id,
@@ -73,11 +78,19 @@ class FireInternalPostbacksListener
             'execution_id' => $execution->id,
             'status' => $execution->status->value ?? $execution->status,
           ]);
+          $timeline->log(DispatchTimelineService::POSTBACK_FIRED, "Postback '{$postback->name}' fired successfully", [
+            'postback_id' => $postback->id,
+            'execution_id' => $execution->id,
+          ]);
         } catch (Throwable $e) {
           TailLogger::saveLog('Postback fire FAILED', 'postback/internal', 'error', [
             'postback_id' => $postback->id,
             'postback_name' => $postback->name,
             'dispatch_uuid' => $dispatch->dispatch_uuid,
+            'error' => $e->getMessage(),
+          ]);
+          $timeline->log(DispatchTimelineService::POSTBACK_FIRE_FAILED, "Postback '{$postback->name}' failed: {$e->getMessage()}", [
+            'postback_id' => $postback->id,
             'error' => $e->getMessage(),
           ]);
         }
@@ -87,6 +100,8 @@ class FireInternalPostbacksListener
         'dispatch_uuid' => $dispatch->dispatch_uuid,
         'total' => $postbacks->count(),
       ]);
+
+      $timeline->flush();
     } catch (Throwable $e) {
       TailLogger::saveLog('Listener FAILED globally', 'postback/internal', 'error', [
         'dispatch_id' => $event->dispatch->id ?? null,
