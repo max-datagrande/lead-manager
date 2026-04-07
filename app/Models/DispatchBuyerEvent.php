@@ -9,14 +9,7 @@ class DispatchBuyerEvent extends Model
 {
   public $timestamps = false;
 
-  protected $fillable = [
-    'lead_dispatch_id',
-    'integration_id',
-    'event',
-    'reason',
-    'detail',
-    'created_at',
-  ];
+  protected $fillable = ['lead_dispatch_id', 'integration_id', 'event', 'reason', 'detail', 'created_at'];
 
   protected $casts = [
     'created_at' => 'datetime',
