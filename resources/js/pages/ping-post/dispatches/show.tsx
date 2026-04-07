@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import AppLayout from '@/layouts/app-layout'
 import type { LeadDispatch } from '@/types/ping-post'
-import { Head } from '@inertiajs/react'
+import { Button } from '@/components/ui/button'
+import { Head, Link } from '@inertiajs/react'
+import { ScrollText } from 'lucide-react'
+import { route } from 'ziggy-js'
 import { useMemo } from 'react'
 
 interface Field {
@@ -38,7 +41,15 @@ const DispatchesShow = ({ dispatch, fields = [] }: Props) => {
           title={`Dispatch #${dispatch.id}`}
           description={`${dispatch.workflow?.name ?? 'Unknown workflow'} · ${dispatch.strategy_used}`}
         >
-          <StatusBadge status={dispatch.status} variant="dispatch" className="text-sm" />
+          <div className="flex items-center gap-3">
+            <StatusBadge status={dispatch.status} variant="dispatch" className="text-sm" />
+            <Button variant="outline" size="sm" asChild>
+              <Link href={route('ping-post.dispatches.timeline', dispatch.id)}>
+                <ScrollText className="mr-2 h-4 w-4" />
+                Timeline Log
+              </Link>
+            </Button>
+          </div>
         </PageHeader>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

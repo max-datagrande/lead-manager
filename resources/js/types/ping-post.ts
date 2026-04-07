@@ -174,6 +174,16 @@ export interface LeadDispatch {
   updated_at: string;
 }
 
+export interface DispatchTimelineLog {
+  id: number
+  fingerprint: string
+  lead_dispatch_id: number
+  event: string
+  message: string
+  context: Record<string, any> | null
+  logged_at: string
+}
+
 export interface PriceSourceOption {
   value: string;
   label: string;
