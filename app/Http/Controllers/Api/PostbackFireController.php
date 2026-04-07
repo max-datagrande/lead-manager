@@ -29,13 +29,12 @@ class PostbackFireController extends Controller
         ipAddress: $request->ip(),
         userAgent: $request->userAgent(),
       );
-
       return $this->successResponse(
         data: [
           'execution_uuid' => $execution->execution_uuid,
           'status' => $execution->status->value,
         ],
-        message: $execution->wasRecentlyCreated ? 'Postback received and processing.' : 'Postback already processed.',
+        message: $execution->status->message(),
       );
     } catch (ModelNotFoundException) {
       return $this->errorResponse('Postback not found or inactive.', status: 404);

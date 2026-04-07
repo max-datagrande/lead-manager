@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\Offerwall\EventController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\PerformanceMetricController;
+use App\Http\Controllers\Api\PingPost\DispatchController;
 use App\Http\Controllers\Api\ProxyController;
 use App\Http\Controllers\Api\TrafficLogController;
 use App\Http\Controllers\OfferwallController;
@@ -32,21 +33,30 @@ Route::middleware(['auth.host'])->group(function () {
     Route::get('/{fingerprint}', [LeadController::class, 'getLeadDetails'])->name('api.leads.details');
   });
   // Forwards Slack payloads through the host-authenticated proxy.
-  Route::post('/proxy/slack', [ProxyController::class, 'forward'])
-    ->name('api.proxy.slack');
+  Route::post('/proxy/slack', [ProxyController::class, 'forward'])->name('api.proxy.slack');
   // Receives SDK performance timing metrics (fire-and-forget from client).
-  Route::post('/metrics/performance', [PerformanceMetricController::class, 'store'])
-    ->name('api.metrics.performance');
+  Route::post('/metrics/performance', [PerformanceMetricController::class, 'store'])->name('api.metrics.performance');
 });
 
 // Offerwall management endpoints that run inside the lead manager.
-Route::prefix('offerwall')->name('api.offerwall.')->group(function () {
-  // Lists enabled offerwall providers and credentials.
-  Route::get('/integrations', [OfferwallController::class, 'getOfferwallIntegrations'])->name('integrations');
-  // Receives callback events when conversions fire from offerwall networks.
-  Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])->name('events.conversion');
-  // Triggers a Mix workflow defined for a specific offerwall integration.
-  Route::post('/mix/{offerwallMix}', [OfferwallMixController::class, 'trigger'])->name('mix.trigger');
+Route::prefix('offerwall')
+  ->name('api.offerwall.')
+  ->group(function () {
+    // Lists enabled offerwall providers and credentials.
+    Route::get('/integrations', [OfferwallController::class, 'getOfferwallIntegrations'])->name('integrations');
+    // Receives callback events when conversions fire from offerwall networks.
+    Route::post('/events/conversion', [EventController::class, 'handleOfferwallConversion'])->name('events.conversion');
+    // Triggers a Mix workflow defined for a specific offerwall integration.
+    Route::post('/mix/{offerwallMix}', [OfferwallMixController::class, 'trigger'])
+      ->whereNumber('offerwallMix')
+      ->name('mix.trigger');
+  });
+
+// Share Leads — dispatch endpoint (host authenticated)
+Route::middleware(['auth.host'])->group(function () {
+  Route::post('share-leads/dispatch/{workflow}', [DispatchController::class, 'dispatch'])
+    ->whereNumber('workflow')
+    ->name('api.share-leads.dispatch');
 });
 
 // Other file routes

@@ -28,19 +28,25 @@ class PostbackController extends Controller
 
     // Validar vendor
     if (!$this->postbackService->isVendorRegistered($vendor)) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Vendor not supported',
-      ], 422);
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Vendor not supported',
+        ],
+        422,
+      );
     }
 
     $offers = collect(config('offers.maxconv'));
     $offer = $offers->where('offer_id', $offerId)->first() ?? null;
     if (!$offer) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Offer not found',
-      ], 422);
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Offer not found',
+        ],
+        422,
+      );
     }
     return $this->postbackService->queueForProcessing($validated);
   }
@@ -53,10 +59,13 @@ class PostbackController extends Controller
     $postback = PostbackQueue::find($postbackId);
 
     if (!$postback) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Postback not found'
-      ], 404);
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Postback not found',
+        ],
+        404,
+      );
     }
 
     return response()->json([
@@ -96,7 +105,7 @@ class PostbackController extends Controller
         'vendor' => $vendor,
         'from_date' => $fromDate,
         'to_date' => $toDate,
-        'payout_found' => $payout
+        'payout_found' => $payout,
       ]);
 
       if ($payout === null) {
@@ -109,7 +118,7 @@ class PostbackController extends Controller
           'click_id' => $clickId,
           'vendor' => $vendor,
           'payout' => $payout,
-        ]
+        ],
       ]);
     } catch (\Exception $e) {
       TailLogger::saveLog('Error during payout search', 'api/postback', 'error', [

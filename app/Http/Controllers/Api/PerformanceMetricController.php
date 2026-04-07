@@ -10,17 +10,17 @@ use Illuminate\Http\JsonResponse;
 
 class PerformanceMetricController extends Controller
 {
-    use ApiResponseTrait;
+  use ApiResponseTrait;
 
-    public function __construct(private PerformanceMetricService $service) {}
+  public function __construct(private PerformanceMetricService $service) {}
 
-    /**
-     * Store a performance metric reported by the Catalyst SDK.
-     */
-    public function store(StorePerformanceMetricRequest $request): JsonResponse
-    {
-        $this->service->record($request->validated());
+  /**
+   * Store a performance metric reported by the Catalyst SDK.
+   */
+  public function store(StorePerformanceMetricRequest $request): JsonResponse
+  {
+    $this->service->record($request->validated());
 
-        return $this->successResponse(message: 'Metric recorded', status: 201);
-    }
+    return $this->successResponse(message: 'Metric recorded', status: 201);
+  }
 }

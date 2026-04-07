@@ -125,7 +125,6 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
           )}
         </DialogDescription>
       </DialogHeader>
-
       <Tabs defaultValue={logs[0].id.toString()} className="w-full">
         <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(logs.length, 5)}, 1fr)` }}>
           {logs.map((log, i) => (
@@ -150,9 +149,9 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <span className="font-mono text-blue-600">{log.request_method}</span>
-                      <span className="break-all font-mono text-xs text-muted-foreground">{log.request_url}</span>
+                    <div className="flex gap-2 text-sm font-medium">
+                      <span className="font-mono bg-accent text-accent-foreground px-1.5 rounded-md flex flex-items">{log.request_method}</span>
+                      <span className="break-all font-mono text-xs text-muted-foreground whitespace-nowrap">{log.request_url}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{log.response_time_ms ?? 0}ms</span>

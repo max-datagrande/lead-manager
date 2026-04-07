@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\ExecutionStatus;
 use App\Enums\FireMode;
+use App\Enums\PostbackSource;
+use App\Jobs\DispatchPostbackJob;
 use App\Models\Postback;
 use App\Models\PostbackExecution;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,7 +32,8 @@ class PostbackFireService
 
     $outboundUrl = $postback->buildOutboundUrl($inboundParams);
 
-    $idempotencyKey = PostbackExecution::generateIdempotencyKey($postback->id, $inboundParams);
+    $source = PostbackSource::EXTERNAL_API;
+    $idempotencyKey = PostbackExecution::generateIdempotencyKey($postback->id, $inboundParams, $source->value);
     $existing = PostbackExecution::query()->where('idempotency_key', $idempotencyKey)->first();
 
     if ($existing) {
@@ -39,6 +42,7 @@ class PostbackFireService
 
     $execution = PostbackExecution::create([
       'postback_id' => $postback->id,
+      'source' => $source,
       'status' => ExecutionStatus::PENDING,
       'inbound_params' => $inboundParams,
       'resolved_tokens' => $inboundParams,
@@ -60,7 +64,63 @@ class PostbackFireService
 
     if ($postback->fire_mode === FireMode::REALTIME) {
       $this->processExecution($execution);
+    } else {
+      DispatchPostbackJob::dispatch($execution);
     }
+
+    return $execution->fresh();
+  }
+
+  /**
+   * Dispara un postback interno desde código (offerwall, ping-post, manual, etc.).
+   *
+   * @param  array<string, string>  $params
+   *
+   * @throws ModelNotFoundException
+   */
+  public function fireInternal(
+    string $uuid,
+    array $params,
+    PostbackSource $source,
+    ?string $sourceReference = null,
+  ): PostbackExecution {
+    $postback = Postback::query()->where('uuid', $uuid)->active()->firstOrFail();
+
+    if (empty($postback->result_url)) {
+      throw new \InvalidArgumentException('Postback has no result URL configured.');
+    }
+
+    $outboundUrl = $postback->buildOutboundUrl($params);
+
+    $idempotencyKey = PostbackExecution::generateIdempotencyKey($postback->id, $params, $source->value);
+    $existing = PostbackExecution::query()->where('idempotency_key', $idempotencyKey)->first();
+
+    if ($existing) {
+      return $existing;
+    }
+
+    $execution = PostbackExecution::create([
+      'postback_id' => $postback->id,
+      'source' => $source,
+      'source_reference' => $sourceReference,
+      'status' => ExecutionStatus::PENDING,
+      'inbound_params' => $params,
+      'resolved_tokens' => $params,
+      'outbound_url' => $outboundUrl,
+      'idempotency_key' => $idempotencyKey,
+    ]);
+
+    $postback->increment('total_executions');
+    $postback->update(['last_fired_at' => now()]);
+
+    Log::info('Internal postback fired', [
+      'postback_id' => $postback->id,
+      'execution_id' => $execution->id,
+      'source' => $source->value,
+      'source_reference' => $sourceReference,
+    ]);
+
+    DispatchPostbackJob::dispatch($execution);
 
     return $execution->fresh();
   }
@@ -88,7 +148,7 @@ class PostbackFireService
 
     foreach ($executions as $execution) {
       $execution->update(['status' => ExecutionStatus::PENDING]);
-      $this->processExecution($execution);
+      DispatchPostbackJob::dispatch($execution);
     }
 
     return $executions->count();

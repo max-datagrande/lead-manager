@@ -17,7 +17,7 @@ export function DataTableContent({ table, data }) {
       {rowModel.rows.map((r) => (
         <TableRow key={r.id}>
           {r.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id} className="p-2">
+            <TableCell key={cell.id} className="empty:p-0">
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </TableCell>
           ))}

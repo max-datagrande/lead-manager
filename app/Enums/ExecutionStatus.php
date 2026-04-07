@@ -10,6 +10,17 @@ enum ExecutionStatus: string
   case FAILED = 'failed';
   case SKIPPED = 'skipped';
 
+  public function message(): string
+  {
+    return match ($this) {
+      self::PENDING => 'Postback received and queued for processing.',
+      self::DISPATCHING => 'Postback is being dispatched.',
+      self::COMPLETED => 'Postback processed successfully.',
+      self::FAILED => 'Postback processing failed.',
+      self::SKIPPED => 'Postback was skipped.',
+    };
+  }
+
   public function label(): string
   {
     return match ($this) {

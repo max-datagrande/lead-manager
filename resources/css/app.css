@@ -161,6 +161,66 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 }
 
+/* ── Local environment theme (navy) ─────────────────────────────────────── */
+:root[data-env="local"] {
+  --primary: oklch(0.58 0.14 240);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.58 0.14 240);
+  --sidebar: oklch(0.23 0.07 240);
+  --sidebar-foreground: oklch(0.88 0.02 240);
+  --sidebar-primary: oklch(0.58 0.14 240);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.30 0.07 240);
+  --sidebar-accent-foreground: oklch(0.88 0.02 240);
+  --sidebar-border: oklch(0.32 0.06 240);
+  --sidebar-ring: oklch(0.58 0.14 240);
+}
+
+:root.dark[data-env="local"] {
+  --primary: oklch(0.65 0.14 240);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.65 0.14 240);
+  --sidebar: oklch(0.18 0.06 240);
+  --sidebar-foreground: oklch(0.85 0.02 240);
+  --sidebar-primary: oklch(0.65 0.14 240);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.24 0.06 240);
+  --sidebar-accent-foreground: oklch(0.85 0.02 240);
+  --sidebar-border: oklch(0.26 0.05 240);
+  --sidebar-ring: oklch(0.65 0.14 240);
+}
+
+/* ── Development / Staging environment theme (slate) ────────────────────── */
+:root[data-env="development"],
+:root[data-env="staging"] {
+  --primary: oklch(0.55 0.03 255);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.55 0.03 255);
+  --sidebar: oklch(0.30 0.02 255);
+  --sidebar-foreground: oklch(0.88 0.01 255);
+  --sidebar-primary: oklch(0.55 0.03 255);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.37 0.02 255);
+  --sidebar-accent-foreground: oklch(0.88 0.01 255);
+  --sidebar-border: oklch(0.39 0.02 255);
+  --sidebar-ring: oklch(0.55 0.03 255);
+}
+
+:root.dark[data-env="development"],
+:root.dark[data-env="staging"] {
+  --primary: oklch(0.62 0.03 255);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.62 0.03 255);
+  --sidebar: oklch(0.22 0.02 255);
+  --sidebar-foreground: oklch(0.85 0.01 255);
+  --sidebar-primary: oklch(0.62 0.03 255);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.28 0.02 255);
+  --sidebar-accent-foreground: oklch(0.85 0.01 255);
+  --sidebar-border: oklch(0.30 0.02 255);
+  --sidebar-ring: oklch(0.62 0.03 255);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -240,6 +300,9 @@
   button:not(:disabled),
   [role='button']:not(:disabled) {
     cursor: pointer;
+  }
+  label {
+    @apply text-sm font-medium text-muted-foreground block;
   }
 
   /* Prevent focus zoom on mobile devices */

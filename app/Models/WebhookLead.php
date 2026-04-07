@@ -7,26 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class WebhookLead extends Model
 {
-    protected $table = 'webhook_leads';
+  protected $table = 'webhook_leads';
 
-    protected $fillable = [
-        'source',
-        'payload',
-        'headers',
-        'ip_origin',
-        'status',
-        'data',
-        'response',
-        'processed_at',
-    ];
+  protected $fillable = ['source', 'payload', 'headers', 'ip_origin', 'status', 'data', 'response', 'processed_at'];
 
-    protected $casts = [
-        'payload' => 'array',
-        'headers' => 'array',
-        'ip_origin' => 'string',
-        'status' => WebhookLeadStatus::class,
-        'data' => 'array',
-        'response' => 'array',
-        'processed_at' => 'datetime',
-    ];
+  protected $casts = [
+    'payload' => 'array',
+    'headers' => 'array',
+    'ip_origin' => 'string',
+    'status' => WebhookLeadStatus::class,
+    'data' => 'array',
+    'response' => 'array',
+    'processed_at' => 'datetime',
+  ];
 }

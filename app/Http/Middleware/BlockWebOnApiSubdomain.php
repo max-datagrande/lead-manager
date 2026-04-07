@@ -20,9 +20,7 @@ class BlockWebOnApiSubdomain
     $path = $request->path();
 
     // Detectar rutas v1 de múltiples formas
-    $isV1Route = str_starts_with($path, 'v1/') ||
-      str_contains($request->fullUrl(), '/v1/') ||
-      str_contains($request->getRequestUri(), '/v1/');
+    $isV1Route = str_starts_with($path, 'v1/') || str_contains($request->fullUrl(), '/v1/') || str_contains($request->getRequestUri(), '/v1/');
 
     // Permitir rutas de Catalyst (loader, assets, tests)
     $isCatalystRoute = str_starts_with($path, 'catalyst/');
@@ -32,9 +30,9 @@ class BlockWebOnApiSubdomain
       return $next($request);
     }
 
-
     // Verificar si es una petición API basada en headers o contenido
-    $isApiRequest = $request->expectsJson() ||
+    $isApiRequest =
+      $request->expectsJson() ||
       $request->header('Accept') === 'application/json' ||
       str_contains($request->header('Content-Type', ''), 'application/json');
 
@@ -44,7 +42,7 @@ class BlockWebOnApiSubdomain
     }
 
     $apiUrl = env('APP_API_URL');
-    $isInternalApi = $apiUrl ? (parse_url($apiUrl, PHP_URL_HOST) === $host) : false;
+    $isInternalApi = $apiUrl ? parse_url($apiUrl, PHP_URL_HOST) === $host : false;
     $apiSubdomains = ['api.', 'bridge.', 'partner.'];
     $subdomainStartsWithApi = false;
     foreach ($apiSubdomains as $subdomain) {

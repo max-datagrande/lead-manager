@@ -32,7 +32,7 @@ class WebhookApiKeyService
   {
     $hasSignature = $request->header('x-hub-signature-256') ?? null;
     if ($hasSignature) {
-      $appSecret  = trim((string) config('services.facebook.app_secret'));
+      $appSecret = trim((string) config('services.facebook.app_secret'));
       $signature = (string) $request->header('x-hub-signature-256');
       if (!$appSecret || !$signature) {
         TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'error', [
@@ -47,7 +47,7 @@ class WebhookApiKeyService
       //Log the result
       TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
         'message' => 'Verification attempt',
-        'body'   => $body,
+        'body' => $body,
         'expectedSignature' => $expectedSignature,
         'signature' => $signature,
         'isEquals' => $isEquals,
@@ -59,10 +59,7 @@ class WebhookApiKeyService
     if ($request->isMethod('get')) {
       $verifyToken = config('auth.webhooks.api_key');
 
-      if (
-        $request->input('hub_mode') === 'subscribe' &&
-        $request->input('hub_verify_token') === $verifyToken
-      ) {
+      if ($request->input('hub_mode') === 'subscribe' && $request->input('hub_verify_token') === $verifyToken) {
         // Log the result
         TailLogger::saveLog('Facebook Webhook Verification', 'webhooks/leads/store', 'info', [
           'message' => 'Verification successful',

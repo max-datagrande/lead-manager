@@ -31,7 +31,7 @@ class FirePostbackRequest extends FormRequest
       'currency' => 'nullable|string|size:3|in:USD,EUR,GBP,CAD,AUD,JPY,CHF,SEK,NOK,DKK',
       'event' => 'nullable|string|max:100',
       'offer_id' => 'required|string|max:255',
-      'vendor' => 'required|string|max:63'
+      'vendor' => 'required|string|max:63',
     ];
   }
 }

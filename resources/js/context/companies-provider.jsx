@@ -2,7 +2,8 @@ import { FormModal } from '@/components/companies/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
+import axios from 'axios';
 import { createContext, useState } from 'react';
 
 export const CompaniesContext = createContext(null);
@@ -64,6 +65,35 @@ export function CompaniesProvider({ children }) {
     }
   };
 
+  const confirmSync = async () => {
+    const confirmed = await modal.confirm({
+      title: 'Sync companies',
+      description:
+        'This action will sync all companies from production to local. Are you sure you want to sync from production? This will TRUNCATE your local companies table!',
+      confirmText: 'Sync',
+      cancelText: 'Cancel',
+      destructive: true,
+    });
+    if (confirmed) {
+      setNotify('Syncing companies', 'info');
+      syncCompanies();
+    }
+  };
+
+  const syncCompanies = async () => {
+    const url = route('api.companies.import');
+    try {
+      const response = await axios.post(url);
+      const notify = response.data.message || 'Sync completed!';
+      setNotify(notify, 'success');
+      router.reload();
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'An unknown error occurred.';
+      console.log(error);
+      setNotify(errorMessage, 'error');
+    }
+  };
+
   return (
     <CompaniesContext.Provider
       value={{
@@ -80,6 +110,7 @@ export function CompaniesProvider({ children }) {
         setGlobalFilter,
         pagination,
         setPagination,
+        confirmSync,
       }}
     >
       {children}

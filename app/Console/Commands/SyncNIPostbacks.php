@@ -57,15 +57,16 @@ class SyncNIPostbacks extends Command
       $this->info('Successfully fetched ' . $niConversions->count() . ' conversions from NI report.');
     } catch (\Exception $e) {
       $this->error('An exception occurred while fetching the NI report: ' . $e->getMessage());
-      TailLogger::saveLog('SyncNIPostbacks: Exception fetching NI report.', 'cron/sync-ni', 'error', ['exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+      TailLogger::saveLog('SyncNIPostbacks: Exception fetching NI report.', 'cron/sync-ni', 'error', [
+        'exception' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+      ]);
       return 1;
     }
 
     // 2. Fetch Pending Postbacks
     $this->line('Fetching pending postbacks for vendor: ' . PostbackVendor::NI->value);
-    $pendingPostbacks = Postback::where('status', Postback::statusPending())
-      ->where('vendor', PostbackVendor::NI->value)
-      ->get();
+    $pendingPostbacks = Postback::where('status', Postback::statusPending())->where('vendor', PostbackVendor::NI->value)->get();
     if ($pendingPostbacks->isEmpty()) {
       $this->info('No pending NI postbacks to process. Job finished.');
       TailLogger::saveLog('SyncNIPostbacks: No pending NI postbacks found.', 'cron/sync-ni', 'info', []);
@@ -95,8 +96,13 @@ class SyncNIPostbacks extends Command
           // 4. Dispatch Event
           PostbackProcessed::dispatch($postback);
           $updatedCount++;
-          TailLogger::saveLog('SyncNIPostbacks: Updated postback.', 'cron/sync-ni', 'info', ['postback_id' => $postback->id, 'click_id' => $clickId, 'payout' => $payout]);
-        } else if ($payout !== null) { // Handles payout == 0
+          TailLogger::saveLog('SyncNIPostbacks: Updated postback.', 'cron/sync-ni', 'info', [
+            'postback_id' => $postback->id,
+            'click_id' => $clickId,
+            'payout' => $payout,
+          ]);
+        } elseif ($payout !== null) {
+          // Handles payout == 0
           $postback->update([
             'payout' => 0,
             'status' => Postback::statusSkipped(),
@@ -105,14 +111,24 @@ class SyncNIPostbacks extends Command
             'processed_at' => now(),
           ]);
           // No event dispatch for skipped postbacks
-          TailLogger::saveLog('SyncNIPostbacks: Postback skipped, payout was 0.', 'cron/sync-ni', 'info', ['postback_id' => $postback->id, 'click_id' => $clickId]);
+          TailLogger::saveLog('SyncNIPostbacks: Postback skipped, payout was 0.', 'cron/sync-ni', 'info', [
+            'postback_id' => $postback->id,
+            'click_id' => $clickId,
+          ]);
         } else {
           // This case handles when the 'payout' key is missing from the conversion data
-          TailLogger::saveLog('SyncNIPostbacks: Conversion found but no payout value.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId, 'conversion' => $conversion]);
+          TailLogger::saveLog('SyncNIPostbacks: Conversion found but no payout value.', 'cron/sync-ni', 'warning', [
+            'postback_id' => $postback->id,
+            'click_id' => $clickId,
+            'conversion' => $conversion,
+          ]);
         }
       } else {
         $notFoundCount++;
-        TailLogger::saveLog('SyncNIPostbacks: Click ID not found in NI report.', 'cron/sync-ni', 'warning', ['postback_id' => $postback->id, 'click_id' => $clickId]);
+        TailLogger::saveLog('SyncNIPostbacks: Click ID not found in NI report.', 'cron/sync-ni', 'warning', [
+          'postback_id' => $postback->id,
+          'click_id' => $clickId,
+        ]);
       }
       $this->line("Processed postback {$postback->id} for click ID {$clickId}");
       sleep(2);

@@ -5,31 +5,30 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
-        if (! Schema::hasTable('traffic_logs')) {
-            return;
-        }
-
-        if (DB::getDriverName() !== 'sqlite') {
-            DB::statement('ALTER TABLE traffic_logs DROP CONSTRAINT IF EXISTS traffic_logs_traffic_source_check');
-        }
-
-        Schema::table('traffic_logs', function (Blueprint $table) {
-            $table->string('traffic_source', 50)->nullable()->change();
-        });
+return new class extends Migration {
+  /**
+   * Run the migrations.
+   */
+  public function up(): void
+  {
+    if (!Schema::hasTable('traffic_logs')) {
+      return;
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        //
+    if (DB::getDriverName() !== 'sqlite') {
+      DB::statement('ALTER TABLE traffic_logs DROP CONSTRAINT IF EXISTS traffic_logs_traffic_source_check');
     }
+
+    Schema::table('traffic_logs', function (Blueprint $table) {
+      $table->string('traffic_source', 50)->nullable()->change();
+    });
+  }
+
+  /**
+   * Reverse the migrations.
+   */
+  public function down(): void
+  {
+    //
+  }
 };

@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Http;
 use Maxidev\Logger\TailLogger;
 use App\Services\IntegrationService;
 use Throwable;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
-use Twig\TwigFunction;
 
 class MixService
 {
@@ -36,11 +33,15 @@ class MixService
         'success' => false,
         'message' => 'Lead not found',
         'status_code' => 404,
-        'data' => null
+        'data' => null,
       ];
     }
 
-    $integrations = $mix->integrations()->where('is_active', true)->get();
+    $integrations = $mix
+      ->integrations()
+      ->where('is_active', true)
+      ->with(['tokenMappings.field', 'environments.fieldHashes'])
+      ->get();
     $leadData = $this->prepareLeadData($lead);
     $mixLog = null;
     try {
@@ -58,41 +59,40 @@ class MixService
             'success' => true,
             'message' => 'No active integrations found',
             'status_code' => 200,
-            'data' => []
+            'data' => [],
           ];
         }
 
         $requestsData = [];
         foreach ($integrations as $integration) {
-          $prodEnv = $integration->environments->where('environment', 'production')->first();
+          $prodEnv = $integration->environments->where('env_type', 'offerwall')->where('environment', 'production')->first();
           if (!$prodEnv) {
             continue;
           }
-
-          $mappingConfig = $integration->request_mapping_config ?? [];
-
-          // Prepare Body
-          $payloadResult = $this->preparePayload($integration, $leadData, $prodEnv);
-          $payloadArray = $payloadResult['payloadArray'];
-
-          // Prepare Headers
-          $headersTemplate = $prodEnv->request_headers ?? '[]';
-          $headersReplacements = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
           $processor = new \App\Services\PayloadProcessorService();
-          $headersParsed = $processor->process($headersTemplate, $headersReplacements['finalReplacements']);
-          $headers = json_decode($headersParsed, true) ?? [];
-          
+          $replacements = $processor->buildReplacements($integration, $prodEnv, $leadData);
+
+          $payloadString = $processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements);
+          $payload = json_decode($payloadString, true) ?? [];
+
+          TailLogger::saveLog('MixService payload after json_decode', 'debug/payload-processor', 'info', [
+            'integration' => $integration->name,
+            'payloadString' => $payloadString,
+            'payload' => $payload,
+          ]);
+
+          $payload = $processor->applyTwigTransformer($integration, $payload);
+
+          $headers = json_decode($processor->applyReplacements($prodEnv->request_headers ?? '[]', $replacements), true) ?? [];
           $method = strtolower($prodEnv->method ?? 'post');
-          $url = $prodEnv->url;
+          $url = $processor->applyReplacements($prodEnv->url ?? '', $replacements);
 
           $requestsData[$integration->id] = [
             'integration' => $integration,
             'url' => $url,
-            'payloadArray' => $payloadArray,
+            'payload' => $payload,
             'method' => $method,
             'headers' => $headers,
-            'originalValues' => $payloadResult['originalValues'],
-            'mappedValues' => $payloadResult['mappedValues'],
           ];
         }
 
@@ -100,10 +100,10 @@ class MixService
           foreach ($requestsData as $integrationId => $data) {
             $url = $data['url'];
             $headers = $data['headers'];
-            $payloadArray = $data['payloadArray'];
+            $payload = $data['payload'];
             $method = $data['method'];
             $request = $pool->as($integrationId)->withHeaders($headers);
-            $request->{$method}($url, $payloadArray);
+            $request->{$method}($url, $payload);
           }
         });
 
@@ -117,20 +117,12 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall(
-            $mixLog,
-            $integration,
-            $response,
-            $requestData['method'],
-            $requestData['headers'],
-            $requestData['payloadArray'],
-            $requestData['originalValues'],
-            $requestData['mappedValues']
-          );
+          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
 
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
-            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration);
+            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration, $prodEnv);
+            $offers = $this->integrationService->applyOfferFallbacks($offers, $integration, $prodEnv);
             $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
@@ -158,30 +150,53 @@ class MixService
               'total_offers' => 0,
               'successful_integrations' => $successfulCount,
               'failed_integrations' => $integrations->count() - $successfulCount,
-              'duration_ms' => $durationRounded
-            ]
+              'duration_ms' => $durationRounded,
+            ],
           ];
         }
+
+        $totalOffers = count($aggregatedOffers);
+
+        // Si hay más de 5 ofertas, exigir mínimo 1 centavo.
+        $minimumCpc = $totalOffers > 5 ? 0.01 : 0.0;
+
+        $filteredOffers = array_filter($aggregatedOffers, function ($offer) use ($minimumCpc) {
+          $cpc = (float) ($offer['cpc'] ?? 0);
+
+          if ($minimumCpc > 0) {
+            return $cpc >= $minimumCpc;
+          }
+
+          return $cpc > 0;
+        });
+
+        $finalOffers = !empty($filteredOffers) ? array_values($filteredOffers) : array_values($aggregatedOffers);
 
         return [
           'success' => true,
           'message' => 'Offers aggregated successfully',
           'status_code' => 200,
-          'data' => $aggregatedOffers,
+          'data' => $finalOffers,
           'meta' => [
-            'total_offers' => count($aggregatedOffers),
+            'total_offers' => count($finalOffers),
             'successful_integrations' => $successfulCount,
             'failed_integrations' => $integrations->count() - $successfulCount,
-            'duration_ms' => $durationRounded
-          ]
+            'duration_ms' => $durationRounded,
+          ],
         ];
       });
 
       return $result;
     } catch (Throwable $e) {
-      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', ['error' => $e->getMessage(), 'fingerprint' => $fingerprint, 'file' => $e->getFile(), 'line' => $e->getLine()]);
+      TailLogger::saveLog('Failed to process offerwall mix', 'offerwall/mix-service', 'error', [
+        'error' => $e->getMessage(),
+        'fingerprint' => $fingerprint,
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ]);
       $slack = new SlackMessageBundler();
-      $slack->addTitle('Critical Offerwall Mix Failure', '🚨')
+      $slack
+        ->addTitle('Critical Offerwall Mix Failure', '🚨')
         ->addSection('The offerwall mix processing failed due to an unexpected error.')
         ->addDivider()
         ->addKeyValue('Fingerprint', $fingerprint, true, '🆔');
@@ -190,8 +205,7 @@ class MixService
         $slack->addKeyValue('Mix Log ID', $mixLog->id, false, '📋');
       }
 
-      $slack->addKeyValue('Error Message', $e->getMessage(), true, '📄')
-        ->addButton('View Admin', route('home'), 'primary');
+      $slack->addKeyValue('Error Message', $e->getMessage(), true, '📄')->addButton('View Admin', route('home'), 'primary');
 
       // Registrar en logs en modo debug, no enviar a Slack
       if (app()->environment('local')) {
@@ -204,7 +218,7 @@ class MixService
         'success' => false,
         'message' => 'An unexpected error occurred while processing offers',
         'status_code' => 500,
-        'data' => null
+        'data' => null,
       ];
     }
   }
@@ -214,62 +228,10 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function preparePayload($integration, array $leadData, $prodEnv): array
+  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, array $payload): void
   {
-    $template = $prodEnv->request_body ?? '';
-    $mappingConfig = $integration->request_mapping_config ?? [];
-
-    $replacementsResult = \App\Services\PayloadProcessorService::generateReplacements($leadData, $mappingConfig);
-    
-    $processor = new \App\Services\PayloadProcessorService();
-    $payloadString = $processor->process($template, $replacementsResult['finalReplacements']);
-    $payloadArray = json_decode($payloadString, true) ?? [];
-
-    // 2. Custom transformation using Twig
-    if ($integration->use_custom_transformer && !empty($integration->payload_transformer)) {
-      try {
-        $loader = new ArrayLoader([
-          'index.html' => $integration->payload_transformer,
-        ]);
-        $twig = new Environment($loader);
-
-        $twig->addFunction(new TwigFunction('output_json', function ($data) {
-            return json_encode($data);
-        }, ['is_safe' => ['html']]));
-
-        $rendered = $twig->render('index.html', ['data' => $payloadArray]);
-        $transformed = json_decode($rendered, true);
-
-        if (json_last_error() === JSON_ERROR_NONE) {
-          $payloadArray = $transformed;
-        }
-      } catch (Throwable $e) {
-        TailLogger::saveLog('Twig payload transformation failed', 'offerwall/mix-service', 'error', [
-          'integration_id' => $integration->id,
-          'error' => $e->getMessage()
-        ]);
-      }
-    }
-    
-    return [
-        'payloadArray' => $payloadArray,
-        'originalValues' => $replacementsResult['originalValues'],
-        'mappedValues' => $replacementsResult['mappedValues'],
-    ];
-  }
-
-  private function logIntegrationCall(
-    OfferwallMixLog $mixLog,
-    $integration,
-    $response,
-    string $method,
-    array $headers,
-    array $payload,
-    ?array $originalValues = null,
-    ?array $mappedValues = null
-  ): void {
     $isResponse = $response instanceof Response;
-    $duration = ($isResponse && $response->transferStats) ? $response->transferStats->getTransferTime() * 1000 : 0;
+    $duration = $isResponse && $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
 
     $status = 'failed';
     $statusCode = 500;
@@ -286,7 +248,7 @@ class MixService
         'error' => get_class($response),
         'message' => $response->getMessage(),
         'file' => $response->getFile(),
-        'line' => $response->getLine()
+        'line' => $response->getLine(),
       ];
     }
 
@@ -301,8 +263,8 @@ class MixService
       'request_payload' => $payload,
       'response_headers' => $isResponse ? $response->headers() : [],
       'response_body' => $responseBody,
-      'original_field_values' => $originalValues,
-      'mapped_field_values' => $mappedValues,
+      'original_field_values' => null,
+      'mapped_field_values' => null,
     ]);
   }
 
@@ -329,14 +291,15 @@ class MixService
   private function sortOffersByCpc(array $offers): array
   {
     usort($offers, function ($a, $b) {
-      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float)$a['cpc'] : -1;
-      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float)$b['cpc'] : -1;
+      $cpcA = isset($a['cpc']) && is_numeric($a['cpc']) ? (float) $a['cpc'] : -1;
+      $cpcB = isset($b['cpc']) && is_numeric($b['cpc']) ? (float) $b['cpc'] : -1;
 
       if ($cpcA == $cpcB) {
         return 0;
       }
+
       // Orden descendente (mayor a menor)
-      return ($cpcA > $cpcB) ? -1 : 1;
+      return $cpcA > $cpcB ? -1 : 1;
     });
 
     // Asignar posición

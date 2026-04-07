@@ -26,7 +26,7 @@ class DomainWhitelistMiddleware
     TailLogger::saveLog('Request to API', 'middleware/geolocation', 'info', [
       'origin' => $origin,
       'ip' => $request->ip(),
-      'user_agent' => $request->userAgent()
+      'user_agent' => $request->userAgent(),
     ]);
     // Si no hay origen, usar el host de la petición
     if (!$origin) {
@@ -42,13 +42,16 @@ class DomainWhitelistMiddleware
         'domain' => $domain,
         'origin' => $origin,
         'ip' => $request->ip(),
-        'user_agent' => $request->userAgent()
+        'user_agent' => $request->userAgent(),
       ]);
-      return response()->json([
-        'error' => 'Access denied',
-        'message' => 'Domain not authorized to access this API',
-        'code' => 'DOMAIN_NOT_ALLOWED'
-      ], Response::HTTP_FORBIDDEN);
+      return response()->json(
+        [
+          'error' => 'Access denied',
+          'message' => 'Domain not authorized to access this API',
+          'code' => 'DOMAIN_NOT_ALLOWED',
+        ],
+        Response::HTTP_FORBIDDEN,
+      );
     }
 
     return $next($request);
@@ -90,7 +93,7 @@ class DomainWhitelistMiddleware
     } catch (\Throwable $e) {
       TailLogger::saveLog('Error while verifying whitelist', 'middleware/geolocation', 'error', [
         'error' => $e->getMessage(),
-        'domain' => $domain
+        'domain' => $domain,
       ]);
       return false;
     }

@@ -53,11 +53,12 @@ class HandleInertiaRequests extends Middleware
         'success' => fn() => $request->session()->get('success'),
         'warning' => fn() => $request->session()->get('warning'),
         'info' => fn() => $request->session()->get('info'),
+        'deletable_errors' => fn() => $request->session()->get('deletable_errors'),
       ],
       'app' => [
         'env' => config('app.env'),
         'services' => config('services'),
-      ]
+      ],
     ];
   }
 }

@@ -2,6 +2,8 @@ export type PostbackExecution = {
   id: number
   execution_uuid: string
   postback_id: number
+  source: 'external_api' | 'offerwall' | 'ping_post' | 'manual' | 'command' | 'system'
+  source_reference: string | null
   status: 'pending' | 'dispatching' | 'completed' | 'failed' | 'skipped'
   inbound_params: Record<string, string> | null
   resolved_tokens: Record<string, string> | null

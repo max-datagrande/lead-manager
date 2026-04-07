@@ -15,12 +15,10 @@ class CompanyController extends Controller
   {
     $sort = $request->get('sort', 'created_at:desc');
     [$col, $dir] = get_sort_data($sort);
-    $entries = Company::query()
-      ->orderBy($col, $dir)
-      ->get();
+    $entries = Company::query()->orderBy($col, $dir)->get();
     return Inertia::render('companies/index', [
       'rows' => $entries,
-      'filters' => compact('sort')
+      'filters' => compact('sort'),
     ]);
   }
 
@@ -39,7 +37,7 @@ class CompanyController extends Controller
     ]);
 
     Company::create($validated);
-    add_flash_message(type: "success", message: "Company created successfully.");
+    add_flash_message(type: 'success', message: 'Company created successfully.');
     return back();
   }
   /**
@@ -56,11 +54,11 @@ class CompanyController extends Controller
         'active' => 'boolean',
       ]);
       $company->update($validated);
-      add_flash_message(type: "success", message: "Company updated successfully.");
-      return  back();
+      add_flash_message(type: 'success', message: 'Company updated successfully.');
+      return back();
     } catch (\Throwable $th) {
       $message = $th->getMessage();
-      add_flash_message(type: "error", message: "Something went wrong: " . $message);
+      add_flash_message(type: 'error', message: 'Something went wrong: ' . $message);
       return back()->withErrors(['message' => 'Something went wrong.']);
     }
   }
@@ -70,7 +68,7 @@ class CompanyController extends Controller
   public function destroy(Company $company)
   {
     $company->delete();
-    add_flash_message(type: "success", message: "Company deleted successfully.");
-    return  back();
+    add_flash_message(type: 'success', message: 'Company deleted successfully.');
+    return back();
   }
 }

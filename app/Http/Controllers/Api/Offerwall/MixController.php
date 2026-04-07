@@ -31,17 +31,25 @@ class MixController extends Controller
       'fingerprint' => 'required|string',
       'placement' => 'nullable|string|max:255',
       'fields' => 'nullable|array',
+      'remove_fields' => 'nullable|array',
+      'remove_fields.*' => 'string|max:255',
       'create_on_miss' => 'nullable|boolean',
     ]);
 
     $fingerprint = $validated['fingerprint'];
     $fields = $validated['fields'] ?? null;
+    $removeFields = $validated['remove_fields'] ?? null;
     $placement = $validated['placement'] ?? null;
     $createOnMiss = $validated['create_on_miss'] ?? false;
 
-    // Optional: Update lead fields if provided
-    if (!empty($fields)) {
-      TailLogger::saveLog('Received request to update lead fields within offerwall mix trigger', 'offerwall/mix/trigger', 'info', compact('fingerprint', 'fields', 'createOnMiss'));
+    // Optional: Update or remove lead fields if provided
+    if (!empty($fields) || !empty($removeFields)) {
+      TailLogger::saveLog(
+        'Received request to update lead fields within offerwall mix trigger',
+        'offerwall/mix/trigger',
+        'info',
+        compact('fingerprint', 'fields', 'removeFields', 'createOnMiss'),
+      );
       try {
         $visitorLog = $this->leadService->validateTrafficLog($fingerprint);
 
@@ -51,7 +59,14 @@ class MixController extends Controller
           $lead = $this->leadService->findLead($visitorLog);
         }
 
-        $this->leadService->processLeadFields($lead, $fields);
+        if (!empty($fields)) {
+          $this->leadService->processLeadFields($lead, $fields);
+        }
+
+        if (!empty($removeFields)) {
+          $this->leadService->removeLeadFields($lead, $removeFields);
+        }
+
         if ($lead->wasRecentlyCreated) {
           $this->leadService->logLeadSuccess($lead);
         } else {
@@ -69,17 +84,14 @@ class MixController extends Controller
         TailLogger::saveLog($message . ': ' . $e->getMessage(), 'offerwall/mix/trigger', 'error', [
           'fingerprint' => $fingerprint,
           'fields' => $fields,
+          'removeFields' => $removeFields,
           'exception' => $e->getMessage(),
         ]);
         return $this->errorResponse($message, null, 500);
       }
     }
 
-    $result = $this->mixService->fetchAndAggregateOffers(
-      $offerwallMix,
-      $fingerprint,
-      $placement,
-    );
+    $result = $this->mixService->fetchAndAggregateOffers($offerwallMix, $fingerprint, $placement);
 
     // Extraer información de la respuesta del servicio
     $success = $result['success'] ?? false;

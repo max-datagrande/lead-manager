@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use MatthiasMullie\Minify;
 
-
 class CatalystController extends Controller
 {
   public function loader(Request $request)
@@ -40,8 +39,8 @@ class CatalystController extends Controller
       'catalystConfig' => $catalystConfig,
     ])->render();
 
-      $minifier = new Minify\JS($content);
-      $content = $minifier->minify();
+    $minifier = new Minify\JS($content);
+    $content = $minifier->minify();
 
     return response($content)->header('Content-Type', 'application/javascript');
   }
@@ -78,9 +77,9 @@ class CatalystController extends Controller
     $fileInfo = null;
 
     if (isset($manifest[$keyTs])) {
-        $fileInfo = $manifest[$keyTs];
+      $fileInfo = $manifest[$keyTs];
     } elseif (isset($manifest[$keyJs])) {
-        $fileInfo = $manifest[$keyJs];
+      $fileInfo = $manifest[$keyJs];
     }
 
     if (!$fileInfo) {
@@ -89,12 +88,12 @@ class CatalystController extends Controller
 
     $path = public_path('cdn/catalyst/' . $fileInfo['file']);
     if (!File::exists($path)) {
-        abort(404, 'File not found');
+      abort(404, 'File not found');
     }
 
     return response()->file($path, [
-        'Content-Type' => 'application/javascript',
-        'Access-Control-Allow-Origin' => '*', // Forzar header CORS explícitamente
+      'Content-Type' => 'application/javascript',
+      'Access-Control-Allow-Origin' => '*', // Forzar header CORS explícitamente
     ]);
   }
 
@@ -127,10 +126,10 @@ class CatalystController extends Controller
     $keyJs = "resources/js/catalyst/{$entry}.js";
 
     if (isset($manifest[$keyTs])) {
-        return asset('cdn/catalyst/' . $manifest[$keyTs]['file']);
+      return asset('cdn/catalyst/' . $manifest[$keyTs]['file']);
     }
     if (isset($manifest[$keyJs])) {
-        return asset('cdn/catalyst/' . $manifest[$keyJs]['file']);
+      return asset('cdn/catalyst/' . $manifest[$keyJs]['file']);
     }
 
     abort(404, "CDN asset not found in manifest: {$entry}");

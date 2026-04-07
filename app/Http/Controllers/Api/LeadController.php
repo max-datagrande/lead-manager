@@ -38,7 +38,7 @@ class LeadController extends Controller
       return [
         'id' => $response->field->id ?? null,
         'name' => $response->field->name ?? 'Unknown',
-        'label' => $response->field->label ?? $response->field->name ?? 'Unknown',
+        'label' => $response->field->label ?? ($response->field->name ?? 'Unknown'),
         'value' => $response->value,
       ];
     });

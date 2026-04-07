@@ -3,7 +3,8 @@ import { type Platform } from '@/types/models/platform';
 export interface Postback {
   id: number;
   name: string;
-  platform_id: number;
+  type: 'external' | 'internal';
+  platform_id: number | null;
   base_url: string;
   param_mappings: Record<string, string>;
   result_url: string;
@@ -25,4 +26,9 @@ export interface DomainOption {
   value: string;
   label: string;
   url: string;
+}
+
+export interface PostbackTypeOption {
+  value: string;
+  label: string;
 }

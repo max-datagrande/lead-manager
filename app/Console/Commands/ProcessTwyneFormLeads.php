@@ -33,11 +33,7 @@ class ProcessTwyneFormLeads extends Command
    *
    * @var array<string>
    */
-  protected array $formIds = [
-    '1981121326072730',
-    '1184004799731431',
-    '872541831863812'
-  ];
+  protected array $formIds = ['1981121326072730', '1184004799731431', '872541831863812'];
 
   /**
    * Execute the console command.
@@ -61,11 +57,11 @@ class ProcessTwyneFormLeads extends Command
       'ip' => ['source' => 'ip_address'],
       'dob' => [
         'source' => 'DOB',
-        'transform' => fn($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('m/d/Y') : null
+        'transform' => fn($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('m/d/Y') : null,
       ],
       'cq1' => [
         'source' => 'desired_amount_of_coverage',
-        'transform' => fn($value) => $value ? preg_replace('/[^\d]/', '', $value) : null
+        'transform' => fn($value) => $value ? preg_replace('/[^\d]/', '', $value) : null,
       ],
       'cq2' => ['source' => 'please_enter_your_beneficiary_s_name'],
       'cq3' => ['source' => 'what_is_your_relationship_to_the_beneficiary'],
@@ -92,10 +88,7 @@ class ProcessTwyneFormLeads extends Command
         // --- Geolocation Step (before Twyne instantiation) ---
         $zipcode = data_get($webhookLead->payload, 'zipcode');
         if (empty($zipcode)) {
-          throw new \App\Exceptions\MissingRequiredFieldsException(
-            'Zipcode is required.',
-            ['zipcode']
-          );
+          throw new \App\Exceptions\MissingRequiredFieldsException('Zipcode is required.', ['zipcode']);
         }
 
         // --- Extract 5-digit Zipcode ---
@@ -114,7 +107,13 @@ class ProcessTwyneFormLeads extends Command
           throw new Exception("Geolocation failed for zipcode: {$cleanZipcode}.");
         }
         $ipAddress = data_get($webhookLead->payload, 'ip_address', null) ?? $webhookLead->ip_origin;
-        $payload = [...$webhookLead->payload, 'city' => $addressInfo['city'],  'state' => $addressInfo['state'], 'ip_address' => $ipAddress, 'zipcode' => $cleanZipcode];
+        $payload = [
+          ...$webhookLead->payload,
+          'city' => $addressInfo['city'],
+          'state' => $addressInfo['state'],
+          'ip_address' => $ipAddress,
+          'zipcode' => $cleanZipcode,
+        ];
 
         // 1. Instantiate the Twyne library with payload, ID, and the specific mapping
         $twyneRequest = new Twyne($payload, $twyneMapping);
@@ -149,7 +148,7 @@ class ProcessTwyneFormLeads extends Command
       } catch (\App\Exceptions\MissingRequiredFieldsException $e) {
         // Catch the specific validation exception to SKIP the lead
         $missingFields = $e->getMissingFields();
-        $this->warn("Skipping webhook_lead_id: {$webhookLead->id}. Reason: " . $e->getMessage() . " Missing: " . implode(', ', $missingFields));
+        $this->warn("Skipping webhook_lead_id: {$webhookLead->id}. Reason: " . $e->getMessage() . ' Missing: ' . implode(', ', $missingFields));
 
         $webhookLead->status = WebhookLeadStatus::SKIPPED;
         $webhookLead->response = ['error' => $e->getMessage(), 'missing_fields' => $missingFields];
@@ -178,12 +177,13 @@ class ProcessTwyneFormLeads extends Command
 
         // Send Slack notification
         $slack = new SlackMessageBundler();
-        $slack->addTitle('Twyne Lead Processing Failed', '🚨')
+        $slack
+          ->addTitle('Twyne Lead Processing Failed', '🚨')
           ->addSection('The cron job failed to process a Twyne lead.')
           ->addDivider()
           ->addKeyValue('Webhook Lead ID', $webhookLead->id)
           ->addKeyValue('Error', $errorMessage, true)
-          ->addSection('Response Details: ```' . substr((string)$responseBody, 0, 200) . '```')
+          ->addSection('Response Details: ```' . substr((string) $responseBody, 0, 200) . '```')
           ->sendDirect('error');
 
         $this->error("Failed to process Twyne lead. Error: {$errorMessage}");

@@ -18,12 +18,10 @@ class WhitelistEntryController extends Controller
   {
     $sort = $request->get('sort', 'created_at:desc');
     [$col, $dir] = get_sort_data($sort);
-    $entries = WhitelistEntry::query()
-      ->orderBy($col, $dir)
-      ->get();
+    $entries = WhitelistEntry::query()->orderBy($col, $dir)->get();
     return Inertia::render('whitelist/index', [
       'rows' => $entries,
-      'filters' => compact('sort')
+      'filters' => compact('sort'),
     ]);
   }
 
@@ -35,7 +33,7 @@ class WhitelistEntryController extends Controller
     $rules = [
       'type' => ['required', 'in:domain,ip'],
       'name' => ['required', 'string', 'max:255'],
-      'is_active' => ['boolean']
+      'is_active' => ['boolean'],
     ];
 
     // Validación específica según el tipo
@@ -45,7 +43,7 @@ class WhitelistEntryController extends Controller
         'url',
         Rule::unique('whitelist_entries')->where(function ($query) use ($request) {
           return $query->where('type', $request->type);
-        })
+        }),
       ];
     } else {
       $rules['value'] = [
@@ -53,7 +51,7 @@ class WhitelistEntryController extends Controller
         'ip',
         Rule::unique('whitelist_entries')->where(function ($query) use ($request) {
           return $query->where('type', $request->type);
-        })
+        }),
       ];
     }
 
@@ -61,7 +59,7 @@ class WhitelistEntryController extends Controller
     $data = $request->all();
     $entry = WhitelistEntry::create($data);
     $message = $request->type === 'domain' ? 'Domain successfully added' : 'IP successfully added';
-    add_flash_message(type: "success", message: $message);
+    add_flash_message(type: 'success', message: $message);
     return redirect()->route('whitelist.index');
   }
 
@@ -72,9 +70,9 @@ class WhitelistEntryController extends Controller
   {
     $isDomainType = $request->type === 'domain';
     $rules = [
-      'type'      => ['required', 'in:domain,ip'],
-      'name'      => ['required', 'string', 'max:255'],
-      'value'     => ['required', 'string', 'max:255'],
+      'type' => ['required', 'in:domain,ip'],
+      'name' => ['required', 'string', 'max:255'],
+      'value' => ['required', 'string', 'max:255'],
       'is_active' => ['nullable', 'boolean'],
     ];
     $rules['value'][] = $isDomainType ? 'url' : 'ip';
@@ -83,10 +81,9 @@ class WhitelistEntryController extends Controller
     // Asegurar el booleano
     $newData['is_active'] = $request->boolean('is_active');
     $whitelist->update($newData);
-    add_flash_message(type: "success", message: "Whitelist entry updated successfully.");
+    add_flash_message(type: 'success', message: 'Whitelist entry updated successfully.');
     return back();
   }
-
 
   /**
    * Eliminar entrada de whitelist
@@ -97,7 +94,7 @@ class WhitelistEntryController extends Controller
     $type = $whitelist->type;
     $whitelist->delete();
     $message = $type === 'domain' ? 'Domain successfully deleted' : 'IP successfully removed';
-    add_flash_message(type: "success", message: $message);
+    add_flash_message(type: 'success', message: $message);
     return back();
   }
 }
