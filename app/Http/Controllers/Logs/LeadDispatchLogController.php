@@ -61,6 +61,7 @@ class LeadDispatchLogController extends Controller
       'pingResults.integration.company',
       'postResults.integration.company',
       'postResults.pingResult',
+      'buyerEvents.integration',
     ]);
 
     return Inertia::render('ping-post/dispatches/show', [
@@ -73,9 +74,7 @@ class LeadDispatchLogController extends Controller
   {
     $dispatch->load(['workflow', 'winnerIntegration']);
 
-    $timelineLogs = $dispatch->timelineLogs()
-      ->orderBy('logged_at')
-      ->get();
+    $timelineLogs = $dispatch->timelineLogs()->orderBy('logged_at')->get();
 
     return Inertia::render('ping-post/dispatches/timeline', [
       'dispatch' => $dispatch,
