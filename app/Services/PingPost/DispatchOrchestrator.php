@@ -37,7 +37,10 @@ class DispatchOrchestrator
   /**
    * Main entry point: dispatch a lead through a workflow.
    */
-  public function dispatch(Workflow $workflow, Lead $lead, string $fingerprint): LeadDispatch
+  /**
+   * @param  array<string, mixed>  $extra  Optional attributes merged into the LeadDispatch create (e.g. attempt, parent_dispatch_id).
+   */
+  public function dispatch(Workflow $workflow, Lead $lead, string $fingerprint, array $extra = []): LeadDispatch
   {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
     $leadSnapshot = $lead->leadFieldResponses->pluck('value', 'field_id')->toArray();
@@ -50,15 +53,20 @@ class DispatchOrchestrator
       'leadData' => $leadData,
     ]);
 
-    $dispatch = LeadDispatch::create([
-      'workflow_id' => $workflow->id,
-      'lead_id' => $lead->id,
-      'fingerprint' => $fingerprint,
-      'lead_snapshot' => $leadSnapshot,
-      'status' => DispatchStatus::RUNNING,
-      'strategy_used' => $workflow->strategy->value,
-      'started_at' => now(),
-    ]);
+    $dispatch = LeadDispatch::create(
+      array_merge(
+        [
+          'workflow_id' => $workflow->id,
+          'lead_id' => $lead->id,
+          'fingerprint' => $fingerprint,
+          'lead_snapshot' => $leadSnapshot,
+          'status' => DispatchStatus::RUNNING,
+          'strategy_used' => $workflow->strategy->value,
+          'started_at' => now(),
+        ],
+        $extra, //'attempt','parent_dispatch_id'
+      ),
+    );
 
     $this->timeline->bind($fingerprint, $dispatch->id);
     $this->timeline->log(DispatchTimelineService::DISPATCH_STARTED, "Workflow '{$workflow->name}' started ({$workflow->strategy->value})", [
