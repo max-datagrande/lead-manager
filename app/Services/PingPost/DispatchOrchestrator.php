@@ -9,6 +9,7 @@ use App\Enums\WorkflowStrategy;
 use App\Models\Integration;
 use App\Models\Lead;
 use App\Models\LeadDispatch;
+use App\Jobs\PingPost\FlushBuyerEventsJob;
 use App\Support\SlackMessageBundler;
 use App\Models\PingResult;
 use App\Models\Workflow;
@@ -21,6 +22,9 @@ use Throwable;
 
 class DispatchOrchestrator
 {
+  /** @var array<int, array{lead_dispatch_id: int, integration_id: int, event: string, reason: string, detail: ?string}> */
+  private array $buyerEventsBuffer = [];
+
   public function __construct(
     private readonly EligibilityCheckerService $eligibility,
     private readonly CapCheckerService $caps,
@@ -88,6 +92,7 @@ class DispatchOrchestrator
         $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
       }
       $this->timeline->flush();
+      $this->flushBuyerEvents();
     }
 
     $dispatch->update([
@@ -141,17 +146,22 @@ class DispatchOrchestrator
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
       }
 
-      $this->timeline->log(DispatchTimelineService::PRICE_RESOLVED, "Price for {$integration->name}: \${$offeredPrice} (bid: \${$pingResult->bid_price})", [
-        'integration_id' => $integration->id,
-        'offered_price' => $offeredPrice,
-        'bid_price' => $pingResult->bid_price,
-        'price_source' => $config->price_source->value,
-      ]);
+      $this->timeline->log(
+        DispatchTimelineService::PRICE_RESOLVED,
+        "Price for {$integration->name}: \${$offeredPrice} (bid: \${$pingResult->bid_price})",
+        [
+          'integration_id' => $integration->id,
+          'offered_price' => $offeredPrice,
+          'bid_price' => $pingResult->bid_price,
+          'price_source' => $config->price_source->value,
+        ],
+      );
 
       if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price below threshold", [
           'integration_id' => $integration->id,
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'skipped', 'price_below_threshold', "price={$offeredPrice}");
         continue;
       }
 
@@ -213,6 +223,7 @@ class DispatchOrchestrator
           'integration_id' => $integration->id,
           'reason' => 'no_config',
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'skipped', 'no_config');
         continue;
       }
 
@@ -227,12 +238,16 @@ class DispatchOrchestrator
       if ($integration->type === 'ping-post') {
         $pingResult = $this->pinger->ping($integration, $config, $dispatch, $leadData);
 
-        $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: {$pingResult->status->value}" . ($pingResult->bid_price ? " at \${$pingResult->bid_price}" : ''), [
-          'ping_result_id' => $pingResult->id,
-          'integration_id' => $integration->id,
-          'status' => $pingResult->status->value,
-          'bid_price' => $pingResult->bid_price,
-        ]);
+        $this->timeline->log(
+          DispatchTimelineService::PING_RESULT,
+          "Ping {$integration->name}: {$pingResult->status->value}" . ($pingResult->bid_price ? " at \${$pingResult->bid_price}" : ''),
+          [
+            'ping_result_id' => $pingResult->id,
+            'integration_id' => $integration->id,
+            'status' => $pingResult->status->value,
+            'bid_price' => $pingResult->bid_price,
+          ],
+        );
 
         if ($pingResult->status === PingResultStatus::ACCEPTED) {
           $offeredPrice = $this->priceResolver->resolvePrice($config, (float) $pingResult->bid_price);
@@ -256,25 +271,34 @@ class DispatchOrchestrator
           ]);
           continue;
         } else {
-          $this->timeline->log(DispatchTimelineService::CASCADE_BREAK, "Stopping cascade at {$integration->name} (ping {$pingResult->status->value})", [
-            'integration_id' => $integration->id,
-            'status' => $pingResult->status->value,
-          ]);
+          $this->timeline->log(
+            DispatchTimelineService::CASCADE_BREAK,
+            "Stopping cascade at {$integration->name} (ping {$pingResult->status->value})",
+            [
+              'integration_id' => $integration->id,
+              'status' => $pingResult->status->value,
+            ],
+          );
           break;
         }
       }
 
-      $this->timeline->log(DispatchTimelineService::PRICE_RESOLVED, "Price for {$integration->name}: \${$offeredPrice} (source: {$config->price_source->value})", [
-        'integration_id' => $integration->id,
-        'offered_price' => $offeredPrice,
-        'price_source' => $config->price_source->value,
-      ]);
+      $this->timeline->log(
+        DispatchTimelineService::PRICE_RESOLVED,
+        "Price for {$integration->name}: \${$offeredPrice} (source: {$config->price_source->value})",
+        [
+          'integration_id' => $integration->id,
+          'offered_price' => $offeredPrice,
+          'price_source' => $config->price_source->value,
+        ],
+      );
 
       if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price \${$offeredPrice} below threshold", [
           'integration_id' => $integration->id,
           'offered_price' => $offeredPrice,
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'skipped', 'price_below_threshold', "price={$offeredPrice}");
         continue;
       }
 
@@ -474,12 +498,16 @@ class DispatchOrchestrator
 
         $pingResults[$integrationId] = $pingResult;
 
-        $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: {$pingResult->status->value}" . ($bidPrice ? " at \${$bidPrice}" : ''), [
-          'ping_result_id' => $pingResult->id,
-          'integration_id' => $integrationId,
-          'status' => $pingResult->status->value,
-          'bid_price' => $bidPrice,
-        ]);
+        $this->timeline->log(
+          DispatchTimelineService::PING_RESULT,
+          "Ping {$integration->name}: {$pingResult->status->value}" . ($bidPrice ? " at \${$bidPrice}" : ''),
+          [
+            'ping_result_id' => $pingResult->id,
+            'integration_id' => $integrationId,
+            'status' => $pingResult->status->value,
+            'bid_price' => $bidPrice,
+          ],
+        );
       } else {
         $isTimeout =
           $response instanceof Throwable && (str_contains($response->getMessage(), 'timed out') || str_contains($response->getMessage(), 'timeout'));
@@ -614,6 +642,9 @@ class DispatchOrchestrator
           'integration_id' => $integration?->id,
           'reason' => 'inactive',
         ]);
+        if ($integration) {
+          $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'inactive');
+        }
         return false;
       }
 
@@ -622,14 +653,18 @@ class DispatchOrchestrator
           'integration_id' => $integration->id,
           'reason' => 'duplicate',
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'duplicate');
         return false;
       }
 
       if (!$this->eligibility->isEligible($integration, $leadData)) {
+        $skipReason = $this->eligibility->getSkipReason($integration, $leadData);
         $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} filtered: ineligible", [
           'integration_id' => $integration->id,
           'reason' => 'ineligible',
+          'detail' => $skipReason,
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'ineligible', $skipReason);
         return false;
       }
 
@@ -638,17 +673,22 @@ class DispatchOrchestrator
           'integration_id' => $integration->id,
           'reason' => 'cap_exceeded',
         ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'cap_exceeded');
         return false;
       }
 
       return true;
     });
 
-    $this->timeline->log(DispatchTimelineService::ELIGIBILITY_CHECK, "{$eligible->count()} of {$allBuyers->count()} buyers eligible for {$group} group", [
-      'total' => $allBuyers->count(),
-      'passed' => $eligible->count(),
-      'group' => $group,
-    ]);
+    $this->timeline->log(
+      DispatchTimelineService::ELIGIBILITY_CHECK,
+      "{$eligible->count()} of {$allBuyers->count()} buyers eligible for {$group} group",
+      [
+        'total' => $allBuyers->count(),
+        'passed' => $eligible->count(),
+        'group' => $group,
+      ],
+    );
 
     return $eligible;
   }
@@ -685,6 +725,40 @@ class DispatchOrchestrator
     $actual = \Illuminate\Support\Arr::get($response->json() ?? [], $acceptedPath);
 
     return (string) $actual === (string) $acceptedValue;
+  }
+
+  private function bufferBuyerEvent(int $dispatchId, int $integrationId, string $event, string $reason, ?string $detail = null): void
+  {
+    TailLogger::saveLog('BuyerEvent buffered', 'dispatch/buyer-events', 'info', [
+      'dispatch_id' => $dispatchId,
+      'integration_id' => $integrationId,
+      'event' => $event,
+      'reason' => $reason,
+      'detail' => $detail,
+    ]);
+
+    $this->buyerEventsBuffer[] = [
+      'lead_dispatch_id' => $dispatchId,
+      'integration_id' => $integrationId,
+      'event' => $event,
+      'reason' => $reason,
+      'detail' => $detail,
+    ];
+  }
+
+  private function flushBuyerEvents(): void
+  {
+    if (empty($this->buyerEventsBuffer)) {
+      TailLogger::saveLog('BuyerEvents flush: empty buffer', 'dispatch/buyer-events');
+      return;
+    }
+
+    TailLogger::saveLog('BuyerEvents flush', 'dispatch/buyer-events', 'info', [
+      'count' => count($this->buyerEventsBuffer),
+    ]);
+
+    FlushBuyerEventsJob::dispatch($this->buyerEventsBuffer);
+    $this->buyerEventsBuffer = [];
   }
 
   private function notifySlackError(LeadDispatch $dispatch, Workflow $workflow, Throwable $e): void
