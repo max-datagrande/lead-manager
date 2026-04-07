@@ -75,6 +75,11 @@ class LeadDispatch extends Model
     return $this->hasMany(DispatchTimelineLog::class);
   }
 
+  public function buyerEvents(): HasMany
+  {
+    return $this->hasMany(DispatchBuyerEvent::class);
+  }
+
   public function markAsSold(Integration $winner, float $price): void
   {
     $this->update([
