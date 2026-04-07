@@ -158,6 +158,8 @@ export interface LeadDispatch {
   lead_snapshot?: Record<string, string> | null;
   status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout';
   strategy_used: string;
+  attempt: number;
+  parent_dispatch_id: number | null;
   winner_integration_id: number | null;
   final_price: number | null;
   fallback_activated: boolean;
@@ -173,6 +175,14 @@ export interface LeadDispatch {
   buyer_events?: DispatchBuyerEvent[];
   created_at: string;
   updated_at: string;
+}
+
+export interface DispatchAttemptSummary {
+  id: number;
+  attempt: number;
+  status: LeadDispatch['status'];
+  started_at: string | null;
+  completed_at: string | null;
 }
 
 export interface DispatchBuyerEvent {

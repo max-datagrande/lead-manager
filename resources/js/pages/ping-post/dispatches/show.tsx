@@ -1,4 +1,5 @@
 import PageHeader from '@/components/page-header';
+import { AttemptTabs } from '@/components/ping-post/dispatches/attempt-tabs';
 import { showBreadcrumbs } from '@/components/ping-post/dispatches/breadcrumbs';
 import { BuyerOutcomes } from '@/components/ping-post/dispatches/buyer-outcomes';
 import { DispatchTimeline } from '@/components/ping-post/dispatches/dispatch-timeline';
@@ -6,10 +7,11 @@ import { StatusBadge } from '@/components/ping-post/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useModal } from '@/hooks/use-modal';
 import AppLayout from '@/layouts/app-layout';
-import type { LeadDispatch } from '@/types/ping-post';
-import { Head, Link } from '@inertiajs/react';
-import { ScrollText } from 'lucide-react';
+import type { DispatchAttemptSummary, LeadDispatch } from '@/types/ping-post';
+import { Head, Link, router } from '@inertiajs/react';
+import { RefreshCw, ScrollText } from 'lucide-react';
 import { useMemo } from 'react';
 import { route } from 'ziggy-js';
 
@@ -22,9 +24,17 @@ interface Field {
 interface Props {
   dispatch: LeadDispatch;
   fields?: Field[];
+  allAttempts?: DispatchAttemptSummary[];
 }
 
-const DispatchesShow = ({ dispatch, fields = [] }: Props) => {
+const TERMINAL_STATUSES = ['sold', 'not_sold', 'error', 'timeout'] as const;
+
+const DispatchesShow = ({ dispatch, fields = [], allAttempts = [] }: Props) => {
+  const modal = useModal();
+
+  const isTerminal = TERMINAL_STATUSES.includes(dispatch.status as (typeof TERMINAL_STATUSES)[number]);
+  const hasRunningRetry = allAttempts.some((a) => a.status === 'running' && a.id !== dispatch.id);
+
   const snapshotRows = useMemo(() => {
     if (!dispatch.lead_snapshot || !fields.length) return [];
     const fieldMap = new Map(fields.map((f) => [String(f.id), f]));
@@ -34,6 +44,25 @@ const DispatchesShow = ({ dispatch, fields = [] }: Props) => {
     });
   }, [dispatch.lead_snapshot, fields]);
 
+  const handleRetry = async () => {
+    const confirmed = await modal.warnConfirm({
+      title: 'Retry Dispatch',
+      description: 'This will re-execute the entire workflow for this lead. Existing logs will be preserved.',
+      consequences: [
+        'The workflow will be queued and executed again with all its buyers',
+        'A new dispatch attempt will be created (Attempt #' + (dispatch.attempt + 1) + ')',
+        'All existing logs, buyer events, and timeline will remain intact',
+      ],
+      confirmText: 'Retry Dispatch',
+      cancelText: 'Cancel',
+      confirmCode: 'RETRY',
+    });
+
+    if (confirmed) {
+      router.post(route('ping-post.dispatches.retry', dispatch.id));
+    }
+  };
+
   return (
     <>
       <Head title={`Dispatch #${dispatch.id}`} />
@@ -41,14 +70,32 @@ const DispatchesShow = ({ dispatch, fields = [] }: Props) => {
         <PageHeader title={`Dispatch #${dispatch.id}`} description={`${dispatch.workflow?.name ?? 'Unknown workflow'} · ${dispatch.strategy_used}`}>
           <div className="flex items-center gap-3">
             <StatusBadge status={dispatch.status} variant="dispatch" className="text-sm" />
+            {dispatch.attempt > 1 && (
+              <Badge variant="outline" className="text-xs">
+                Attempt #{dispatch.attempt}
+              </Badge>
+            )}
             <Button variant="outline" size="sm" asChild>
               <Link href={route('ping-post.dispatches.timeline', dispatch.id)}>
                 <ScrollText className="mr-2 h-4 w-4" />
                 Timeline Log
               </Link>
             </Button>
+            {isTerminal && !hasRunningRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/50"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            )}
           </div>
         </PageHeader>
+
+        <AttemptTabs attempts={allAttempts} currentDispatchId={dispatch.id} buildHref={(id) => route('ping-post.dispatches.show', id)} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Meta + Snapshot */}
