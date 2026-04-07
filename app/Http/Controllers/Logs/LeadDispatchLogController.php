@@ -7,8 +7,11 @@ use App\Enums\PostbackType;
 use App\Http\Controllers\Controller;
 use App\Models\Field;
 use App\Models\LeadDispatch;
+use App\Models\PingResult;
 use App\Models\PostbackExecution;
+use App\Models\PostResult;
 use App\Models\Workflow;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -78,5 +81,16 @@ class LeadDispatchLogController extends Controller
       'dispatch' => $dispatch,
       'timelineLogs' => $timelineLogs,
     ]);
+  }
+
+  public function resultDetail(string $type, int $id): JsonResponse
+  {
+    $model = match ($type) {
+      'ping' => PingResult::with('integration')->findOrFail($id),
+      'post' => PostResult::with('integration')->findOrFail($id),
+      default => abort(404),
+    };
+
+    return response()->json($model);
   }
 }

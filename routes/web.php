@@ -182,6 +182,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::get('dispatches/{dispatch}/timeline', [LeadDispatchLogController::class, 'timeline'])
         ->whereNumber('dispatch')
         ->name('dispatches.timeline');
+      Route::get('dispatches/result/{type}/{id}', [LeadDispatchLogController::class, 'resultDetail'])
+        ->whereIn('type', ['ping', 'post'])
+        ->whereNumber('id')
+        ->name('dispatches.result-detail');
     });
 });
 
