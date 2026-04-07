@@ -27,6 +27,7 @@ class DispatchOrchestrator
     private readonly PingService $pinger,
     private readonly PostService $poster,
     private readonly PriceResolverService $priceResolver,
+    private readonly DispatchTimelineService $timeline,
   ) {}
 
   /**
@@ -55,6 +56,13 @@ class DispatchOrchestrator
       'started_at' => now(),
     ]);
 
+    $this->timeline->bind($fingerprint, $dispatch->id);
+    $this->timeline->log(DispatchTimelineService::DISPATCH_STARTED, "Workflow '{$workflow->name}' started ({$workflow->strategy->value})", [
+      'workflow_id' => $workflow->id,
+      'strategy' => $workflow->strategy->value,
+      'lead_id' => $lead->id,
+    ]);
+
     try {
       TailLogger::saveLog('Running strategy: ' . ($workflow->strategy?->value ?? 'NULL'), 'dispatch/debug');
       match ($workflow->strategy) {
@@ -63,6 +71,7 @@ class DispatchOrchestrator
         WorkflowStrategy::COMBINED => $this->runCombined($workflow, $dispatch, $leadData),
       };
       TailLogger::saveLog('Strategy completed OK', 'dispatch/debug');
+      $this->timeline->log(DispatchTimelineService::DISPATCH_COMPLETED, 'Strategy completed');
     } catch (Throwable $e) {
       TailLogger::saveLog('Strategy FAILED', 'dispatch/debug', 'error', [
         'error' => $e->getMessage(),
@@ -70,12 +79,15 @@ class DispatchOrchestrator
         'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10),
       ]);
       $dispatch->markAsError($e->getMessage());
+      $this->timeline->log(DispatchTimelineService::DISPATCH_ERROR, "Strategy failed: {$e->getMessage()}");
       $this->notifySlackError($dispatch, $workflow, $e);
-    }
-
-    $dispatch->refresh();
-    if (!$dispatch->status->isTerminal()) {
-      $dispatch->markAsNotSold();
+    } finally {
+      $dispatch->refresh();
+      if (!$dispatch->status->isTerminal()) {
+        $dispatch->markAsNotSold();
+        $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
+      }
+      $this->timeline->flush();
     }
 
     $dispatch->update([
@@ -112,6 +124,7 @@ class DispatchOrchestrator
 
     foreach ($ranked as $pingResult) {
       if ($retries >= $workflow->cascade_max_retries) {
+        $this->timeline->log(DispatchTimelineService::CASCADE_BREAK, "Max retries ({$workflow->cascade_max_retries}) reached");
         break;
       }
 
@@ -128,7 +141,17 @@ class DispatchOrchestrator
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
       }
 
+      $this->timeline->log(DispatchTimelineService::PRICE_RESOLVED, "Price for {$integration->name}: \${$offeredPrice} (bid: \${$pingResult->bid_price})", [
+        'integration_id' => $integration->id,
+        'offered_price' => $offeredPrice,
+        'bid_price' => $pingResult->bid_price,
+        'price_source' => $config->price_source->value,
+      ]);
+
       if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+        $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price below threshold", [
+          'integration_id' => $integration->id,
+        ]);
         continue;
       }
 
@@ -136,18 +159,39 @@ class DispatchOrchestrator
 
       $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, $pingResult, $offeredPrice);
 
+      $this->timeline->log(DispatchTimelineService::POST_RESULT, "Post to {$integration->name}: {$postResult->status->value}", [
+        'post_result_id' => $postResult->id,
+        'integration_id' => $integration->id,
+        'status' => $postResult->status->value,
+        'price_offered' => $offeredPrice,
+      ]);
+
       if ($postResult->status->isSold() || $postResult->status === \App\Enums\PostResultStatus::PENDING_POSTBACK) {
         if ($postResult->status->isSold()) {
+          $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+            'integration_id' => $integration->id,
+            'price' => $offeredPrice,
+          ]);
           $dispatch->markAsSold($integration, $offeredPrice);
+        } else {
+          $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, "Pending postback from {$integration->name}", [
+            'integration_id' => $integration->id,
+            'post_result_id' => $postResult->id,
+          ]);
         }
         $sold = true;
         break;
       }
 
       if (!$workflow->cascade_on_post_rejection) {
+        $this->timeline->log(DispatchTimelineService::CASCADE_BREAK, "Cascade disabled, stopping at {$integration->name}");
         break;
       }
 
+      $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (post {$postResult->status->value})", [
+        'integration_id' => $integration->id,
+        'retry' => $retries + 1,
+      ]);
       $retries++;
     }
 
@@ -165,6 +209,10 @@ class DispatchOrchestrator
       $config = $integration->buyerConfig;
 
       if (!$config) {
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} skipped: no buyer config", [
+          'integration_id' => $integration->id,
+          'reason' => 'no_config',
+        ]);
         continue;
       }
 
@@ -179,6 +227,13 @@ class DispatchOrchestrator
       if ($integration->type === 'ping-post') {
         $pingResult = $this->pinger->ping($integration, $config, $dispatch, $leadData);
 
+        $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: {$pingResult->status->value}" . ($pingResult->bid_price ? " at \${$pingResult->bid_price}" : ''), [
+          'ping_result_id' => $pingResult->id,
+          'integration_id' => $integration->id,
+          'status' => $pingResult->status->value,
+          'bid_price' => $pingResult->bid_price,
+        ]);
+
         if ($pingResult->status === PingResultStatus::ACCEPTED) {
           $offeredPrice = $this->priceResolver->resolvePrice($config, (float) $pingResult->bid_price);
 
@@ -186,17 +241,40 @@ class DispatchOrchestrator
             $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
           }
         } elseif ($pingResult->status === PingResultStatus::REJECTED && $workflow->advance_on_rejection) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (ping rejected)", [
+            'integration_id' => $integration->id,
+          ]);
           continue;
         } elseif ($pingResult->status === PingResultStatus::TIMEOUT && $workflow->advance_on_timeout) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (ping timeout)", [
+            'integration_id' => $integration->id,
+          ]);
           continue;
         } elseif ($pingResult->status === PingResultStatus::ERROR && $workflow->advance_on_error) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (ping error)", [
+            'integration_id' => $integration->id,
+          ]);
           continue;
         } else {
-          break; // don't advance on this status
+          $this->timeline->log(DispatchTimelineService::CASCADE_BREAK, "Stopping cascade at {$integration->name} (ping {$pingResult->status->value})", [
+            'integration_id' => $integration->id,
+            'status' => $pingResult->status->value,
+          ]);
+          break;
         }
       }
 
+      $this->timeline->log(DispatchTimelineService::PRICE_RESOLVED, "Price for {$integration->name}: \${$offeredPrice} (source: {$config->price_source->value})", [
+        'integration_id' => $integration->id,
+        'offered_price' => $offeredPrice,
+        'price_source' => $config->price_source->value,
+      ]);
+
       if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+        $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price \${$offeredPrice} below threshold", [
+          'integration_id' => $integration->id,
+          'offered_price' => $offeredPrice,
+        ]);
         continue;
       }
 
@@ -204,25 +282,49 @@ class DispatchOrchestrator
 
       $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, $pingResult, $offeredPrice);
 
+      $this->timeline->log(DispatchTimelineService::POST_RESULT, "Post to {$integration->name}: {$postResult->status->value}", [
+        'post_result_id' => $postResult->id,
+        'integration_id' => $integration->id,
+        'status' => $postResult->status->value,
+        'price_offered' => $offeredPrice,
+      ]);
+
       if ($postResult->status->isSold()) {
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+          'integration_id' => $integration->id,
+          'price' => $offeredPrice,
+        ]);
         $dispatch->markAsSold($integration, $offeredPrice);
 
         return true;
       }
 
       if ($postResult->status === \App\Enums\PostResultStatus::PENDING_POSTBACK) {
-        return true; // async, consider handled
+        $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, "Pending postback from {$integration->name}", [
+          'integration_id' => $integration->id,
+          'post_result_id' => $postResult->id,
+        ]);
+        return true;
       }
 
       if ($postResult->status === \App\Enums\PostResultStatus::REJECTED && $workflow->advance_on_rejection) {
+        $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (post rejected)", [
+          'integration_id' => $integration->id,
+        ]);
         continue;
       }
 
       if ($postResult->status === \App\Enums\PostResultStatus::TIMEOUT && $workflow->advance_on_timeout) {
+        $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (post timeout)", [
+          'integration_id' => $integration->id,
+        ]);
         continue;
       }
 
       if ($postResult->status === \App\Enums\PostResultStatus::ERROR && $workflow->advance_on_error) {
+        $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past {$integration->name} (post error)", [
+          'integration_id' => $integration->id,
+        ]);
         continue;
       }
 
@@ -357,7 +459,7 @@ class DispatchOrchestrator
         $bidPrice = $this->extractBidFromResponse($response, $config);
         $accepted = $this->isAcceptedResponse($response, $config);
 
-        $pingResults[$integrationId] = PingResult::create([
+        $pingResult = PingResult::create([
           'lead_dispatch_id' => $dispatch->id,
           'integration_id' => $integrationId,
           'idempotency_key' => $idempotencyKey,
@@ -369,11 +471,20 @@ class DispatchOrchestrator
           'request_headers' => $data['headers'],
           'response_body' => $response->json() ?? ['raw' => $response->body()],
         ]);
+
+        $pingResults[$integrationId] = $pingResult;
+
+        $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: {$pingResult->status->value}" . ($bidPrice ? " at \${$bidPrice}" : ''), [
+          'ping_result_id' => $pingResult->id,
+          'integration_id' => $integrationId,
+          'status' => $pingResult->status->value,
+          'bid_price' => $bidPrice,
+        ]);
       } else {
         $isTimeout =
           $response instanceof Throwable && (str_contains($response->getMessage(), 'timed out') || str_contains($response->getMessage(), 'timeout'));
 
-        $pingResults[$integrationId] = PingResult::create([
+        $pingResult = PingResult::create([
           'lead_dispatch_id' => $dispatch->id,
           'integration_id' => $integrationId,
           'idempotency_key' => $idempotencyKey,
@@ -383,8 +494,22 @@ class DispatchOrchestrator
           'request_headers' => $data['headers'],
           'response_body' => ['error' => $response instanceof Throwable ? $response->getMessage() : 'unknown'],
         ]);
+
+        $pingResults[$integrationId] = $pingResult;
+
+        $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: {$pingResult->status->value}", [
+          'ping_result_id' => $pingResult->id,
+          'integration_id' => $integrationId,
+          'status' => $pingResult->status->value,
+        ]);
       }
     }
+
+    $accepted = collect($pingResults)->filter(fn(PingResult $r) => $r->status === PingResultStatus::ACCEPTED)->count();
+    $this->timeline->log(DispatchTimelineService::PING_PARALLEL_COMPLETE, "{$accepted} accepted out of " . count($pingResults) . ' pings', [
+      'total' => count($pingResults),
+      'accepted' => $accepted,
+    ]);
 
     return $pingResults;
   }
@@ -399,10 +524,15 @@ class DispatchOrchestrator
       ->get();
 
     if ($fallbackBuyers->isEmpty()) {
+      $this->timeline->log(DispatchTimelineService::FALLBACK_NO_BUYERS, 'No fallback buyers available');
       $dispatch->markAsNotSold();
 
       return;
     }
+
+    $this->timeline->log(DispatchTimelineService::FALLBACK_ACTIVATED, "Fallback activated: {$fallbackBuyers->count()} buyers available", [
+      'fallback_buyer_count' => $fallbackBuyers->count(),
+    ]);
 
     $dispatch->update(['fallback_activated' => true]);
     $sold = false;
@@ -422,13 +552,27 @@ class DispatchOrchestrator
       }
 
       if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+        $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Fallback {$integration->name}: price below threshold", [
+          'integration_id' => $integration->id,
+        ]);
         continue;
       }
 
       $offeredPrice = $offeredPrice ?? 0;
       $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, null, $offeredPrice);
 
+      $this->timeline->log(DispatchTimelineService::POST_RESULT, "Fallback post to {$integration->name}: {$postResult->status->value}", [
+        'post_result_id' => $postResult->id,
+        'integration_id' => $integration->id,
+        'status' => $postResult->status->value,
+        'price_offered' => $offeredPrice,
+      ]);
+
       if ($postResult->status->isSold()) {
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold via fallback to {$integration->name} at \${$offeredPrice}", [
+          'integration_id' => $integration->id,
+          'price' => $offeredPrice,
+        ]);
         $dispatch->markAsSold($integration, $offeredPrice);
         $sold = true;
         break;
@@ -447,7 +591,7 @@ class DispatchOrchestrator
    */
   private function getEligibleBuyers(Workflow $workflow, LeadDispatch $dispatch, array $leadData, string $group): Collection
   {
-    return $workflow
+    $allBuyers = $workflow
       ->workflowBuyers()
       ->where('buyer_group', $group)
       ->where('is_active', true)
@@ -460,28 +604,53 @@ class DispatchOrchestrator
         'integration.eligibilityRules',
         'integration.capRules',
       ])
-      ->get()
-      ->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData): bool {
-        $integration = $wfBuyer->integration;
+      ->get();
 
-        if (!$integration || !$integration->is_active) {
-          return false;
-        }
+    $eligible = $allBuyers->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData): bool {
+      $integration = $wfBuyer->integration;
 
-        if ($this->isDuplicate($dispatch, $integration)) {
-          return false;
-        }
+      if (!$integration || !$integration->is_active) {
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration?->name} filtered: inactive", [
+          'integration_id' => $integration?->id,
+          'reason' => 'inactive',
+        ]);
+        return false;
+      }
 
-        if (!$this->eligibility->isEligible($integration, $leadData)) {
-          return false;
-        }
+      if ($this->isDuplicate($dispatch, $integration)) {
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} filtered: duplicate", [
+          'integration_id' => $integration->id,
+          'reason' => 'duplicate',
+        ]);
+        return false;
+      }
 
-        if ($this->caps->isCapExceeded($integration)) {
-          return false;
-        }
+      if (!$this->eligibility->isEligible($integration, $leadData)) {
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} filtered: ineligible", [
+          'integration_id' => $integration->id,
+          'reason' => 'ineligible',
+        ]);
+        return false;
+      }
 
-        return true;
-      });
+      if ($this->caps->isCapExceeded($integration)) {
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} filtered: cap exceeded", [
+          'integration_id' => $integration->id,
+          'reason' => 'cap_exceeded',
+        ]);
+        return false;
+      }
+
+      return true;
+    });
+
+    $this->timeline->log(DispatchTimelineService::ELIGIBILITY_CHECK, "{$eligible->count()} of {$allBuyers->count()} buyers eligible for {$group} group", [
+      'total' => $allBuyers->count(),
+      'passed' => $eligible->count(),
+      'group' => $group,
+    ]);
+
+    return $eligible;
   }
 
   private function isDuplicate(LeadDispatch $dispatch, Integration $integration): bool
