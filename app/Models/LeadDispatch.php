@@ -20,6 +20,8 @@ class LeadDispatch extends Model
     'lead_snapshot',
     'status',
     'strategy_used',
+    'attempt',
+    'parent_dispatch_id',
     'winner_integration_id',
     'final_price',
     'fallback_activated',
@@ -78,6 +80,16 @@ class LeadDispatch extends Model
   public function buyerEvents(): HasMany
   {
     return $this->hasMany(DispatchBuyerEvent::class);
+  }
+
+  public function parentDispatch(): BelongsTo
+  {
+    return $this->belongsTo(self::class, 'parent_dispatch_id');
+  }
+
+  public function retries(): HasMany
+  {
+    return $this->hasMany(self::class, 'parent_dispatch_id');
   }
 
   public function markAsSold(Integration $winner, float $price): void

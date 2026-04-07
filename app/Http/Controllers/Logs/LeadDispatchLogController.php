@@ -11,7 +11,9 @@ use App\Models\PingResult;
 use App\Models\PostbackExecution;
 use App\Models\PostResult;
 use App\Models\Workflow;
+use App\Jobs\PingPost\RetryDispatchJob;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -64,9 +66,18 @@ class LeadDispatchLogController extends Controller
       'buyerEvents.integration',
     ]);
 
+    $rootId = $dispatch->parent_dispatch_id ?? $dispatch->id;
+    $allAttempts = LeadDispatch::query()
+      ->where(function ($q) use ($rootId) {
+        $q->where('id', $rootId)->orWhere('parent_dispatch_id', $rootId);
+      })
+      ->orderBy('attempt')
+      ->get(['id', 'attempt', 'status', 'started_at', 'completed_at']);
+
     return Inertia::render('ping-post/dispatches/show', [
       'dispatch' => $dispatch,
       'fields' => Field::all(['id', 'name', 'label']),
+      'allAttempts' => $allAttempts,
     ]);
   }
 
@@ -76,10 +87,30 @@ class LeadDispatchLogController extends Controller
 
     $timelineLogs = $dispatch->timelineLogs()->orderBy('logged_at')->get();
 
+    $rootId = $dispatch->parent_dispatch_id ?? $dispatch->id;
+    $allAttempts = LeadDispatch::query()
+      ->where(function ($q) use ($rootId) {
+        $q->where('id', $rootId)->orWhere('parent_dispatch_id', $rootId);
+      })
+      ->orderBy('attempt')
+      ->get(['id', 'attempt', 'status', 'started_at', 'completed_at']);
+
     return Inertia::render('ping-post/dispatches/timeline', [
       'dispatch' => $dispatch,
       'timelineLogs' => $timelineLogs,
+      'allAttempts' => $allAttempts,
     ]);
+  }
+
+  public function retry(LeadDispatch $dispatch): RedirectResponse
+  {
+    if (!$dispatch->status->isTerminal()) {
+      return back()->with('error', 'Only terminal dispatches can be retried.');
+    }
+
+    RetryDispatchJob::dispatch($dispatch->id);
+
+    return back()->with('success', 'Retry dispatch queued. A new attempt will appear shortly.');
   }
 
   public function resultDetail(string $type, int $id): JsonResponse
