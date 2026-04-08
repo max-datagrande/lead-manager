@@ -10,7 +10,7 @@ use App\Models\Integration;
 use App\Models\Lead;
 use App\Models\LeadDispatch;
 use App\Jobs\PingPost\FlushBuyerEventsJob;
-use App\Support\SlackMessageBundler;
+use App\Jobs\PingPost\SendWorkflowAlertJob;
 use App\Models\PingResult;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
@@ -92,7 +92,16 @@ class DispatchOrchestrator
       ]);
       $dispatch->markAsError($e->getMessage());
       $this->timeline->log(DispatchTimelineService::DISPATCH_ERROR, "Strategy failed: {$e->getMessage()}");
-      $this->notifySlackError($dispatch, $workflow, $e);
+      SendWorkflowAlertJob::dispatch($workflow->id, "Workflow '{$workflow->name}' strategy failed: {$e->getMessage()}", [
+        'title' => 'Workflow Dispatch Failed',
+        'fields' => [
+          'Workflow' => "{$workflow->name} (#{$workflow->id})",
+          'Dispatch' => "#{$dispatch->id} — {$dispatch->dispatch_uuid}",
+          'Strategy' => $dispatch->strategy_used ?? $workflow->strategy->value,
+          'Error' => $e->getMessage(),
+          'File' => "{$e->getFile()}:{$e->getLine()}",
+        ],
+      ]);
     } finally {
       $dispatch->refresh();
       if (!$dispatch->status->isTerminal()) {
@@ -767,27 +776,5 @@ class DispatchOrchestrator
 
     FlushBuyerEventsJob::dispatch($this->buyerEventsBuffer);
     $this->buyerEventsBuffer = [];
-  }
-
-  private function notifySlackError(LeadDispatch $dispatch, Workflow $workflow, Throwable $e): void
-  {
-    try {
-      (new SlackMessageBundler())
-        ->createAttachment('#dc3545')
-        ->addTitle('Dispatch Strategy Failed', '🚨')
-        ->addSection("Workflow *{$workflow->name}* (#{$workflow->id}) failed during `{$dispatch->strategy_used}` strategy.")
-        ->addField('Dispatch', "#{$dispatch->id} — `{$dispatch->dispatch_uuid}`", '📋')
-        ->addField('Lead', "#{$dispatch->lead_id} — `{$dispatch->fingerprint}`", '👤')
-        ->addKeyValue('Error', $e->getMessage(), true, '💥')
-        ->addFooter("_{$e->getFile()}:{$e->getLine()}_")
-        ->closeAttachment()
-        ->sendDirect('error');
-    } catch (Throwable $slackError) {
-      TailLogger::saveLog('Slack notification failed', 'notifications/slack', 'error', [
-        'original_error' => $e->getMessage(),
-        'slack_error' => $slackError->getMessage(),
-        'dispatch_id' => $dispatch->id,
-      ]);
-    }
   }
 }
