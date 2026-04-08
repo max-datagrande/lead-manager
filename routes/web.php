@@ -14,6 +14,7 @@ use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PingPost\BuyerController;
+use App\Http\Controllers\PingPost\WorkflowAlertController;
 use App\Http\Controllers\PingPost\WorkflowController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\InternalPostbackController;
@@ -181,6 +182,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('workflow')
         ->name('workflows.duplicate');
       Route::resource('workflows', WorkflowController::class)->whereNumber('workflow');
+      Route::post('workflows/{workflow}/alerts', [WorkflowAlertController::class, 'store'])
+        ->whereNumber('workflow')
+        ->name('workflows.alerts.store');
+      Route::delete('workflows/{workflow}/alerts/{alertChannel}', [WorkflowAlertController::class, 'destroy'])
+        ->whereNumber(['workflow', 'alertChannel'])
+        ->name('workflows.alerts.destroy');
       Route::resource('dispatches', LeadDispatchLogController::class)
         ->only(['index', 'show'])
         ->whereNumber('dispatch');

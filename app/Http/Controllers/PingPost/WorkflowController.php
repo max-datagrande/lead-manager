@@ -7,6 +7,7 @@ use App\Enums\WorkflowStrategy;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PingPost\StoreWorkflowRequest;
 use App\Http\Requests\PingPost\UpdateWorkflowRequest;
+use App\Models\AlertChannel;
 use App\Models\Buyer;
 use App\Models\Postback;
 use App\Models\Workflow;
@@ -50,7 +51,7 @@ class WorkflowController extends Controller
 
   public function show(Workflow $workflow): Response
   {
-    $workflow->load(['workflowBuyers.integration.company', 'user']);
+    $workflow->load(['workflowBuyers.integration.company', 'user', 'workflowAlerts.alertChannel']);
 
     return Inertia::render('ping-post/workflows/show', [
       'workflow' => $workflow,
@@ -59,7 +60,7 @@ class WorkflowController extends Controller
 
   public function edit(Workflow $workflow): Response
   {
-    $workflow->load(['workflowBuyers.integration', 'postbacks']);
+    $workflow->load(['workflowBuyers.integration', 'postbacks', 'workflowAlerts.alertChannel']);
 
     return Inertia::render('ping-post/workflows/edit', [
       'workflow' => $workflow,
@@ -72,6 +73,10 @@ class WorkflowController extends Controller
         ->where('is_active', true)
         ->orderBy('name')
         ->get(['id', 'uuid', 'name', 'base_url', 'is_active']),
+      'alert_channels' => AlertChannel::query()
+        ->where('active', true)
+        ->orderBy('name')
+        ->get(['id', 'name', 'type']),
     ]);
   }
 

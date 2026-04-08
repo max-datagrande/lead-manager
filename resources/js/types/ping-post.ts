@@ -88,9 +88,24 @@ export interface Workflow {
   workflow_buyers?: WorkflowBuyer[];
   workflow_buyers_count?: number;
   postbacks?: InternalPostbackSummary[];
+  workflow_alerts?: WorkflowAlert[];
   user?: { id: number; name: string };
   created_at: string;
   updated_at: string;
+}
+
+export interface WorkflowAlert {
+  id: number;
+  workflow_id: number;
+  alert_channel_id: number;
+  is_active: boolean;
+  alert_channel: AlertChannelSummary;
+}
+
+export interface AlertChannelSummary {
+  id: number;
+  name: string;
+  type: string;
 }
 
 export interface InternalPostbackSummary {
