@@ -31,17 +31,16 @@ class VisitorController extends Controller
       defaultSort: 'created_at:desc',
     );
 
-    // Datos adicionales para filtros
-    $data = [
-      'hosts' => $this->visitorService->getExistingHosts(),
-      'states' => $this->visitorService->getExistingStates(),
-    ];
-
     return Inertia::render('visitors/index', [
       'rows' => $result['rows'],
       'meta' => $result['meta'],
       'state' => $result['state'],
-      'data' => $data,
+      'data' => Inertia::defer(
+        fn() => [
+          'hosts' => $this->visitorService->getExistingHosts(),
+          'states' => $this->visitorService->getExistingStates(),
+        ],
+      ),
     ]);
   }
 

@@ -102,5 +102,5 @@ export interface DatatablePageProps<T = any> {
   };
   state: stateDatatable;
   meta: metaDatatable;
-  data: Record<string, any>;
+  data?: Record<string, any>;
 }

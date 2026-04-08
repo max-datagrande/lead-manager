@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\TrafficLog;
+use Illuminate\Support\Facades\Cache;
 
 class VisitorService
 {
@@ -124,31 +125,33 @@ class VisitorService
       'allowedSort' => $allowedSort,
     ];
   }
-  public function getExistingStates()
+  public function getExistingStates(): array
   {
-    return TrafficLog::select('state')
-      ->whereNotNull('state')
-      ->where('state', '<>', '')
-      ->distinct()
-      ->get()
-      ->map(function ($item) {
-        return [
-          'value' => $item->state,
-          'label' => ucfirst($item->state),
-        ];
-      })
-      ->values();
+    return Cache::remember('visitors:states', 3600, function () {
+      return TrafficLog::select('state')
+        ->whereNotNull('state')
+        ->where('state', '<>', '')
+        ->distinct()
+        ->orderBy('state')
+        ->pluck('state')
+        ->map(fn($value) => ['value' => $value, 'label' => ucfirst($value)])
+        ->values()
+        ->all();
+    });
   }
-  public function getExistingHosts()
+
+  public function getExistingHosts(): array
   {
-    return TrafficLog::select('host')
-      ->distinct()
-      ->get()
-      ->map(function ($item) {
-        return [
-          'value' => $item->host,
-          'label' => $item->host,
-        ];
-      });
+    return Cache::remember('visitors:hosts', 3600, function () {
+      return TrafficLog::select('host')
+        ->whereNotNull('host')
+        ->where('host', '<>', '')
+        ->distinct()
+        ->orderBy('host')
+        ->pluck('host')
+        ->map(fn($value) => ['value' => $value, 'label' => $value])
+        ->values()
+        ->all();
+    });
   }
 }
