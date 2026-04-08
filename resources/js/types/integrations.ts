@@ -19,12 +19,18 @@ interface PingResponseConfig {
   accepted_path?: string;
   accepted_value?: string;
   lead_id_path?: string;
+  error_path?: string;
+  error_value?: string;
+  error_reason_path?: string;
 }
 
 interface PostResponseConfig {
   accepted_path?: string;
   accepted_value?: string;
   rejected_path?: string;
+  error_path?: string;
+  error_value?: string;
+  error_reason_path?: string;
 }
 
 type ResponseConfig = OfferwallResponseConfig | PingResponseConfig | PostResponseConfig;
@@ -113,6 +119,7 @@ export type {
   EnvType,
   EnvironmentDB,
   EnvironmentForm,
+  EnvironmentTabProps,
   EnvironmentType,
   FieldMappingEntry,
   FlatEnvironments,
@@ -120,12 +127,11 @@ export type {
   IntegrationDB,
   IntegrationForm,
   MappingEntry,
-  PingPostEnvironments,
-  TokenMapping,
-  EnvironmentTabProps,
   OfferwallResponseConfig,
+  PingPostEnvironments,
   PingResponseConfig,
   PostResponseConfig,
   ResponseConfig,
-  ResponseConfigField
+  ResponseConfigField,
+  TokenMapping,
 };
