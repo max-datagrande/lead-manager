@@ -61,8 +61,11 @@ export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
           <Select
             value={rule.operator}
             onValueChange={(v) => {
-              updateRule(i, 'operator', v);
-              if (VALUE_LESS_OPERATORS.includes(v)) updateRule(i, 'value', null);
+              if (VALUE_LESS_OPERATORS.includes(v)) {
+                onChange(rules.map((r, idx) => (idx === i ? { ...r, operator: v as EligibilityRule['operator'], value: null } : r)));
+              } else {
+                updateRule(i, 'operator', v);
+              }
             }}
           >
             <SelectTrigger className="w-60">
