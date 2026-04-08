@@ -166,7 +166,7 @@ class CatalystCore {
 
     const payload = {
       fingerprint: this.visitorData.fingerprint,
-      fields,
+      fields: this.sanitizeFields(fields),
     };
 
     try {
@@ -229,7 +229,7 @@ class CatalystCore {
 
     const payload = {
       fingerprint: this.visitorData.fingerprint,
-      fields,
+      fields: this.sanitizeFields(fields),
     };
 
     try {
@@ -435,7 +435,7 @@ class CatalystCore {
     }
 
     if (fields && Object.keys(fields).length > 0) {
-      payload.fields = fields
+      payload.fields = this.sanitizeFields(fields)
       payload.create_on_miss = createOnMiss
     }
 
@@ -598,6 +598,14 @@ class CatalystCore {
   }
 
   // --- Helpers Privados ---
+
+  private sanitizeFields(fields: Record<string, any>): Record<string, any> {
+    const sanitized: Record<string, any> = {}
+    for (const [key, value] of Object.entries(fields)) {
+      sanitized[key] = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : value
+    }
+    return sanitized
+  }
 
   private getReferer(): string | null {
     const referer = document.referrer;
