@@ -158,6 +158,8 @@ export interface LeadDispatch {
   lead_snapshot?: Record<string, string> | null;
   status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout';
   strategy_used: string;
+  attempt: number;
+  parent_dispatch_id: number | null;
   winner_integration_id: number | null;
   final_price: number | null;
   fallback_activated: boolean;
@@ -170,8 +172,38 @@ export interface LeadDispatch {
   winner_integration?: Integration | null;
   ping_results?: PingResult[];
   post_results?: PostResult[];
+  buyer_events?: DispatchBuyerEvent[];
   created_at: string;
   updated_at: string;
+}
+
+export interface DispatchAttemptSummary {
+  id: number;
+  attempt: number;
+  status: LeadDispatch['status'];
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface DispatchBuyerEvent {
+  id: number;
+  lead_dispatch_id: number;
+  integration_id: number;
+  event: 'filtered' | 'skipped';
+  reason: string;
+  detail: string | null;
+  integration?: Integration;
+  created_at: string;
+}
+
+export interface DispatchTimelineLog {
+  id: number;
+  fingerprint: string;
+  lead_dispatch_id: number;
+  event: string;
+  message: string;
+  context: Record<string, any> | null;
+  logged_at: string;
 }
 
 export interface PriceSourceOption {

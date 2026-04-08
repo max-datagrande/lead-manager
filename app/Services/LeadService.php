@@ -112,6 +112,10 @@ class LeadService
         if (is_array($fieldValue)) {
           $fieldValue = json_encode($fieldValue);
         }
+        // Sanitize: strip newlines and excessive whitespace from string values
+        if (is_string($fieldValue)) {
+          $fieldValue = trim(preg_replace('/\s+/', ' ', $fieldValue));
+        }
 
         // Buscar el field por name (como en el controlador original)
         $field = Field::where('name', $fieldName)->first();
