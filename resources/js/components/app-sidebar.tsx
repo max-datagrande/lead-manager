@@ -5,10 +5,12 @@ import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
   BookOpen,
+  Bell,
   Bug,
   ClipboardList,
   Coins,
   Cpu,
+  Database,
   Factory,
   FileText,
   FlaskConical,
@@ -134,6 +136,11 @@ const SystemGroup: NavGroupType = {
       href: route('landing_pages.index'),
       icon: Globe,
     },
+    {
+      title: 'Alert Channels',
+      href: route('alert-channels.index'),
+      icon: Bell,
+    },
   ],
 };
 
@@ -154,6 +161,17 @@ const ShareLeadsGroup: NavGroupType = {
       title: 'Dispatch Logs',
       href: route('ping-post.dispatches.index'),
       icon: ClipboardList,
+    },
+  ],
+};
+
+const SystemToolsGroup: NavGroupType = {
+  title: 'System',
+  items: [
+    {
+      title: 'Cache',
+      href: route('system.cache.index'),
+      icon: Database,
     },
   ],
 };
@@ -193,6 +211,7 @@ const navGroups: NavGroupType[] = [
   ShareLeadsGroup,
   SystemGroup,
   DocumentationGroup,
+  SystemToolsGroup,
   AdminGroup,
 ];
 
@@ -216,8 +235,8 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navGroups.map((group) => {
-          const hasAdminAccess = group.title === 'Admin' && !isAdmin;
-          if (hasAdminAccess) {
+          const isAdminOnly = group.title === 'Admin' || group.title === 'System';
+          if (isAdminOnly && !isAdmin) {
             return null;
           }
           return <NavGroup key={group.title} title={group.title} items={group.items} currentHref={currentUrl} />;

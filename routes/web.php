@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\CatalystController;
+use App\Http\Controllers\AlertChannelController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
@@ -142,6 +143,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
   // Verticals
   Route::resource('verticals', VerticalController::class)->whereNumber('vertical');
   Route::resource('landing_pages', LandingPageController::class)->whereNumber('landing_page');
+  // Alert Channels
+  Route::resource('alert-channels', AlertChannelController::class)
+    ->except(['show', 'create', 'edit'])
+    ->whereNumber('alert_channel');
 
   // Forms
   Route::prefix('forms')->group(function () {
@@ -214,6 +219,7 @@ Route::prefix('catalyst')->group(function () {
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/admin.php';
+require __DIR__ . '/system.php';
 require __DIR__ . '/docs.php';
 require __DIR__ . '/auth.php';
 
