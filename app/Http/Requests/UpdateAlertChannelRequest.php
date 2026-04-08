@@ -20,7 +20,7 @@ class UpdateAlertChannelRequest extends FormRequest
     return [
       'name' => ['required', 'string', 'max:255'],
       'type' => ['required', 'string', Rule::in($resolver->registeredTypeNames())],
-      'webhook_url' => ['required', 'url', 'max:2048'],
+      'webhook_url' => ['nullable', 'url', 'max:2048'],
       'active' => ['sometimes', 'boolean'],
     ];
   }

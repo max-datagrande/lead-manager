@@ -16,7 +16,10 @@ class AlertChannel extends Model
 
   protected $casts = [
     'active' => 'boolean',
+    'webhook_url' => 'encrypted',
   ];
+
+  protected $hidden = ['webhook_url'];
 
   protected static function boot(): void
   {

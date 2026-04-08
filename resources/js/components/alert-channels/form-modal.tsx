@@ -7,6 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { type AlertChannel, type ChannelType } from '@/pages/alert-channels/index';
 import { useForm } from '@inertiajs/react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 interface FormModalProps {
   channelTypes: ChannelType[];
@@ -17,11 +19,12 @@ interface FormModalProps {
 export default function FormModal({ channelTypes, entry, isEdit = false }: FormModalProps) {
   const modal = useModal();
   const modalId = useCurrentModalId();
+  const [showUrl, setShowUrl] = useState(false);
 
   const { data, setData, post, put, processing, errors, reset } = useForm({
     name: entry?.name ?? '',
     type: entry?.type ?? channelTypes[0]?.value ?? '',
-    webhook_url: entry?.webhook_url ?? '',
+    webhook_url: '',
     active: entry?.active ?? true,
   });
 
@@ -85,13 +88,26 @@ export default function FormModal({ channelTypes, entry, isEdit = false }: FormM
         {/* Webhook URL */}
         <div className="space-y-2">
           <Label htmlFor="webhook_url">Webhook URL</Label>
-          <Input
-            id="webhook_url"
-            type="url"
-            value={data.webhook_url}
-            onChange={(e) => setData('webhook_url', e.target.value)}
-            placeholder="https://hooks.slack.com/services/..."
-          />
+          <div className="relative">
+            <Input
+              id="webhook_url"
+              type={showUrl ? 'text' : 'password'}
+              value={data.webhook_url}
+              onChange={(e) => setData('webhook_url', e.target.value)}
+              placeholder={isEdit ? 'Leave blank to keep current URL' : 'https://hooks.slack.com/services/...'}
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground"
+              onClick={() => setShowUrl(!showUrl)}
+            >
+              {showUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+          {isEdit && <p className="text-xs text-muted-foreground">Leave blank to keep the current webhook URL.</p>}
           {errors.webhook_url && <p className="text-sm text-destructive">{errors.webhook_url}</p>}
         </div>
 
@@ -100,7 +116,7 @@ export default function FormModal({ channelTypes, entry, isEdit = false }: FormM
           <Button type="button" variant="outline" onClick={handleCancel} disabled={processing}>
             Cancel
           </Button>
-          <Button type="submit" disabled={processing || !data.name.trim() || !data.webhook_url.trim()}>
+          <Button type="submit" disabled={processing || !data.name.trim() || (!isEdit && !data.webhook_url.trim())}>
             {processing ? 'Saving...' : isEdit ? 'Update' : 'Create'}
           </Button>
         </div>
