@@ -119,7 +119,7 @@ export function WorkflowForm({
                           <div key={wa.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
                             <div className="flex min-w-0 flex-1 items-center gap-2">
                               <p className="min-w-0 truncate text-sm">{wa.alert_channel.name}</p>
-                              <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
+                              <Badge variant="muted" className="shrink-0 text-xs capitalize">
                                 {wa.alert_channel.type}
                               </Badge>
                             </div>
