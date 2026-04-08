@@ -310,6 +310,13 @@ class PayloadProcessorService
       return $payload;
     }
 
+    TailLogger::saveLog('Twig transformer input', 'debug/twig-transformer', 'info', [
+      'integration_id' => $integration->id,
+      'integration_name' => $integration->name,
+      'payload_input' => $payload,
+      'twig_template' => $integration->payload_transformer,
+    ]);
+
     try {
       $loader = new \Twig\Loader\ArrayLoader([
         'index.html' => $integration->payload_transformer,
@@ -328,6 +335,13 @@ class PayloadProcessorService
 
       $rendered = $twig->render('index.html', ['data' => $payload]);
       $transformed = json_decode($rendered, true);
+
+      TailLogger::saveLog('Twig transformer output', 'debug/twig-transformer', 'info', [
+        'integration_id' => $integration->id,
+        'rendered_raw' => $rendered,
+        'decoded' => $transformed,
+        'json_valid' => json_last_error() === JSON_ERROR_NONE,
+      ]);
 
       if (json_last_error() === JSON_ERROR_NONE && is_array($transformed)) {
         return $transformed;
