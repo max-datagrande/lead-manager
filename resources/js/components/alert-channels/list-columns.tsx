@@ -56,13 +56,9 @@ export const columns = [
     enableHiding: true,
   },
   {
-    accessorKey: 'webhook_url',
+    accessorKey: 'webhook_url_masked',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Webhook URL" />,
-    cell: ({ cell }) => (
-      <div className="max-w-[300px] truncate text-sm text-muted-foreground" title={cell.getValue() as string}>
-        {cell.getValue() as string}
-      </div>
-    ),
+    cell: ({ cell }) => <div className="max-w-[300px] truncate font-mono text-sm text-muted-foreground">{cell.getValue() as string}</div>,
     enableSorting: false,
     enableHiding: true,
   },
