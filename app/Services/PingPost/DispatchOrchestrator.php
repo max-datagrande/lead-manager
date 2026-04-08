@@ -69,6 +69,8 @@ class DispatchOrchestrator
     );
 
     $this->timeline->bind($fingerprint, $dispatch->id);
+    $this->pinger->setTimeline($this->timeline);
+    $this->poster->setTimeline($this->timeline);
     $this->timeline->log(DispatchTimelineService::DISPATCH_STARTED, "Workflow '{$workflow->name}' started ({$workflow->strategy->value})", [
       'workflow_id' => $workflow->id,
       'strategy' => $workflow->strategy->value,

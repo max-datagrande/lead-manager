@@ -29,6 +29,7 @@ class DispatchTimelineService
 
   // ─── Ping ───────────────────────────────────────────────────────────
   public const PING_RESULT = 'ping.result';
+  public const PING_ERROR = 'ping.error';
   public const PING_PARALLEL_COMPLETE = 'ping.parallel_complete';
 
   // ─── Price ──────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ class DispatchTimelineService
 
   // ─── Post ───────────────────────────────────────────────────────────
   public const POST_RESULT = 'post.result';
+  public const POST_ERROR = 'post.error';
 
   // ─── Cascade ────────────────────────────────────────────────────────
   public const CASCADE_ADVANCE = 'cascade.advance';
