@@ -92,6 +92,9 @@ export default function FormModal({ channelTypes, entry, isEdit = false }: FormM
             <Input
               id="webhook_url"
               type={showUrl ? 'text' : 'password'}
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               value={data.webhook_url}
               onChange={(e) => setData('webhook_url', e.target.value)}
               placeholder={isEdit ? 'Leave blank to keep current URL' : 'https://hooks.slack.com/services/...'}
