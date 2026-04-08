@@ -122,7 +122,7 @@ class PayloadProcessorService
         'integer' => '___INT___' . (int) $value,
         'float' => '___FLOAT___' . (float) $value,
         'boolean' => '___BOOL___' . (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'),
-        default => (string) $value,
+        default => $this->jsonEscapeValue((string) $value),
       };
 
       $replacements['{$' . $mapping->field_id . '}'] = $watermarked;
@@ -166,6 +166,15 @@ class PayloadProcessorService
   public function resolveTokens(string $template, Integration $integration, IntegrationEnvironment $environment, array $leadData): string
   {
     return $this->applyReplacements($template, $this->buildReplacements($integration, $environment, $leadData));
+  }
+
+  /**
+   * Escape a string value so it is safe to inject inside a JSON string literal.
+   * Uses json_encode to handle \n, \t, ", \ etc., then strips the outer quotes.
+   */
+  private function jsonEscapeValue(string $value): string
+  {
+    return substr(json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 1, -1);
   }
 
   /**
