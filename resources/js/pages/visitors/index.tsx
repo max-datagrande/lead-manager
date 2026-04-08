@@ -7,6 +7,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, DatatablePageProps } from '@/types';
 import { Head } from '@inertiajs/react';
+import { useCallback, useState } from 'react';
 import { route } from 'ziggy-js';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -43,13 +44,16 @@ type Visitor = {
 };
 
 interface IndexProps extends DatatablePageProps<Visitor> {
-  data: {
+  data?: {
     hosts: string[];
     states: string[];
   };
 }
 
 const Index = ({ rows, meta, state, data }: IndexProps) => {
+  const [animated, setAnimated] = useState(false);
+  const onAnimationEnd = useCallback(() => setAnimated(true), []);
+
   const modal = useModal();
   const table = useServerTable({
     routeName: 'visitors.index',
@@ -57,7 +61,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
     defaultPageSize: 10,
   });
 
-  const { hosts = [], states = [] } = data;
+  const { hosts = [], states = [] } = data ?? {};
 
   const showLeadDataModal = (row: Visitor) => {
     modal.open(<LeadDetailsModal fingerprint={row.fingerprint} />, {
@@ -68,7 +72,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
   return (
     <>
       <Head title="Visitors" />
-      <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
+      <div className={`${animated ? '' : 'slide-in-up'} relative flex-1 space-y-6 p-6 md:p-8`} onAnimationEnd={onAnimationEnd}>
         <PageHeader title="Visitors" description="Manage visitors from our landing pages." />
         <ServerTable
           data={rows.data}
