@@ -1,30 +1,30 @@
-import { showBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs'
-import PageHeader from '@/components/page-header'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import AppLayout from '@/layouts/app-layout'
-import type { Workflow } from '@/types/ping-post'
-import { Head, Link, router } from '@inertiajs/react'
-import { Copy, Edit, Trash2 } from 'lucide-react'
-import { route } from 'ziggy-js'
+import PageHeader from '@/components/page-header';
+import { showBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import type { Workflow } from '@/types/ping-post';
+import { Head, Link, router } from '@inertiajs/react';
+import { Bell, Copy, Edit, Trash2 } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 interface Props {
-  workflow: Workflow
+  workflow: Workflow;
 }
 
 const STRATEGY_LABELS: Record<string, string> = {
   best_bid: 'Best Bid',
   waterfall: 'Waterfall',
   combined: 'Combined',
-}
+};
 
 const WorkflowsShow = ({ workflow }: Props) => {
   const handleDelete = () => {
     if (confirm(`Delete workflow "${workflow.name}"?`)) {
-      router.delete(route('ping-post.workflows.destroy', workflow.id))
+      router.delete(route('ping-post.workflows.destroy', workflow.id));
     }
-  }
+  };
 
   return (
     <>
@@ -98,12 +98,22 @@ const WorkflowsShow = ({ workflow }: Props) => {
                           <span className="text-muted-foreground">#{wb.position + 1}</span>
                           <span className="font-medium">{wb.integration?.name ?? `Buyer #${wb.integration_id}`}</span>
                           {wb.buyer_group === 'secondary' && (
-                            <Badge variant="outline" className="text-xs">Secondary</Badge>
+                            <Badge variant="outline" className="text-xs">
+                              Secondary
+                            </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {wb.is_fallback && <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">Fallback</Badge>}
-                          {!wb.is_active && <Badge variant="outline" className="border-red-400 text-red-500 text-xs">Inactive</Badge>}
+                          {wb.is_fallback && (
+                            <Badge variant="outline" className="border-amber-500 text-xs text-amber-600">
+                              Fallback
+                            </Badge>
+                          )}
+                          {!wb.is_active && (
+                            <Badge variant="outline" className="border-red-400 text-xs text-red-500">
+                              Inactive
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -113,12 +123,47 @@ const WorkflowsShow = ({ workflow }: Props) => {
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Alerts
+              </CardTitle>
+              <CardDescription>{workflow.workflow_alerts?.length ?? 0} configured</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {workflow.workflow_alerts?.length ? (
+                <div className="space-y-2">
+                  {workflow.workflow_alerts.map((wa) => (
+                    <div key={wa.id} className="flex items-center justify-between rounded bg-muted px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{wa.alert_channel.name}</span>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {wa.alert_channel.type}
+                        </Badge>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={wa.is_active ? 'border-green-500 text-xs text-green-600' : 'border-red-400 text-xs text-red-500'}
+                      >
+                        {wa.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No alert channels configured.</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </>
-  )
-}
+  );
+};
 
-WorkflowsShow.layout = (page: React.ReactNode & { props: { workflow: Workflow } }) =>
+WorkflowsShow.layout = (page: React.ReactNode & { props: { workflow: Workflow } }) => (
   <AppLayout children={page} breadcrumbs={showBreadcrumbs(page.props.workflow)} />
-export default WorkflowsShow
+);
+export default WorkflowsShow;
