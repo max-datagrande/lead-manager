@@ -8,6 +8,7 @@ const POST_ONLY_FIELDS = [
   { key: 'accepted_path', label: 'Accepted Path', placeholder: 'e.g. result' },
   { key: 'accepted_value', label: 'Accepted Value', placeholder: 'e.g. success / true / 1' },
   { key: 'rejected_path', label: 'Rejected Path', placeholder: 'e.g. error_message' },
+  { key: 'bid_price_path', label: 'Bid Price Path', placeholder: 'e.g. price or data.bid_amount' },
 ];
 
 const ERROR_PATH_FIELDS = [
@@ -49,6 +50,11 @@ export function PostOnlyResponseConfig({ env }) {
                 value={responseConfig[field.key] ?? ''}
                 onChange={(e) => handleChange(field.key, e.target.value)}
               />
+              {field.key === 'bid_price_path' && (
+                <p className="text-xs text-muted-foreground">
+                  JSON path to extract the price from the POST response. Used when price source is "Response Bid" on post-only integrations.
+                </p>
+              )}
             </div>
           ))}
         </div>
