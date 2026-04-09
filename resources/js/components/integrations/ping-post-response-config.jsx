@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import TagInput from '@/components/ui/tag-input.jsx';
 import { useIntegrations } from '@/hooks/use-integrations';
 
 const PING_FIELDS = [
@@ -16,11 +17,22 @@ const POST_FIELDS = [
   { key: 'rejected_path', label: 'Rejected Path', placeholder: 'e.g. error_message' },
 ];
 
-const ERROR_FIELDS = [
+const ERROR_PATH_FIELDS = [
   { key: 'error_path', label: 'Error Path', placeholder: 'e.g. response.status / outcome' },
   { key: 'error_value', label: 'Error Value', placeholder: 'e.g. Error — leave empty for truthy check' },
-  { key: 'error_reason_path', label: 'Error Reason Path', placeholder: 'e.g. response.errors.error / reason' },
 ];
+
+/**
+ * Parse error_reason_path from DB string (pipe-separated) to array for TagInput.
+ */
+function parseReasonPaths(value) {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'string') return [];
+  return value
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export function PingPostResponseConfig({ envType, env }) {
   const { data, handleEnvironmentChange } = useIntegrations();
@@ -62,8 +74,8 @@ export function PingPostResponseConfig({ envType, env }) {
             <p className="text-sm font-medium">Error Detection</p>
             <p className="text-xs text-muted-foreground">Detect errors in valid JSON responses. Evaluated before accepted/rejected logic.</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {ERROR_FIELDS.map((field) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {ERROR_PATH_FIELDS.map((field) => (
               <div key={field.key} className="space-y-2">
                 <Label htmlFor={`${envType}-${env}-${field.key}`}>{field.label}</Label>
                 <Input
@@ -74,6 +86,11 @@ export function PingPostResponseConfig({ envType, env }) {
                 />
               </div>
             ))}
+          </div>
+          <div className="space-y-2">
+            <Label>Error Reason Path</Label>
+            <TagInput value={parseReasonPaths(responseConfig.error_reason_path)} onChange={(paths) => handleChange('error_reason_path', paths)} />
+            <p className="text-xs text-muted-foreground">JSON paths to extract the error message. Checked in order, first match wins.</p>
           </div>
         </div>
       </CardContent>
