@@ -22,6 +22,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Maxidev\Logger\TailLogger;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadDispatchLogController extends Controller
 {
@@ -29,63 +31,21 @@ class LeadDispatchLogController extends Controller
 
   public function index(Request $request): Response
   {
-    $query = LeadDispatch::query()->with(['workflow:id,name', 'lead', 'winnerIntegration:id,name,company_id', 'winnerIntegration.company:id,name']);
-
-    $filters = json_decode($request->input('filters', '[]'), true) ?? [];
-    $companyFilter = collect($filters)->firstWhere('id', 'company_id');
-    if ($companyFilter) {
-      $companyIds = (array) $companyFilter['value'];
-      $query->whereHas('winnerIntegration', fn($q) => $q->whereIn('company_id', $companyIds));
-    }
-
-    // Sort by related columns (join-based)
-    $sort = $request->input('sort', '');
-    [$sortCol] = $sort ? get_sort_data($sort) : ['', 'desc'];
-    $joinSorts = [
-      'workflow' => ['workflows', 'workflow_id', 'name'],
-      'winner_integration' => ['integrations', 'winner_integration_id', 'name'],
-      'company' => ['integrations', 'winner_integration_id', 'company_id'],
-    ];
-
-    if (isset($joinSorts[$sortCol])) {
-      [$joinTable, $fk, $orderCol] = $joinSorts[$sortCol];
-      [, $dir] = get_sort_data($sort);
-      if ($sortCol === 'company') {
-        $query
-          ->leftJoin('integrations', 'lead_dispatches.winner_integration_id', '=', 'integrations.id')
-          ->leftJoin('companies', 'integrations.company_id', '=', 'companies.id')
-          ->orderBy('companies.name', $dir)
-          ->select('lead_dispatches.*');
-      } else {
-        $query
-          ->leftJoin($joinTable, "lead_dispatches.{$fk}", '=', "{$joinTable}.id")
-          ->orderBy("{$joinTable}.{$orderCol}", $dir)
-          ->select('lead_dispatches.*');
-      }
-      // Remove sort from request so DatatableTrait doesn't override it
-      $request->merge(['sort' => '']);
-    }
+    $originalSort = $request->input('sort', '');
+    $query = $this->buildDispatchQuery($request);
 
     $table = $this->processDatatableQuery(
       query: $query,
       request: $request,
       searchableColumns: ['fingerprint', 'dispatch_uuid', 'utm_source'],
-      filterConfig: [
-        'status' => ['type' => 'exact'],
-        'strategy_used' => ['type' => 'exact'],
-        'workflow_id' => ['type' => 'exact'],
-        'winner_integration_id' => ['type' => 'exact'],
-        'utm_source' => ['type' => 'exact'],
-        'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
-        'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
-      ],
-      allowedSort: ['id', 'status', 'strategy_used', 'final_price', 'total_duration_ms', 'created_at', 'utm_source'],
+      filterConfig: self::FILTER_CONFIG,
+      allowedSort: self::ALLOWED_SORT,
       defaultSort: 'created_at:desc',
     );
 
-    // Restore original sort in state for frontend persistence
-    if (isset($joinSorts[$sortCol])) {
-      $table['state']['sort'] = $sort;
+    // Restore original sort in state for frontend persistence (join-based sorts clear it)
+    if ($originalSort && $table['state']['sort'] !== $originalSort) {
+      $table['state']['sort'] = $originalSort;
     }
 
     $items = collect($table['rows']->items());
@@ -137,6 +97,75 @@ class LeadDispatchLogController extends Controller
       'dispatches_with_executions' => $dispatchesWithExecutions,
       'workflow_postbacks' => $workflowPostbacks,
     ]);
+  }
+
+  public function report(Request $request): StreamedResponse
+  {
+    $query = $this->buildDispatchQuery($request);
+    $this->applyGlobalSearch($query, $request->input('search', ''), ['fingerprint', 'dispatch_uuid', 'utm_source']);
+    $this->applyColumnFilters($query, json_decode($request->input('filters', '[]'), true) ?? [], self::FILTER_CONFIG);
+
+    $delimiter = $request->input('os') === 'windows' ? ';' : ',';
+    $filename = 'dispatch-logs-' . now()->format('Y-m-d-His') . '.csv';
+
+    return new StreamedResponse(
+      function () use ($query, $delimiter) {
+        $handle = fopen('php://output', 'w');
+        fputcsv(
+          $handle,
+          [
+            'ID',
+            'UUID',
+            'Fingerprint',
+            'Workflow',
+            'Strategy',
+            'Status',
+            'Winner',
+            'Company',
+            'Price',
+            'Duration (ms)',
+            'UTM Source',
+            'Started At',
+            'Completed At',
+            'Created At',
+          ],
+          $delimiter,
+        );
+
+        $query
+          ->with(['workflow:id,name', 'winnerIntegration:id,name,company_id', 'winnerIntegration.company:id,name'])
+          ->cursor()
+          ->each(function (LeadDispatch $d) use ($handle, $delimiter) {
+            fputcsv(
+              $handle,
+              [
+                $d->id,
+                $d->dispatch_uuid,
+                $d->fingerprint,
+                $d->workflow?->name ?? '',
+                $d->strategy_used,
+                $d->status?->value ?? '',
+                $d->winnerIntegration?->name ?? '',
+                $d->winnerIntegration?->company?->name ?? '',
+                $d->final_price,
+                $d->total_duration_ms,
+                $d->utm_source ?? '',
+                $d->started_at?->toDateTimeString() ?? '',
+                $d->completed_at?->toDateTimeString() ?? '',
+                $d->created_at?->toDateTimeString() ?? '',
+              ],
+              $delimiter,
+            );
+          });
+
+        fclose($handle);
+      },
+      200,
+      [
+        'Content-Type' => 'text/csv',
+        'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+      ],
+    );
   }
 
   public function show(LeadDispatch $dispatch): Response
@@ -207,5 +236,65 @@ class LeadDispatchLogController extends Controller
     };
 
     return response()->json($model);
+  }
+
+  // ── Shared query builder ────────────────────────────────────────────
+
+  private const FILTER_CONFIG = [
+    'status' => ['type' => 'exact'],
+    'strategy_used' => ['type' => 'exact'],
+    'workflow_id' => ['type' => 'exact'],
+    'winner_integration_id' => ['type' => 'exact'],
+    'utm_source' => ['type' => 'exact'],
+    'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
+    'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
+  ];
+
+  private const ALLOWED_SORT = ['id', 'status', 'strategy_used', 'final_price', 'total_duration_ms', 'created_at', 'utm_source'];
+
+  /**
+   * Build the base dispatch query with filters and join-based sorts.
+   * Shared between index() and report().
+   */
+  private function buildDispatchQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+  {
+    $query = LeadDispatch::query()->with(['workflow:id,name', 'lead', 'winnerIntegration:id,name,company_id', 'winnerIntegration.company:id,name']);
+
+    $filters = json_decode($request->input('filters', '[]'), true) ?? [];
+    $companyFilter = collect($filters)->firstWhere('id', 'company_id');
+    if ($companyFilter) {
+      $companyIds = (array) $companyFilter['value'];
+      $query->whereHas('winnerIntegration', fn($q) => $q->whereIn('company_id', $companyIds));
+    }
+
+    // Sort by related columns (join-based)
+    $sort = $request->input('sort', '');
+    [$sortCol] = $sort ? get_sort_data($sort) : ['', 'desc'];
+    $joinSorts = [
+      'workflow' => ['workflows', 'workflow_id', 'name'],
+      'winner_integration' => ['integrations', 'winner_integration_id', 'name'],
+      'company' => ['integrations', 'winner_integration_id', 'company_id'],
+    ];
+
+    if (isset($joinSorts[$sortCol])) {
+      [, $dir] = get_sort_data($sort);
+      if ($sortCol === 'company') {
+        $query
+          ->leftJoin('integrations', 'lead_dispatches.winner_integration_id', '=', 'integrations.id')
+          ->leftJoin('companies', 'integrations.company_id', '=', 'companies.id')
+          ->orderBy('companies.name', $dir)
+          ->select('lead_dispatches.*');
+      } else {
+        [$joinTable, $fk, $orderCol] = $joinSorts[$sortCol];
+        $query
+          ->leftJoin($joinTable, "lead_dispatches.{$fk}", '=', "{$joinTable}.id")
+          ->orderBy("{$joinTable}.{$orderCol}", $dir)
+          ->select('lead_dispatches.*');
+      }
+      // Clear sort so DatatableTrait doesn't override
+      $request->merge(['sort' => '']);
+    }
+
+    return $query;
   }
 }
