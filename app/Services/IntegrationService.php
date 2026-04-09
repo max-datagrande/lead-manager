@@ -536,6 +536,7 @@ class IntegrationService
           'accepted_path' => $configData['accepted_path'] ?? null,
           'accepted_value' => $configData['accepted_value'] ?? null,
           'rejected_path' => $configData['rejected_path'] ?? null,
+          'bid_price_path' => $configData['bid_price_path'] ?? null,
           'error_path' => $configData['error_path'] ?? null,
           'error_value' => $configData['error_value'] ?? null,
           'error_reason_path' => $this->joinReasonPaths($configData['error_reason_path'] ?? null),

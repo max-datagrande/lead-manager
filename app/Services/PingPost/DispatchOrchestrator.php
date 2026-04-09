@@ -201,11 +201,12 @@ class DispatchOrchestrator
 
       if ($postResult->status->isSold() || $postResult->status === \App\Enums\PostResultStatus::PENDING_POSTBACK) {
         if ($postResult->status->isSold()) {
-          $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+          $soldPrice = $postResult->price_final ?? $offeredPrice;
+          $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$soldPrice}", [
             'integration_id' => $integration->id,
-            'price' => $offeredPrice,
+            'price' => $soldPrice,
           ]);
-          $dispatch->markAsSold($integration, $offeredPrice);
+          $dispatch->markAsSold($integration, $soldPrice);
         } else {
           $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, "Pending postback from {$integration->name}", [
             'integration_id' => $integration->id,
@@ -252,7 +253,8 @@ class DispatchOrchestrator
 
       // Post-only buyer: resolve price through resolver pattern
       $pingResult = null;
-      $offeredPrice = $this->priceResolver->resolvePrice($config, 0);
+      $isPostOnlyResponseBid = $integration->type === 'post-only' && $config->price_source === PriceSource::RESPONSE_BID;
+      $offeredPrice = $isPostOnlyResponseBid ? 0 : $this->priceResolver->resolvePrice($config, 0);
 
       if ($config->price_source === PriceSource::CONDITIONAL) {
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
@@ -316,7 +318,12 @@ class DispatchOrchestrator
         ],
       );
 
-      if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+      if (
+        !$isPostOnlyResponseBid &&
+        $config->price_source !== PriceSource::POSTBACK &&
+        ($offeredPrice === null || $offeredPrice <= 0) &&
+        !$config->sell_on_zero_price
+      ) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price \${$offeredPrice} below threshold", [
           'integration_id' => $integration->id,
           'offered_price' => $offeredPrice,
@@ -337,11 +344,12 @@ class DispatchOrchestrator
       ]);
 
       if ($postResult->status->isSold()) {
-        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+        $soldPrice = $postResult->price_final ?? $offeredPrice;
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$soldPrice}", [
           'integration_id' => $integration->id,
-          'price' => $offeredPrice,
+          'price' => $soldPrice,
         ]);
-        $dispatch->markAsSold($integration, $offeredPrice);
+        $dispatch->markAsSold($integration, $soldPrice);
 
         return true;
       }
@@ -416,7 +424,8 @@ class DispatchOrchestrator
         $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, $pingResult, $offeredPrice);
 
         if ($postResult->status->isSold()) {
-          $dispatch->markAsSold($integration, $offeredPrice);
+          $soldPrice = $postResult->price_final ?? $offeredPrice;
+          $dispatch->markAsSold($integration, $soldPrice);
 
           return;
         }
@@ -596,13 +605,19 @@ class DispatchOrchestrator
         continue;
       }
 
-      $offeredPrice = $this->priceResolver->resolvePrice($config, 0);
+      $isPostOnlyResponseBid = $integration->type === 'post-only' && $config->price_source === PriceSource::RESPONSE_BID;
+      $offeredPrice = $isPostOnlyResponseBid ? 0 : $this->priceResolver->resolvePrice($config, 0);
 
       if ($config->price_source === PriceSource::CONDITIONAL) {
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
       }
 
-      if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+      if (
+        !$isPostOnlyResponseBid &&
+        $config->price_source !== PriceSource::POSTBACK &&
+        ($offeredPrice === null || $offeredPrice <= 0) &&
+        !$config->sell_on_zero_price
+      ) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Fallback {$integration->name}: price below threshold", [
           'integration_id' => $integration->id,
         ]);
@@ -620,11 +635,12 @@ class DispatchOrchestrator
       ]);
 
       if ($postResult->status->isSold()) {
-        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold via fallback to {$integration->name} at \${$offeredPrice}", [
+        $soldPrice = $postResult->price_final ?? $offeredPrice;
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold via fallback to {$integration->name} at \${$soldPrice}", [
           'integration_id' => $integration->id,
-          'price' => $offeredPrice,
+          'price' => $soldPrice,
         ]);
-        $dispatch->markAsSold($integration, $offeredPrice);
+        $dispatch->markAsSold($integration, $soldPrice);
         $sold = true;
         break;
       }
