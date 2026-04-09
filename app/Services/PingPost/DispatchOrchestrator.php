@@ -12,6 +12,7 @@ use App\Models\LeadDispatch;
 use App\Jobs\PingPost\FlushBuyerEventsJob;
 use App\Jobs\PingPost\SendWorkflowAlertJob;
 use App\Models\PingResult;
+use App\Models\TrafficLog;
 use App\Models\Workflow;
 use App\Models\WorkflowBuyer;
 use Illuminate\Http\Client\Pool;
@@ -53,6 +54,8 @@ class DispatchOrchestrator
       'leadData' => $leadData,
     ]);
 
+    $utmSource = TrafficLog::where('fingerprint', $fingerprint)->latest('visit_date')->value('utm_source');
+
     $dispatch = LeadDispatch::create(
       array_merge(
         [
@@ -60,6 +63,7 @@ class DispatchOrchestrator
           'lead_id' => $lead->id,
           'fingerprint' => $fingerprint,
           'lead_snapshot' => $leadSnapshot,
+          'utm_source' => $utmSource,
           'status' => DispatchStatus::RUNNING,
           'strategy_used' => $workflow->strategy->value,
           'started_at' => now(),
