@@ -122,7 +122,7 @@ class PayloadProcessorService
         'integer' => '___INT___' . (int) $value,
         'float' => '___FLOAT___' . (float) $value,
         'boolean' => '___BOOL___' . (filter_var($value, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'),
-        default => (string) $value,
+        default => $this->jsonEscapeValue((string) $value),
       };
 
       $replacements['{$' . $mapping->field_id . '}'] = $watermarked;
@@ -166,6 +166,15 @@ class PayloadProcessorService
   public function resolveTokens(string $template, Integration $integration, IntegrationEnvironment $environment, array $leadData): string
   {
     return $this->applyReplacements($template, $this->buildReplacements($integration, $environment, $leadData));
+  }
+
+  /**
+   * Escape a string value so it is safe to inject inside a JSON string literal.
+   * Uses json_encode to handle \n, \t, ", \ etc., then strips the outer quotes.
+   */
+  private function jsonEscapeValue(string $value): string
+  {
+    return substr(json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 1, -1);
   }
 
   /**
@@ -310,6 +319,13 @@ class PayloadProcessorService
       return $payload;
     }
 
+    TailLogger::saveLog('Twig transformer input', 'debug/twig-transformer', 'info', [
+      'integration_id' => $integration->id,
+      'integration_name' => $integration->name,
+      'payload_input' => $payload,
+      'twig_template' => $integration->payload_transformer,
+    ]);
+
     try {
       $loader = new \Twig\Loader\ArrayLoader([
         'index.html' => $integration->payload_transformer,
@@ -328,6 +344,13 @@ class PayloadProcessorService
 
       $rendered = $twig->render('index.html', ['data' => $payload]);
       $transformed = json_decode($rendered, true);
+
+      TailLogger::saveLog('Twig transformer output', 'debug/twig-transformer', 'info', [
+        'integration_id' => $integration->id,
+        'rendered_raw' => $rendered,
+        'decoded' => $transformed,
+        'json_valid' => json_last_error() === JSON_ERROR_NONE,
+      ]);
 
       if (json_last_error() === JSON_ERROR_NONE && is_array($transformed)) {
         return $transformed;

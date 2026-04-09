@@ -9,7 +9,7 @@ use App\Jobs\DispatchPostbackJob;
 use App\Models\Postback;
 use App\Models\PostbackExecution;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Log;
+use Maxidev\Logger\TailLogger;
 
 class PostbackFireService
 {
@@ -55,7 +55,7 @@ class PostbackFireService
     $postback->increment('total_executions');
     $postback->update(['last_fired_at' => now()]);
 
-    Log::info('Postback inbound received', [
+    TailLogger::saveLog('Postback inbound received', 'postback/fire', 'info', [
       'postback_id' => $postback->id,
       'execution_id' => $execution->id,
       'fire_mode' => $postback->fire_mode->value,
@@ -78,12 +78,8 @@ class PostbackFireService
    *
    * @throws ModelNotFoundException
    */
-  public function fireInternal(
-    string $uuid,
-    array $params,
-    PostbackSource $source,
-    ?string $sourceReference = null,
-  ): PostbackExecution {
+  public function fireInternal(string $uuid, array $params, PostbackSource $source, ?string $sourceReference = null): PostbackExecution
+  {
     $postback = Postback::query()->where('uuid', $uuid)->active()->firstOrFail();
 
     if (empty($postback->result_url)) {
@@ -113,7 +109,7 @@ class PostbackFireService
     $postback->increment('total_executions');
     $postback->update(['last_fired_at' => now()]);
 
-    Log::info('Internal postback fired', [
+    TailLogger::saveLog('Internal postback fired', 'postback/internal', 'info', [
       'postback_id' => $postback->id,
       'execution_id' => $execution->id,
       'source' => $source->value,

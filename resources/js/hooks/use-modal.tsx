@@ -1,6 +1,7 @@
 import ConfirmDialog from '@/components/confirm-dialog';
 import PromptDialog from '@/components/prompt-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import WarnConfirmDialog from '@/components/warn-confirm-dialog';
 /* import { router } from '@inertiajs/react'; */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
@@ -34,6 +35,18 @@ type ConfirmOptions = {
 };
 
 /**
+ * Options for the warning confirmation dialog
+ */
+type WarnConfirmOptions = {
+  title?: string;
+  description?: string;
+  consequences?: string[];
+  confirmText?: string;
+  cancelText?: string;
+  confirmCode?: string;
+};
+
+/**
  * Options for the prompt dialog
  */
 type PromptOptions = {
@@ -52,6 +65,7 @@ type ModalContextType = {
   open: (node: React.ReactNode, options?: ModalOptions) => number;
   openAsync: <T = unknown>(node: React.ReactNode, options?: ModalOptions) => Promise<T>;
   confirm: (opts: ConfirmOptions) => Promise<boolean>;
+  warnConfirm: (opts: WarnConfirmOptions) => Promise<boolean>;
   prompt: (opts: PromptOptions) => Promise<string | null>;
   close: (id?: number) => void;
   closeAll: () => void;
@@ -153,6 +167,21 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
   }, []);
 
   /**
+   * Opens a warning confirmation dialog (large, aggressive styling with optional confirm code)
+   */
+  const warnConfirm = useCallback((opts: WarnConfirmOptions) => {
+    return new Promise<boolean>((resolve) => {
+      const id = ++_id;
+      const node = (
+        <ModalScope id={id}>
+          <WarnConfirmDialog id={id} {...opts} />
+        </ModalScope>
+      );
+      setStack((s) => [...s, { id, node, resolve: (v) => resolve(Boolean(v)), options: { maxWidth: 'sm:max-w-md' } }]);
+    });
+  }, []);
+
+  /**
    * Opens a standard prompt dialog
    */
   const prompt = useCallback((opts: PromptOptions) => {
@@ -181,6 +210,7 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
       open,
       openAsync,
       confirm,
+      warnConfirm,
       prompt,
       close,
       closeAll,
@@ -188,7 +218,7 @@ export function ModalProvider({ children, autoCloseOnNavigate = true }: { childr
       reject,
       topId: stack.at(-1)?.id ?? null,
     }),
-    [open, openAsync, confirm, prompt, close, closeAll, resolve, reject, stack],
+    [open, openAsync, confirm, warnConfirm, prompt, close, closeAll, resolve, reject, stack],
   );
 
   return (

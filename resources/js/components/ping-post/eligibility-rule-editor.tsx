@@ -15,7 +15,11 @@ const OPERATORS = [
   { value: 'lte', label: 'less than or equal' },
   { value: 'in', label: 'in (comma-separated)' },
   { value: 'not_in', label: 'not in (comma-separated)' },
+  { value: 'is_empty', label: 'is empty' },
+  { value: 'is_not_empty', label: 'is not empty' },
 ];
+
+const VALUE_LESS_OPERATORS = ['is_empty', 'is_not_empty'];
 
 interface Props {
   rules: EligibilityRule[];
@@ -49,13 +53,22 @@ export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
               fields={fields}
               usedFields={usedFields}
               placeholder="Select field..."
-              className="w-36"
+              className="w-60"
             />
           ) : (
             <Input placeholder="field (e.g. state)" value={rule.field} onChange={(e) => updateRule(i, 'field', e.target.value)} className="w-36" />
           )}
-          <Select value={rule.operator} onValueChange={(v) => updateRule(i, 'operator', v)}>
-            <SelectTrigger className="w-44">
+          <Select
+            value={rule.operator}
+            onValueChange={(v) => {
+              if (VALUE_LESS_OPERATORS.includes(v)) {
+                onChange(rules.map((r, idx) => (idx === i ? { ...r, operator: v as EligibilityRule['operator'], value: null } : r)));
+              } else {
+                updateRule(i, 'operator', v);
+              }
+            }}
+          >
+            <SelectTrigger className="w-60">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -66,16 +79,18 @@ export function EligibilityRuleEditor({ rules, onChange, fields = [] }: Props) {
               ))}
             </SelectContent>
           </Select>
-          <Input
-            placeholder="value"
-            value={Array.isArray(rule.value) ? rule.value.join(',') : (rule.value as string)}
-            onChange={(e) => {
-              const v = e.target.value;
-              const isMulti = rule.operator === 'in' || rule.operator === 'not_in';
-              updateRule(i, 'value', isMulti ? v.split(',').map((s) => s.trim()) : v);
-            }}
-            className="flex-1"
-          />
+          {!VALUE_LESS_OPERATORS.includes(rule.operator) && (
+            <Input
+              placeholder="value"
+              value={Array.isArray(rule.value) ? rule.value.join(',') : (rule.value as string)}
+              onChange={(e) => {
+                const v = e.target.value;
+                const isMulti = rule.operator === 'in' || rule.operator === 'not_in';
+                updateRule(i, 'value', isMulti ? v.split(',').map((s) => s.trim()) : v);
+              }}
+              className="flex-1"
+            />
+          )}
           <Button variant="ghost" size="icon" onClick={() => removeRule(i)} className="shrink-0 text-destructive">
             <Trash2 className="h-4 w-4" />
           </Button>

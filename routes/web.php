@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\WhitelistEntryController;
 use App\Http\Controllers\CatalystController;
+use App\Http\Controllers\AlertChannelController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\PingPost\BuyerController;
+use App\Http\Controllers\PingPost\WorkflowAlertController;
 use App\Http\Controllers\PingPost\WorkflowController;
 use App\Http\Controllers\PlatformController;
 use App\Http\Controllers\InternalPostbackController;
@@ -68,6 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('associations.destroy');
       Route::post('/associations/fire-for-dispatch', [PostbackAssociationController::class, 'fireForDispatch'])->name(
         'associations.fire-for-dispatch',
+      );
+      Route::post('/associations/preview-for-dispatch', [PostbackAssociationController::class, 'previewForDispatch'])->name(
+        'associations.preview-for-dispatch',
       );
       // Executions (new fire system)
       Route::prefix('executions')
@@ -139,6 +144,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
   // Verticals
   Route::resource('verticals', VerticalController::class)->whereNumber('vertical');
   Route::resource('landing_pages', LandingPageController::class)->whereNumber('landing_page');
+  // Alert Channels
+  Route::resource('alert-channels', AlertChannelController::class)
+    ->except(['show', 'create', 'edit'])
+    ->whereNumber('alert_channel');
 
   // Forms
   Route::prefix('forms')->group(function () {
@@ -173,9 +182,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereNumber('workflow')
         ->name('workflows.duplicate');
       Route::resource('workflows', WorkflowController::class)->whereNumber('workflow');
+      Route::post('workflows/{workflow}/alerts', [WorkflowAlertController::class, 'store'])
+        ->whereNumber('workflow')
+        ->name('workflows.alerts.store');
+      Route::delete('workflows/{workflow}/alerts/{alertChannel}', [WorkflowAlertController::class, 'destroy'])
+        ->whereNumber(['workflow', 'alertChannel'])
+        ->name('workflows.alerts.destroy');
       Route::resource('dispatches', LeadDispatchLogController::class)
         ->only(['index', 'show'])
         ->whereNumber('dispatch');
+      Route::get('dispatches/report', [LeadDispatchLogController::class, 'report'])->name('dispatches.report');
+      Route::get('dispatches/{dispatch}/timeline', [LeadDispatchLogController::class, 'timeline'])
+        ->whereNumber('dispatch')
+        ->name('dispatches.timeline');
+      Route::post('dispatches/{dispatch}/retry', [LeadDispatchLogController::class, 'retry'])
+        ->whereNumber('dispatch')
+        ->name('dispatches.retry');
+      Route::get('dispatches/result/{type}/{id}', [LeadDispatchLogController::class, 'resultDetail'])
+        ->whereIn('type', ['ping', 'post'])
+        ->whereNumber('id')
+        ->name('dispatches.result-detail');
     });
 });
 
@@ -201,6 +227,7 @@ Route::prefix('catalyst')->group(function () {
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/admin.php';
+require __DIR__ . '/system.php';
 require __DIR__ . '/docs.php';
 require __DIR__ . '/auth.php';
 

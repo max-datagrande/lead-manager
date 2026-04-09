@@ -20,8 +20,8 @@ class StoreEligibilityRuleRequest extends FormRequest
     return [
       'rules' => ['required', 'array'],
       'rules.*.field' => ['required', 'string', 'max:100'],
-      'rules.*.operator' => ['required', 'string', Rule::in(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in'])],
-      'rules.*.value' => ['required'],
+      'rules.*.operator' => ['required', 'string', Rule::in(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'is_empty', 'is_not_empty'])],
+      'rules.*.value' => ['exclude_if:rules.*.operator,is_empty', 'exclude_if:rules.*.operator,is_not_empty', 'required'],
       'rules.*.sort_order' => ['nullable', 'integer', 'min:0'],
     ];
   }

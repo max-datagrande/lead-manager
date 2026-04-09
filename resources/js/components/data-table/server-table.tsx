@@ -30,9 +30,7 @@ interface ServerTableProps<TData> {
     }>;
     dateRange?: { column: string; label: string };
   };
-  contextFunctions?: {
-    [key: string]: (value: any) => any;
-  };
+  contextFunctions?: Record<string, any>;
 }
 
 export function ServerTable<TData>({
