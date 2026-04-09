@@ -236,6 +236,9 @@ class IntegrationService
             'accepted_path' => $env->pingResponseConfig->accepted_path,
             'accepted_value' => $env->pingResponseConfig->accepted_value,
             'lead_id_path' => $env->pingResponseConfig->lead_id_path,
+            'error_path' => $env->pingResponseConfig->error_path,
+            'error_value' => $env->pingResponseConfig->error_value,
+            'error_reason_path' => $env->pingResponseConfig->error_reason_path,
           ]
           : null,
         IntegrationEnvironment::ENV_TYPE_POST => $env->postResponseConfig
@@ -243,6 +246,9 @@ class IntegrationService
             'accepted_path' => $env->postResponseConfig->accepted_path,
             'accepted_value' => $env->postResponseConfig->accepted_value,
             'rejected_path' => $env->postResponseConfig->rejected_path,
+            'error_path' => $env->postResponseConfig->error_path,
+            'error_value' => $env->postResponseConfig->error_value,
+            'error_reason_path' => $env->postResponseConfig->error_reason_path,
           ]
           : null,
         default => null,
@@ -519,6 +525,9 @@ class IntegrationService
           'accepted_path' => $configData['accepted_path'] ?? null,
           'accepted_value' => $configData['accepted_value'] ?? null,
           'lead_id_path' => $configData['lead_id_path'] ?? null,
+          'error_path' => $configData['error_path'] ?? null,
+          'error_value' => $configData['error_value'] ?? null,
+          'error_reason_path' => $this->joinReasonPaths($configData['error_reason_path'] ?? null),
         ],
       ),
       IntegrationEnvironment::ENV_TYPE_POST => PostResponseConfig::updateOrCreate(
@@ -527,10 +536,26 @@ class IntegrationService
           'accepted_path' => $configData['accepted_path'] ?? null,
           'accepted_value' => $configData['accepted_value'] ?? null,
           'rejected_path' => $configData['rejected_path'] ?? null,
+          'error_path' => $configData['error_path'] ?? null,
+          'error_value' => $configData['error_value'] ?? null,
+          'error_reason_path' => $this->joinReasonPaths($configData['error_reason_path'] ?? null),
         ],
       ),
       default => null,
     };
+  }
+
+  /**
+   * Convert error_reason_path from array (frontend tags) to pipe-separated string for DB.
+   */
+  private function joinReasonPaths(mixed $value): ?string
+  {
+    if (is_array($value)) {
+      $filtered = array_filter(array_map('trim', $value));
+      return $filtered ? implode('|', $filtered) : null;
+    }
+
+    return $value ?: null;
   }
 }
 

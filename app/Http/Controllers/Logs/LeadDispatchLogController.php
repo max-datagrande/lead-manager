@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
-use Maxidev\Logger\TailLogger;
+
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadDispatchLogController extends Controller
