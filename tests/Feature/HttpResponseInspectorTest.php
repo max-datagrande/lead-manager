@@ -161,3 +161,32 @@ it('handles deeply nested paths', function () {
   expect($result['is_error'])->toBeTrue();
   expect($result['reason'])->toBe('Timeout upstream');
 });
+
+// Pipe-separated reason paths
+
+it('uses first matching pipe-separated reason path', function () {
+  $json = ['response' => ['status' => 'Error', 'errors' => ['error' => 'Lead is a duplicate']]];
+
+  $result = HttpResponseInspector::detectConfiguredError($json, 'response.status', 'Error', 'response.errors.error|response.error');
+
+  expect($result['is_error'])->toBeTrue();
+  expect($result['reason'])->toBe('Lead is a duplicate');
+});
+
+it('falls back to second pipe-separated reason path when first is empty', function () {
+  $json = ['response' => ['status' => 'Error', 'error' => 'Insert Error #8: Required value missing.']];
+
+  $result = HttpResponseInspector::detectConfiguredError($json, 'response.status', 'Error', 'response.errors.error|response.error');
+
+  expect($result['is_error'])->toBeTrue();
+  expect($result['reason'])->toBe('Insert Error #8: Required value missing.');
+});
+
+it('uses fallback when no pipe-separated reason path matches', function () {
+  $json = ['response' => ['status' => 'Error']];
+
+  $result = HttpResponseInspector::detectConfiguredError($json, 'response.status', 'Error', 'response.errors.error|response.error');
+
+  expect($result['is_error'])->toBeTrue();
+  expect($result['reason'])->toContain('Error detected at');
+});

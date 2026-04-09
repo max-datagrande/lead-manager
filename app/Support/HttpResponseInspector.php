@@ -54,11 +54,22 @@ class HttpResponseInspector
       return ['is_error' => false, 'reason' => null];
     }
 
-    $reason = $errorReasonPath ? Arr::get($json, $errorReasonPath) : ($errorValue !== null ? null : $actual);
+    $reason = null;
+    if ($errorReasonPath) {
+      foreach (explode('|', $errorReasonPath) as $path) {
+        $value = Arr::get($json, trim($path));
+        if ($value) {
+          $reason = (string) $value;
+          break;
+        }
+      }
+    } elseif ($errorValue === null) {
+      $reason = is_string($actual) ? $actual : null;
+    }
 
     return [
       'is_error' => true,
-      'reason' => $reason ? (string) $reason : "Error detected at {$errorPath}",
+      'reason' => $reason ?: "Error detected at {$errorPath}",
     ];
   }
 }
