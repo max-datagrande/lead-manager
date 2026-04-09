@@ -171,6 +171,7 @@ export interface LeadDispatch {
   lead_id: number;
   fingerprint: string;
   lead_snapshot?: Record<string, string> | null;
+  utm_source?: string | null;
   status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout';
   strategy_used: string;
   attempt: number;

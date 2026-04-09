@@ -1,50 +1,13 @@
-import { DataTableContent } from '@/components/data-table/table-content';
-import { DataTableHeader } from '@/components/data-table/table-header';
-import { DataTablePagination } from '@/components/data-table/table-pagination';
-import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { ServerTable } from '@/components/data-table/server-table';
 import PageHeader from '@/components/page-header';
 import { indexBreadcrumbs } from '@/components/ping-post/dispatches/breadcrumbs';
 import { dispatchColumns } from '@/components/ping-post/dispatches/list-columns';
-import { Table, TableBody } from '@/components/ui/table';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
+import { DatatablePageProps } from '@/types';
 import type { LeadDispatch } from '@/types/ping-post';
 import { Head } from '@inertiajs/react';
-import {
-  getCoreRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { useState } from 'react';
-
-const toolbarConfig = {
-  dateRange: { column: 'created_at', label: 'Created At' },
-  filters: [
-    {
-      columnId: 'status',
-      title: 'Status',
-      options: [
-        { label: 'Sold', value: 'sold' },
-        { label: 'Not Sold', value: 'not_sold' },
-        { label: 'Running', value: 'running' },
-        { label: 'Error', value: 'error' },
-        { label: 'Timeout', value: 'timeout' },
-      ],
-    },
-    {
-      columnId: 'strategy_used',
-      title: 'Strategy',
-      options: [
-        { label: 'Best Bid', value: 'best_bid' },
-        { label: 'Waterfall', value: 'waterfall' },
-        { label: 'Combined', value: 'combined' },
-      ],
-    },
-  ],
-};
 
 interface WorkflowPostback {
   id: number;
@@ -53,39 +16,26 @@ interface WorkflowPostback {
   base_url: string;
 }
 
-interface Props {
-  dispatches: { data: LeadDispatch[] };
+type FilterOption = { value: string; label: string };
+
+interface Props extends DatatablePageProps<LeadDispatch> {
+  data: {
+    statusOptions: FilterOption[];
+    strategyOptions: FilterOption[];
+    workflows: { id: number; name: string }[];
+  };
   dispatches_with_executions: string[];
   workflow_postbacks: Record<number, WorkflowPostback[]>;
 }
 
-const DispatchesIndex = ({ dispatches, dispatches_with_executions, workflow_postbacks }: Props) => {
-  const [sorting, setSorting] = useState([{ id: 'created_at', desc: true }]);
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 50 });
-  const [columnFilters, setColumnFilters] = useState<any[]>([]);
+const DispatchesIndex = ({ rows, state, meta, data, dispatches_with_executions, workflow_postbacks }: Props) => {
   const [firedDispatches, setFiredDispatches] = useState<string[]>(dispatches_with_executions);
 
-  const table = useReactTable({
-    data: dispatches.data,
-    columns: dispatchColumns,
-    state: { sorting, globalFilter, pagination, columnFilters },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
-    onColumnFiltersChange: setColumnFilters,
-    getPaginationRowModel: getPaginationRowModel(),
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    globalFilterFn: 'includesString',
-    meta: {
-      workflowPostbacks: workflow_postbacks,
-      firedDispatches,
-      markAsFired: (uuid: string) => setFiredDispatches((prev) => [...prev, uuid]),
-    },
+  const table = useServerTable({
+    routeName: 'ping-post.dispatches.index',
+    initialState: state,
+    defaultPageSize: 50,
+    includeInReload: ['dispatches_with_executions', 'workflow_postbacks'],
   });
 
   return (
@@ -93,16 +43,46 @@ const DispatchesIndex = ({ dispatches, dispatches_with_executions, workflow_post
       <Head title="Dispatch Logs" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Dispatch Logs" description="View lead dispatch activity and results." />
-        <div className="space-y-4">
-          <DataTableToolbar table={table} config={toolbarConfig} />
-          <Table>
-            <DataTableHeader table={table} />
-            <TableBody>
-              <DataTableContent table={table} data={dispatches.data} />
-            </TableBody>
-          </Table>
-          <DataTablePagination table={table} />
-        </div>
+        <ServerTable
+          data={rows.data}
+          columns={dispatchColumns}
+          meta={meta}
+          isLoading={table.isLoading}
+          pagination={table.pagination}
+          setPagination={table.setPagination}
+          sorting={table.sorting}
+          setSorting={table.setSorting}
+          columnFilters={table.columnFilters}
+          setColumnFilters={table.setColumnFilters}
+          globalFilter={table.globalFilter}
+          setGlobalFilter={table.setGlobalFilter}
+          toolbarConfig={{
+            searchPlaceholder: 'Search fingerprint, UUID, UTM...',
+            filters: [
+              {
+                columnId: 'workflow_id',
+                title: 'Workflow',
+                options: (data?.workflows ?? []).map((w) => ({ value: String(w.id), label: w.name })),
+              },
+              {
+                columnId: 'status',
+                title: 'Status',
+                options: data?.statusOptions ?? [],
+              },
+              {
+                columnId: 'strategy_used',
+                title: 'Strategy',
+                options: data?.strategyOptions ?? [],
+              },
+            ],
+            dateRange: { column: 'created_at', label: 'Created At' },
+          }}
+          contextFunctions={{
+            workflowPostbacks: workflow_postbacks,
+            firedDispatches,
+            markAsFired: (uuid: string) => setFiredDispatches((prev) => [...prev, uuid]),
+          }}
+        />
       </div>
     </>
   );
