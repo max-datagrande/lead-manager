@@ -149,7 +149,6 @@ export function DateRangePicker({
   // LOG DE CAMBIOS EN FORMATO UTC
   useEffect(() => {
     if (!range.from) {
-      console.log('--- Estado Inicial / Reset (Sin selección) ---');
       return;
     }
     if (range.from) {
