@@ -191,6 +191,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::resource('dispatches', LeadDispatchLogController::class)
         ->only(['index', 'show'])
         ->whereNumber('dispatch');
+      Route::get('dispatches/report', [LeadDispatchLogController::class, 'report'])->name('dispatches.report');
       Route::get('dispatches/{dispatch}/timeline', [LeadDispatchLogController::class, 'timeline'])
         ->whereNumber('dispatch')
         ->name('dispatches.timeline');
