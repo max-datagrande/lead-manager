@@ -6,7 +6,9 @@ use App\Enums\DispatchStatus;
 use App\Enums\PostbackType;
 use App\Enums\WorkflowStrategy;
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\Field;
+use App\Models\Integration;
 use App\Models\LeadDispatch;
 use App\Models\PingResult;
 use App\Models\PostbackExecution;
@@ -27,7 +29,42 @@ class LeadDispatchLogController extends Controller
 
   public function index(Request $request): Response
   {
-    $query = LeadDispatch::query()->with(['workflow:id,name', 'lead', 'winnerIntegration:id,name']);
+    $query = LeadDispatch::query()->with(['workflow:id,name', 'lead', 'winnerIntegration:id,name,company_id', 'winnerIntegration.company:id,name']);
+
+    $filters = json_decode($request->input('filters', '[]'), true) ?? [];
+    $companyFilter = collect($filters)->firstWhere('id', 'company_id');
+    if ($companyFilter) {
+      $companyIds = (array) $companyFilter['value'];
+      $query->whereHas('winnerIntegration', fn($q) => $q->whereIn('company_id', $companyIds));
+    }
+
+    // Sort by related columns (join-based)
+    $sort = $request->input('sort', '');
+    [$sortCol] = $sort ? get_sort_data($sort) : ['', 'desc'];
+    $joinSorts = [
+      'workflow' => ['workflows', 'workflow_id', 'name'],
+      'winner_integration' => ['integrations', 'winner_integration_id', 'name'],
+      'company' => ['integrations', 'winner_integration_id', 'company_id'],
+    ];
+
+    if (isset($joinSorts[$sortCol])) {
+      [$joinTable, $fk, $orderCol] = $joinSorts[$sortCol];
+      [, $dir] = get_sort_data($sort);
+      if ($sortCol === 'company') {
+        $query
+          ->leftJoin('integrations', 'lead_dispatches.winner_integration_id', '=', 'integrations.id')
+          ->leftJoin('companies', 'integrations.company_id', '=', 'companies.id')
+          ->orderBy('companies.name', $dir)
+          ->select('lead_dispatches.*');
+      } else {
+        $query
+          ->leftJoin($joinTable, "lead_dispatches.{$fk}", '=', "{$joinTable}.id")
+          ->orderBy("{$joinTable}.{$orderCol}", $dir)
+          ->select('lead_dispatches.*');
+      }
+      // Remove sort from request so DatatableTrait doesn't override it
+      $request->merge(['sort' => '']);
+    }
 
     $table = $this->processDatatableQuery(
       query: $query,
@@ -37,13 +74,19 @@ class LeadDispatchLogController extends Controller
         'status' => ['type' => 'exact'],
         'strategy_used' => ['type' => 'exact'],
         'workflow_id' => ['type' => 'exact'],
-        'utm_source' => ['type' => 'like'],
+        'winner_integration_id' => ['type' => 'exact'],
+        'utm_source' => ['type' => 'exact'],
         'from_date' => ['type' => 'from_date', 'column' => 'created_at'],
         'to_date' => ['type' => 'to_date', 'column' => 'created_at'],
       ],
-      allowedSort: ['id', 'status', 'final_price', 'created_at', 'utm_source'],
+      allowedSort: ['id', 'status', 'strategy_used', 'final_price', 'total_duration_ms', 'created_at', 'utm_source'],
       defaultSort: 'created_at:desc',
     );
+
+    // Restore original sort in state for frontend persistence
+    if (isset($joinSorts[$sortCol])) {
+      $table['state']['sort'] = $sort;
+    }
 
     $items = collect($table['rows']->items());
 
@@ -74,6 +117,22 @@ class LeadDispatchLogController extends Controller
         'statusOptions' => DispatchStatus::toArray(),
         'strategyOptions' => WorkflowStrategy::toArray(),
         'workflows' => Workflow::orderBy('name')->get(['id', 'name']),
+        'integrations' => Integration::query()
+          ->whereIn('type', ['ping-post', 'post-only'])
+          ->orderBy('name')
+          ->get(['id', 'name']),
+        'companies' => Company::query()
+          ->whereHas('integrations', fn($q) => $q->whereIn('type', ['ping-post', 'post-only']))
+          ->orderBy('name')
+          ->get(['id', 'name']),
+        'utmSources' => LeadDispatch::query()
+          ->whereNotNull('utm_source')
+          ->distinct()
+          ->orderBy('utm_source')
+          ->pluck('utm_source')
+          ->map(fn(string $v) => ['value' => $v, 'label' => $v])
+          ->values()
+          ->all(),
       ],
       'dispatches_with_executions' => $dispatchesWithExecutions,
       'workflow_postbacks' => $workflowPostbacks,
