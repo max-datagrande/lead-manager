@@ -90,6 +90,15 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     enableSorting: false,
   },
   {
+    accessorKey: 'utm_source',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="UTM Source" />,
+    cell: ({ cell }) => {
+      const v = cell.getValue<string | null>();
+      return v ? <span className="text-sm">{v}</span> : <span className="text-muted-foreground">—</span>;
+    },
+    enableSorting: true,
+  },
+  {
     accessorKey: 'strategy_used',
     header: 'Strategy',
     cell: ({ cell }) => (
@@ -97,14 +106,12 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
         {STRATEGY_LABELS[cell.getValue<string>()] ?? cell.getValue<string>()}
       </Badge>
     ),
-    filterFn: (row, _, filterValue: string[]) => !filterValue?.length || filterValue.includes(row.original.strategy_used),
     enableSorting: false,
   },
   {
     accessorKey: 'status',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ cell }) => <StatusBadge status={cell.getValue<string>()} variant="dispatch" />,
-    filterFn: (row, _, filterValue: string[]) => !filterValue?.length || filterValue.includes(row.original.status),
     enableSorting: true,
   },
   {

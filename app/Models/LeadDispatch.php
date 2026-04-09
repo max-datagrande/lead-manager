@@ -18,6 +18,7 @@ class LeadDispatch extends Model
     'lead_id',
     'fingerprint',
     'lead_snapshot',
+    'utm_source',
     'status',
     'strategy_used',
     'attempt',
