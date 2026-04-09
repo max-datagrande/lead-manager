@@ -23,6 +23,9 @@ interface Props extends DatatablePageProps<LeadDispatch> {
     statusOptions: FilterOption[];
     strategyOptions: FilterOption[];
     workflows: { id: number; name: string }[];
+    integrations: { id: number; name: string }[];
+    companies: { id: number; name: string }[];
+    utmSources: FilterOption[];
   };
   dispatches_with_executions: string[];
   workflow_postbacks: Record<number, WorkflowPostback[]>;
@@ -73,6 +76,21 @@ const DispatchesIndex = ({ rows, state, meta, data, dispatches_with_executions, 
                 columnId: 'strategy_used',
                 title: 'Strategy',
                 options: data?.strategyOptions ?? [],
+              },
+              {
+                columnId: 'company_id',
+                title: 'Company',
+                options: (data?.companies ?? []).map((c) => ({ value: String(c.id), label: c.name })),
+              },
+              {
+                columnId: 'winner_integration_id',
+                title: 'Integration',
+                options: (data?.integrations ?? []).map((i) => ({ value: String(i.id), label: i.name })),
+              },
+              {
+                columnId: 'utm_source',
+                title: 'UTM Source',
+                options: data?.utmSources ?? [],
               },
             ],
             dateRange: { column: 'created_at', label: 'Created At' },

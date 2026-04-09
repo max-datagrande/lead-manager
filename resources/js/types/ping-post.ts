@@ -11,6 +11,7 @@ export interface Integration {
   type: 'ping-post' | 'post-only' | 'offerwall';
   is_active: boolean;
   company_id: number | null;
+  company?: { id: number; name: string } | null;
   environments?: EnvironmentDB[];
 }
 
