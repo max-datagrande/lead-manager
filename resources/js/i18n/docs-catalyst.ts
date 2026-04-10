@@ -148,8 +148,8 @@ const dictionary: Dictionary = {
       es: 'fields (opcional) \u2014 Campos del lead a crear/actualizar antes de despachar',
     },
     opt_create: {
-      en: "createOnMiss (optional, default: true) \u2014 If true, creates the lead if it doesn't exist yet",
-      es: 'createOnMiss (opcional, default: true) \u2014 Si es true, crea el lead si no existe a\u00fan',
+      en: "createOnMiss (optional, default: false) \u2014 If true, creates the lead if it doesn't exist yet",
+      es: 'createOnMiss (opcional, default: false) \u2014 Si es true, crea el lead si no existe a\u00fan',
     },
     response_title: { en: 'ShareLeadResponse', es: 'ShareLeadResponse' },
     response_desc: {
