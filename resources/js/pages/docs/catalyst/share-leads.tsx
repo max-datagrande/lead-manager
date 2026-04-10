@@ -13,7 +13,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const OPTIONS_TYPE = `interface ShareLeadOptions {
   workflowId: number | string  // The workflow ID to dispatch to
   fields?: Record<string, any> // Lead fields to create/update
-  createOnMiss?: boolean       // Create lead if not exists (default: true)
+  createOnMiss?: boolean       // Create lead if not exists (default: false)
 }`;
 
 const RESPONSE_TYPE = `interface ShareLeadResponse {
