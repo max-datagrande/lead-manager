@@ -364,3 +364,125 @@ describe('Async postback pricing', function () {
     ]);
   });
 });
+
+// ─── Error Excludes ─────────────────────────────────────────────────────────
+
+describe('Error Excludes', function () {
+  it('treats excluded ping error as rejected instead of error', function () {
+    $lead = Lead::factory()->create(['fingerprint' => 'fp-excluded-ping']);
+
+    $buyer = Integration::factory()
+      ->pingPost()
+      ->withBuyerConfig(['price_source' => 'response_bid', 'min_bid' => 0])
+      ->create(['name' => 'Buyer Exclude']);
+
+    // Configure error detection with excludes on the ping environment
+    $pingEnv = $buyer->environments->where('env_type', 'ping')->where('environment', 'production')->first();
+
+    $pingEnv->pingResponseConfig->update([
+      'error_path' => 'outcome',
+      'error_value' => 'failure',
+      'error_reason_path' => 'reason',
+      'error_excludes' => ['duplicate', 'cap reached'],
+    ]);
+
+    $workflow = Workflow::factory()->bestBid()->create();
+    attachBuyers($workflow, [['integration' => $buyer, 'position' => 0]]);
+
+    Http::fake([
+      'https://buyer.example.com/ping' => Http::response([
+        'outcome' => 'failure',
+        'reason' => 'Lead is a duplicate',
+      ]),
+    ]);
+
+    $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
+
+    expect($dispatch->status)->toBe(DispatchStatus::NOT_SOLD);
+    $this->assertDatabaseHas('ping_results', [
+      'integration_id' => $buyer->id,
+      'status' => 'rejected',
+    ]);
+    $this->assertDatabaseMissing('ping_results', [
+      'integration_id' => $buyer->id,
+      'status' => 'error',
+    ]);
+  });
+
+  it('treats excluded post error as rejected instead of error', function () {
+    $lead = Lead::factory()->create(['fingerprint' => 'fp-excluded-post']);
+
+    $buyer = Integration::factory()
+      ->postOnly()
+      ->withBuyerConfig(['price_source' => 'fixed', 'fixed_price' => 10.0])
+      ->create(['name' => 'Buyer Post Exclude']);
+
+    // Configure error detection with excludes on the post environment
+    $postEnv = $buyer->environments->where('env_type', 'post')->where('environment', 'production')->first();
+
+    $postEnv->postResponseConfig->update([
+      'error_path' => 'status',
+      'error_value' => 'Error',
+      'error_reason_path' => 'message',
+      'error_excludes' => ['state not accepted'],
+    ]);
+
+    $workflow = Workflow::factory()->waterfall()->create();
+    attachBuyers($workflow, [['integration' => $buyer, 'position' => 0]]);
+
+    Http::fake([
+      'https://buyer.example.com/post' => Http::response([
+        'status' => 'Error',
+        'message' => 'State not accepted for this buyer',
+      ]),
+    ]);
+
+    $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
+
+    expect($dispatch->status)->toBe(DispatchStatus::NOT_SOLD);
+    $this->assertDatabaseHas('post_results', [
+      'integration_id' => $buyer->id,
+      'status' => 'rejected',
+    ]);
+    $this->assertDatabaseMissing('post_results', [
+      'integration_id' => $buyer->id,
+      'status' => 'error',
+    ]);
+  });
+
+  it('still triggers error when configured error does not match any exclude', function () {
+    $lead = Lead::factory()->create(['fingerprint' => 'fp-nonexcluded-ping']);
+
+    $buyer = Integration::factory()
+      ->pingPost()
+      ->withBuyerConfig(['price_source' => 'response_bid', 'min_bid' => 0])
+      ->create(['name' => 'Buyer NonExclude']);
+
+    $pingEnv = $buyer->environments->where('env_type', 'ping')->where('environment', 'production')->first();
+
+    $pingEnv->pingResponseConfig->update([
+      'error_path' => 'outcome',
+      'error_value' => 'failure',
+      'error_reason_path' => 'reason',
+      'error_excludes' => ['duplicate'],
+    ]);
+
+    $workflow = Workflow::factory()->bestBid()->create();
+    attachBuyers($workflow, [['integration' => $buyer, 'position' => 0]]);
+
+    Http::fake([
+      'https://buyer.example.com/ping' => Http::response([
+        'outcome' => 'failure',
+        'reason' => 'Internal server error on buyer side',
+      ]),
+    ]);
+
+    $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
+
+    expect($dispatch->status)->toBe(DispatchStatus::NOT_SOLD);
+    $this->assertDatabaseHas('ping_results', [
+      'integration_id' => $buyer->id,
+      'status' => 'error',
+    ]);
+  });
+});
