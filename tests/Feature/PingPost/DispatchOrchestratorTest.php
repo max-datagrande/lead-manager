@@ -151,7 +151,7 @@ describe('Best Bid strategy', function () {
     Http::assertNothingSent();
   });
 
-  it('records ping result as rejected when buyer responds with 5xx and marks dispatch not_sold', function () {
+  it('records ping result as error when buyer responds with 5xx and marks dispatch not_sold', function () {
     $lead = Lead::factory()->create(['fingerprint' => 'fp-bestbid-error']);
 
     $buyer = Integration::factory()->pingPost()->withBuyerConfig()->create();
@@ -165,7 +165,7 @@ describe('Best Bid strategy', function () {
     $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
 
     expect($dispatch->status)->toBe(DispatchStatus::NOT_SOLD);
-    $this->assertDatabaseHas('ping_results', ['integration_id' => $buyer->id, 'status' => 'rejected']);
+    $this->assertDatabaseHas('ping_results', ['integration_id' => $buyer->id, 'status' => 'error']);
   });
 
   it('prevents duplicate pings via idempotency key', function () {
