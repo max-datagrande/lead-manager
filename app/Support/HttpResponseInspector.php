@@ -72,4 +72,31 @@ class HttpResponseInspector
       'reason' => $reason ?: "Error detected at {$errorPath}",
     ];
   }
+
+  /**
+   * Check if an error reason matches any exclude pattern (case-insensitive substring).
+   *
+   * Used to silently downgrade expected errors (e.g. "duplicate", "cap reached")
+   * to rejections instead of triggering alerts.
+   *
+   * @param  string  $reason    The extracted error reason string.
+   * @param  array|null  $excludes  List of substring patterns to match against.
+   * @return bool  True if the reason matches any exclude entry.
+   */
+  public static function isExcludedError(string $reason, ?array $excludes): bool
+  {
+    if (empty($excludes)) {
+      return false;
+    }
+
+    $lowerReason = mb_strtolower($reason);
+
+    foreach ($excludes as $pattern) {
+      if (str_contains($lowerReason, mb_strtolower(trim($pattern)))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

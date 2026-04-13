@@ -113,7 +113,32 @@ class PostService
         $responseConfig?->error_reason_path,
       );
       if ($configError['is_error']) {
-        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $configError['reason'], retry: false);
+        $reason = $configError['reason'];
+        $excludes = $responseConfig?->error_excludes;
+        $isExcluded = HttpResponseInspector::isExcludedError($reason, $excludes);
+
+        // Excluded (expected) error → treat as rejection, no alert, no retry
+        if ($isExcluded) {
+          $postResult = $this->createRecord(
+            $dispatch,
+            $integration,
+            $pingResult,
+            array_merge($baseData, [
+              'status' => PostResultStatus::REJECTED,
+              'rejection_reason' => $reason,
+            ]),
+          );
+
+          $this->timeline?->log(DispatchTimelineService::POST_RESULT, "Buyer '{$integration->name}': excluded error — {$reason}", [
+            'integration_id' => $integration->id,
+            'post_result_id' => $postResult->id,
+            'excluded_error' => true,
+          ]);
+
+          return $postResult;
+        }
+
+        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $reason, retry: false);
       }
 
       // 3. Normal accepted/rejected evaluation
