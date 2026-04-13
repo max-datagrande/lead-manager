@@ -81,6 +81,13 @@ export function PostOnlyResponseConfig({ env }) {
             <TagInput value={parseReasonPaths(responseConfig.error_reason_path)} onChange={(paths) => handleChange('error_reason_path', paths)} />
             <p className="text-xs text-muted-foreground">JSON paths to extract the error message. Checked in order, first match wins.</p>
           </div>
+          <div className="space-y-2">
+            <Label>Error Excludes</Label>
+            <TagInput value={responseConfig.error_excludes ?? []} onChange={(excludes) => handleChange('error_excludes', excludes)} />
+            <p className="text-xs text-muted-foreground">
+              Substrings to match against the error reason. Matching errors are treated as rejections (no alert). E.g. "duplicate", "cap reached".
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
