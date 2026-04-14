@@ -73,6 +73,18 @@ class Workflow extends Model
     return $this->belongsToMany(Postback::class, 'postback_workflow')->withTimestamps();
   }
 
+  public function workflowAlerts(): HasMany
+  {
+    return $this->hasMany(WorkflowAlert::class);
+  }
+
+  public function alertChannels(): BelongsToMany
+  {
+    return $this->belongsToMany(AlertChannel::class, 'workflow_alerts')
+      ->withPivot(['is_active'])
+      ->withTimestamps();
+  }
+
   public function scopeActive(Builder $query): Builder
   {
     return $query->where('is_active', true);

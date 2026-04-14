@@ -29,8 +29,8 @@ Route::prefix('postback')->group(function () {
     ->where('uuid', '[0-9a-f-]{36}')
     ->middleware('throttle:60,1');
 
-  // Internal postback fire endpoint (recibe fingerprint + params, guarda en lead y dispara)
-  Route::get('/fire/{uuid}/{fingerprint}', [InternalPostbackFireController::class, 'fire'])
+  // Internal postback fire endpoint (recibe fingerprint + source + params, guarda en lead y dispara)
+  Route::get('/fire/{uuid}/{fingerprint}/{source}', [InternalPostbackFireController::class, 'fire'])
     ->name('api.postback.fire-internal')
     ->where('uuid', '[0-9a-f-]{36}')
     ->middleware('throttle:60,1');

@@ -2,6 +2,7 @@
 
 namespace App\Services\PingPost;
 
+use App\Models\Field;
 use App\Models\Integration;
 
 class EligibilityCheckerService
@@ -18,6 +19,8 @@ class EligibilityCheckerService
       return true;
     }
 
+    $leadData = $this->resolveArrayFields($leadData);
+
     foreach ($rules as $rule) {
       if (!$rule->evaluate($leadData)) {
         return false;
@@ -32,6 +35,8 @@ class EligibilityCheckerService
    */
   public function getSkipReason(Integration $integration, array $leadData): ?string
   {
+    $leadData = $this->resolveArrayFields($leadData);
+
     foreach ($integration->eligibilityRules as $rule) {
       if (!$rule->evaluate($leadData)) {
         return "Rule failed: field={$rule->field} operator={$rule->operator}";
@@ -39,5 +44,22 @@ class EligibilityCheckerService
     }
 
     return null;
+  }
+
+  /**
+   * Split semicolon-delimited string values into arrays
+   * for fields marked as is_array in the Field model.
+   */
+  private function resolveArrayFields(array $leadData): array
+  {
+    $arrayFieldNames = Field::where('is_array', true)->pluck('name')->all();
+
+    foreach ($arrayFieldNames as $name) {
+      if (isset($leadData[$name]) && is_string($leadData[$name])) {
+        $leadData[$name] = array_values(array_filter(array_map('trim', explode(';', $leadData[$name])), fn(string $v): bool => $v !== ''));
+      }
+    }
+
+    return $leadData;
   }
 }

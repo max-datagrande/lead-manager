@@ -14,6 +14,7 @@ import { FieldMappingsModal } from './field-mappings-modal';
 import { IntegrationTypeCards } from './integration-type-selector';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { PingPostResponseConfig } from './ping-post-response-config';
+import { PostOnlyResponseConfig } from './post-only-response-config';
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
               <EnvironmentTab env="development" fields={fields} />
             </CardContent>
           </Card>
+          {data.type === 'post-only' && <PostOnlyResponseConfig env="development" />}
         </TabsContent>
         <TabsContent value="production">
           <Card>
@@ -94,6 +96,7 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
               <EnvironmentTab env="production" fields={fields} />
             </CardContent>
           </Card>
+          {data.type === 'post-only' && <PostOnlyResponseConfig env="production" />}
         </TabsContent>
       </Tabs>
       {data.type === 'offerwall' && <OfferwallParserConfig env="production" />}

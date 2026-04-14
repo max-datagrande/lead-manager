@@ -1,4 +1,5 @@
 import { WorkflowBuyerList } from '@/components/ping-post/workflow-buyer-list';
+import { WorkflowAlertModal } from '@/components/ping-post/workflows/workflow-alert-modal';
 import { PostbackAssociationModal } from '@/components/postbacks/postback-association-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,10 +12,10 @@ import { Switch } from '@/components/ui/switch';
 import { useModal } from '@/hooks/use-modal';
 import { useWorkflows } from '@/hooks/use-workflows';
 import { cn } from '@/lib/utils';
-import type { InternalPostbackSummary } from '@/types/ping-post';
+import type { AlertChannelSummary, InternalPostbackSummary, WorkflowAlert } from '@/types/ping-post';
 import { Link } from '@inertiajs/react';
 import axios from 'axios';
-import { type LucideIcon, Clock, Cpu, Layers, ListOrdered, Plus, Trash2, Zap } from 'lucide-react';
+import { type LucideIcon, Bell, Clock, Cpu, Layers, ListOrdered, Plus, Trash2, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
 
@@ -62,12 +63,21 @@ interface WorkflowFormProps {
   workflowId?: number;
   associatedPostbacks?: InternalPostbackSummary[];
   internalPostbacks?: InternalPostbackSummary[];
+  associatedAlerts?: WorkflowAlert[];
+  alertChannels?: AlertChannelSummary[];
 }
 
-export function WorkflowForm({ workflowId, associatedPostbacks: initialPostbacks = [], internalPostbacks = [] }: WorkflowFormProps) {
+export function WorkflowForm({
+  workflowId,
+  associatedPostbacks: initialPostbacks = [],
+  internalPostbacks = [],
+  associatedAlerts: initialAlerts = [],
+  alertChannels = [],
+}: WorkflowFormProps) {
   const { isEdit, data, errors, processing, handleSubmit, setData, availableBuyers, strategies } = useWorkflows();
   const modal = useModal();
   const [linkedPostbacks, setLinkedPostbacks] = useState(initialPostbacks);
+  const [linkedAlerts, setLinkedAlerts] = useState(initialAlerts);
 
   const isCombined = data.strategy === 'combined';
   const isWaterfall = data.strategy === 'waterfall';
@@ -85,72 +95,147 @@ export function WorkflowForm({ workflowId, associatedPostbacks: initialPostbacks
           </div>
           <div className="flex items-center gap-2">
             {isEdit && workflowId && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button type="button" variant="outline" size="sm" className="gap-1.5">
-                    <Zap className="h-3.5 w-3.5" />
-                    Postbacks
-                    {linkedPostbacks.length > 0 && (
-                      <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 items-center justify-center px-1.5 text-xs leading-none">
-                        {linkedPostbacks.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-80 p-0">
-                  <div className="border-b px-3 py-2.5">
-                    <p className="text-sm font-medium">Internal Postbacks</p>
-                    <p className="text-xs text-muted-foreground">Fired on sale through this workflow</p>
-                  </div>
-                  {linkedPostbacks.length > 0 && (
-                    <div className="max-h-48 space-y-0.5 overflow-y-auto p-1">
-                      {linkedPostbacks.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
-                          <p className="min-w-0 flex-1 truncate text-sm">{p.name}</p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:bg-destructive hover:text-white"
-                            onClick={async () => {
-                              await axios.delete(
-                                route('postbacks.associations.destroy', { source: 'workflow', sourceId: workflowId, postbackId: p.id }),
-                              );
-                              setLinkedPostbacks((prev) => prev.filter((x) => x.id !== p.id));
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="border-t p-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start gap-1.5 text-muted-foreground"
-                      onClick={async () => {
-                        const added = await modal.openAsync<InternalPostbackSummary | false>(
-                          <PostbackAssociationModal
-                            source="workflow"
-                            sourceId={workflowId}
-                            postbacks={internalPostbacks}
-                            associatedIds={linkedPostbacks.map((p) => p.id)}
-                          />,
-                        );
-                        if (added) {
-                          setLinkedPostbacks((prev) => [...prev, added]);
-                        }
-                      }}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add postback
+              <>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                      <Bell className="h-3.5 w-3.5" />
+                      Alerts
+                      {linkedAlerts.length > 0 && (
+                        <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 items-center justify-center px-1.5 text-xs leading-none">
+                          {linkedAlerts.length}
+                        </Badge>
+                      )}
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 p-0">
+                    <div className="border-b px-3 py-2.5">
+                      <p className="text-sm font-medium">Alert Channels</p>
+                      <p className="text-xs text-muted-foreground">Notified on workflow errors</p>
+                    </div>
+                    {linkedAlerts.length > 0 && (
+                      <div className="max-h-48 space-y-0.5 overflow-y-auto p-1">
+                        {linkedAlerts.map((wa) => (
+                          <div key={wa.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              <p className="min-w-0 truncate text-sm">{wa.alert_channel.name}</p>
+                              <Badge variant="muted" className="shrink-0 text-xs capitalize">
+                                {wa.alert_channel.type}
+                              </Badge>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:bg-destructive hover:text-white"
+                              onClick={async () => {
+                                await axios.delete(
+                                  route('ping-post.workflows.alerts.destroy', {
+                                    workflow: workflowId,
+                                    alertChannel: wa.alert_channel_id,
+                                  }),
+                                );
+                                setLinkedAlerts((prev) => prev.filter((x) => x.id !== wa.id));
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="border-t p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start gap-1.5 text-muted-foreground"
+                        onClick={async () => {
+                          const added = await modal.openAsync<WorkflowAlert | false>(
+                            <WorkflowAlertModal
+                              workflowId={workflowId}
+                              alertChannels={alertChannels}
+                              associatedIds={linkedAlerts.map((wa) => wa.alert_channel_id)}
+                            />,
+                          );
+                          if (added) {
+                            setLinkedAlerts((prev) => [...prev, added]);
+                          }
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add alert channel
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="gap-1.5">
+                      <Zap className="h-3.5 w-3.5" />
+                      Postbacks
+                      {linkedPostbacks.length > 0 && (
+                        <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 items-center justify-center px-1.5 text-xs leading-none">
+                          {linkedPostbacks.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 p-0">
+                    <div className="border-b px-3 py-2.5">
+                      <p className="text-sm font-medium">Internal Postbacks</p>
+                      <p className="text-xs text-muted-foreground">Fired on sale through this workflow</p>
+                    </div>
+                    {linkedPostbacks.length > 0 && (
+                      <div className="max-h-48 space-y-0.5 overflow-y-auto p-1">
+                        {linkedPostbacks.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50">
+                            <p className="min-w-0 flex-1 truncate text-sm">{p.name}</p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 shrink-0 p-0 text-muted-foreground hover:bg-destructive hover:text-white"
+                              onClick={async () => {
+                                await axios.delete(
+                                  route('postbacks.associations.destroy', { source: 'workflow', sourceId: workflowId, postbackId: p.id }),
+                                );
+                                setLinkedPostbacks((prev) => prev.filter((x) => x.id !== p.id));
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="border-t p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start gap-1.5 text-muted-foreground"
+                        onClick={async () => {
+                          const added = await modal.openAsync<InternalPostbackSummary | false>(
+                            <PostbackAssociationModal
+                              source="workflow"
+                              sourceId={workflowId}
+                              postbacks={internalPostbacks}
+                              associatedIds={linkedPostbacks.map((p) => p.id)}
+                            />,
+                          );
+                          if (added) {
+                            setLinkedPostbacks((prev) => [...prev, added]);
+                          }
+                        }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add postback
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </>
             )}
             <Switch id="is_active" checked={data.is_active} onCheckedChange={(v) => setData('is_active', v)} />
             <Label htmlFor="is_active" className="cursor-pointer">

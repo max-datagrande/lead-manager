@@ -4,6 +4,7 @@ namespace App\Services\PingPost;
 
 use App\Enums\PostResultStatus;
 use App\Jobs\PingPost\RetryPostJob;
+use App\Jobs\PingPost\SendWorkflowAlertJob;
 use App\Models\BuyerConfig;
 use App\Models\Integration;
 use App\Models\LeadDispatch;
@@ -11,6 +12,7 @@ use App\Models\PingResult;
 use App\Models\PostResult;
 use App\Models\PostResponseConfig;
 use App\Services\PayloadProcessorService;
+use App\Support\HttpResponseInspector;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
@@ -18,7 +20,14 @@ use Throwable;
 
 class PostService
 {
+  private ?DispatchTimelineService $timeline = null;
+
   public function __construct(private readonly PayloadProcessorService $payloadProcessor) {}
+
+  public function setTimeline(DispatchTimelineService $timeline): void
+  {
+    $this->timeline = $timeline;
+  }
 
   /**
    * Execute a post to a buyer and return the recorded PostResult.
@@ -78,14 +87,41 @@ class PostService
         ->{$method}($requestUrl, $payload);
       $durationMs = (int) round((microtime(true) - $startMs) * 1000);
 
-      $configUrl = $postEnv->response_config;
-      $accepted = $this->isAccepted($response, $configUrl);
-      $rejectionReason = $this->extractRejectionReason($response, $configUrl);
+      $baseData = [
+        'status' => PostResultStatus::ERROR,
+        'price_offered' => $offeredPrice,
+        'http_status_code' => $response->status(),
+        'request_url' => $requestUrl,
+        'request_payload' => $payload,
+        'request_headers' => $headers,
+        'response_body' => $response->json() ?? ['raw' => $response->body()],
+        'duration_ms' => $durationMs,
+      ];
 
-      $status = $accepted ? PostResultStatus::ACCEPTED : PostResultStatus::REJECTED;
+      // 1. HTTP-level error (5xx, invalid JSON)
+      $errorCheck = HttpResponseInspector::detectError($response);
+      if ($errorCheck['is_error']) {
+        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $errorCheck['reason']);
+      }
+
+      // 2. Configured error path match
+      $responseConfig = $postEnv->response_config;
+      $configError = HttpResponseInspector::detectConfiguredError(
+        $response->json() ?? [],
+        $responseConfig?->error_path,
+        $responseConfig?->error_value,
+        $responseConfig?->error_reason_path,
+      );
+      if ($configError['is_error']) {
+        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $configError['reason']);
+      }
+
+      // 3. Normal accepted/rejected evaluation
+      $accepted = $this->isAccepted($response, $responseConfig);
+      $rejectionReason = $this->extractRejectionReason($response, $responseConfig);
 
       return $this->createRecord($dispatch, $integration, $pingResult, [
-        'status' => $status,
+        'status' => $accepted ? PostResultStatus::ACCEPTED : PostResultStatus::REJECTED,
         'price_offered' => $offeredPrice,
         'price_final' => $accepted ? $offeredPrice : null,
         'http_status_code' => $response->status(),
@@ -112,13 +148,59 @@ class PostService
         'duration_ms' => $durationMs,
       ]);
 
-      // Queue retry for network/server errors
+      $this->timeline?->log(
+        $isTimeout ? DispatchTimelineService::POST_RESULT : DispatchTimelineService::POST_ERROR,
+        "Buyer '{$integration->name}': " . ($isTimeout ? 'timeout' : "exception — {$e->getMessage()}"),
+        ['integration_id' => $integration->id, 'post_result_id' => $postResult->id],
+      );
+
       if (!$isTimeout) {
         RetryPostJob::dispatch($postResult->id)->delay(3);
+        SendWorkflowAlertJob::dispatch($dispatch->workflow_id, "Buyer '{$integration->name}' post failed: {$e->getMessage()}", [
+          'title' => 'Buyer Post Failed',
+          'fields' => [
+            'Buyer' => "{$integration->name} (#{$integration->id})",
+            'Dispatch' => "#{$dispatch->id} — {$dispatch->dispatch_uuid}",
+            'Error' => $e->getMessage(),
+          ],
+        ]);
       }
 
       return $postResult;
     }
+  }
+
+  /**
+   * Handle a detected error: create ERROR result, log to timeline, dispatch alert, queue retry.
+   */
+  private function handleErrorResult(
+    LeadDispatch $dispatch,
+    Integration $integration,
+    ?PingResult $pingResult,
+    array $baseData,
+    string $reason,
+  ): PostResult {
+    $postResult = $this->createRecord($dispatch, $integration, $pingResult, $baseData);
+
+    $this->timeline?->log(DispatchTimelineService::POST_ERROR, "Buyer '{$integration->name}': {$reason}", [
+      'integration_id' => $integration->id,
+      'http_status' => $baseData['http_status_code'],
+      'post_result_id' => $postResult->id,
+    ]);
+
+    SendWorkflowAlertJob::dispatch($dispatch->workflow_id, "Buyer '{$integration->name}' post error: {$reason}", [
+      'title' => 'Buyer Post Error',
+      'fields' => [
+        'Buyer' => "{$integration->name} (#{$integration->id})",
+        'Dispatch' => "#{$dispatch->id} — {$dispatch->dispatch_uuid}",
+        'HTTP Status' => (string) $baseData['http_status_code'],
+        'Error' => $reason,
+      ],
+    ]);
+
+    RetryPostJob::dispatch($postResult->id)->delay(3);
+
+    return $postResult;
   }
 
   private function isAccepted(Response $response, ?PostResponseConfig $config): bool

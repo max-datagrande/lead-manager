@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DispatchStatus;
 use App\Events\LeadSold;
 use Illuminate\Database\Eloquent\Model;
+use Maxidev\Logger\TailLogger;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -17,8 +18,11 @@ class LeadDispatch extends Model
     'lead_id',
     'fingerprint',
     'lead_snapshot',
+    'utm_source',
     'status',
     'strategy_used',
+    'attempt',
+    'parent_dispatch_id',
     'winner_integration_id',
     'final_price',
     'fallback_activated',
@@ -69,6 +73,26 @@ class LeadDispatch extends Model
     return $this->hasMany(PostResult::class);
   }
 
+  public function timelineLogs(): HasMany
+  {
+    return $this->hasMany(DispatchTimelineLog::class);
+  }
+
+  public function buyerEvents(): HasMany
+  {
+    return $this->hasMany(DispatchBuyerEvent::class);
+  }
+
+  public function parentDispatch(): BelongsTo
+  {
+    return $this->belongsTo(self::class, 'parent_dispatch_id');
+  }
+
+  public function retries(): HasMany
+  {
+    return $this->hasMany(self::class, 'parent_dispatch_id');
+  }
+
   public function markAsSold(Integration $winner, float $price): void
   {
     $this->update([
@@ -76,6 +100,14 @@ class LeadDispatch extends Model
       'winner_integration_id' => $winner->id,
       'final_price' => $price,
       'completed_at' => now(),
+    ]);
+
+    TailLogger::saveLog('markAsSold → dispatching LeadSold event', 'postback/internal', 'info', [
+      'dispatch_id' => $this->id,
+      'dispatch_uuid' => $this->dispatch_uuid,
+      'workflow_id' => $this->workflow_id,
+      'winner' => $winner->name,
+      'price' => $price,
     ]);
 
     LeadSold::dispatch($this);

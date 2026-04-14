@@ -310,7 +310,7 @@ const Index = ({ integrations, clientIp, deviceType }: IndexProps) => {
         {submitting && !results && (
           <Card>
             <CardHeader>
-              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-6 w-48" />
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex gap-4">

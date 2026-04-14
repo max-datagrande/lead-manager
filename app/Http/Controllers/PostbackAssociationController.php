@@ -81,12 +81,7 @@ class PostbackAssociationController extends Controller
     }
 
     $resolvedTokens = $tokenResolver->resolveFromFingerprint($dispatch->fingerprint);
-
-    $saleParams = [
-      'lead_price' => (string) $dispatch->final_price,
-      'event_name' => 'sale',
-      'buyer_name' => $dispatch->winnerIntegration?->name ?? '',
-    ];
+    $saleParams = $tokenResolver->buildSaleParams($dispatch);
 
     $params = array_merge($resolvedTokens, $saleParams);
     $fired = 0;
@@ -110,6 +105,34 @@ class PostbackAssociationController extends Controller
     }
 
     return response()->json(['success' => true, 'fired' => $fired, 'message' => "{$fired} postback(s) fired."]);
+  }
+
+  /**
+   * Preview resolved outbound URLs for a dispatch without firing.
+   */
+  public function previewForDispatch(Request $request, InternalTokenResolverService $tokenResolver): JsonResponse
+  {
+    $data = $request->validate([
+      'dispatch_id' => ['required', 'integer', 'exists:lead_dispatches,id'],
+    ]);
+
+    $dispatch = LeadDispatch::with(['workflow.postbacks', 'winnerIntegration'])->findOrFail($data['dispatch_id']);
+
+    $postbacks = $dispatch->workflow?->postbacks()->internal()->active()->get() ?? collect();
+
+    $resolvedTokens = $tokenResolver->resolveFromFingerprint($dispatch->fingerprint);
+    $saleParams = $tokenResolver->buildSaleParams($dispatch);
+    $params = array_merge($resolvedTokens, $saleParams);
+
+    $preview = $postbacks->map(
+      fn(Postback $p) => [
+        'id' => $p->id,
+        'name' => $p->name,
+        'resolved_url' => $p->buildOutboundUrl($params),
+      ],
+    );
+
+    return response()->json(['success' => true, 'data' => $preview]);
   }
 
   /**

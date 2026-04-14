@@ -74,7 +74,7 @@ class Postback extends Model
     $domain = $this->is_public ? config('app.api_url') : config('app.url');
 
     if ($this->type === PostbackType::INTERNAL) {
-      $base = rtrim($domain, '/') . '/v1/postback/fire/' . $this->uuid . '/{fingerprint}';
+      $base = rtrim($domain, '/') . '/v1/postback/fire/' . $this->uuid . '/{fingerprint}/{source}';
 
       if (empty($this->param_mappings)) {
         return $base;

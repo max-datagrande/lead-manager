@@ -32,7 +32,7 @@ class InternalPostbackFireController extends Controller
    * 4. Resuelve tokens de traffic log
    * 5. Combina todo y delega al servicio
    */
-  public function fire(Request $request, string $uuid, string $fingerprint): JsonResponse
+  public function fire(Request $request, string $uuid, string $fingerprint, string $source): JsonResponse
   {
     try {
       $postback = Postback::query()
@@ -84,7 +84,7 @@ class InternalPostbackFireController extends Controller
       $execution = $this->fireService->fireInternal(
         uuid: $postback->uuid,
         params: $params,
-        source: PostbackSource::EXTERNAL_API,
+        source: PostbackSource::tryFrom($source) ?? throw new \InvalidArgumentException("Invalid source: {$source}"),
         sourceReference: $fingerprint,
       );
 

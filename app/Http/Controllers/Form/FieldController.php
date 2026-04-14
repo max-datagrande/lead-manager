@@ -33,6 +33,7 @@ class FieldController extends Controller
       'name' => 'required|string|max:255',
       'label' => 'required|string|max:255',
       'possible_values' => 'nullable|array',
+      'is_array' => 'boolean',
     ]);
 
     Field::create($validated);
@@ -49,6 +50,7 @@ class FieldController extends Controller
         'name' => 'required|string|max:255',
         'label' => 'required|string|max:255',
         'possible_values' => 'nullable|array',
+        'is_array' => 'boolean',
       ]);
       $field->update($validated);
       add_flash_message(type: 'success', message: 'Field updated successfully.');

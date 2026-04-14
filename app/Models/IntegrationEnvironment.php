@@ -85,6 +85,18 @@ class IntegrationEnvironment extends Model
             'label' => 'Lead ID Path',
             'hint' => 'JSON path to extract the external lead ID assigned by the buyer (e.g. "data.lead_id")',
           ],
+          'error_path' => [
+            'label' => 'Error Path',
+            'hint' => 'JSON path to the field that indicates an error (e.g. "response.status", "outcome")',
+          ],
+          'error_value' => [
+            'label' => 'Error Value',
+            'hint' => 'Exact match value that means error (e.g. "Error"). Leave empty to trigger on any truthy value.',
+          ],
+          'error_reason_path' => [
+            'label' => 'Error Reason Path',
+            'hint' => 'JSON path to extract the error message (e.g. "response.errors.error", "reason")',
+          ],
         ],
         self::ENV_TYPE_POST => [
           'accepted_path' => ['label' => 'Accepted Path', 'hint' => 'JSON path to the field that signals the post was accepted (e.g. "result")'],
@@ -95,6 +107,18 @@ class IntegrationEnvironment extends Model
           'rejected_path' => [
             'label' => 'Rejected Path',
             'hint' => 'JSON path to extract the rejection reason from the response (e.g. "error_message")',
+          ],
+          'error_path' => [
+            'label' => 'Error Path',
+            'hint' => 'JSON path to the field that indicates an error (e.g. "response.status", "outcome")',
+          ],
+          'error_value' => [
+            'label' => 'Error Value',
+            'hint' => 'Exact match value that means error (e.g. "Error"). Leave empty to trigger on any truthy value.',
+          ],
+          'error_reason_path' => [
+            'label' => 'Error Reason Path',
+            'hint' => 'JSON path to extract the error message (e.g. "response.errors.error", "reason")',
           ],
         ],
         self::ENV_TYPE_OFFERWALL => [
