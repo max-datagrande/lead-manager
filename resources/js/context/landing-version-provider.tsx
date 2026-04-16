@@ -45,7 +45,6 @@ export function LandingPagesVersionProvider({ children, landingPage }) {
   };
 
   const deleteEntry = (entry) => {
-    console.log(entry)
     const url = route('landing_pages.versions.destroy', {version: entry.id, landing_page: landingPage.id});
     destroy(url, {
       preserveScroll: true,
