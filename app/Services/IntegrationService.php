@@ -528,6 +528,7 @@ class IntegrationService
           'error_path' => $configData['error_path'] ?? null,
           'error_value' => $configData['error_value'] ?? null,
           'error_reason_path' => $this->joinReasonPaths($configData['error_reason_path'] ?? null),
+          'error_excludes' => $configData['error_excludes'] ?? null,
         ],
       ),
       IntegrationEnvironment::ENV_TYPE_POST => PostResponseConfig::updateOrCreate(
@@ -540,6 +541,7 @@ class IntegrationService
           'error_path' => $configData['error_path'] ?? null,
           'error_value' => $configData['error_value'] ?? null,
           'error_reason_path' => $this->joinReasonPaths($configData['error_reason_path'] ?? null),
+          'error_excludes' => $configData['error_excludes'] ?? null,
         ],
       ),
       default => null,
