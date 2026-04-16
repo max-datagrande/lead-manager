@@ -1,0 +1,1 @@
+export { LandingPagesVersionsActions } from './actions';
