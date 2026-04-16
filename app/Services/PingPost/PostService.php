@@ -66,17 +66,7 @@ class PostService
     $headers = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
     $method = strtolower($postEnv->method ?? 'post');
 
-    // Async postback: create a pending record immediately
-    if ($config->price_source->isAsync()) {
-      return $this->createRecord($dispatch, $integration, $pingResult, [
-        'status' => PostResultStatus::PENDING_POSTBACK,
-        'price_offered' => $offeredPrice,
-        'request_url' => $requestUrl,
-        'request_payload' => $payload,
-        'request_headers' => $headers,
-        'postback_expires_at' => now()->addDays($config->postback_pending_days),
-      ]);
-    }
+    $isAsyncPricing = $config->price_source->isAsync();
 
     $startMs = microtime(true);
 
@@ -144,6 +134,21 @@ class PostService
       // 3. Normal accepted/rejected evaluation
       $accepted = $this->isAccepted($response, $responseConfig);
       $rejectionReason = $this->extractRejectionReason($response, $responseConfig);
+
+      // Async pricing: buyer accepted the lead but price comes later via postback
+      if ($accepted && $isAsyncPricing) {
+        return $this->createRecord($dispatch, $integration, $pingResult, [
+          'status' => PostResultStatus::PENDING_POSTBACK,
+          'price_offered' => $offeredPrice,
+          'http_status_code' => $response->status(),
+          'request_url' => $requestUrl,
+          'request_payload' => $payload,
+          'request_headers' => $headers,
+          'response_body' => $response->json() ?? ['raw' => $response->body()],
+          'duration_ms' => $durationMs,
+          'postback_expires_at' => now()->addDays($config->postback_pending_days),
+        ]);
+      }
 
       $priceFinal = $accepted ? $offeredPrice : null;
 

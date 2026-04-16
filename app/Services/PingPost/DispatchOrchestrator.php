@@ -112,8 +112,14 @@ class DispatchOrchestrator
     } finally {
       $dispatch->refresh();
       if (!$dispatch->status->isTerminal()) {
-        $dispatch->markAsNotSold();
-        $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
+        $hasPendingPostback = $dispatch->postResults()->where('status', \App\Enums\PostResultStatus::PENDING_POSTBACK)->exists();
+
+        if ($hasPendingPostback) {
+          $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, 'Dispatch awaiting postback price confirmation');
+        } else {
+          $dispatch->markAsNotSold();
+          $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
+        }
       }
       $this->timeline->flush();
       $this->flushBuyerEvents();

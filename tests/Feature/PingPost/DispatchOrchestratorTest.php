@@ -352,16 +352,22 @@ describe('Async postback pricing', function () {
     attachBuyers($workflow, [['integration' => $buyer, 'position' => 0]]);
 
     Http::fake([
-      'https://buyer.example.com/post' => Http::response(['status' => 'received']),
+      'https://buyer.example.com/post' => Http::response(['accepted' => 'true', 'status' => 'received']),
     ]);
 
     $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
 
-    // Dispatch stays in a non-sold terminal-like state until postback resolves
+    // Post was actually sent to the buyer (HTTP request recorded)
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'buyer.example.com/post'));
+
+    // PostResult is pending_postback (buyer accepted but price comes later)
     $this->assertDatabaseHas('post_results', [
       'integration_id' => $buyer->id,
       'status' => 'pending_postback',
     ]);
+
+    // Dispatch stays in RUNNING — not sold yet, not marked as not_sold
+    expect($dispatch->status)->toBe(DispatchStatus::RUNNING);
   });
 });
 
