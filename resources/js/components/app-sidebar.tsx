@@ -4,8 +4,8 @@ import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
-  BookOpen,
   Bell,
+  BookOpen,
   Bug,
   ClipboardList,
   Coins,
@@ -21,6 +21,7 @@ import {
   List,
   Network,
   Shield,
+  ShieldCheck,
   TextCursorInput,
   Users,
   Webhook,
@@ -165,6 +166,17 @@ const ShareLeadsGroup: NavGroupType = {
   ],
 };
 
+const LeadQualityGroup: NavGroupType = {
+  title: 'Lead Quality',
+  items: [
+    {
+      title: 'Providers',
+      href: route('lead-quality.providers.index'),
+      icon: ShieldCheck,
+    },
+  ],
+};
+
 const SystemToolsGroup: NavGroupType = {
   title: 'System',
   items: [
@@ -209,6 +221,7 @@ const navGroups: NavGroupType[] = [
   PostbacksGroup,
   OfferwallGroup,
   ShareLeadsGroup,
+  LeadQualityGroup,
   SystemGroup,
   DocumentationGroup,
   SystemToolsGroup,
