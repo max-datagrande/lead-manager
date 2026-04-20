@@ -15,6 +15,7 @@ use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\LeadQuality\ProviderController as LeadQualityProviderController;
 use App\Http\Controllers\LeadQuality\ProviderTestController as LeadQualityProviderTestController;
+use App\Http\Controllers\LeadQuality\ValidationRuleController as LeadQualityValidationRuleController;
 use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowAlertController;
 use App\Http\Controllers\PingPost\WorkflowController;
@@ -217,6 +218,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::resource('providers', LeadQualityProviderController::class)
         ->except(['show'])
         ->whereNumber('provider');
+      Route::resource('validation-rules', LeadQualityValidationRuleController::class)
+        ->except(['show'])
+        ->parameters(['validation-rules' => 'validationRule'])
+        ->whereNumber('validationRule');
     });
 });
 
