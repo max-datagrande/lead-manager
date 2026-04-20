@@ -6,6 +6,7 @@ use App\Enums\DispatchStatus;
 use App\Enums\LeadQuality\ValidationLogStatus;
 use App\Models\LeadDispatch;
 use App\Models\LeadQualityValidationLog;
+use App\Services\PingPost\DispatchTimelineService;
 use Illuminate\Console\Command;
 
 /**
@@ -19,7 +20,7 @@ class ExpireValidationDispatchesCommand extends Command
 
   protected $description = 'Expire pending_validation dispatches whose challenge logs have passed their TTL.';
 
-  public function handle(): int
+  public function handle(DispatchTimelineService $timeline): int
   {
     $pendingDispatches = LeadDispatch::query()->where('status', DispatchStatus::PENDING_VALIDATION->value)->get();
 
@@ -44,6 +45,19 @@ class ExpireValidationDispatchesCommand extends Command
 
       $dispatch->update(['status' => DispatchStatus::VALIDATION_FAILED->value]);
       $expiredDispatches++;
+
+      $timeline->logSingle(
+        $dispatch->id,
+        (string) $dispatch->fingerprint,
+        DispatchTimelineService::VALIDATION_FAILED,
+        'Challenge expired before verification; dispatch closed by scheduled sweep',
+        [
+          'validation_log_id' => $latestLog->id,
+          'expired_at' => $latestLog->expires_at?->toIso8601String(),
+          'reason' => 'quality_expired',
+          'source' => 'lead-quality:expire-validation',
+        ],
+      );
     }
 
     $this->info("Expired {$expiredDispatches} dispatch(es) and {$expiredLogs} log(s).");
