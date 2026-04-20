@@ -121,4 +121,34 @@ class DispatchTimelineService
   {
     return $this->buffer;
   }
+
+  /**
+   * Persist a single event directly to the timeline table, bypassing the
+   * in-memory buffer + flush job cycle. Used by services that run OUTSIDE
+   * the orchestrator request (e.g., `ChallengeIssuerService`,
+   * `ChallengeVerifierService`, scheduled commands), where there is no
+   * per-request context to bind to and only one or two events need to be
+   * recorded.
+   *
+   * Unlike `log()`, this method requires the dispatch id and fingerprint
+   * explicitly — there is no shared state to infer them from when called
+   * across request boundaries.
+   *
+   * @param  array<string, mixed>|null  $context  Arbitrary JSON-serializable context.
+   */
+  public function logSingle(int $leadDispatchId, string $fingerprint, string $event, string $message, ?array $context = null): void
+  {
+    $now = now();
+
+    \App\Models\DispatchTimelineLog::create([
+      'lead_dispatch_id' => $leadDispatchId,
+      'fingerprint' => $fingerprint,
+      'event' => $event,
+      'message' => $message,
+      'context' => !empty($context) ? $context : null,
+      'logged_at' => CarbonImmutable::now()->format('Y-m-d H:i:s.u'),
+      'created_at' => $now,
+      'updated_at' => $now,
+    ]);
+  }
 }
