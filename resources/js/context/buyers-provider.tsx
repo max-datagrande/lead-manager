@@ -30,6 +30,13 @@ function buildInitialData(buyer: Buyer | null) {
     fixed_price: String(cfg?.fixed_price ?? ''),
     min_bid: String(cfg?.min_bid ?? ''),
     postback_pending_days: cfg?.postback_pending_days ?? '',
+    pricing_postback: cfg?.pricing_postback?.[0]
+      ? {
+          postback_id: cfg.pricing_postback[0].id,
+          identifier_token: cfg.pricing_postback[0].pivot.identifier_token,
+          price_token: cfg.pricing_postback[0].pivot.price_token,
+        }
+      : null,
     sell_on_zero_price: cfg?.sell_on_zero_price ?? false,
     conditional_pricing_rules: cfg?.conditional_pricing_rules ?? [],
     eligibility_rules: buyer?.eligibility_rules ?? [],
