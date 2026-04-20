@@ -194,6 +194,13 @@ class Postback extends Model
     return $this->belongsToMany(Workflow::class, 'postback_workflow')->withTimestamps();
   }
 
+  public function buyerConfigs(): BelongsToMany
+  {
+    return $this->belongsToMany(BuyerConfig::class, 'buyer_config_postback')
+      ->withPivot(['identifier_token', 'price_token'])
+      ->withTimestamps();
+  }
+
   public function creator(): BelongsTo
   {
     return $this->belongsTo(User::class, 'user_id');

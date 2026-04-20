@@ -10,14 +10,15 @@ interface Props {
   integrations: Integration[];
   priceSources: Array<{ value: string; label: string }>;
   fields: { id: number; name: string }[];
+  externalPostbacks: any[];
 }
 
-const BuyersCreate = ({ integrations, priceSources, fields }: Props) => (
+const BuyersCreate = ({ integrations, priceSources, fields, externalPostbacks }: Props) => (
   <BuyersProvider>
     <Head title="Create Buyer" />
     <div className="relative flex-1 space-y-6 p-6 md:p-8">
       <PageHeader title="Create Buyer" description="Select an integration and configure this buyer." />
-      <BuyerForm integrations={integrations} priceSources={priceSources} fields={fields} />
+      <BuyerForm integrations={integrations} priceSources={priceSources} fields={fields} externalPostbacks={externalPostbacks} />
     </div>
   </BuyersProvider>
 );

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PriceSource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BuyerConfig extends Model
 {
@@ -31,5 +32,12 @@ class BuyerConfig extends Model
   public function integration(): BelongsTo
   {
     return $this->belongsTo(Integration::class);
+  }
+
+  public function pricingPostback(): BelongsToMany
+  {
+    return $this->belongsToMany(Postback::class, 'buyer_config_postback')
+      ->withPivot(['identifier_token', 'price_token'])
+      ->withTimestamps();
   }
 }

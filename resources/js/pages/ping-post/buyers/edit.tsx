@@ -11,14 +11,15 @@ interface Props {
   integrations: Integration[];
   priceSources: Array<{ value: string; label: string }>;
   fields: { id: number; name: string }[];
+  externalPostbacks: any[];
 }
 
-const BuyersEdit = ({ buyer, integrations, priceSources, fields }: Props) => (
+const BuyersEdit = ({ buyer, integrations, priceSources, fields, externalPostbacks }: Props) => (
   <BuyersProvider buyer={buyer}>
     <Head title={`Edit ${buyer.name}`} />
     <div className="relative flex-1 space-y-6 p-6 md:p-8">
       <PageHeader title={`Edit ${buyer.name}`} description="Update buyer configuration." />
-      <BuyerForm integrations={integrations} priceSources={priceSources} fields={fields} />
+      <BuyerForm integrations={integrations} priceSources={priceSources} fields={fields} externalPostbacks={externalPostbacks} />
     </div>
   </BuyersProvider>
 );
