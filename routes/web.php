@@ -13,6 +13,8 @@ use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\LeadQuality\ProviderController as LeadQualityProviderController;
+use App\Http\Controllers\LeadQuality\ProviderTestController as LeadQualityProviderTestController;
 use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowAlertController;
 use App\Http\Controllers\PingPost\WorkflowController;
@@ -202,6 +204,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereIn('type', ['ping', 'post'])
         ->whereNumber('id')
         ->name('dispatches.result-detail');
+    });
+
+  // Lead Quality — providers, validation rules, logs
+  Route::prefix('lead-quality')
+    ->name('lead-quality.')
+    ->middleware(['role:admin,manager'])
+    ->group(function () {
+      Route::post('providers/{provider}/test', [LeadQualityProviderTestController::class, 'test'])
+        ->whereNumber('provider')
+        ->name('providers.test');
+      Route::resource('providers', LeadQualityProviderController::class)
+        ->except(['show'])
+        ->whereNumber('provider');
     });
 });
 
