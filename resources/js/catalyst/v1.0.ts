@@ -2,14 +2,19 @@ import { API_ROUTES } from './routes';
 import {
   CatalystConfig,
   CatalystPlaceholder,
+  ChallengeStatusEvent,
   EventCallback,
   GetOfferwallOptions,
   LeadStatusEvent,
   OfferwallConversionRequest,
   OfferwallConversionResponse,
   OfferwallResponse,
+  SendChallengeOptions,
+  SendChallengeResponse,
   ShareLeadOptions,
   ShareLeadResponse,
+  VerifyChallengeOptions,
+  VerifyChallengeResponse,
   VisitorData,
   visitorRegisterResponse,
 } from './types';
@@ -479,6 +484,153 @@ class CatalystCore {
     }
   }
 
+  // ===================================================================================
+  // LEAD QUALITY (Challenge send / verify)
+  // ===================================================================================
+
+  /**
+   * Issues a Lead Quality challenge (OTP, etc.) for the given workflow before dispatch.
+   *
+   * The backend resolves which validation rules apply based on the workflow's buyers,
+   * creates a `LeadDispatch` in `PENDING_VALIDATION` state, and delegates to each
+   * provider (Twilio Verify, etc.) to send the challenge.
+   *
+   * Canonical landing flow:
+   *   1. `catalyst.registerLead({...})`         // lead exists in our DB
+   *   2. `catalyst.sendChallenge({ workflowId, to })`   // user receives SMS
+   *   3. user types the code → `catalyst.verifyChallenge({ challengeToken, code, to })`
+   *   4. on `verified: true`, the backend auto-queues the dispatch — no extra call needed.
+   *
+   * When the workflow has no applicable validation rules, the response comes back with
+   * `challenges: []` + `errors: []`; the caller can skip straight to `shareLead()`.
+   */
+  async sendChallenge({ workflowId, leadId, fingerprint, to, channel, locale }: SendChallengeOptions): Promise<SendChallengeResponse> {
+    const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
+    if (!resolvedFingerprint) {
+      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
+      this.dispatch('challenge:status', { type: 'send', success: false, error } as ChallengeStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    const resolvedLeadId = leadId ?? this.visitorData?.lead_data?.id ?? this.visitorData?.lead_data?.lead_id;
+    if (!resolvedLeadId) {
+      const error = 'No lead_id available. Call registerLead() first or pass leadId explicitly.';
+      this.dispatch('challenge:status', { type: 'send', success: false, error } as ChallengeStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    const payload: Record<string, any> = {
+      workflow_id: workflowId,
+      lead_id: resolvedLeadId,
+      fingerprint: resolvedFingerprint,
+    };
+    if (to) payload.to = to;
+    if (channel) payload.channel = channel;
+    if (locale) payload.locale = locale;
+
+    try {
+      const res = await fetch(this.getEndpoint('LEAD_QUALITY.CHALLENGE_SEND'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = (await res.json()) as SendChallengeResponse;
+
+      if (!res.ok) {
+        const msg = (json as any)?.message ?? `HTTP ${res.status}`;
+        this.dispatch('challenge:status', { type: 'send', success: false, error: msg, data: json } as ChallengeStatusEvent);
+        throw new Error(`Catalyst SDK: ${msg}`);
+      }
+
+      if (this.config.debug) console.log('Catalyst SDK: Challenge sent.', json);
+
+      this.dispatch('challenge:status', { type: 'send', success: true, data: json.data } as ChallengeStatusEvent);
+
+      return json;
+    } catch (error) {
+      console.error('Catalyst SDK: Error sending challenge:', error);
+      this.dispatch('challenge:status', {
+        type: 'send',
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as ChallengeStatusEvent);
+      throw error;
+    }
+  }
+
+  /**
+   * Verifies a challenge code entered by the user. On `verified: true`, the
+   * backend auto-transitions the associated dispatch from PENDING_VALIDATION
+   * to RUNNING and queues the DispatchLeadJob — the landing does NOT need to
+   * call `shareLead()` afterwards.
+   *
+   * Non-success outcomes:
+   *   - `retry` → wrong code, `retry_remaining` is set.
+   *   - `expired` / `failed` → terminal, the dispatch is VALIDATION_FAILED.
+   *   - `invalid_token` / `not_found` → token was tampered or doesn't exist.
+   */
+  async verifyChallenge({ challengeToken, code, to }: VerifyChallengeOptions): Promise<VerifyChallengeResponse> {
+    const payload: Record<string, any> = {
+      challenge_token: challengeToken,
+      code,
+    };
+    if (to) payload.to = to;
+
+    try {
+      const res = await fetch(this.getEndpoint('LEAD_QUALITY.CHALLENGE_VERIFY'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      // Success envelope: { success: true, data: { verified, status, dispatch_uuid? }, message }
+      // Failure envelope: { success: false, message, errors: { verified, status, retry_remaining?, reason? } }
+      const flattened: VerifyChallengeResponse = res.ok
+        ? {
+            success: true,
+            message: json.message ?? 'Challenge verified.',
+            verified: Boolean(json.data?.verified),
+            status: json.data?.status ?? 'verified',
+            dispatch_uuid: json.data?.dispatch_uuid,
+          }
+        : {
+            success: false,
+            message: json.message ?? `HTTP ${res.status}`,
+            verified: Boolean(json.errors?.verified),
+            status: json.errors?.status ?? 'error',
+            retry_remaining: json.errors?.retry_remaining,
+            reason: json.errors?.reason ?? json.message,
+          };
+
+      if (this.config.debug) console.log('Catalyst SDK: Challenge verify result.', flattened);
+
+      this.dispatch('challenge:status', {
+        type: 'verify',
+        success: flattened.verified,
+        data: flattened,
+      } as ChallengeStatusEvent);
+
+      return flattened;
+    } catch (error) {
+      console.error('Catalyst SDK: Error verifying challenge:', error);
+      this.dispatch('challenge:status', {
+        type: 'verify',
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as ChallengeStatusEvent);
+      throw error;
+    }
+  }
+
   /**
    * Registra una conversión de Offerwall.
    * @param data Datos de la conversión
@@ -667,7 +819,7 @@ async function init(): Promise<void> {
         item.length === 4 &&
         typeof possibleResolve === 'function' &&
         typeof possibleReject === 'function' &&
-        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead'].includes(method);
+        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'sendChallenge', 'verifyChallenge'].includes(method);
 
       if (isPromiseProxy) {
         const args = Array.from((item[1] as ArrayLike<any>) || []);
