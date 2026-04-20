@@ -21,6 +21,7 @@ import {
   List,
   ListChecks,
   Network,
+  ScrollText,
   Shield,
   ShieldCheck,
   TextCursorInput,
@@ -179,6 +180,11 @@ const LeadQualityGroup: NavGroupType = {
       title: 'Validation Rules',
       href: route('lead-quality.validation-rules.index'),
       icon: ListChecks,
+    },
+    {
+      title: 'Validation Logs',
+      href: route('lead-quality.validation-logs.index'),
+      icon: ScrollText,
     },
   ],
 };

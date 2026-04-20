@@ -107,3 +107,66 @@ export interface RuleDetail {
   priority: number;
   buyer_ids: number[];
 }
+
+export type ValidationLogStatusValue = 'pending' | 'sent' | 'verified' | 'failed' | 'expired' | 'skipped' | 'error';
+
+export interface ValidationLogStatusOption {
+  value: ValidationLogStatusValue;
+  label: string;
+}
+
+export interface ValidationLogRow {
+  id: number;
+  status: ValidationLogStatusValue;
+  status_label: string;
+  result: string | null;
+  attempts_count: number;
+  fingerprint: string | null;
+  challenge_reference: string | null;
+  message: string | null;
+  started_at: string | null;
+  resolved_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  rule: { id: number; name: string; validation_type: string | null } | null;
+  provider: { id: number; name: string; type: string | null } | null;
+  buyer: { id: number; name: string } | null;
+}
+
+export interface ValidationLogDetail extends ValidationLogRow {
+  context: Record<string, unknown> | null;
+  lead: { id: number; fingerprint: string | null } | null;
+  lead_dispatch: { id: number; dispatch_uuid: string | null; status: string | null } | null;
+  rule_detail: {
+    id: number;
+    name: string;
+    validation_type: string | null;
+    status: string | null;
+    is_enabled: boolean;
+  } | null;
+  provider_detail: {
+    id: number;
+    name: string;
+    type: string | null;
+    status: string | null;
+    is_enabled: boolean;
+  } | null;
+}
+
+export interface ExternalRequestRow {
+  id: number;
+  operation: string | null;
+  service_name: string | null;
+  request_method: string;
+  request_url: string;
+  request_headers: Record<string, unknown> | null;
+  request_body: Record<string, unknown> | null;
+  response_status_code: number | null;
+  response_headers: Record<string, unknown> | null;
+  response_body: Record<string, unknown> | null;
+  status: string;
+  error_message: string | null;
+  duration_ms: number | null;
+  requested_at: string | null;
+  responded_at: string | null;
+}
