@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -79,6 +80,17 @@ class Integration extends Model
   public function capRules(): HasMany
   {
     return $this->hasMany(BuyerCapRule::class);
+  }
+
+  /**
+   * Lead Quality validation rules linked to this integration (buyer).
+   * The pivot `buyer_validation_rule` holds per-buyer enable/disable flag.
+   */
+  public function validationRules(): BelongsToMany
+  {
+    return $this->belongsToMany(LeadQualityValidationRule::class, 'buyer_validation_rule', 'integration_id', 'validation_rule_id')
+      ->withPivot('is_enabled')
+      ->withTimestamps();
   }
 
   /**
