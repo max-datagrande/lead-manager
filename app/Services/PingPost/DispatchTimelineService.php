@@ -53,6 +53,13 @@ class DispatchTimelineService
   public const OUTCOME_SOLD = 'outcome.sold';
   public const OUTCOME_NOT_SOLD = 'outcome.not_sold';
   public const OUTCOME_PENDING_POSTBACK = 'outcome.pending_postback';
+  public const OUTCOME_VALIDATION_FAILED = 'outcome.validation_failed';
+
+  // ─── Lead Quality (validation safety net) ──────────────────────────
+  public const VALIDATION_STARTED = 'validation.started';
+  public const VALIDATION_COMPLETED = 'validation.completed';
+  public const VALIDATION_FAILED = 'validation.failed';
+  public const QUALITY_NOT_VERIFIED = 'quality.not_verified';
 
   // ─── Postback ───────────────────────────────────────────────────────
   public const POSTBACK_FIRED = 'postback.fired';
