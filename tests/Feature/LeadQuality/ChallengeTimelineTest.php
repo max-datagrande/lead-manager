@@ -125,21 +125,25 @@ test('verify failures at max_attempts write challenge.attempt_failed + VALIDATIO
   $token = Crypt::encryptString(json_encode(['log_id' => $log->id, 'fingerprint' => $stack['lead']->fingerprint]));
 
   // First wrong attempt → retry
-  postJson('/v1/lead-quality/challenge/verify', ['challenge_token' => $token, 'code' => '000000', 'to' => '+15555551234'], timelineHostHeader())
-    ->assertStatus(422);
+  postJson(
+    '/v1/lead-quality/challenge/verify',
+    ['challenge_token' => $token, 'code' => '000000', 'to' => '+15555551234'],
+    timelineHostHeader(),
+  )->assertStatus(422);
 
   // Second wrong attempt → terminal
-  postJson('/v1/lead-quality/challenge/verify', ['challenge_token' => $token, 'code' => '000000', 'to' => '+15555551234'], timelineHostHeader())
-    ->assertStatus(410);
+  postJson(
+    '/v1/lead-quality/challenge/verify',
+    ['challenge_token' => $token, 'code' => '000000', 'to' => '+15555551234'],
+    timelineHostHeader(),
+  )->assertStatus(410);
 
   $events = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)->pluck('event')->all();
 
   expect($events)->toContain('challenge.attempt_failed');
   expect($events)->toContain(DispatchTimelineService::VALIDATION_FAILED);
 
-  $attemptRow = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)
-    ->where('event', 'challenge.attempt_failed')
-    ->first();
+  $attemptRow = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)->where('event', 'challenge.attempt_failed')->first();
   expect($attemptRow->context['attempt_number'])->toBe(1);
   expect($attemptRow->context['retry_remaining'])->toBe(1);
 
@@ -181,8 +185,11 @@ test('verify success writes VALIDATION_COMPLETED before dispatching the job', fu
 
   $token = Crypt::encryptString(json_encode(['log_id' => $log->id, 'fingerprint' => $stack['lead']->fingerprint]));
 
-  postJson('/v1/lead-quality/challenge/verify', ['challenge_token' => $token, 'code' => '123456', 'to' => '+15555551234'], timelineHostHeader())
-    ->assertOk();
+  postJson(
+    '/v1/lead-quality/challenge/verify',
+    ['challenge_token' => $token, 'code' => '123456', 'to' => '+15555551234'],
+    timelineHostHeader(),
+  )->assertOk();
 
   $events = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)->pluck('event')->all();
 
@@ -217,9 +224,7 @@ test('expire command writes VALIDATION_FAILED to the timeline', function () {
 
   artisan('lead-quality:expire-validation')->assertSuccessful();
 
-  $row = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)
-    ->where('event', DispatchTimelineService::VALIDATION_FAILED)
-    ->first();
+  $row = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)->where('event', DispatchTimelineService::VALIDATION_FAILED)->first();
 
   expect($row)->not->toBeNull();
   expect($row->context['source'])->toBe('lead-quality:expire-validation');
