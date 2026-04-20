@@ -15,6 +15,7 @@ use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
 use App\Http\Controllers\LeadQuality\ProviderController as LeadQualityProviderController;
 use App\Http\Controllers\LeadQuality\ProviderTestController as LeadQualityProviderTestController;
+use App\Http\Controllers\LeadQuality\ValidationLogController as LeadQualityValidationLogController;
 use App\Http\Controllers\LeadQuality\ValidationRuleController as LeadQualityValidationRuleController;
 use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowAlertController;
@@ -222,6 +223,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->except(['show'])
         ->parameters(['validation-rules' => 'validationRule'])
         ->whereNumber('validationRule');
+
+      Route::get('validation-logs', [LeadQualityValidationLogController::class, 'index'])->name('validation-logs.index');
+      Route::get('validation-logs/{log}', [LeadQualityValidationLogController::class, 'show'])
+        ->whereNumber('log')
+        ->name('validation-logs.show');
+      Route::get('validation-logs/{log}/technical', [LeadQualityValidationLogController::class, 'technical'])
+        ->whereNumber('log')
+        ->name('validation-logs.technical');
     });
 });
 
