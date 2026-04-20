@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   LayoutList,
   List,
+  ListChecks,
   Network,
   Shield,
   ShieldCheck,
@@ -173,6 +174,11 @@ const LeadQualityGroup: NavGroupType = {
       title: 'Providers',
       href: route('lead-quality.providers.index'),
       icon: ShieldCheck,
+    },
+    {
+      title: 'Validation Rules',
+      href: route('lead-quality.validation-rules.index'),
+      icon: ListChecks,
     },
   ],
 };
