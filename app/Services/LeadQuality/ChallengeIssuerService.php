@@ -10,6 +10,7 @@ use App\Models\LeadDispatch;
 use App\Models\LeadQualityValidationLog;
 use App\Models\LeadQualityValidationRule;
 use App\Models\Workflow;
+use App\Services\PingPost\DispatchTimelineService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ChallengeIssuerService
 {
-  public function __construct(private readonly LeadQualityProviderResolver $resolver) {}
+  public function __construct(private readonly LeadQualityProviderResolver $resolver, private readonly DispatchTimelineService $timeline) {}
 
   /**
    * Issue validation challenges for a workflow + lead pair.
@@ -63,6 +64,21 @@ class ChallengeIssuerService
     foreach ($rules as $rule) {
       $log = $this->createPendingLog($rule, $dispatch, $lead, $fingerprint, $context);
 
+      $this->timeline->logSingle(
+        $dispatch->id,
+        $fingerprint,
+        DispatchTimelineService::VALIDATION_STARTED,
+        "Challenge issued for rule '{$rule->name}'",
+        [
+          'rule_id' => $rule->id,
+          'rule_name' => $rule->name,
+          'validation_type' => $rule->validation_type?->value,
+          'provider_id' => $rule->provider_id,
+          'provider_name' => $rule->provider?->name,
+          'validation_log_id' => $log->id,
+        ],
+      );
+
       try {
         $service = $this->resolver->forProvider($rule->provider);
       } catch (\Throwable $e) {
@@ -98,6 +114,13 @@ class ChallengeIssuerService
           'result' => 'fail',
           'resolved_at' => now(),
         ]);
+        $this->timeline->logSingle(
+          $dispatch->id,
+          $fingerprint,
+          'challenge.send_failed',
+          "Provider rejected challenge for rule '{$rule->name}': {$result->error}",
+          ['rule_id' => $rule->id, 'validation_log_id' => $log->id, 'error' => $result->error],
+        );
         $errors[] = ['rule_id' => $rule->id, 'rule_name' => $rule->name, 'error' => $result->error ?? 'Challenge not sent'];
         continue;
       }
@@ -114,6 +137,17 @@ class ChallengeIssuerService
         ]),
       ]);
 
+      $channel = $context['channel'] ?? ($rule->settings['channel'] ?? 'sms');
+      $dest = $result->maskedDestination ?? 'destination hidden';
+      $this->timeline->logSingle($dispatch->id, $fingerprint, 'challenge.sent', "Challenge sent via {$channel} to {$dest}", [
+        'rule_id' => $rule->id,
+        'validation_log_id' => $log->id,
+        'channel' => $channel,
+        'masked_destination' => $result->maskedDestination,
+        'challenge_reference' => $result->reference,
+        'expires_at' => $expiresAt->toIso8601String(),
+      ]);
+
       $challenges[] = [
         'challenge_token' => $this->encodeToken($log->id, $fingerprint),
         'rule_id' => $rule->id,
@@ -127,6 +161,13 @@ class ChallengeIssuerService
     // If every rule failed to send, short-circuit the dispatch as validation_failed.
     if ($challenges === [] && $errors !== []) {
       $dispatch->update(['status' => DispatchStatus::VALIDATION_FAILED]);
+      $this->timeline->logSingle(
+        $dispatch->id,
+        $fingerprint,
+        DispatchTimelineService::VALIDATION_FAILED,
+        'All applicable challenges failed to send; dispatch closed',
+        ['errors' => $errors],
+      );
     }
 
     return [

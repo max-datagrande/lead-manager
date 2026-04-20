@@ -7,6 +7,7 @@ use App\Enums\LeadQuality\ValidationLogStatus;
 use App\Jobs\PingPost\DispatchLeadJob;
 use App\Models\LeadDispatch;
 use App\Models\LeadQualityValidationLog;
+use App\Services\PingPost\DispatchTimelineService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ChallengeVerifierService
 {
-  public function __construct(private readonly LeadQualityProviderResolver $resolver) {}
+  public function __construct(private readonly LeadQualityProviderResolver $resolver, private readonly DispatchTimelineService $timeline) {}
 
   /**
    * Result shape returned to the frontend.
@@ -110,6 +111,24 @@ class ChallengeVerifierService
     }
 
     $remaining = max(0, $maxAttempts - ($refreshed?->attempts_count ?? 0));
+    $attemptNumber = $refreshed?->attempts_count ?? 1;
+
+    if ($log->lead_dispatch_id) {
+      $this->timeline->logSingle(
+        $log->lead_dispatch_id,
+        (string) $log->fingerprint,
+        'challenge.attempt_failed',
+        "Wrong code (attempt {$attemptNumber}/{$maxAttempts})",
+        [
+          'rule_id' => $rule->id,
+          'rule_name' => $rule->name,
+          'validation_log_id' => $log->id,
+          'attempt_number' => $attemptNumber,
+          'retry_remaining' => $remaining,
+          'reason' => $result->error,
+        ],
+      );
+    }
 
     return [
       'verified' => false,
@@ -151,6 +170,19 @@ class ChallengeVerifierService
 
     $dispatch->update(['status' => DispatchStatus::RUNNING]);
 
+    $this->timeline->logSingle(
+      $dispatch->id,
+      (string) $dispatch->fingerprint,
+      DispatchTimelineService::VALIDATION_COMPLETED,
+      "Challenge verified for rule '{$log->rule?->name}'; dispatch resumed",
+      [
+        'rule_id' => $log->validation_rule_id,
+        'rule_name' => $log->rule?->name,
+        'validation_log_id' => $log->id,
+        'attempts_used' => $log->attempts_count,
+      ],
+    );
+
     DispatchLeadJob::dispatch($dispatch->workflow_id, $dispatch->lead_id, $dispatch->fingerprint, $dispatch->id);
 
     return $dispatch->fresh();
@@ -163,6 +195,20 @@ class ChallengeVerifierService
     if (!$dispatch || $dispatch->status->isTerminal()) {
       return;
     }
+
+    $this->timeline->logSingle(
+      $dispatch->id,
+      (string) $dispatch->fingerprint,
+      DispatchTimelineService::VALIDATION_FAILED,
+      "Challenge failed: {$reason}",
+      [
+        'rule_id' => $log->validation_rule_id,
+        'rule_name' => $log->rule?->name,
+        'validation_log_id' => $log->id,
+        'reason' => $reason,
+        'attempts_used' => $log->attempts_count,
+      ],
+    );
 
     $dispatch->update(['status' => DispatchStatus::VALIDATION_FAILED]);
   }
