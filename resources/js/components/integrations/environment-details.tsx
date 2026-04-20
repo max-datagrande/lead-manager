@@ -35,7 +35,7 @@ function MethodBadge({ method }: { method: string }) {
   return (
     <Badge
       className={cn(
-        'rounded px-1.5 py-0 font-mono text-[11px] font-semibold tracking-wide',
+        'rounded px-1.5 py-0 font-mono text-xs font-semibold tracking-wide',
         METHOD_VARIANTS[upper] ?? 'border-border bg-muted text-muted-foreground',
       )}
     >
@@ -77,7 +77,7 @@ function ValueMappingPopover({ token, valueMapping }: { token: string; valueMapp
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         >
           <ArrowRightLeft className="size-3 shrink-0" />
           mapping
