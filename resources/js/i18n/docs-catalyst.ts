@@ -7,6 +7,7 @@ const dictionary: Dictionary = {
     visitor: { en: 'Visitor', es: 'Visitante' },
     leads: { en: 'Leads', es: 'Leads' },
     share_leads: { en: 'Share Leads', es: 'Share Leads' },
+    lead_quality: { en: 'Lead Quality', es: 'Lead Quality' },
     offerwall: { en: 'Offerwall', es: 'Offerwall' },
     events: { en: 'Events', es: 'Eventos' },
     examples: { en: 'Examples', es: 'Ejemplos' },
@@ -155,6 +156,90 @@ const dictionary: Dictionary = {
     response_desc: {
       en: 'Returns dispatch_uuid, status, strategy_used, final_price, and total_duration_ms for sync dispatches. For async, returns queued: true with workflow_id.',
       es: 'Retorna dispatch_uuid, status, strategy_used, final_price y total_duration_ms para despachos sync. Para async, retorna queued: true con workflow_id.',
+    },
+  },
+
+  lead_quality: {
+    title: { en: 'Lead Quality (Challenge / OTP)', es: 'Lead Quality (Challenge / OTP)' },
+    description: {
+      en: 'Issue and verify a validation challenge (SMS OTP, etc.) before dispatching a lead to a workflow. Required when buyers in the workflow have Lead Quality rules attached. The landing drives the flow: send → user enters code → verify → backend auto-dispatches.',
+      es: 'Emite y verifica un challenge de validacion (SMS OTP, etc.) antes de despachar un lead a un workflow. Requerido cuando los buyers del workflow tienen reglas de Lead Quality asociadas. La landing orquesta el flujo: send -> usuario ingresa el codigo -> verify -> el backend auto-despacha.',
+    },
+    send_title: { en: 'sendChallenge(options)', es: 'sendChallenge(options)' },
+    send_desc: {
+      en: 'Creates a LeadDispatch in PENDING_VALIDATION state and emits a challenge per applicable rule. Returns one challenge_token per rule so the landing can collect the code from the user.',
+      es: 'Crea un LeadDispatch en estado PENDING_VALIDATION y emite un challenge por cada regla aplicable. Retorna un challenge_token por regla para que la landing pueda recoger el codigo del usuario.',
+    },
+    send_options_title: { en: 'SendChallengeOptions', es: 'SendChallengeOptions' },
+    send_opt_workflow: {
+      en: 'workflowId (required) \u2014 The workflow ID the lead will be dispatched to once verified',
+      es: 'workflowId (requerido) \u2014 El ID del workflow al que se despachara el lead una vez verificado',
+    },
+    send_opt_lead: {
+      en: 'leadId (optional) \u2014 Falls back to visitorData.lead_data.id from a prior registerLead()',
+      es: 'leadId (opcional) \u2014 Usa visitorData.lead_data.id de un registerLead() previo si se omite',
+    },
+    send_opt_fingerprint: {
+      en: 'fingerprint (optional) \u2014 Falls back to visitorData.fingerprint',
+      es: 'fingerprint (opcional) \u2014 Usa visitorData.fingerprint si se omite',
+    },
+    send_opt_to: {
+      en: 'to (optional) \u2014 Destination for the challenge (E.164 phone for SMS, email address for email OTP)',
+      es: 'to (opcional) \u2014 Destino del challenge (telefono E.164 para SMS, email para OTP por email)',
+    },
+    send_opt_channel: {
+      en: "channel (optional) \u2014 One of 'sms' | 'call' | 'email' | 'whatsapp'. Defaults to the rule's configured channel.",
+      es: "channel (opcional) \u2014 'sms' | 'call' | 'email' | 'whatsapp'. Si se omite usa el channel configurado en la regla.",
+    },
+    send_opt_locale: {
+      en: 'locale (optional) \u2014 Forwarded to the provider to localize the message (e.g., en, es)',
+      es: 'locale (opcional) \u2014 Se envia al provider para localizar el mensaje (p. ej. en, es)',
+    },
+    send_response_title: { en: 'SendChallengeResponse', es: 'SendChallengeResponse' },
+    send_response_desc: {
+      en: 'Returns dispatch_id + dispatch_uuid plus a list of issued challenges and non-fatal errors. When challenges is empty AND errors is empty, the workflow has no rules and the landing can proceed straight to shareLead().',
+      es: 'Retorna dispatch_id + dispatch_uuid mas una lista de challenges emitidos y errores no fatales. Cuando challenges viene vacio Y errors tambien, el workflow no tiene reglas y la landing puede ir directo a shareLead().',
+    },
+    verify_title: { en: 'verifyChallenge(options)', es: 'verifyChallenge(options)' },
+    verify_desc: {
+      en: 'Checks the user-entered code against the provider. On verified: true the backend transitions the dispatch from PENDING_VALIDATION to RUNNING and queues the DispatchLeadJob automatically \u2014 the landing should NOT call shareLead() afterwards.',
+      es: 'Verifica el codigo ingresado por el usuario contra el provider. Con verified: true el backend transita el dispatch de PENDING_VALIDATION a RUNNING y encola el DispatchLeadJob automaticamente \u2014 la landing NO debe llamar shareLead() despues.',
+    },
+    verify_options_title: { en: 'VerifyChallengeOptions', es: 'VerifyChallengeOptions' },
+    verify_opt_token: {
+      en: 'challengeToken (required) \u2014 The token from SendChallengeResponse.data.challenges[i].challenge_token',
+      es: 'challengeToken (requerido) \u2014 El token devuelto en SendChallengeResponse.data.challenges[i].challenge_token',
+    },
+    verify_opt_code: {
+      en: 'code (required) \u2014 The code the user typed (4-12 characters)',
+      es: 'code (requerido) \u2014 El codigo que el usuario ingreso (4-12 caracteres)',
+    },
+    verify_opt_to: {
+      en: 'to (optional) \u2014 Same destination used in sendChallenge (required by some providers like Twilio Verify)',
+      es: 'to (opcional) \u2014 El mismo destino usado en sendChallenge (requerido por algunos providers como Twilio Verify)',
+    },
+    verify_response_title: { en: 'VerifyChallengeResponse', es: 'VerifyChallengeResponse' },
+    verify_response_desc: {
+      en: "Flattened response: verified (boolean) plus a discriminant status. 'retry' means wrong code with attempts remaining; 'expired' or 'failed' are terminal (dispatch is VALIDATION_FAILED); 'invalid_token' or 'not_found' indicate a tampered or unknown token.",
+      es: "Respuesta aplanada: verified (boolean) mas un status discriminante. 'retry' = codigo incorrecto con intentos restantes; 'expired' o 'failed' son terminales (dispatch VALIDATION_FAILED); 'invalid_token' o 'not_found' indican token adulterado o desconocido.",
+    },
+    event_title: { en: 'Event: challenge:status', es: 'Evento: challenge:status' },
+    event_desc: {
+      en: "Unified lifecycle event emitted by both methods. Payload: { type: 'send' | 'verify', success, data?, error? }. Subscribe with Catalyst.on('challenge:status', handler) to drive UI from declarative listeners.",
+      es: "Evento unificado de ciclo de vida emitido por ambos metodos. Payload: { type: 'send' | 'verify', success, data?, error? }. Subscribirse con Catalyst.on('challenge:status', handler) para manejar UI de manera declarativa.",
+    },
+    no_rules_note_title: { en: 'Note: when no rules apply', es: 'Nota: cuando no hay reglas aplicables' },
+    no_rules_note_desc: {
+      en: 'If the workflow has no Lead Quality rules attached, sendChallenge() returns { challenges: [], errors: [] } and the landing can call shareLead() directly, skipping verify. This keeps the integration forwards-compatible: adding rules later does not require landing code changes beyond handling the verify step.',
+      es: 'Si el workflow no tiene reglas de Lead Quality asociadas, sendChallenge() retorna { challenges: [], errors: [] } y la landing puede llamar a shareLead() directo, saltando el verify. Esto mantiene la integracion compatible a futuro: agregar reglas mas tarde solo requiere implementar el paso de verify en la landing.',
+    },
+    backend_auto_dispatch_title: {
+      en: 'Important: backend auto-dispatches on verify OK',
+      es: 'Importante: el backend auto-despacha al verificar OK',
+    },
+    backend_auto_dispatch_desc: {
+      en: 'When verifyChallenge returns verified: true, the server internally queues the dispatch using the existing LeadDispatch row. The landing must NOT also call shareLead() \u2014 doing so would produce a duplicate dispatch attempt.',
+      es: 'Cuando verifyChallenge retorna verified: true, el servidor internamente encola el dispatch usando el LeadDispatch existente. La landing NO debe llamar shareLead() adicionalmente \u2014 hacerlo producira un intento de despacho duplicado.',
     },
   },
 
