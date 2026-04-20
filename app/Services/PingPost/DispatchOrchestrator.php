@@ -796,7 +796,12 @@ class DispatchOrchestrator
 
     $lead = $dispatch->lead; // loaded via relation for the safety net check
 
-    $eligible = $allBuyers->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData, $lead): bool {
+    // Batch the Lead Quality lookup into a single triple of queries covering every buyer.
+    // Without this we would hit the DB twice per buyer (rules + verified log), which balloons
+    // on workflows with many buyers even though the result is usually "no rules apply".
+    $qualitySnapshot = $lead ? $this->leadQuality->prefetchForBuyers($allBuyers->pluck('integration')->filter(), $lead) : null;
+
+    $eligible = $allBuyers->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData, $lead, $qualitySnapshot): bool {
       $integration = $wfBuyer->integration;
 
       if (!$integration || !$integration->is_active) {
@@ -843,8 +848,8 @@ class DispatchOrchestrator
       // challenge/verify before dispatching, so this gate is mostly a no-op. It protects
       // against bypass (direct curl, misconfigured integrations) by requiring a verified
       // log within the rule's validity window for every applicable rule on the buyer.
-      if ($lead && !$this->leadQuality->isEligibleForQuality($integration, $lead, $leadData)) {
-        $skipReason = $this->leadQuality->getSkipReason($integration, $lead, $leadData);
+      if ($lead && !$this->leadQuality->isEligibleForQuality($integration, $lead, $leadData, $qualitySnapshot)) {
+        $skipReason = $this->leadQuality->getSkipReason($integration, $lead, $leadData, $qualitySnapshot);
         $this->timeline->log(DispatchTimelineService::QUALITY_NOT_VERIFIED, "Buyer {$integration->name} filtered: {$skipReason}", [
           'integration_id' => $integration->id,
           'reason' => 'quality_not_verified',
