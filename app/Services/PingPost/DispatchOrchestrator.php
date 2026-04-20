@@ -11,6 +11,7 @@ use App\Models\Lead;
 use App\Models\LeadDispatch;
 use App\Jobs\PingPost\FlushBuyerEventsJob;
 use App\Jobs\PingPost\SendWorkflowAlertJob;
+use App\Support\HttpResponseInspector;
 use App\Models\PingResult;
 use App\Models\TrafficLog;
 use App\Models\Workflow;
@@ -111,8 +112,14 @@ class DispatchOrchestrator
     } finally {
       $dispatch->refresh();
       if (!$dispatch->status->isTerminal()) {
-        $dispatch->markAsNotSold();
-        $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
+        $hasPendingPostback = $dispatch->postResults()->where('status', \App\Enums\PostResultStatus::PENDING_POSTBACK)->exists();
+
+        if ($hasPendingPostback) {
+          $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, 'Dispatch awaiting postback price confirmation');
+        } else {
+          $dispatch->markAsNotSold();
+          $this->timeline->log(DispatchTimelineService::OUTCOME_NOT_SOLD, 'No buyer accepted the lead');
+        }
       }
       $this->timeline->flush();
       $this->flushBuyerEvents();
@@ -201,11 +208,12 @@ class DispatchOrchestrator
 
       if ($postResult->status->isSold() || $postResult->status === \App\Enums\PostResultStatus::PENDING_POSTBACK) {
         if ($postResult->status->isSold()) {
-          $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+          $soldPrice = $postResult->price_final ?? $offeredPrice;
+          $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$soldPrice}", [
             'integration_id' => $integration->id,
-            'price' => $offeredPrice,
+            'price' => $soldPrice,
           ]);
-          $dispatch->markAsSold($integration, $offeredPrice);
+          $dispatch->markAsSold($integration, $soldPrice);
         } else {
           $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, "Pending postback from {$integration->name}", [
             'integration_id' => $integration->id,
@@ -252,7 +260,8 @@ class DispatchOrchestrator
 
       // Post-only buyer: resolve price through resolver pattern
       $pingResult = null;
-      $offeredPrice = $this->priceResolver->resolvePrice($config, 0);
+      $isPostOnlyResponseBid = $integration->type === 'post-only' && $config->price_source === PriceSource::RESPONSE_BID;
+      $offeredPrice = $isPostOnlyResponseBid ? 0 : $this->priceResolver->resolvePrice($config, 0);
 
       if ($config->price_source === PriceSource::CONDITIONAL) {
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
@@ -316,7 +325,12 @@ class DispatchOrchestrator
         ],
       );
 
-      if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+      if (
+        !$isPostOnlyResponseBid &&
+        $config->price_source !== PriceSource::POSTBACK &&
+        ($offeredPrice === null || $offeredPrice <= 0) &&
+        !$config->sell_on_zero_price
+      ) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Skipping {$integration->name}: price \${$offeredPrice} below threshold", [
           'integration_id' => $integration->id,
           'offered_price' => $offeredPrice,
@@ -337,11 +351,12 @@ class DispatchOrchestrator
       ]);
 
       if ($postResult->status->isSold()) {
-        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$offeredPrice}", [
+        $soldPrice = $postResult->price_final ?? $offeredPrice;
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold to {$integration->name} at \${$soldPrice}", [
           'integration_id' => $integration->id,
-          'price' => $offeredPrice,
+          'price' => $soldPrice,
         ]);
-        $dispatch->markAsSold($integration, $offeredPrice);
+        $dispatch->markAsSold($integration, $soldPrice);
 
         return true;
       }
@@ -416,7 +431,8 @@ class DispatchOrchestrator
         $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, $pingResult, $offeredPrice);
 
         if ($postResult->status->isSold()) {
-          $dispatch->markAsSold($integration, $offeredPrice);
+          $soldPrice = $postResult->price_final ?? $offeredPrice;
+          $dispatch->markAsSold($integration, $soldPrice);
 
           return;
         }
@@ -502,22 +518,114 @@ class DispatchOrchestrator
       $idempotencyKey = LeadDispatch::generateIdempotencyKey($dispatch->workflow_id, $integrationId, $dispatch->fingerprint);
 
       if ($response instanceof \Illuminate\Http\Client\Response) {
-        $config = $pingEnv->response_config;
-        $bidPrice = $this->extractBidFromResponse($response, $config);
-        $accepted = $this->isAcceptedResponse($response, $config);
+        $responseConfig = $pingEnv->response_config;
 
-        $pingResult = PingResult::create([
+        $baseData = [
           'lead_dispatch_id' => $dispatch->id,
           'integration_id' => $integrationId,
           'idempotency_key' => $idempotencyKey,
-          'status' => $accepted ? PingResultStatus::ACCEPTED : PingResultStatus::REJECTED,
-          'bid_price' => $bidPrice,
           'http_status_code' => $response->status(),
           'request_url' => $data['url'],
           'request_payload' => $data['payload'],
           'request_headers' => $data['headers'],
           'response_body' => $response->json() ?? ['raw' => $response->body()],
-        ]);
+        ];
+
+        // 1. HTTP-level error (5xx, invalid JSON)
+        $errorCheck = HttpResponseInspector::detectError($response);
+        if ($errorCheck['is_error']) {
+          $pingResult = PingResult::create(
+            array_merge($baseData, [
+              'status' => PingResultStatus::ERROR,
+              'bid_price' => null,
+            ]),
+          );
+
+          $this->timeline->log(DispatchTimelineService::PING_ERROR, "Ping {$integration->name}: {$errorCheck['reason']}", [
+            'ping_result_id' => $pingResult->id,
+            'integration_id' => $integrationId,
+            'http_status' => $response->status(),
+          ]);
+
+          SendWorkflowAlertJob::dispatch($dispatch->workflow_id, "Buyer '{$integration->name}' ping error: {$errorCheck['reason']}", [
+            'title' => 'Buyer Ping Error',
+            'fields' => [
+              'Buyer' => "{$integration->name} (#{$integrationId})",
+              'Dispatch' => "#{$dispatch->id} — {$dispatch->dispatch_uuid}",
+              'HTTP Status' => (string) $response->status(),
+              'Error' => $errorCheck['reason'],
+            ],
+          ]);
+
+          $pingResults[$integrationId] = $pingResult;
+          continue;
+        }
+
+        // 2. Configured error path match
+        $configError = HttpResponseInspector::detectConfiguredError(
+          $response->json() ?? [],
+          $responseConfig?->error_path,
+          $responseConfig?->error_value,
+          $responseConfig?->error_reason_path,
+        );
+
+        if ($configError['is_error']) {
+          $reason = $configError['reason'];
+          $excludes = $responseConfig?->error_excludes;
+          $isExcluded = HttpResponseInspector::isExcludedError($reason, $excludes);
+
+          if ($isExcluded) {
+            $pingResult = PingResult::create(
+              array_merge($baseData, [
+                'status' => PingResultStatus::REJECTED,
+                'bid_price' => null,
+              ]),
+            );
+
+            $this->timeline->log(DispatchTimelineService::PING_RESULT, "Ping {$integration->name}: excluded error — {$reason}", [
+              'ping_result_id' => $pingResult->id,
+              'integration_id' => $integrationId,
+              'excluded_error' => true,
+            ]);
+          } else {
+            $pingResult = PingResult::create(
+              array_merge($baseData, [
+                'status' => PingResultStatus::ERROR,
+                'bid_price' => null,
+              ]),
+            );
+
+            $this->timeline->log(DispatchTimelineService::PING_ERROR, "Ping {$integration->name}: {$reason}", [
+              'ping_result_id' => $pingResult->id,
+              'integration_id' => $integrationId,
+              'http_status' => $response->status(),
+            ]);
+
+            SendWorkflowAlertJob::dispatch($dispatch->workflow_id, "Buyer '{$integration->name}' ping error: {$reason}", [
+              'title' => 'Buyer Ping Error',
+              'fields' => [
+                'Buyer' => "{$integration->name} (#{$integrationId})",
+                'Dispatch' => "#{$dispatch->id} — {$dispatch->dispatch_uuid}",
+                'HTTP Status' => (string) $response->status(),
+                'Error' => $reason,
+              ],
+            ]);
+          }
+
+          $pingResults[$integrationId] = $pingResult;
+          continue;
+        }
+
+        // 3. Normal accepted/rejected evaluation
+        $bidPrice = $this->extractBidFromResponse($response, $responseConfig);
+        $accepted = $this->isAcceptedResponse($response, $responseConfig);
+
+        $pingResult = PingResult::create(
+          array_merge($baseData, [
+            'status' => $accepted ? PingResultStatus::ACCEPTED : PingResultStatus::REJECTED,
+            'bid_price' => $bidPrice,
+          ]),
+        );
 
         $pingResults[$integrationId] = $pingResult;
 
@@ -596,13 +704,19 @@ class DispatchOrchestrator
         continue;
       }
 
-      $offeredPrice = $this->priceResolver->resolvePrice($config, 0);
+      $isPostOnlyResponseBid = $integration->type === 'post-only' && $config->price_source === PriceSource::RESPONSE_BID;
+      $offeredPrice = $isPostOnlyResponseBid ? 0 : $this->priceResolver->resolvePrice($config, 0);
 
       if ($config->price_source === PriceSource::CONDITIONAL) {
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
       }
 
-      if ($config->price_source !== PriceSource::POSTBACK && ($offeredPrice === null || $offeredPrice <= 0) && !$config->sell_on_zero_price) {
+      if (
+        !$isPostOnlyResponseBid &&
+        $config->price_source !== PriceSource::POSTBACK &&
+        ($offeredPrice === null || $offeredPrice <= 0) &&
+        !$config->sell_on_zero_price
+      ) {
         $this->timeline->log(DispatchTimelineService::PRICE_SKIPPED, "Fallback {$integration->name}: price below threshold", [
           'integration_id' => $integration->id,
         ]);
@@ -620,11 +734,12 @@ class DispatchOrchestrator
       ]);
 
       if ($postResult->status->isSold()) {
-        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold via fallback to {$integration->name} at \${$offeredPrice}", [
+        $soldPrice = $postResult->price_final ?? $offeredPrice;
+        $this->timeline->log(DispatchTimelineService::OUTCOME_SOLD, "Sold via fallback to {$integration->name} at \${$soldPrice}", [
           'integration_id' => $integration->id,
-          'price' => $offeredPrice,
+          'price' => $soldPrice,
         ]);
-        $dispatch->markAsSold($integration, $offeredPrice);
+        $dispatch->markAsSold($integration, $soldPrice);
         $sold = true;
         break;
       }

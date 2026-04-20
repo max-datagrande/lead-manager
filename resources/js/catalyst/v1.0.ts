@@ -421,27 +421,27 @@ class CatalystCore {
    *
    * @param options.workflowId  The workflow ID to dispatch to
    * @param options.fields      Optional lead fields to create/update before dispatching
-   * @param options.createOnMiss If true, creates the lead if it doesn't exist yet
+   * @param options.createOnMiss If true, creates the lead if it doesn't exist yet (default: false)
    */
-  async shareLead({ workflowId, fields, createOnMiss = true }: ShareLeadOptions): Promise<ShareLeadResponse> {
+  async shareLead({ workflowId, fields, createOnMiss = false }: ShareLeadOptions): Promise<ShareLeadResponse> {
     if (!this.visitorData?.fingerprint) {
-      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.'
-      this.dispatch('share:status', { success: false, workflowId, error })
-      throw new Error(`Catalyst SDK: ${error}`)
+      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
+      this.dispatch('share:status', { success: false, workflowId, error });
+      throw new Error(`Catalyst SDK: ${error}`);
     }
 
     const payload: Record<string, any> = {
       fingerprint: this.visitorData.fingerprint,
-    }
+    };
 
     if (fields && Object.keys(fields).length > 0) {
-      payload.fields = this.sanitizeFields(fields)
-      payload.create_on_miss = createOnMiss
+      payload.fields = this.sanitizeFields(fields);
+      payload.create_on_miss = createOnMiss;
     }
 
     try {
-      const baseUrl = this.getEndpoint('SHARE_LEADS.DISPATCH')
-      const url = `${baseUrl}${workflowId}`
+      const baseUrl = this.getEndpoint('SHARE_LEADS.DISPATCH');
+      const url = `${baseUrl}${workflowId}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -450,32 +450,32 @@ class CatalystCore {
           Accept: 'application/json',
         },
         body: JSON.stringify(payload),
-      })
+      });
 
       if (!res.ok) {
-        const errorBody = await res.text()
-        throw new Error(`HTTP ${res.status}: ${errorBody}`)
+        const errorBody = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorBody}`);
       }
 
-      const json: ShareLeadResponse = await res.json()
+      const json: ShareLeadResponse = await res.json();
 
-      if (this.config.debug) console.log('Catalyst SDK: Lead dispatched successfully.', json)
+      if (this.config.debug) console.log('Catalyst SDK: Lead dispatched successfully.', json);
 
       this.dispatch('share:status', {
         success: true,
         workflowId,
         data: json.data,
-      })
+      });
 
-      return json
+      return json;
     } catch (error) {
-      console.error(`Catalyst SDK: Error dispatching lead to workflow ${workflowId}:`, error)
+      console.error(`Catalyst SDK: Error dispatching lead to workflow ${workflowId}:`, error);
       this.dispatch('share:status', {
         success: false,
         workflowId,
         error: error instanceof Error ? error.message : error,
-      })
-      throw error
+      });
+      throw error;
     }
   }
 
@@ -600,11 +600,11 @@ class CatalystCore {
   // --- Helpers Privados ---
 
   private sanitizeFields(fields: Record<string, any>): Record<string, any> {
-    const sanitized: Record<string, any> = {}
+    const sanitized: Record<string, any> = {};
     for (const [key, value] of Object.entries(fields)) {
-      sanitized[key] = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : value
+      sanitized[key] = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : value;
     }
-    return sanitized
+    return sanitized;
   }
 
   private getReferer(): string | null {

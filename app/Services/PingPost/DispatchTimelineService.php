@@ -35,6 +35,7 @@ class DispatchTimelineService
   // ─── Price ──────────────────────────────────────────────────────────
   public const PRICE_RESOLVED = 'price.resolved';
   public const PRICE_SKIPPED = 'price.skipped';
+  public const PRICE_EXTRACTED_FROM_POST = 'price.extracted_from_post';
 
   // ─── Post ───────────────────────────────────────────────────────────
   public const POST_RESULT = 'post.result';

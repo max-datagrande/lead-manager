@@ -91,7 +91,7 @@ it('detects failure outcome with reason path', function () {
 });
 
 it('passes success outcome in match mode', function () {
-  $json = ['outcome' => 'success', 'price' => 5.50];
+  $json = ['outcome' => 'success', 'price' => 5.5];
 
   $result = HttpResponseInspector::detectConfiguredError($json, 'outcome', 'failure', 'reason');
 
@@ -189,4 +189,34 @@ it('uses fallback when no pipe-separated reason path matches', function () {
 
   expect($result['is_error'])->toBeTrue();
   expect($result['reason'])->toContain('Error detected at');
+});
+
+// ─── isExcludedError ────────────────────────────────────────────────────────
+
+it('matches case-insensitive substring in excludes', function () {
+  expect(HttpResponseInspector::isExcludedError('Lead is a duplicate', ['duplicate']))->toBeTrue();
+});
+
+it('matches with different casing in excludes', function () {
+  expect(HttpResponseInspector::isExcludedError('DUPLICATE LEAD', ['duplicate']))->toBeTrue();
+});
+
+it('matches second exclude entry', function () {
+  expect(HttpResponseInspector::isExcludedError('Cap reached for today', ['duplicate', 'cap reached']))->toBeTrue();
+});
+
+it('does not match when no substring matches in excludes', function () {
+  expect(HttpResponseInspector::isExcludedError('Connection timeout', ['duplicate', 'cap reached']))->toBeFalse();
+});
+
+it('returns false for null excludes', function () {
+  expect(HttpResponseInspector::isExcludedError('Any error', null))->toBeFalse();
+});
+
+it('returns false for empty excludes array', function () {
+  expect(HttpResponseInspector::isExcludedError('Any error', []))->toBeFalse();
+});
+
+it('trims whitespace in exclude patterns', function () {
+  expect(HttpResponseInspector::isExcludedError('Lead is a duplicate', ['  duplicate  ']))->toBeTrue();
 });

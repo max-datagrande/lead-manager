@@ -8,6 +8,7 @@ use App\Http\Requests\PingPost\StoreBuyerConfigRequest;
 use App\Models\Buyer;
 use App\Models\Field;
 use App\Models\Integration;
+use App\Models\Postback;
 use App\Services\PingPost\BuyerConfigService;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -43,6 +44,7 @@ class BuyerController extends Controller
       'integrations' => $integrations,
       'priceSources' => PriceSource::toArray(),
       'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
+      'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
     ]);
   }
 
@@ -58,7 +60,11 @@ class BuyerController extends Controller
     ]);
 
     $configData = $this->extractConfigData($validated);
-    $this->configService->createConfig($buyer->integration, $configData);
+    $config = $this->configService->createConfig($buyer->integration, $configData);
+
+    if ($validated['price_source'] === 'postback') {
+      $this->configService->syncPricingPostback($config, $validated['pricing_postback'] ?? null);
+    }
 
     if ($request->has('eligibility_rules')) {
       $this->configService->syncEligibilityRules($buyer->integration, $request->input('eligibility_rules', []));
@@ -82,7 +88,7 @@ class BuyerController extends Controller
 
   public function edit(Buyer $buyer): Response
   {
-    $buyer->load(['integration', 'buyerConfig', 'eligibilityRules', 'capRules']);
+    $buyer->load(['integration', 'buyerConfig.pricingPostback', 'eligibilityRules', 'capRules']);
 
     return Inertia::render('ping-post/buyers/edit', [
       'buyer' => $buyer,
@@ -91,6 +97,7 @@ class BuyerController extends Controller
         ->get(['id', 'name', 'type']),
       'priceSources' => PriceSource::toArray(),
       'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
+      'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
     ]);
   }
 
@@ -110,7 +117,13 @@ class BuyerController extends Controller
     if ($config) {
       $this->configService->updateConfig($config, $configData);
     } else {
-      $this->configService->createConfig($buyer->integration, $configData);
+      $config = $this->configService->createConfig($buyer->integration, $configData);
+    }
+
+    if ($validated['price_source'] === 'postback') {
+      $this->configService->syncPricingPostback($config, $validated['pricing_postback'] ?? null);
+    } else {
+      $this->configService->syncPricingPostback($config, null);
     }
 
     if ($request->has('eligibility_rules')) {
@@ -153,6 +166,6 @@ class BuyerController extends Controller
    */
   private function extractConfigData(array $validated): array
   {
-    return array_diff_key($validated, array_flip(['name', 'integration_id', 'company_id', 'is_active']));
+    return array_diff_key($validated, array_flip(['name', 'integration_id', 'company_id', 'is_active', 'pricing_postback']));
   }
 }

@@ -97,6 +97,10 @@ class IntegrationEnvironment extends Model
             'label' => 'Error Reason Path',
             'hint' => 'JSON path to extract the error message (e.g. "response.errors.error", "reason")',
           ],
+          'error_excludes' => [
+            'label' => 'Error Excludes',
+            'hint' => 'Substrings to match against the error reason. Matching errors become rejections (no alert).',
+          ],
         ],
         self::ENV_TYPE_POST => [
           'accepted_path' => ['label' => 'Accepted Path', 'hint' => 'JSON path to the field that signals the post was accepted (e.g. "result")'],
@@ -119,6 +123,10 @@ class IntegrationEnvironment extends Model
           'error_reason_path' => [
             'label' => 'Error Reason Path',
             'hint' => 'JSON path to extract the error message (e.g. "response.errors.error", "reason")',
+          ],
+          'error_excludes' => [
+            'label' => 'Error Excludes',
+            'hint' => 'Substrings to match against the error reason. Matching errors become rejections (no alert).',
           ],
         ],
         self::ENV_TYPE_OFFERWALL => [
