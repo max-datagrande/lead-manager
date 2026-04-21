@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { useLandings } from '@/hooks/use-landings';
-import { Edit, Trash2, Eye } from 'lucide-react';
+import { Edit, Trash2, SquareArrowOutUpRight } from 'lucide-react';
 
 const StatusBadge = ({ isActive }) => (
   <Badge variant={isActive ? 'default' : 'destructive'}>
@@ -28,7 +28,7 @@ const ActionsCell = ({ row }) => {
         <Trash2 className="h-4 w-4" />
       </Button>
       <Button variant="ghost" size="sm" onClick={() => showEditVersionsModal(entry)} className="h-8 w-8 p-0">
-        <Eye className="h-4 w-4" />
+        <SquareArrowOutUpRight className="h-4 w-4" />
       </Button>
     </div>
   );
