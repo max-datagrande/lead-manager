@@ -10,11 +10,13 @@ use App\Models\Lead;
 use App\Models\Workflow;
 use App\Services\LeadQuality\ChallengeIssuerService;
 use App\Services\LeadQuality\ChallengeVerifierService;
+use App\Traits\MergesLeadFieldsTrait;
 use Illuminate\Http\JsonResponse;
 
 class ChallengeController extends Controller
 {
   use ApiResponseTrait;
+  use MergesLeadFieldsTrait;
 
   public function __construct(private readonly ChallengeIssuerService $issuer, private readonly ChallengeVerifierService $verifier) {}
 
@@ -24,6 +26,11 @@ class ChallengeController extends Controller
 
     $workflow = Workflow::findOrFail($data['workflow_id']);
     $lead = Lead::findOrFail($data['lead_id']);
+
+    // Merge any fields the landing wants to persist right before the challenge.
+    // Propagates ValidationException upwards so the request aborts atomically
+    // — partial writes would leave the landing guessing what did or didn't stick.
+    $this->mergeLeadFields($lead, $data['fields'] ?? null);
 
     $context = array_filter([
       'to' => $data['to'] ?? null,

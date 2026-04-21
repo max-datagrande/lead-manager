@@ -24,6 +24,7 @@ class SendChallengeRequest extends FormRequest
       'to' => ['nullable', 'string', 'max:120'],
       'channel' => ['nullable', 'string', Rule::in(['sms', 'call', 'email', 'whatsapp'])],
       'locale' => ['nullable', 'string', 'max:10'],
+      'fields' => ['nullable', 'array'],
     ];
   }
 }
