@@ -38,4 +38,9 @@ class LandingPage extends Model
   {
     return $this->belongsTo(Company::class);
   }
+
+  public function versions()
+  {
+      return $this->hasMany(LandingPageVersion::class);
+  }
 }

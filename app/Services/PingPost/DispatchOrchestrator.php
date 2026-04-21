@@ -34,16 +34,26 @@ class DispatchOrchestrator
     private readonly PostService $poster,
     private readonly PriceResolverService $priceResolver,
     private readonly DispatchTimelineService $timeline,
+    private readonly \App\Services\LeadQuality\LeadQualityCheckerService $leadQuality,
   ) {}
 
   /**
    * Main entry point: dispatch a lead through a workflow.
+   *
+   * @param  array<string, mixed>  $extra  Optional attributes merged into the LeadDispatch create
+   *                                       (e.g. attempt, parent_dispatch_id). Ignored when
+   *                                       $existingDispatch is supplied.
+   * @param  ?LeadDispatch  $existingDispatch  Pre-created dispatch (used by the Lead Quality
+   *                                           challenge/verify flow, which creates the dispatch
+   *                                           in PENDING_VALIDATION state before any orchestration).
    */
-  /**
-   * @param  array<string, mixed>  $extra  Optional attributes merged into the LeadDispatch create (e.g. attempt, parent_dispatch_id).
-   */
-  public function dispatch(Workflow $workflow, Lead $lead, string $fingerprint, array $extra = []): LeadDispatch
-  {
+  public function dispatch(
+    Workflow $workflow,
+    Lead $lead,
+    string $fingerprint,
+    array $extra = [],
+    ?LeadDispatch $existingDispatch = null,
+  ): LeadDispatch {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
     $leadSnapshot = $lead->leadFieldResponses->pluck('value', 'field_id')->toArray();
     TailLogger::saveLog('Orchestrator START', 'dispatch/debug', 'info', [
@@ -53,25 +63,37 @@ class DispatchOrchestrator
       'lead_id' => $lead->id,
       'fingerprint' => $fingerprint,
       'leadData' => $leadData,
+      'reused_dispatch_id' => $existingDispatch?->id,
     ]);
 
     $utmSource = TrafficLog::where('fingerprint', $fingerprint)->latest('visit_date')->value('utm_source');
 
-    $dispatch = LeadDispatch::create(
-      array_merge(
-        [
-          'workflow_id' => $workflow->id,
-          'lead_id' => $lead->id,
-          'fingerprint' => $fingerprint,
-          'lead_snapshot' => $leadSnapshot,
-          'utm_source' => $utmSource,
-          'status' => DispatchStatus::RUNNING,
-          'strategy_used' => $workflow->strategy->value,
-          'started_at' => now(),
-        ],
-        $extra, //'attempt','parent_dispatch_id'
-      ),
-    );
+    if ($existingDispatch) {
+      $existingDispatch->update([
+        'status' => DispatchStatus::RUNNING,
+        'lead_snapshot' => $existingDispatch->lead_snapshot ?? $leadSnapshot,
+        'utm_source' => $existingDispatch->utm_source ?? $utmSource,
+        'strategy_used' => $existingDispatch->strategy_used ?? $workflow->strategy->value,
+      ]);
+      $dispatch = $existingDispatch->fresh();
+      $this->timeline->log(DispatchTimelineService::VALIDATION_COMPLETED, 'Lead quality validation passed — dispatch resumed');
+    } else {
+      $dispatch = LeadDispatch::create(
+        array_merge(
+          [
+            'workflow_id' => $workflow->id,
+            'lead_id' => $lead->id,
+            'fingerprint' => $fingerprint,
+            'lead_snapshot' => $leadSnapshot,
+            'utm_source' => $utmSource,
+            'status' => DispatchStatus::RUNNING,
+            'strategy_used' => $workflow->strategy->value,
+            'started_at' => now(),
+          ],
+          $extra, //'attempt','parent_dispatch_id'
+        ),
+      );
+    }
 
     $this->timeline->bind($fingerprint, $dispatch->id);
     $this->pinger->setTimeline($this->timeline);
@@ -772,7 +794,14 @@ class DispatchOrchestrator
       ])
       ->get();
 
-    $eligible = $allBuyers->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData): bool {
+    $lead = $dispatch->lead; // loaded via relation for the safety net check
+
+    // Batch the Lead Quality lookup into a single triple of queries covering every buyer.
+    // Without this we would hit the DB twice per buyer (rules + verified log), which balloons
+    // on workflows with many buyers even though the result is usually "no rules apply".
+    $qualitySnapshot = $lead ? $this->leadQuality->prefetchForBuyers($allBuyers->pluck('integration')->filter(), $lead) : null;
+
+    $eligible = $allBuyers->filter(function (WorkflowBuyer $wfBuyer) use ($dispatch, $leadData, $lead, $qualitySnapshot): bool {
       $integration = $wfBuyer->integration;
 
       if (!$integration || !$integration->is_active) {
@@ -812,6 +841,21 @@ class DispatchOrchestrator
           'reason' => 'cap_exceeded',
         ]);
         $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'cap_exceeded');
+        return false;
+      }
+
+      // Lead Quality safety net. Canonical path has the landing call challenge/send and
+      // challenge/verify before dispatching, so this gate is mostly a no-op. It protects
+      // against bypass (direct curl, misconfigured integrations) by requiring a verified
+      // log within the rule's validity window for every applicable rule on the buyer.
+      if ($lead && !$this->leadQuality->isEligibleForQuality($integration, $lead, $leadData, $qualitySnapshot)) {
+        $skipReason = $this->leadQuality->getSkipReason($integration, $lead, $leadData, $qualitySnapshot);
+        $this->timeline->log(DispatchTimelineService::QUALITY_NOT_VERIFIED, "Buyer {$integration->name} filtered: {$skipReason}", [
+          'integration_id' => $integration->id,
+          'reason' => 'quality_not_verified',
+          'detail' => $skipReason,
+        ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'quality_not_verified', $skipReason);
         return false;
       }
 

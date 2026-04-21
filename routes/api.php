@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\LeadController;
+use App\Http\Controllers\Api\LeadQuality\ChallengeController as LeadQualityChallengeController;
 use App\Http\Controllers\Api\Offerwall\EventController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\PerformanceMetricController;
@@ -58,6 +59,15 @@ Route::middleware(['auth.host'])->group(function () {
     ->whereNumber('workflow')
     ->name('api.share-leads.dispatch');
 });
+
+// Lead Quality — challenge issue/verify. Driven by the landing page before dispatch.
+Route::middleware(['auth.host', 'throttle:10,1'])
+  ->prefix('lead-quality')
+  ->name('api.lead-quality.')
+  ->group(function () {
+    Route::post('challenge/send', [LeadQualityChallengeController::class, 'send'])->name('challenge.send');
+    Route::post('challenge/verify', [LeadQualityChallengeController::class, 'verify'])->name('challenge.verify');
+  });
 
 // Other file routes
 require __DIR__ . '/syncs.php';

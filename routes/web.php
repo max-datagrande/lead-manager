@@ -13,6 +13,11 @@ use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\LeadQuality\LeadQualityController;
+use App\Http\Controllers\LeadQuality\ProviderController as LeadQualityProviderController;
+use App\Http\Controllers\LeadQuality\ProviderTestController as LeadQualityProviderTestController;
+use App\Http\Controllers\LeadQuality\ValidationLogController as LeadQualityValidationLogController;
+use App\Http\Controllers\LeadQuality\ValidationRuleController as LeadQualityValidationRuleController;
 use App\Http\Controllers\PingPost\BuyerController;
 use App\Http\Controllers\PingPost\WorkflowAlertController;
 use App\Http\Controllers\PingPost\WorkflowController;
@@ -26,6 +31,7 @@ use App\Http\Controllers\VerticalController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LandingVersionController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -148,6 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::resource('alert-channels', AlertChannelController::class)
     ->except(['show', 'create', 'edit'])
     ->whereNumber('alert_channel');
+  Route::resource('landing_pages.versions', LandingVersionController::class);
 
   // Forms
   Route::prefix('forms')->group(function () {
@@ -202,6 +209,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereIn('type', ['ping', 'post'])
         ->whereNumber('id')
         ->name('dispatches.result-detail');
+    });
+
+  // Lead Quality — providers, validation rules, logs
+  Route::prefix('lead-quality')
+    ->name('lead-quality.')
+    ->middleware(['role:admin,manager'])
+    ->group(function () {
+      Route::get('/', [LeadQualityController::class, 'index'])->name('index');
+      Route::post('providers/{provider}/test', [LeadQualityProviderTestController::class, 'test'])
+        ->whereNumber('provider')
+        ->name('providers.test');
+      Route::post('providers/{provider}/test-send', [LeadQualityProviderTestController::class, 'testSendOtp'])
+        ->whereNumber('provider')
+        ->name('providers.test-send');
+      Route::post('providers/{provider}/test-verify', [LeadQualityProviderTestController::class, 'testVerifyOtp'])
+        ->whereNumber('provider')
+        ->name('providers.test-verify');
+      Route::resource('providers', LeadQualityProviderController::class)
+        ->except(['show'])
+        ->whereNumber('provider');
+      Route::resource('validation-rules', LeadQualityValidationRuleController::class)
+        ->except(['show'])
+        ->parameters(['validation-rules' => 'validationRule'])
+        ->whereNumber('validationRule');
+
+      Route::get('validation-logs', [LeadQualityValidationLogController::class, 'index'])->name('validation-logs.index');
+      Route::get('validation-logs/{log}', [LeadQualityValidationLogController::class, 'show'])
+        ->whereNumber('log')
+        ->name('validation-logs.show');
+      Route::get('validation-logs/{log}/technical', [LeadQualityValidationLogController::class, 'technical'])
+        ->whereNumber('log')
+        ->name('validation-logs.technical');
     });
 });
 

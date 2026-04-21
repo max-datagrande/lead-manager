@@ -10,6 +10,8 @@ enum DispatchStatus: string
   case NOT_SOLD = 'not_sold';
   case ERROR = 'error';
   case TIMEOUT = 'timeout';
+  case PENDING_VALIDATION = 'pending_validation';
+  case VALIDATION_FAILED = 'validation_failed';
 
   public function label(): string
   {
@@ -20,6 +22,8 @@ enum DispatchStatus: string
       self::NOT_SOLD => 'Not Sold',
       self::ERROR => 'Error',
       self::TIMEOUT => 'Timeout',
+      self::PENDING_VALIDATION => 'Pending Validation',
+      self::VALIDATION_FAILED => 'Validation Failed',
     };
   }
 
@@ -32,6 +36,8 @@ enum DispatchStatus: string
       self::NOT_SOLD => 'x-circle',
       self::ERROR => 'alert-circle',
       self::TIMEOUT => 'timer-off',
+      self::PENDING_VALIDATION => 'shield-alert',
+      self::VALIDATION_FAILED => 'shield-off',
     };
   }
 
@@ -44,12 +50,14 @@ enum DispatchStatus: string
       self::NOT_SOLD => 'red',
       self::ERROR => 'orange',
       self::TIMEOUT => 'yellow',
+      self::PENDING_VALIDATION => 'amber',
+      self::VALIDATION_FAILED => 'rose',
     };
   }
 
   public function isTerminal(): bool
   {
-    return in_array($this, [self::SOLD, self::NOT_SOLD, self::ERROR, self::TIMEOUT]);
+    return in_array($this, [self::SOLD, self::NOT_SOLD, self::ERROR, self::TIMEOUT, self::VALIDATION_FAILED]);
   }
 
   /**

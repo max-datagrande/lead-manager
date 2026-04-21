@@ -13,6 +13,7 @@ const sidebarNavItems: NavItem[] = [
   { title: 'visitor', href: '/docs/catalyst/visitor', icon: null },
   { title: 'leads', href: '/docs/catalyst/leads', icon: null },
   { title: 'share_leads', href: '/docs/catalyst/share-leads', icon: null },
+  { title: 'lead_quality', href: '/docs/catalyst/lead-quality', icon: null },
   { title: 'offerwall', href: '/docs/catalyst/offerwall', icon: null },
   { title: 'events', href: '/docs/catalyst/events', icon: null },
   { title: 'examples', href: '/docs/catalyst/examples', icon: null },

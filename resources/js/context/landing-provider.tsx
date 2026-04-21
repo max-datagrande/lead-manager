@@ -2,7 +2,7 @@ import { FormModal } from '@/components/landing-pages/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage, router } from '@inertiajs/react';
 import { createContext, useState } from 'react';
 
 export const LandingPagesContext = createContext(null);
@@ -39,6 +39,14 @@ export function LandingPagesProvider({ children, verticals, companies }) {
     }
   };
 
+  const showVersions = async (entry) => {
+   router.get(
+         route('landing_pages.versions.index', {
+           landing_page: entry.id,
+         }),
+       );
+  };
+
   const deleteEntry = (entry) => {
     const url = route('landing_pages.destroy', entry.id);
     destroy(url, {
@@ -68,6 +76,7 @@ export function LandingPagesProvider({ children, verticals, companies }) {
         setCurrentRow,
         showCreateModal,
         showEditModal,
+        showVersions,
         showDeleteModal,
         resetTrigger,
         setResetTrigger,

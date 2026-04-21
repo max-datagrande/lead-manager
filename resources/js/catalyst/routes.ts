@@ -13,6 +13,10 @@ export const API_ROUTES = {
   SHARE_LEADS: {
     DISPATCH: '/v1/share-leads/dispatch/', // + workflow ID
   },
+  LEAD_QUALITY: {
+    CHALLENGE_SEND: '/v1/lead-quality/challenge/send',
+    CHALLENGE_VERIFY: '/v1/lead-quality/challenge/verify',
+  },
   METRICS: {
     PERFORMANCE: '/v1/metrics/performance',
   },
