@@ -31,6 +31,7 @@ use App\Http\Controllers\VerticalController;
 use App\Http\Controllers\VisitorController;
 use App\Http\Controllers\VpsMetricsController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LandingVersionController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
   Route::get('/', [DashboardController::class, 'index'])->name('home');
@@ -153,6 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::resource('alert-channels', AlertChannelController::class)
     ->except(['show', 'create', 'edit'])
     ->whereNumber('alert_channel');
+  Route::resource('landing_pages.versions', LandingVersionController::class);
 
   // Forms
   Route::prefix('forms')->group(function () {

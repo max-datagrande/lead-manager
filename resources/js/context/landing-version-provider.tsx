@@ -1,13 +1,13 @@
-import { FormModal } from '@/components/landing-pages/index';
+import { FormModalVersion } from '@/components/landing-versions/form-versions-modal';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage, router } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
 
-export const LandingPagesContext = createContext(null);
+export const LandingPagesVersionContext = createContext(null);
 
-export function LandingPagesProvider({ children, verticals, companies }) {
+export function LandingPagesVersionProvider({ children, landingPage }) {
   const { filters } = usePage().props as any;
   const modal = useModal();
   const { addMessage: setNotify } = useToast();
@@ -19,9 +19,9 @@ export function LandingPagesProvider({ children, verticals, companies }) {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const { delete: destroy } = useForm();
 
-  const showCreateModal = async () => {
+  const showCreateModal = async (entry) => {
     try {
-      const result = await modal.openAsync(<FormModal entry={null} verticals={verticals} companies={companies} />);
+      const result = await modal.openAsync(<FormModalVersion entry={entry} landingPageId={landingPage.id} />);
       console.log(result);
     } catch (error) {
       setNotify('Error creating landing page', 'error');
@@ -31,7 +31,7 @@ export function LandingPagesProvider({ children, verticals, companies }) {
 
   const showEditModal = async (entry) => {
     try {
-      const result = await modal.openAsync(<FormModal entry={entry} isEdit={true} verticals={verticals} companies={companies} />);
+      const result = await modal.openAsync(<FormModalVersion landingPageId={landingPage.id} entry={entry} isEdit={true} />);
       console.log(result);
     } catch (error) {
       setNotify('Error updating landing page', 'error');
@@ -39,16 +39,8 @@ export function LandingPagesProvider({ children, verticals, companies }) {
     }
   };
 
-  const showVersions = async (entry) => {
-   router.get(
-         route('landing_pages.versions.index', {
-           landing_page: entry.id,
-         }),
-       );
-  };
-
   const deleteEntry = (entry) => {
-    const url = route('landing_pages.destroy', entry.id);
+    const url = route('landing_pages.versions.destroy', { version: entry.id, landing_page: landingPage.id });
     destroy(url, {
       preserveScroll: true,
       preserveState: true,
@@ -57,7 +49,7 @@ export function LandingPagesProvider({ children, verticals, companies }) {
 
   const showDeleteModal = async (entry) => {
     const confirmed = await modal.confirm({
-      title: 'Delete Landing Page',
+      title: 'Delete Landing Page Version',
       description: 'This action cannot be undone. Are you sure you want to continue?',
       confirmText: 'Delete',
       cancelText: 'Cancel',
@@ -70,13 +62,12 @@ export function LandingPagesProvider({ children, verticals, companies }) {
   };
 
   return (
-    <LandingPagesContext.Provider
+    <LandingPagesVersionContext.Provider
       value={{
         currentRow,
         setCurrentRow,
         showCreateModal,
         showEditModal,
-        showVersions,
         showDeleteModal,
         resetTrigger,
         setResetTrigger,
@@ -91,6 +82,6 @@ export function LandingPagesProvider({ children, verticals, companies }) {
       }}
     >
       {children}
-    </LandingPagesContext.Provider>
+    </LandingPagesVersionContext.Provider>
   );
 }
