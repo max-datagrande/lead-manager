@@ -152,6 +152,110 @@ test('full flow: landing captures lead, verifies OTP, dispatch runs to SOLD', fu
   Http::assertSent(fn($req) => str_contains($req->url(), '/post'));
 });
 
+test('lead_snapshot is refreshed at RUNNING (overwrites the PENDING_VALIDATION seed)', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
+    'verify.twilio.com/*/VerificationCheck' => Http::response(['status' => 'approved'], 200),
+    'https://buyer.example.com/ping' => Http::response(['accepted' => 'true', 'bid' => 12.5]),
+    'https://buyer.example.com/post' => Http::response(['accepted' => 'true']),
+  ]);
+
+  $stack = buildE2eStack();
+  $phone = '+15555551234';
+
+  // Seed a field response on the lead so the snapshot has something observable.
+  $field = \App\Models\Field::factory()->create(['name' => 'phone']);
+  \App\Models\LeadFieldResponse::create([
+    'lead_id' => $stack['lead']->id,
+    'field_id' => $field->id,
+    'fingerprint' => $stack['lead']->fingerprint,
+    'value' => 'OLD_VALUE_AT_REQUEST',
+  ]);
+
+  // Step 1: request the challenge → dispatch PENDING with the "old" snapshot.
+  $send = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $stack['workflow']->id,
+      'lead_id' => $stack['lead']->id,
+      'fingerprint' => $stack['lead']->fingerprint,
+      'to' => $phone,
+      'channel' => 'sms',
+    ],
+    e2eHostHeader(),
+  );
+  $send->assertOk();
+
+  $dispatch = LeadDispatch::findOrFail($send->json('data.dispatch_id'));
+  expect($dispatch->lead_snapshot[$field->id])->toBe('OLD_VALUE_AT_REQUEST');
+
+  // Step 2: simulate that the lead's field was updated between send and verify
+  // (landing pushed a new value via updateLead or because the user reopened
+  // the form). The RUNNING transition should pick up this fresh value.
+  \App\Models\LeadFieldResponse::where('lead_id', $stack['lead']->id)
+    ->where('field_id', $field->id)
+    ->update(['value' => 'NEW_VALUE_AT_DELIVERY']);
+
+  // Step 3: verify OK → dispatch transitions to RUNNING and the snapshot refreshes.
+  postJson(
+    '/v1/lead-quality/challenge/verify',
+    ['challenge_token' => $send->json('data.challenges.0.challenge_token'), 'code' => '123456', 'to' => $phone],
+    e2eHostHeader(),
+  )->assertOk();
+
+  $dispatch->refresh();
+  expect($dispatch->status)->toBeIn([DispatchStatus::RUNNING, DispatchStatus::SOLD, DispatchStatus::NOT_SOLD]);
+  expect($dispatch->lead_snapshot[$field->id])->toBe('NEW_VALUE_AT_DELIVERY');
+});
+
+test('lead_snapshot is retained when the dispatch closes as VALIDATION_FAILED', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
+    'verify.twilio.com/*/VerificationCheck' => Http::response(['status' => 'pending'], 200),
+  ]);
+
+  $stack = buildE2eStack();
+  $field = \App\Models\Field::factory()->create(['name' => 'phone']);
+  \App\Models\LeadFieldResponse::create([
+    'lead_id' => $stack['lead']->id,
+    'field_id' => $field->id,
+    'fingerprint' => $stack['lead']->fingerprint,
+    'value' => 'PENDING_ERA_VALUE',
+  ]);
+
+  $send = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $stack['workflow']->id,
+      'lead_id' => $stack['lead']->id,
+      'fingerprint' => $stack['lead']->fingerprint,
+      'to' => '+15555551234',
+      'channel' => 'sms',
+    ],
+    e2eHostHeader(),
+  );
+  $send->assertOk();
+  $dispatchId = $send->json('data.dispatch_id');
+  $challengeToken = $send->json('data.challenges.0.challenge_token');
+
+  // Exhaust max_attempts (default 3) → dispatch VALIDATION_FAILED.
+  for ($i = 0; $i < 3; $i++) {
+    postJson(
+      '/v1/lead-quality/challenge/verify',
+      ['challenge_token' => $challengeToken, 'code' => '000000', 'to' => '+15555551234'],
+      e2eHostHeader(),
+    );
+  }
+
+  $dispatch = LeadDispatch::findOrFail($dispatchId);
+  expect($dispatch->status)->toBe(DispatchStatus::VALIDATION_FAILED);
+
+  // The snapshot from the PENDING phase must survive — the orchestrator never
+  // ran, so there's no RUNNING-time refresh. This is the audit trail for
+  // failed-validation dispatches.
+  expect($dispatch->lead_snapshot[$field->id])->toBe('PENDING_ERA_VALUE');
+});
+
 test('full flow: landing aborts when user exhausts verify attempts', function () {
   Http::fake([
     'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
