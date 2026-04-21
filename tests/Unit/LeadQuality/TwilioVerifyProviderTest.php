@@ -118,6 +118,39 @@ it('verifyChallenge returns failure when Twilio status is not approved', functio
   expect($result->error)->toContain('pending');
 });
 
+it('sendChallenge normalizes a 10-digit US number to E.164 before hitting Twilio', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
+  ]);
+
+  [$provider, $rule, $log] = makeTwilioStack();
+  $service = app(TwilioVerifyProvider::class);
+
+  // Landing sent raw digits (worst-case common input). Provider should prepend +1.
+  $service->sendChallenge($provider, $rule, $log, ['to' => '9542353075', 'channel' => 'sms']);
+
+  Http::assertSent(function ($request) {
+    parse_str((string) $request->body(), $parsed);
+    return str_contains((string) $request->url(), '/Verifications') && ($parsed['To'] ?? null) === '+19542353075';
+  });
+});
+
+it('sendChallenge preserves email destinations untouched', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('d', 32), 'status' => 'pending'], 201),
+  ]);
+
+  [$provider, $rule, $log] = makeTwilioStack();
+  $service = app(TwilioVerifyProvider::class);
+
+  $service->sendChallenge($provider, $rule, $log, ['to' => 'user@example.com', 'channel' => 'email']);
+
+  Http::assertSent(function ($request) {
+    parse_str((string) $request->body(), $parsed);
+    return ($parsed['To'] ?? null) === 'user@example.com' && ($parsed['Channel'] ?? null) === 'email';
+  });
+});
+
 it('testConnection succeeds when service exists', function () {
   Http::fake([
     'verify.twilio.com/*' => Http::response(

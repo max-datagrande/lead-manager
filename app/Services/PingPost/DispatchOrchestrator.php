@@ -35,6 +35,7 @@ class DispatchOrchestrator
     private readonly PriceResolverService $priceResolver,
     private readonly DispatchTimelineService $timeline,
     private readonly \App\Services\LeadQuality\LeadQualityCheckerService $leadQuality,
+    private readonly \App\Services\LeadService $leadService,
   ) {}
 
   /**
@@ -55,7 +56,12 @@ class DispatchOrchestrator
     ?LeadDispatch $existingDispatch = null,
   ): LeadDispatch {
     $leadData = $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
-    $leadSnapshot = $lead->leadFieldResponses->pluck('value', 'field_id')->toArray();
+    // Refresh the snapshot at RUNNING time — intentionally overwriting any
+    // earlier PENDING_VALIDATION seed so the buyer-facing record reflects
+    // the lead's state at delivery. Failed-validation dispatches keep their
+    // PENDING-era snapshot because the orchestrator never runs on them.
+    $snapshot = $this->leadService->buildDispatchSnapshot($lead, $fingerprint);
+
     TailLogger::saveLog('Orchestrator START', 'dispatch/debug', 'info', [
       'workflow_id' => $workflow->id,
       'strategy' => $workflow->strategy?->value,
@@ -66,13 +72,11 @@ class DispatchOrchestrator
       'reused_dispatch_id' => $existingDispatch?->id,
     ]);
 
-    $utmSource = TrafficLog::where('fingerprint', $fingerprint)->latest('visit_date')->value('utm_source');
-
     if ($existingDispatch) {
       $existingDispatch->update([
         'status' => DispatchStatus::RUNNING,
-        'lead_snapshot' => $existingDispatch->lead_snapshot ?? $leadSnapshot,
-        'utm_source' => $existingDispatch->utm_source ?? $utmSource,
+        'lead_snapshot' => $snapshot['lead_snapshot'],
+        'utm_source' => $snapshot['utm_source'],
         'strategy_used' => $existingDispatch->strategy_used ?? $workflow->strategy->value,
       ]);
       $dispatch = $existingDispatch->fresh();
@@ -84,8 +88,8 @@ class DispatchOrchestrator
             'workflow_id' => $workflow->id,
             'lead_id' => $lead->id,
             'fingerprint' => $fingerprint,
-            'lead_snapshot' => $leadSnapshot,
-            'utm_source' => $utmSource,
+            'lead_snapshot' => $snapshot['lead_snapshot'],
+            'utm_source' => $snapshot['utm_source'],
             'status' => DispatchStatus::RUNNING,
             'strategy_used' => $workflow->strategy->value,
             'started_at' => now(),

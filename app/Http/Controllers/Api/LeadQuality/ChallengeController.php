@@ -6,31 +6,46 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LeadQuality\SendChallengeRequest;
 use App\Http\Requests\LeadQuality\VerifyChallengeRequest;
 use App\Http\Traits\ApiResponseTrait;
-use App\Models\Lead;
 use App\Models\Workflow;
 use App\Services\LeadQuality\ChallengeIssuerService;
 use App\Services\LeadQuality\ChallengeVerifierService;
-use App\Traits\MergesLeadFieldsTrait;
+use App\Services\LeadService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Validation\ValidationException;
 
 class ChallengeController extends Controller
 {
   use ApiResponseTrait;
-  use MergesLeadFieldsTrait;
 
-  public function __construct(private readonly ChallengeIssuerService $issuer, private readonly ChallengeVerifierService $verifier) {}
+  public function __construct(
+    private readonly ChallengeIssuerService $issuer,
+    private readonly ChallengeVerifierService $verifier,
+    private readonly LeadService $leadService,
+  ) {}
 
   public function send(SendChallengeRequest $request): JsonResponse
   {
     $data = $request->validated();
 
     $workflow = Workflow::findOrFail($data['workflow_id']);
-    $lead = Lead::findOrFail($data['lead_id']);
+
+    // Resolve the lead fingerprint-first, matching the shareLead contract:
+    // explicit lead_id wins when provided, otherwise lookup by fingerprint
+    // (with optional create-on-miss for landings that want a one-shot call).
+    try {
+      $lead = $this->leadService->resolveLead((string) $data['fingerprint'], $data['lead_id'] ?? null, (bool) ($data['create_on_miss'] ?? false));
+    } catch (ValidationException $e) {
+      $errors = $e->errors();
+      $message = $e->getMessage() ?? 'Lead could not be resolved for this fingerprint.';
+      $statusCode = $message === 'Fingerprint not found' ? 404 : 400;
+
+      return $this->errorResponse($message, $errors['services'] ?? $errors, $statusCode);
+    }
 
     // Merge any fields the landing wants to persist right before the challenge.
-    // Propagates ValidationException upwards so the request aborts atomically
-    // — partial writes would leave the landing guessing what did or didn't stick.
-    $this->mergeLeadFields($lead, $data['fields'] ?? null);
+    // Propagates exceptions upwards so the request aborts atomically — partial
+    // writes would leave the landing guessing what did or didn't stick.
+    $this->leadService->mergeLeadFields($lead, $data['fields'] ?? null);
 
     $context = array_filter([
       'to' => $data['to'] ?? null,
@@ -38,7 +53,7 @@ class ChallengeController extends Controller
       'locale' => $data['locale'] ?? null,
     ]);
 
-    $result = $this->issuer->issue($workflow, $lead, $data['fingerprint'], $context);
+    $result = $this->issuer->issue($workflow, $lead, (string) $data['fingerprint'], $context);
 
     if ($result['challenges'] === [] && $result['errors'] === []) {
       return $this->successResponse(data: $result, message: 'No validation rules apply to this workflow; dispatch can proceed directly.');

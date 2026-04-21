@@ -88,6 +88,76 @@ class LeadService
   }
 
   /**
+   * Build the point-in-time snapshot fields that a `LeadDispatch` needs:
+   * a `field_id => value` map of the lead's current responses plus the
+   * latest `utm_source` from the traffic log for the same fingerprint.
+   *
+   * Called both when a dispatch is first created (e.g. `PENDING_VALIDATION`
+   * via ChallengeIssuerService) and when it transitions to `RUNNING`
+   * (via DispatchOrchestrator) — the later call intentionally overwrites
+   * the earlier one so the buyer-facing snapshot reflects the lead state
+   * at delivery time, while failed-validation dispatches retain the
+   * original snapshot for audit.
+   *
+   * @return array{lead_snapshot: array<int, mixed>, utm_source: ?string}
+   */
+  public function buildDispatchSnapshot(Lead $lead, string $fingerprint): array
+  {
+    $lead->loadMissing('leadFieldResponses');
+
+    return [
+      'lead_snapshot' => $lead->leadFieldResponses->pluck('value', 'field_id')->toArray(),
+      'utm_source' => TrafficLog::where('fingerprint', $fingerprint)->latest('visit_date')->value('utm_source'),
+    ];
+  }
+
+  /**
+   * Resolve a `Lead` for an inbound request, fingerprint-first.
+   *
+   * Priority:
+   *   1. If `$leadId` is provided, trust it (explicit override, e.g. admin
+   *      tooling or tests).
+   *   2. Otherwise look up by fingerprint. `$createOnMiss = true` creates the
+   *      lead when the traffic log exists but no lead row does — mirrors the
+   *      `shareLead` contract so the landing can register + dispatch in one
+   *      round-trip.
+   *
+   * Throws `ValidationException` for the fingerprint path when the traffic log
+   * is missing / bot / no lead exists (when `$createOnMiss` is false).
+   */
+  public function resolveLead(string $fingerprint, ?int $leadId = null, bool $createOnMiss = false): Lead
+  {
+    if ($leadId) {
+      return Lead::findOrFail($leadId);
+    }
+
+    $visitorLog = $this->validateTrafficLog($fingerprint);
+
+    return $createOnMiss ? $this->createOrFindLead($visitorLog) : $this->findLead($visitorLog);
+  }
+
+  /**
+   * Merge-update field responses onto an already-resolved `Lead`.
+   *
+   * Short-circuits to `null` when there's nothing to merge so callers can
+   * pass the raw request payload without a guard. Propagates exceptions from
+   * `processLeadFields` so the surrounding request aborts atomically —
+   * partial writes would make the "fields applied + dispatch/challenge
+   * issued" contract unpredictable for landings.
+   *
+   * @param  array<string, mixed>|null  $fields
+   * @return array{created_count: int, updated_count: int, created_fields: array, updated_fields: array}|null
+   */
+  public function mergeLeadFields(Lead $lead, ?array $fields): ?array
+  {
+    if (empty($fields)) {
+      return null;
+    }
+
+    return $this->processLeadFields($lead, $fields);
+  }
+
+  /**
    * Process and save lead field responses.
    *
    * @param Lead $lead

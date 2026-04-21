@@ -3,6 +3,7 @@
 use App\Enums\DispatchStatus;
 use App\Enums\LeadQuality\RuleStatus;
 use App\Enums\LeadQuality\ValidationLogStatus;
+use App\Enums\LeadQuality\ValidationType;
 use App\Models\ExternalServiceRequest;
 use App\Models\Integration;
 use App\Models\Lead;
@@ -156,5 +157,125 @@ test('send returns 502 and marks dispatch VALIDATION_FAILED when every provider 
 test('send validates required fields', function () {
   $response = postJson('/v1/lead-quality/challenge/send', [], leadQualityHostHeader());
   $response->assertStatus(422);
-  $response->assertJsonValidationErrors(['workflow_id', 'lead_id', 'fingerprint']);
+  // lead_id is now optional — the controller resolves the lead from fingerprint
+  // when it's missing, so only workflow_id + fingerprint are strictly required.
+  $response->assertJsonValidationErrors(['workflow_id', 'fingerprint']);
+});
+
+test('send seeds lead_snapshot at PENDING_VALIDATION so failed validations keep an audit trail', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
+  ]);
+
+  $provider = makeLeadQualityTwilioProvider();
+  [$workflow] = makeWorkflowWithBuyerAndRule($provider);
+
+  // Lead with one field response so the snapshot has something observable.
+  $fingerprint = 'fp-snapshot-seed';
+  \App\Models\TrafficLog::factory()->create(['fingerprint' => $fingerprint, 'is_bot' => false, 'utm_source' => 'facebook']);
+  $lead = Lead::factory()->create(['fingerprint' => $fingerprint]);
+  $field = \App\Models\Field::factory()->create(['name' => 'phone_at_request']);
+  \App\Models\LeadFieldResponse::create([
+    'lead_id' => $lead->id,
+    'field_id' => $field->id,
+    'fingerprint' => $fingerprint,
+    'value' => '+15555551234',
+  ]);
+
+  $response = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $workflow->id,
+      'fingerprint' => $fingerprint,
+      'to' => '+15555551234',
+      'channel' => 'sms',
+    ],
+    leadQualityHostHeader(),
+  );
+  $response->assertOk();
+
+  $dispatch = LeadDispatch::findOrFail($response->json('data.dispatch_id'));
+
+  // Snapshot populated at challenge-request time.
+  expect($dispatch->status)->toBe(DispatchStatus::PENDING_VALIDATION);
+  expect($dispatch->lead_snapshot)->toBeArray();
+  expect($dispatch->lead_snapshot[$field->id])->toBe('+15555551234');
+  expect($dispatch->utm_source)->toBe('facebook');
+});
+
+test('send skips sync validation rules (phone_lookup, etc.) from challenge issuance', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('c', 32), 'status' => 'pending'], 201),
+  ]);
+
+  $provider = makeLeadQualityTwilioProvider();
+  [$workflow, $buyer, $otpRule] = makeWorkflowWithBuyerAndRule($provider);
+
+  // Attach a phone_lookup (sync) rule to the same buyer alongside the OTP one.
+  // The challenge/send flow must ignore it — lookups are evaluated at dispatch
+  // time, not as an async user-facing challenge.
+  $lookupRule = LeadQualityValidationRule::factory()
+    ->forProvider($provider)
+    ->create([
+      'validation_type' => ValidationType::PHONE_LOOKUP,
+      'status' => RuleStatus::ACTIVE,
+      'is_enabled' => true,
+      'settings' => ['validity_window' => 60],
+    ]);
+  $buyer->validationRules()->attach($lookupRule->id, ['is_enabled' => true]);
+
+  $lead = Lead::factory()->create(['fingerprint' => 'fp-async-filter']);
+
+  $response = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $workflow->id,
+      'lead_id' => $lead->id,
+      'fingerprint' => 'fp-async-filter',
+      'to' => '+15555551234',
+      'channel' => 'sms',
+    ],
+    leadQualityHostHeader(),
+  );
+
+  $response->assertOk();
+  $challenges = $response->json('data.challenges');
+  expect($challenges)->toHaveCount(1);
+  expect($challenges[0]['rule_id'])->toBe($otpRule->id);
+  expect($response->json('data.errors'))->toHaveCount(0);
+});
+
+test('send resolves the lead from fingerprint when lead_id is omitted', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('a', 32), 'status' => 'pending'], 201),
+  ]);
+
+  $provider = makeLeadQualityTwilioProvider();
+  [$workflow] = makeWorkflowWithBuyerAndRule($provider);
+
+  // Seed both the traffic log and the lead so resolveLead's fingerprint path
+  // finds a real lead to attach the dispatch to — mirrors what an actual
+  // landing produces via the visitor-register flow.
+  $fingerprint = 'fp-resolve-by-fingerprint';
+  \App\Models\TrafficLog::factory()->create(['fingerprint' => $fingerprint, 'is_bot' => false]);
+  $lead = Lead::factory()->create(['fingerprint' => $fingerprint]);
+
+  $response = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $workflow->id,
+      'fingerprint' => $fingerprint,
+      'to' => '+15555551234',
+      'channel' => 'sms',
+    ],
+    leadQualityHostHeader(),
+  );
+
+  $response->assertOk();
+  $response->assertJsonPath('success', true);
+  expect($response->json('data.challenges'))->toHaveCount(1);
+
+  // The dispatch was created attached to the lead we seeded, not a fresh one.
+  $dispatch = LeadDispatch::findOrFail($response->json('data.dispatch_id'));
+  expect($dispatch->lead_id)->toBe($lead->id);
 });
