@@ -184,23 +184,26 @@ interface ShareLeadResponse {
  * (OTP, etc.) against one or more rules associated to the workflow's buyers.
  *
  * - `workflowId` is required.
- * - `leadId` falls back to `visitorData.lead_data.id` when omitted.
- * - `fingerprint` falls back to `visitorData.fingerprint` when omitted.
+ * - `fingerprint` falls back to `visitorData.fingerprint` when omitted — the
+ *   server resolves the lead from it, matching the `shareLead` contract.
  * - `to`, `channel`, `locale` are provider-specific delivery options.
  * - `fields` is an optional merge-update applied to the lead atomically before
  *   the challenge is issued — saves a separate `updateLead` round-trip when
  *   the landing wants to persist context (timestamps, UX flags, last-minute
  *   UTM captures, etc.) alongside the request. If the merge fails, the whole
  *   request aborts and no challenge is emitted.
+ * - `createOnMiss` lets the server create the lead when only the traffic log
+ *   exists and no lead row has been registered yet. Same flag as `shareLead`
+ *   — useful for one-shot landings that merge register + challenge.
  */
 interface RequestChallengeOptions {
   workflowId: number | string;
-  leadId?: number | string;
   fingerprint?: string;
   to?: string;
   channel?: 'sms' | 'call' | 'email' | 'whatsapp';
   locale?: string;
   fields?: Record<string, unknown>;
+  createOnMiss?: boolean;
 }
 
 interface ChallengeIssued {

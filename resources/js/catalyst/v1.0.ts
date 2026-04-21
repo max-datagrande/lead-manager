@@ -508,7 +508,15 @@ class CatalystCore {
    * issued, saving a separate `updateLead()` round-trip. If the merge fails, the
    * whole request aborts and no challenge is emitted.
    */
-  async requestChallenge({ workflowId, leadId, fingerprint, to, channel, locale, fields }: RequestChallengeOptions): Promise<RequestChallengeResponse> {
+  async requestChallenge({
+    workflowId,
+    fingerprint,
+    to,
+    channel,
+    locale,
+    fields,
+    createOnMiss,
+  }: RequestChallengeOptions): Promise<RequestChallengeResponse> {
     const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
     if (!resolvedFingerprint) {
       const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
@@ -516,22 +524,15 @@ class CatalystCore {
       throw new Error(`Catalyst SDK: ${error}`);
     }
 
-    const resolvedLeadId = leadId ?? this.visitorData?.lead_data?.id ?? this.visitorData?.lead_data?.lead_id;
-    if (!resolvedLeadId) {
-      const error = 'No lead_id available. Call registerLead() first or pass leadId explicitly.';
-      this.dispatch('challenge:status', { type: 'send', success: false, error } as ChallengeStatusEvent);
-      throw new Error(`Catalyst SDK: ${error}`);
-    }
-
     const payload: Record<string, any> = {
       workflow_id: workflowId,
-      lead_id: resolvedLeadId,
       fingerprint: resolvedFingerprint,
     };
     if (to) payload.to = to;
     if (channel) payload.channel = channel;
     if (locale) payload.locale = locale;
     if (fields && Object.keys(fields).length > 0) payload.fields = fields;
+    if (createOnMiss) payload.create_on_miss = true;
 
     try {
       const res = await fetch(this.getEndpoint('LEAD_QUALITY.CHALLENGE_SEND'), {
