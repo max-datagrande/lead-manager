@@ -28,6 +28,10 @@ class StoreProviderRequest extends FormRequest
       'credentials' => ['nullable', 'array'],
       'credentials.*' => ['nullable', 'string', 'max:2000'],
       'settings' => ['nullable', 'array'],
+      // Twilio Verify caps the Service FriendlyName at 30 chars; we enforce the same
+      // limit even for providers that don't end up syncing to Twilio, so moving a
+      // provider from one type to another stays compatible.
+      'friendly_name' => ['nullable', 'string', 'max:30'],
       'notes' => ['nullable', 'string', 'max:2000'],
     ];
   }

@@ -30,6 +30,7 @@ class UpdateProviderRequest extends FormRequest
       'credentials' => ['nullable', 'array'],
       'credentials.*' => ['nullable', 'string', 'max:2000'],
       'settings' => ['nullable', 'array'],
+      'friendly_name' => ['nullable', 'string', 'max:30'],
       'notes' => ['nullable', 'string', 'max:2000'],
     ];
   }
