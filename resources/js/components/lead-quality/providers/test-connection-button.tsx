@@ -1,11 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 import { CheckCircle2, PlugZap, XCircle } from 'lucide-react';
 import { useState } from 'react';
 
 interface Props {
   providerId: number;
   disabled?: boolean;
+}
+
+interface TestConnectionPayload {
+  ok?: boolean;
+  message?: string;
+  error?: string;
 }
 
 export function TestConnectionButton({ providerId, disabled = false }: Props) {
@@ -18,21 +25,22 @@ export function TestConnectionButton({ providerId, disabled = false }: Props) {
     setLoading(true);
     setLastResult(null);
     try {
-      const res = await fetch(route('lead-quality.providers.test', providerId), {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-        },
-      });
-      const json = (await res.json()) as { ok: boolean; message?: string; error?: string };
-      const ok = Boolean(json.ok);
-      const text = ok ? (json.message ?? 'Connection successful.') : (json.error ?? 'Connection failed.');
+      // Use axios so Inertia's pre-wired CSRF interceptor handles the token.
+      // Bare `fetch` misses the XSRF-TOKEN cookie → "CSRF token mismatch" in prod.
+      const { data } = await axios.post<TestConnectionPayload>(route('lead-quality.providers.test', providerId));
+      const ok = Boolean(data.ok);
+      const text = ok ? (data.message ?? 'Connection successful.') : (data.error ?? 'Connection failed.');
       setLastResult({ ok, text });
       addMessage(text, ok ? 'success' : 'error');
     } catch (e) {
-      const text = e instanceof Error ? e.message : 'Unexpected error.';
+      // axios throws on non-2xx responses; surface the backend payload if present.
+      let text = 'Unexpected error.';
+      if (axios.isAxiosError(e)) {
+        const payload = e.response?.data as TestConnectionPayload | undefined;
+        text = payload?.error ?? payload?.message ?? e.message;
+      } else if (e instanceof Error) {
+        text = e.message;
+      }
       setLastResult({ ok: false, text });
       addMessage(text, 'error');
     } finally {
