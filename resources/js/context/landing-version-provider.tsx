@@ -1,5 +1,4 @@
-import { FormModalVersion } from '@/components/landing-pages-version/form-versions-modal';
-import { FormModal } from '@/components/landing-pages/index';
+import { FormModalVersion } from '@/components/landing-versions/form-versions-modal';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
@@ -40,12 +39,8 @@ export function LandingPagesVersionProvider({ children, landingPage }) {
     }
   };
 
-  const showEditVersionsModal = async (entry) => {
-    window.location.href = `/landing_pages/${entry.id}/versions`;
-  };
-
   const deleteEntry = (entry) => {
-    const url = route('landing_pages.versions.destroy', {version: entry.id, landing_page: landingPage.id});
+    const url = route('landing_pages.versions.destroy', { version: entry.id, landing_page: landingPage.id });
     destroy(url, {
       preserveScroll: true,
       preserveState: true,
@@ -73,7 +68,6 @@ export function LandingPagesVersionProvider({ children, landingPage }) {
         setCurrentRow,
         showCreateModal,
         showEditModal,
-        showEditVersionsModal,
         showDeleteModal,
         resetTrigger,
         setResetTrigger,
