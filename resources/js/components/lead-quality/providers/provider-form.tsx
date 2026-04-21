@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { EnvironmentOption, ProviderStatusOption, ProviderStatusValue, ProviderTypeOption } from '@/types/models/lead-quality';
 import { Link } from '@inertiajs/react';
 import { CredentialsFields } from './credentials-fields';
+import { ProviderOtpTester } from './otp-tester';
 import { TestConnectionButton } from './test-connection-button';
 
 export interface ProviderFormData {
@@ -17,6 +18,7 @@ export interface ProviderFormData {
   is_enabled: boolean;
   environment: 'production' | 'sandbox' | 'test';
   credentials: Record<string, string>;
+  friendly_name: string;
   notes: string;
 }
 
@@ -31,6 +33,8 @@ interface Props {
   onSubmit: (e: React.FormEvent) => void;
   isEdit?: boolean;
   providerId?: number;
+  credentialStatus?: Record<string, boolean>;
+  credentialLengths?: Record<string, number>;
 }
 
 export function ProviderForm({
@@ -44,6 +48,8 @@ export function ProviderForm({
   onSubmit,
   isEdit = false,
   providerId,
+  credentialStatus,
+  credentialLengths,
 }: Props) {
   const currentType = providerTypes.find((t) => t.value === data.type);
   const notImplemented = currentType && !currentType.is_implemented;
@@ -56,10 +62,28 @@ export function ProviderForm({
           <CardDescription>Identify the provider and control whether it is in use.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Twilio Verify (Production)" />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Twilio Verify (Production)" />
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+              <p className="text-xs text-muted-foreground">Internal label for this provider in the admin.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="friendly_name">Friendly name (SMS sender)</Label>
+              <Input
+                id="friendly_name"
+                value={data.friendly_name}
+                onChange={(e) => setData('friendly_name', e.target.value)}
+                placeholder="DataGrande"
+                maxLength={30}
+              />
+              {errors.friendly_name && <p className="text-xs text-destructive">{errors.friendly_name}</p>}
+              <p className="text-xs text-muted-foreground">
+                Max 30 chars. Appears in the SMS body ("Your <em>{data.friendly_name || '…'}</em> verification code is…"). Synced to Twilio on save;
+                trial accounts keep "SAMPLE TEST" until upgraded.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -133,7 +157,14 @@ export function ProviderForm({
           <CardDescription>Stored encrypted. Hidden fields keep the previous value if left blank on edit.</CardDescription>
         </CardHeader>
         <CardContent>
-          <CredentialsFields type={data.type} credentials={data.credentials} onChange={(c) => setData('credentials', c)} errors={errors} />
+          <CredentialsFields
+            type={data.type}
+            credentials={data.credentials}
+            onChange={(c) => setData('credentials', c)}
+            errors={errors}
+            credentialStatus={credentialStatus}
+            credentialLengths={credentialLengths}
+          />
         </CardContent>
       </Card>
 
@@ -145,6 +176,18 @@ export function ProviderForm({
           </CardHeader>
           <CardContent>
             <TestConnectionButton providerId={providerId} disabled={notImplemented} />
+          </CardContent>
+        </Card>
+      )}
+
+      {isEdit && providerId && data.type === 'twilio_verify' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">OTP roundtrip tester</CardTitle>
+            <CardDescription>Send a real test OTP to a destination and verify the returned code against the provider.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProviderOtpTester providerId={providerId} disabled={notImplemented} />
           </CardContent>
         </Card>
       )}
