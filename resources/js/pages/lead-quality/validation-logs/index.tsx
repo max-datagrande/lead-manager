@@ -9,7 +9,7 @@ import { Head } from '@inertiajs/react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Lead Quality', href: route('lead-quality.validation-logs.index') },
+  { title: 'Lead Quality', href: route('lead-quality.index') },
   { title: 'Validation Logs', href: route('lead-quality.validation-logs.index') },
 ];
 

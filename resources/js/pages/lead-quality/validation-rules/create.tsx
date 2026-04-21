@@ -7,7 +7,7 @@ import { Head, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Lead Quality', href: route('lead-quality.validation-rules.index') },
+  { title: 'Lead Quality', href: route('lead-quality.index') },
   { title: 'Validation Rules', href: route('lead-quality.validation-rules.index') },
   { title: 'New', href: route('lead-quality.validation-rules.create') },
 ];

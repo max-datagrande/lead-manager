@@ -8,7 +8,7 @@ import { Head } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Lead Quality', href: route('lead-quality.providers.index') },
+  { title: 'Lead Quality', href: route('lead-quality.index') },
   { title: 'Providers', href: route('lead-quality.providers.index') },
 ];
 

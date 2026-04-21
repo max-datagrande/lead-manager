@@ -7,7 +7,7 @@ import { Head, useForm } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Lead Quality', href: route('lead-quality.providers.index') },
+  { title: 'Lead Quality', href: route('lead-quality.index') },
   { title: 'Providers', href: route('lead-quality.providers.index') },
   { title: 'Edit', href: '#' },
 ];
@@ -26,9 +26,11 @@ const Edit = ({ provider, provider_types, statuses, environments }: Props) => {
     status: provider.status,
     is_enabled: provider.is_enabled,
     environment: provider.environment,
-    // On edit, start with empty creds so blank fields don't overwrite existing values.
-    // The backend merges incoming with existing. Settings not editable from admin UI in V1.
-    credentials: {},
+    // Prefill non-secret credentials so the admin sees what's already configured.
+    // Secrets are kept blank — the backend merges incoming over existing, so
+    // leaving a secret field empty preserves the stored value.
+    credentials: { ...provider.safe_credentials },
+    friendly_name: provider.friendly_name ?? '',
     notes: provider.notes ?? '',
   });
 
@@ -53,6 +55,8 @@ const Edit = ({ provider, provider_types, statuses, environments }: Props) => {
           onSubmit={handleSubmit}
           isEdit
           providerId={provider.id}
+          credentialStatus={provider.credential_status}
+          credentialLengths={provider.credential_lengths}
         />
       </div>
     </>
