@@ -1,5 +1,5 @@
-import { LandingPagesVersionsActions } from '@/components/landing-pages-version';
-import { TableLandingPagesVersions } from '@/components/landing-pages-version/table-landing-pages-version';
+import { LandingPagesVersionsActions } from '@/components/landing-versions';
+import { TableLandingPagesVersions } from '@/components/landing-versions/table-landing-pages-version';
 import PageHeader from '@/components/page-header';
 import { LandingPagesVersionProvider } from '@/context/landing-version-provider';
 import AppLayout from '@/layouts/app-layout';
@@ -32,15 +32,15 @@ type LandingPage = {
 };
 
 interface Versions {
-    id: number,
-    landing_page_id: number,
-    name: string,
-    description: string,
-    url: string,
-    status: boolean,
-    created_at: string,
-    updated_at: string,
-    fullUrl: string
+  id: number;
+  landing_page_id: number;
+  name: string;
+  description: string;
+  url: string;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+  fullUrl: string;
 }
 
 interface IndexProps {
