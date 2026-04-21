@@ -18,8 +18,8 @@ return new class extends Migration {
       $table->text('description')->nullable();
       $table->json('settings')->nullable();
       $table->unsignedSmallInteger('priority')->default(100);
-      $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-      $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+      $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+      $table->foreignId('updated_user_id')->nullable()->constrained('users')->nullOnDelete();
       $table->timestamps();
 
       $table->index('validation_type');

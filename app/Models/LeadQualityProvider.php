@@ -16,7 +16,7 @@ class LeadQualityProvider extends Model
 
   protected $table = 'lead_quality_providers';
 
-  protected $fillable = ['name', 'type', 'status', 'is_enabled', 'environment', 'credentials', 'settings', 'notes', 'created_by', 'updated_by'];
+  protected $fillable = ['name', 'type', 'status', 'is_enabled', 'environment', 'credentials', 'settings', 'notes', 'user_id', 'updated_user_id'];
 
   protected $casts = [
     'type' => LeadQualityProviderType::class,
@@ -33,11 +33,15 @@ class LeadQualityProvider extends Model
     parent::boot();
 
     static::creating(function (self $model): void {
-      $model->created_by ??= Auth::id();
+      $model->user_id ??= Auth::id();
     });
 
     static::updating(function (self $model): void {
-      $model->updated_by = Auth::id();
+      $model->updated_user_id = Auth::id();
+    });
+
+    static::deleting(function (self $model): void {
+      $model->updated_user_id = Auth::id();
     });
   }
 
@@ -48,12 +52,12 @@ class LeadQualityProvider extends Model
 
   public function creator(): BelongsTo
   {
-    return $this->belongsTo(User::class, 'created_by');
+    return $this->belongsTo(User::class, 'user_id');
   }
 
   public function updater(): BelongsTo
   {
-    return $this->belongsTo(User::class, 'updated_by');
+    return $this->belongsTo(User::class, 'updated_user_id');
   }
 
   /**

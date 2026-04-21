@@ -29,8 +29,8 @@ class LeadQualityValidationRule extends Model
     'description',
     'settings',
     'priority',
-    'created_by',
-    'updated_by',
+    'user_id',
+    'updated_user_id',
   ];
 
   protected $casts = [
@@ -49,11 +49,15 @@ class LeadQualityValidationRule extends Model
       if (empty($model->slug)) {
         $model->slug = static::uniqueSlug($model->name);
       }
-      $model->created_by ??= Auth::id();
+      $model->user_id ??= Auth::id();
     });
 
     static::updating(function (self $model): void {
-      $model->updated_by = Auth::id();
+      $model->updated_user_id = Auth::id();
+    });
+
+    static::deleting(function (self $model): void {
+      $model->updated_user_id = Auth::id();
     });
   }
 
@@ -90,12 +94,12 @@ class LeadQualityValidationRule extends Model
 
   public function creator(): BelongsTo
   {
-    return $this->belongsTo(User::class, 'created_by');
+    return $this->belongsTo(User::class, 'user_id');
   }
 
   public function updater(): BelongsTo
   {
-    return $this->belongsTo(User::class, 'updated_by');
+    return $this->belongsTo(User::class, 'updated_user_id');
   }
 
   public function scopeActive(Builder $query): Builder

@@ -17,8 +17,8 @@ return new class extends Migration {
       $table->text('credentials')->nullable();
       $table->json('settings')->nullable();
       $table->text('notes')->nullable();
-      $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-      $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+      $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+      $table->foreignId('updated_user_id')->nullable()->constrained('users')->nullOnDelete();
       $table->timestamps();
 
       $table->index('type');
