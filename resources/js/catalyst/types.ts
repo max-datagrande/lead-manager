@@ -180,21 +180,27 @@ interface ShareLeadResponse {
 }
 
 /**
- * Options for sendChallenge(). Kicks off a Lead Quality validation flow
+ * Options for requestChallenge(). Kicks off a Lead Quality validation flow
  * (OTP, etc.) against one or more rules associated to the workflow's buyers.
  *
  * - `workflowId` is required.
  * - `leadId` falls back to `visitorData.lead_data.id` when omitted.
  * - `fingerprint` falls back to `visitorData.fingerprint` when omitted.
  * - `to`, `channel`, `locale` are provider-specific delivery options.
+ * - `fields` is an optional merge-update applied to the lead atomically before
+ *   the challenge is issued — saves a separate `updateLead` round-trip when
+ *   the landing wants to persist context (timestamps, UX flags, last-minute
+ *   UTM captures, etc.) alongside the request. If the merge fails, the whole
+ *   request aborts and no challenge is emitted.
  */
-interface SendChallengeOptions {
+interface RequestChallengeOptions {
   workflowId: number | string;
   leadId?: number | string;
   fingerprint?: string;
   to?: string;
   channel?: 'sms' | 'call' | 'email' | 'whatsapp';
   locale?: string;
+  fields?: Record<string, unknown>;
 }
 
 interface ChallengeIssued {
@@ -217,7 +223,7 @@ interface ChallengeError {
  * `challenges` is empty when no rules apply; the caller can proceed with
  * `shareLead()` directly.
  */
-interface SendChallengeResponse {
+interface RequestChallengeResponse {
   success: boolean;
   message: string;
   data: {
@@ -230,7 +236,7 @@ interface SendChallengeResponse {
 
 /**
  * Options for verifyChallenge(). `challengeToken` comes from
- * `SendChallengeResponse.data.challenges[i].challenge_token`.
+ * `RequestChallengeResponse.data.challenges[i].challenge_token`.
  */
 interface VerifyChallengeOptions {
   challengeToken: string;
@@ -287,8 +293,8 @@ export {
   type OfferwallConversionRequest,
   type OfferwallConversionResponse,
   type OfferwallResponse,
-  type SendChallengeOptions,
-  type SendChallengeResponse,
+  type RequestChallengeOptions,
+  type RequestChallengeResponse,
   type ShareLeadOptions,
   type ShareLeadResponse,
   type VerifyChallengeOptions,

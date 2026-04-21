@@ -165,12 +165,12 @@ const dictionary: Dictionary = {
       en: 'Issue and verify a validation challenge (SMS OTP, etc.) before dispatching a lead to a workflow. Required when buyers in the workflow have Lead Quality rules attached. The landing drives the flow: send → user enters code → verify → backend auto-dispatches.',
       es: 'Emite y verifica un challenge de validacion (SMS OTP, etc.) antes de despachar un lead a un workflow. Requerido cuando los buyers del workflow tienen reglas de Lead Quality asociadas. La landing orquesta el flujo: send -> usuario ingresa el codigo -> verify -> el backend auto-despacha.',
     },
-    send_title: { en: 'sendChallenge(options)', es: 'sendChallenge(options)' },
+    send_title: { en: 'requestChallenge(options)', es: 'requestChallenge(options)' },
     send_desc: {
       en: 'Creates a LeadDispatch in PENDING_VALIDATION state and emits a challenge per applicable rule. Returns one challenge_token per rule so the landing can collect the code from the user.',
       es: 'Crea un LeadDispatch en estado PENDING_VALIDATION y emite un challenge por cada regla aplicable. Retorna un challenge_token por regla para que la landing pueda recoger el codigo del usuario.',
     },
-    send_options_title: { en: 'SendChallengeOptions', es: 'SendChallengeOptions' },
+    send_options_title: { en: 'RequestChallengeOptions', es: 'RequestChallengeOptions' },
     send_opt_workflow: {
       en: 'workflowId (required) \u2014 The workflow ID the lead will be dispatched to once verified',
       es: 'workflowId (requerido) \u2014 El ID del workflow al que se despachara el lead una vez verificado',
@@ -195,7 +195,11 @@ const dictionary: Dictionary = {
       en: 'locale (optional) \u2014 Forwarded to the provider to localize the message (e.g., en, es)',
       es: 'locale (opcional) \u2014 Se envia al provider para localizar el mensaje (p. ej. en, es)',
     },
-    send_response_title: { en: 'SendChallengeResponse', es: 'SendChallengeResponse' },
+    send_opt_fields: {
+      en: 'fields (optional) \u2014 Merge-update applied to the lead atomically right before the challenge is issued. Saves a separate updateLead() round-trip when you want to persist timestamps, UX flags or last-minute UTMs. If the merge fails, the whole request aborts and no challenge is emitted.',
+      es: 'fields (opcional) \u2014 Merge-update aplicado al lead de forma atomica justo antes de emitir el challenge. Ahorra un updateLead() extra cuando queres persistir timestamps, flags de UX o UTMs capturadas a ultimo momento. Si el merge falla, toda la request aborta y no se emite el challenge.',
+    },
+    send_response_title: { en: 'RequestChallengeResponse', es: 'RequestChallengeResponse' },
     send_response_desc: {
       en: 'Returns dispatch_id + dispatch_uuid plus a list of issued challenges and non-fatal errors. When challenges is empty AND errors is empty, the workflow has no rules and the landing can proceed straight to shareLead().',
       es: 'Retorna dispatch_id + dispatch_uuid mas una lista de challenges emitidos y errores no fatales. Cuando challenges viene vacio Y errors tambien, el workflow no tiene reglas y la landing puede ir directo a shareLead().',
@@ -207,16 +211,16 @@ const dictionary: Dictionary = {
     },
     verify_options_title: { en: 'VerifyChallengeOptions', es: 'VerifyChallengeOptions' },
     verify_opt_token: {
-      en: 'challengeToken (required) \u2014 The token from SendChallengeResponse.data.challenges[i].challenge_token',
-      es: 'challengeToken (requerido) \u2014 El token devuelto en SendChallengeResponse.data.challenges[i].challenge_token',
+      en: 'challengeToken (required) \u2014 The token from RequestChallengeResponse.data.challenges[i].challenge_token',
+      es: 'challengeToken (requerido) \u2014 El token devuelto en RequestChallengeResponse.data.challenges[i].challenge_token',
     },
     verify_opt_code: {
       en: 'code (required) \u2014 The code the user typed (4-12 characters)',
       es: 'code (requerido) \u2014 El codigo que el usuario ingreso (4-12 caracteres)',
     },
     verify_opt_to: {
-      en: 'to (optional) \u2014 Same destination used in sendChallenge (required by some providers like Twilio Verify)',
-      es: 'to (opcional) \u2014 El mismo destino usado en sendChallenge (requerido por algunos providers como Twilio Verify)',
+      en: 'to (optional) \u2014 Same destination used in requestChallenge (required by some providers like Twilio Verify)',
+      es: 'to (opcional) \u2014 El mismo destino usado en requestChallenge (requerido por algunos providers como Twilio Verify)',
     },
     verify_response_title: { en: 'VerifyChallengeResponse', es: 'VerifyChallengeResponse' },
     verify_response_desc: {
@@ -230,8 +234,8 @@ const dictionary: Dictionary = {
     },
     no_rules_note_title: { en: 'Note: when no rules apply', es: 'Nota: cuando no hay reglas aplicables' },
     no_rules_note_desc: {
-      en: 'If the workflow has no Lead Quality rules attached, sendChallenge() returns { challenges: [], errors: [] } and the landing can call shareLead() directly, skipping verify. This keeps the integration forwards-compatible: adding rules later does not require landing code changes beyond handling the verify step.',
-      es: 'Si el workflow no tiene reglas de Lead Quality asociadas, sendChallenge() retorna { challenges: [], errors: [] } y la landing puede llamar a shareLead() directo, saltando el verify. Esto mantiene la integracion compatible a futuro: agregar reglas mas tarde solo requiere implementar el paso de verify en la landing.',
+      en: 'If the workflow has no Lead Quality rules attached, requestChallenge() returns { challenges: [], errors: [] } and the landing can call shareLead() directly, skipping verify. This keeps the integration forwards-compatible: adding rules later does not require landing code changes beyond handling the verify step.',
+      es: 'Si el workflow no tiene reglas de Lead Quality asociadas, requestChallenge() retorna { challenges: [], errors: [] } y la landing puede llamar a shareLead() directo, saltando el verify. Esto mantiene la integracion compatible a futuro: agregar reglas mas tarde solo requiere implementar el paso de verify en la landing.',
     },
     backend_auto_dispatch_title: {
       en: 'Important: backend auto-dispatches on verify OK',

@@ -9,8 +9,8 @@ import {
   OfferwallConversionRequest,
   OfferwallConversionResponse,
   OfferwallResponse,
-  SendChallengeOptions,
-  SendChallengeResponse,
+  RequestChallengeOptions,
+  RequestChallengeResponse,
   ShareLeadOptions,
   ShareLeadResponse,
   VerifyChallengeOptions,
@@ -497,14 +497,18 @@ class CatalystCore {
    *
    * Canonical landing flow:
    *   1. `catalyst.registerLead({...})`         // lead exists in our DB
-   *   2. `catalyst.sendChallenge({ workflowId, to })`   // user receives SMS
+   *   2. `catalyst.requestChallenge({ workflowId, to })`   // user receives SMS
    *   3. user types the code → `catalyst.verifyChallenge({ challengeToken, code, to })`
    *   4. on `verified: true`, the backend auto-queues the dispatch — no extra call needed.
    *
    * When the workflow has no applicable validation rules, the response comes back with
    * `challenges: []` + `errors: []`; the caller can skip straight to `shareLead()`.
+   *
+   * Passing `fields` merges them onto the lead atomically before the challenge is
+   * issued, saving a separate `updateLead()` round-trip. If the merge fails, the
+   * whole request aborts and no challenge is emitted.
    */
-  async sendChallenge({ workflowId, leadId, fingerprint, to, channel, locale }: SendChallengeOptions): Promise<SendChallengeResponse> {
+  async requestChallenge({ workflowId, leadId, fingerprint, to, channel, locale, fields }: RequestChallengeOptions): Promise<RequestChallengeResponse> {
     const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
     if (!resolvedFingerprint) {
       const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
@@ -527,6 +531,7 @@ class CatalystCore {
     if (to) payload.to = to;
     if (channel) payload.channel = channel;
     if (locale) payload.locale = locale;
+    if (fields && Object.keys(fields).length > 0) payload.fields = fields;
 
     try {
       const res = await fetch(this.getEndpoint('LEAD_QUALITY.CHALLENGE_SEND'), {
@@ -538,7 +543,7 @@ class CatalystCore {
         body: JSON.stringify(payload),
       });
 
-      const json = (await res.json()) as SendChallengeResponse;
+      const json = (await res.json()) as RequestChallengeResponse;
 
       if (!res.ok) {
         const msg = (json as any)?.message ?? `HTTP ${res.status}`;
@@ -552,7 +557,7 @@ class CatalystCore {
 
       return json;
     } catch (error) {
-      console.error('Catalyst SDK: Error sending challenge:', error);
+      console.error('Catalyst SDK: Error requesting challenge:', error);
       this.dispatch('challenge:status', {
         type: 'send',
         success: false,
@@ -819,7 +824,7 @@ async function init(): Promise<void> {
         item.length === 4 &&
         typeof possibleResolve === 'function' &&
         typeof possibleReject === 'function' &&
-        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'sendChallenge', 'verifyChallenge'].includes(method);
+        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'requestChallenge', 'verifyChallenge'].includes(method);
 
       if (isPromiseProxy) {
         const args = Array.from((item[1] as ArrayLike<any>) || []);
