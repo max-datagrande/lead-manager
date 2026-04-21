@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import type { SharedData } from '@/types';
 import type { Integration } from '@/types/ping-post';
 import { Link, usePage } from '@inertiajs/react';
-import { type LucideIcon, AlertTriangle, DollarSign, ExternalLink, GitBranch, RotateCcw, TrendingUp } from 'lucide-react';
+import { type LucideIcon, AlertTriangle, Copy, DollarSign, ExternalLink, GitBranch, RotateCcw, TrendingUp } from 'lucide-react';
 import { route } from 'ziggy-js';
 
 const PRICING_META: Record<string, { icon: LucideIcon; description: string }> = {
@@ -25,14 +25,23 @@ const PRICING_META: Record<string, { icon: LucideIcon; description: string }> = 
   postback: { icon: RotateCcw, description: 'Price confirmed via postback callback' },
 };
 
+interface ExternalPostback {
+  id: number
+  uuid: string
+  name: string
+  param_mappings: Record<string, string>
+  generated_url: string
+}
+
 interface Props {
   integrations?: Integration[];
   priceSources?: Array<{ value: string; label: string }>;
   companies?: Array<{ id: number; name: string }>;
   fields?: { id: number; name: string }[];
+  externalPostbacks?: ExternalPostback[];
 }
 
-export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [] }: Props) {
+export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [], externalPostbacks = [] }: Props) {
   const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers()
   const { auth } = usePage<SharedData>().props
   const isAdmin = auth.user?.role === 'admin';
@@ -289,22 +298,32 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
           )}
 
           {data.price_source === 'postback' && (
-            <div className="space-y-2">
-              <Label htmlFor="postback_pending_days">
-                Postback Window (days)
-                <FieldHint text="Días que el sistema espera que el buyer envíe el postback de confirmación con el precio final. Si no llega dentro de este plazo, el lead se marca automáticamente como no vendido. Máximo 90 días." />
-              </Label>
-              <Input
-                id="postback_pending_days"
-                type="number"
-                min={1}
-                max={90}
-                placeholder="e.g. 15  (máx. 90 días)"
-                value={data.postback_pending_days}
-                onChange={(e) => setData('postback_pending_days', e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="max-w-40"
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="postback_pending_days">
+                  Postback Window (days)
+                  <FieldHint text="Días que el sistema espera que el buyer envíe el postback de confirmación con el precio final. Si no llega dentro de este plazo, el lead se marca automáticamente como no vendido. Máximo 90 días." />
+                </Label>
+                <Input
+                  id="postback_pending_days"
+                  type="number"
+                  min={1}
+                  max={90}
+                  placeholder="e.g. 15  (máx. 90 días)"
+                  value={data.postback_pending_days}
+                  onChange={(e) => setData('postback_pending_days', e.target.value === '' ? '' : parseInt(e.target.value))}
+                  className="max-w-40"
+                />
+              </div>
+
+              {/* ── Pricing Webhook ──────────────────────────────────────────── */}
+              <PricingWebhookSection
+                externalPostbacks={externalPostbacks}
+                pricingPostback={data.pricing_postback}
+                onChange={(value) => setData('pricing_postback', value)}
+                errors={errors}
               />
-            </div>
+            </>
           )}
 
           {data.price_source === 'conditional' && (
@@ -376,4 +395,131 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
       </div>
     </form>
   );
+}
+
+// ─── Pricing Webhook Section ──────────────────────────────────────────────────
+
+interface PricingWebhookProps {
+  externalPostbacks: ExternalPostback[]
+  pricingPostback: { postback_id: number; identifier_token: string; price_token: string } | null
+  onChange: (value: { postback_id: number; identifier_token: string; price_token: string } | null) => void
+  errors: Record<string, string>
+}
+
+function PricingWebhookSection({ externalPostbacks, pricingPostback, onChange, errors }: PricingWebhookProps) {
+  const selectedPostback = externalPostbacks.find((p) => p.id === pricingPostback?.postback_id) ?? null
+  const internalTokens = selectedPostback ? [...new Set(Object.values(selectedPostback.param_mappings))] : []
+
+  const handlePostbackChange = (postbackId: string) => {
+    if (postbackId === 'none') {
+      onChange(null)
+      return
+    }
+    onChange({ postback_id: Number(postbackId), identifier_token: '', price_token: '' })
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <div>
+        <h4 className="text-sm font-medium">Pricing Webhook</h4>
+        <p className="text-muted-foreground text-xs">
+          Vincula un postback externo para recibir la confirmación de precio del buyer. Cuando el partner dispara la URL, el sistema resuelve el
+          precio pendiente automáticamente.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Postback</Label>
+        <Select value={pricingPostback?.postback_id ? String(pricingPostback.postback_id) : 'none'} onValueChange={handlePostbackChange}>
+          <SelectTrigger className="max-w-sm">
+            <SelectValue placeholder="Select a postback..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">No postback</SelectItem>
+            {externalPostbacks.map((p) => (
+              <SelectItem key={p.id} value={String(p.id)}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors['pricing_postback.postback_id'] && <p className="text-sm text-destructive">{errors['pricing_postback.postback_id']}</p>}
+      </div>
+
+      {selectedPostback && pricingPostback && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>
+                Identifier Token
+                <FieldHint text="El token que contiene el fingerprint del lead. Se usa para buscar el PostResult pendiente." />
+              </Label>
+              <Select
+                value={pricingPostback.identifier_token || undefined}
+                onValueChange={(v) => onChange({ ...pricingPostback, identifier_token: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select token..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {internalTokens.map((token) => (
+                    <SelectItem key={token} value={token}>
+                      {token}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors['pricing_postback.identifier_token'] && (
+                <p className="text-sm text-destructive">{errors['pricing_postback.identifier_token']}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>
+                Price Token
+                <FieldHint text="El token que contiene el precio confirmado por el buyer." />
+              </Label>
+              <Select
+                value={pricingPostback.price_token || undefined}
+                onValueChange={(v) => onChange({ ...pricingPostback, price_token: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select token..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {internalTokens.map((token) => (
+                    <SelectItem key={token} value={token}>
+                      {token}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors['pricing_postback.price_token'] && (
+                <p className="text-sm text-destructive">{errors['pricing_postback.price_token']}</p>
+              )}
+            </div>
+          </div>
+
+          {selectedPostback.generated_url && (
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs">Generated URL</Label>
+              <div className="bg-muted flex items-center gap-2 rounded-md p-3">
+                <code className="flex-1 truncate text-xs">{selectedPostback.generated_url}</code>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0"
+                  onClick={() => navigator.clipboard.writeText(selectedPostback.generated_url)}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs">Comparte esta URL con el buyer para recibir confirmaciones de precio.</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
 }

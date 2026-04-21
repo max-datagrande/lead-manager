@@ -66,17 +66,7 @@ class PostService
     $headers = json_decode($this->payloadProcessor->applyReplacements($postEnv->request_headers ?? '{}', $replacements), true) ?? [];
     $method = strtolower($postEnv->method ?? 'post');
 
-    // Async postback: create a pending record immediately
-    if ($config->price_source->isAsync()) {
-      return $this->createRecord($dispatch, $integration, $pingResult, [
-        'status' => PostResultStatus::PENDING_POSTBACK,
-        'price_offered' => $offeredPrice,
-        'request_url' => $requestUrl,
-        'request_payload' => $payload,
-        'request_headers' => $headers,
-        'postback_expires_at' => now()->addDays($config->postback_pending_days),
-      ]);
-    }
+    $isAsyncPricing = $config->price_source->isAsync();
 
     $startMs = microtime(true);
 
@@ -98,13 +88,13 @@ class PostService
         'duration_ms' => $durationMs,
       ];
 
-      // 1. HTTP-level error (5xx, invalid JSON)
+      // 1. HTTP-level error (5xx, invalid JSON) — transient, retry
       $errorCheck = HttpResponseInspector::detectError($response);
       if ($errorCheck['is_error']) {
-        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $errorCheck['reason']);
+        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $errorCheck['reason'], retry: true);
       }
 
-      // 2. Configured error path match
+      // 2. Configured error path match — deterministic, no retry
       $responseConfig = $postEnv->response_config;
       $configError = HttpResponseInspector::detectConfiguredError(
         $response->json() ?? [],
@@ -113,17 +103,72 @@ class PostService
         $responseConfig?->error_reason_path,
       );
       if ($configError['is_error']) {
-        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $configError['reason']);
+        $reason = $configError['reason'];
+        $excludes = $responseConfig?->error_excludes;
+        $isExcluded = HttpResponseInspector::isExcludedError($reason, $excludes);
+
+        // Excluded (expected) error → treat as rejection, no alert, no retry
+        if ($isExcluded) {
+          $postResult = $this->createRecord(
+            $dispatch,
+            $integration,
+            $pingResult,
+            array_merge($baseData, [
+              'status' => PostResultStatus::REJECTED,
+              'rejection_reason' => $reason,
+            ]),
+          );
+
+          $this->timeline?->log(DispatchTimelineService::POST_RESULT, "Buyer '{$integration->name}': excluded error — {$reason}", [
+            'integration_id' => $integration->id,
+            'post_result_id' => $postResult->id,
+            'excluded_error' => true,
+          ]);
+
+          return $postResult;
+        }
+
+        return $this->handleErrorResult($dispatch, $integration, $pingResult, $baseData, $reason, retry: false);
       }
 
       // 3. Normal accepted/rejected evaluation
       $accepted = $this->isAccepted($response, $responseConfig);
       $rejectionReason = $this->extractRejectionReason($response, $responseConfig);
 
+      // Async pricing: buyer accepted the lead but price comes later via postback
+      if ($accepted && $isAsyncPricing) {
+        return $this->createRecord($dispatch, $integration, $pingResult, [
+          'status' => PostResultStatus::PENDING_POSTBACK,
+          'price_offered' => $offeredPrice,
+          'http_status_code' => $response->status(),
+          'request_url' => $requestUrl,
+          'request_payload' => $payload,
+          'request_headers' => $headers,
+          'response_body' => $response->json() ?? ['raw' => $response->body()],
+          'duration_ms' => $durationMs,
+          'postback_expires_at' => now()->addDays($config->postback_pending_days),
+        ]);
+      }
+
+      $priceFinal = $accepted ? $offeredPrice : null;
+
+      // Extract bid price from POST response when bid_price_path is configured
+      if ($accepted && $responseConfig?->bid_price_path) {
+        $extractedPrice = $this->extractBidFromResponse($response, $responseConfig);
+        if ($extractedPrice !== null) {
+          $priceFinal = $extractedPrice;
+          $this->timeline?->log(
+            DispatchTimelineService::PRICE_EXTRACTED_FROM_POST,
+            "Extracted price \${$extractedPrice} from post response for '{$integration->name}'",
+            ['integration_id' => $integration->id, 'extracted_price' => $extractedPrice],
+          );
+        }
+      }
+
       return $this->createRecord($dispatch, $integration, $pingResult, [
         'status' => $accepted ? PostResultStatus::ACCEPTED : PostResultStatus::REJECTED,
         'price_offered' => $offeredPrice,
-        'price_final' => $accepted ? $offeredPrice : null,
+        'price_final' => $priceFinal,
         'http_status_code' => $response->status(),
         'request_url' => $requestUrl,
         'request_payload' => $payload,
@@ -171,7 +216,8 @@ class PostService
   }
 
   /**
-   * Handle a detected error: create ERROR result, log to timeline, dispatch alert, queue retry.
+   * Handle a detected error: create ERROR result, log to timeline, dispatch alert.
+   * Only queues retry for transient errors (HTTP 5xx, network), not for configured error path matches.
    */
   private function handleErrorResult(
     LeadDispatch $dispatch,
@@ -179,6 +225,7 @@ class PostService
     ?PingResult $pingResult,
     array $baseData,
     string $reason,
+    bool $retry = false,
   ): PostResult {
     $postResult = $this->createRecord($dispatch, $integration, $pingResult, $baseData);
 
@@ -198,7 +245,9 @@ class PostService
       ],
     ]);
 
-    RetryPostJob::dispatch($postResult->id)->delay(3);
+    if ($retry) {
+      RetryPostJob::dispatch($postResult->id)->delay(3);
+    }
 
     return $postResult;
   }
@@ -215,6 +264,19 @@ class PostService
     $actual = Arr::get($response->json() ?? [], $acceptedPath);
 
     return (string) $actual === (string) $acceptedValue;
+  }
+
+  private function extractBidFromResponse(Response $response, ?PostResponseConfig $config): ?float
+  {
+    $path = $config?->bid_price_path;
+
+    if (!$path) {
+      return null;
+    }
+
+    $value = Arr::get($response->json() ?? [], $path);
+
+    return is_numeric($value) ? (float) $value : null;
   }
 
   private function extractRejectionReason(Response $response, ?PostResponseConfig $config): ?string

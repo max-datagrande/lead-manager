@@ -12,8 +12,9 @@ function formatRelativeMs(ms: number): string {
 }
 
 function parseTimestamp(ts: string): number {
-  // Handle microsecond precision: "2026-04-07 16:13:00.123456"
-  return new Date(ts.replace(' ', 'T') + 'Z').getTime()
+  // Normalize to ISO: handle "2026-04-07 16:13:00.123456" and "2026-04-07T16:13:00.000000Z"
+  const normalized = ts.replace(' ', 'T')
+  return new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z').getTime()
 }
 
 interface EntryProps {

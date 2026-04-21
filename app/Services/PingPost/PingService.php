@@ -84,7 +84,29 @@ class PingService
         $responseConfig?->error_reason_path,
       );
       if ($configError['is_error']) {
-        return $this->handleErrorResult($dispatch, $integration, $baseData, $configError['reason']);
+        $reason = $configError['reason'];
+        $excludes = $responseConfig?->error_excludes;
+        $isExcluded = HttpResponseInspector::isExcludedError($reason, $excludes);
+
+        // Excluded (expected) error → treat as rejection, no alert
+        if ($isExcluded) {
+          $pingResult = PingResult::create(
+            array_merge($baseData, [
+              'status' => PingResultStatus::REJECTED,
+              'bid_price' => null,
+            ]),
+          );
+
+          $this->timeline?->log(DispatchTimelineService::PING_RESULT, "Buyer '{$integration->name}': excluded error — {$reason}", [
+            'integration_id' => $integration->id,
+            'ping_result_id' => $pingResult->id,
+            'excluded_error' => true,
+          ]);
+
+          return $pingResult;
+        }
+
+        return $this->handleErrorResult($dispatch, $integration, $baseData, $reason);
       }
 
       // 3. Normal accepted/rejected evaluation

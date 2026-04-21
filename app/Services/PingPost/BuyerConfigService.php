@@ -19,6 +19,23 @@ class BuyerConfigService
     return $config->fresh();
   }
 
+  /**
+   * Sync the pricing postback pivot for a buyer config.
+   *
+   * @param  array{postback_id: int, identifier_token: string, price_token: string}|null  $data
+   */
+  public function syncPricingPostback(BuyerConfig $config, ?array $data): void
+  {
+    $config->pricingPostback()->detach();
+
+    if ($data && isset($data['postback_id'])) {
+      $config->pricingPostback()->attach($data['postback_id'], [
+        'identifier_token' => $data['identifier_token'],
+        'price_token' => $data['price_token'],
+      ]);
+    }
+  }
+
   public function deleteConfig(BuyerConfig $config): void
   {
     $config->delete();

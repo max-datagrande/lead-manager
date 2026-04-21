@@ -8,6 +8,7 @@ const POST_ONLY_FIELDS = [
   { key: 'accepted_path', label: 'Accepted Path', placeholder: 'e.g. result' },
   { key: 'accepted_value', label: 'Accepted Value', placeholder: 'e.g. success / true / 1' },
   { key: 'rejected_path', label: 'Rejected Path', placeholder: 'e.g. error_message' },
+  { key: 'bid_price_path', label: 'Bid Price Path', placeholder: 'e.g. price or data.bid_amount' },
 ];
 
 const ERROR_PATH_FIELDS = [
@@ -49,6 +50,11 @@ export function PostOnlyResponseConfig({ env }) {
                 value={responseConfig[field.key] ?? ''}
                 onChange={(e) => handleChange(field.key, e.target.value)}
               />
+              {field.key === 'bid_price_path' && (
+                <p className="text-xs text-muted-foreground">
+                  JSON path to extract the price from the POST response. Used when price source is "Response Bid" on post-only integrations.
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -74,6 +80,13 @@ export function PostOnlyResponseConfig({ env }) {
             <Label>Error Reason Path</Label>
             <TagInput value={parseReasonPaths(responseConfig.error_reason_path)} onChange={(paths) => handleChange('error_reason_path', paths)} />
             <p className="text-xs text-muted-foreground">JSON paths to extract the error message. Checked in order, first match wins.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Error Excludes</Label>
+            <TagInput value={responseConfig.error_excludes ?? []} onChange={(excludes) => handleChange('error_excludes', excludes)} />
+            <p className="text-xs text-muted-foreground">
+              Substrings to match against the error reason. Matching errors are treated as rejections (no alert). E.g. "duplicate", "cap reached".
+            </p>
           </div>
         </div>
       </CardContent>

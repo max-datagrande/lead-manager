@@ -18,12 +18,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $accepted_path
  * @property string|null $accepted_value
  * @property string|null $lead_id_path
+ * @property string|null $error_path
+ * @property string|null $error_value
+ * @property string|null $error_reason_path
+ * @property array|null $error_excludes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
 class PingResponseConfig extends Model
 {
   protected $guarded = [];
+
+  protected $casts = [
+    'error_excludes' => 'array',
+  ];
 
   /**
    * Get the integration environment that owns this config.

@@ -71,6 +71,12 @@ function ActionsCell({ row, table }: CellContext<LeadDispatch, unknown>) {
 }
 
 export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ActionsCell,
+    enableSorting: false,
+  },
   // Filter-only columns — no visible output, needed so TanStack recognises the filter ids
   { id: 'workflow_id', accessorKey: 'workflow_id', header: () => null, cell: () => null, enableHiding: false, size: 0, minSize: 0, maxSize: 0 },
   {
@@ -88,7 +94,7 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
     cell: ({ row }) => (
-      <Link href={route('ping-post.dispatches.show', row.original.id)} className="font-mono text-xs hover:underline">
+      <Link href={route('ping-post.dispatches.show', row.original.id)} className="font-mono text-xs hover:underline px-2">
         #{row.original.id}
       </Link>
     ),
@@ -97,13 +103,13 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
   {
     accessorKey: 'fingerprint',
     header: 'Fingerprint',
-    cell: ({ cell }) => <span className="font-mono text-xs text-muted-foreground">{String(cell.getValue()).slice(0, 12)}…</span>,
+    cell: ({ cell }) => <span className="font-mono text-xs text-muted-foreground whitespace-nowrap max-w-25 text-ellipsis block overflow-hidden">{String(cell.getValue())}</span>,
     enableSorting: false,
   },
   {
     accessorKey: 'workflow',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Workflow" />,
-    cell: ({ row }) => <span className="text-sm">{row.original.workflow?.name ?? `#${row.original.workflow_id}`}</span>,
+    cell: ({ row }) => <span className="text-sm whitespace-nowrap">{row.original.workflow?.name ?? `#${row.original.workflow_id}`}</span>,
     enableSorting: true,
   },
   {
@@ -134,7 +140,7 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
   {
     accessorKey: 'winner_integration',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Winner" />,
-    cell: ({ row }) => <span className="text-sm">{row.original.winner_integration?.name ?? '—'}</span>,
+    cell: ({ row }) => <span className="text-sm whitespace-nowrap">{row.original.winner_integration?.name ?? '—'}</span>,
     enableSorting: true,
   },
   {
@@ -166,11 +172,5 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
     cell: ({ cell }) => <FormattedDateTime date={cell.getValue<string>()} />,
     enableSorting: true,
-  },
-  {
-    id: 'actions',
-    header: 'Actions',
-    cell: ActionsCell,
-    enableSorting: false,
-  },
+  }
 ];

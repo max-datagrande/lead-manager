@@ -44,6 +44,10 @@ class StoreBuyerConfigRequest extends FormRequest
       'conditional_pricing_rules.*.conditions.*.value' => ['required'],
       'conditional_pricing_rules.*.price' => ['required', 'numeric', 'min:0'],
       'postback_pending_days' => $this->input('price_source') === 'postback' ? ['required', 'integer', 'min:1', 'max:90'] : ['exclude'],
+      'pricing_postback' => $this->input('price_source') === 'postback' ? ['nullable', 'array'] : ['exclude'],
+      'pricing_postback.postback_id' => ['required_with:pricing_postback', 'integer', 'exists:postbacks,id'],
+      'pricing_postback.identifier_token' => ['required_with:pricing_postback', 'string', 'max:100'],
+      'pricing_postback.price_token' => ['required_with:pricing_postback', 'string', 'max:100'],
       'sell_on_zero_price' => ['boolean'],
     ];
   }

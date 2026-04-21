@@ -11,6 +11,7 @@ enum InternalToken: string
   case STATUS = 'status';
   case SOURCE = 'source';
   case CAMPAIGN_ID = 'campaign_id';
+  case FINGERPRINT = 'fingerprint';
 
   public function label(): string
   {
@@ -22,6 +23,7 @@ enum InternalToken: string
       self::STATUS => 'Status',
       self::SOURCE => 'Source',
       self::CAMPAIGN_ID => 'Campaign ID',
+      self::FINGERPRINT => 'Fingerprint',
     };
   }
 
