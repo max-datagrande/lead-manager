@@ -88,6 +88,30 @@ class LeadService
   }
 
   /**
+   * Build the point-in-time snapshot fields that a `LeadDispatch` needs:
+   * a `field_id => value` map of the lead's current responses plus the
+   * latest `utm_source` from the traffic log for the same fingerprint.
+   *
+   * Called both when a dispatch is first created (e.g. `PENDING_VALIDATION`
+   * via ChallengeIssuerService) and when it transitions to `RUNNING`
+   * (via DispatchOrchestrator) — the later call intentionally overwrites
+   * the earlier one so the buyer-facing snapshot reflects the lead state
+   * at delivery time, while failed-validation dispatches retain the
+   * original snapshot for audit.
+   *
+   * @return array{lead_snapshot: array<int, mixed>, utm_source: ?string}
+   */
+  public function buildDispatchSnapshot(Lead $lead, string $fingerprint): array
+  {
+    $lead->loadMissing('leadFieldResponses');
+
+    return [
+      'lead_snapshot' => $lead->leadFieldResponses->pluck('value', 'field_id')->toArray(),
+      'utm_source' => TrafficLog::where('fingerprint', $fingerprint)->latest('visit_date')->value('utm_source'),
+    ];
+  }
+
+  /**
    * Resolve a `Lead` for an inbound request, fingerprint-first.
    *
    * Priority:
