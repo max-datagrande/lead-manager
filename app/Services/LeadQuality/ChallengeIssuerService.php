@@ -10,6 +10,7 @@ use App\Models\LeadDispatch;
 use App\Models\LeadQualityValidationLog;
 use App\Models\LeadQualityValidationRule;
 use App\Models\Workflow;
+use App\Services\LeadService;
 use App\Services\PingPost\DispatchTimelineService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
@@ -25,7 +26,11 @@ use Illuminate\Support\Facades\Log;
  */
 class ChallengeIssuerService
 {
-  public function __construct(private readonly LeadQualityProviderResolver $resolver, private readonly DispatchTimelineService $timeline) {}
+  public function __construct(
+    private readonly LeadQualityProviderResolver $resolver,
+    private readonly DispatchTimelineService $timeline,
+    private readonly LeadService $leadService,
+  ) {}
 
   /**
    * Issue validation challenges for a workflow + lead pair.
@@ -49,10 +54,19 @@ class ChallengeIssuerService
   {
     $rules = $this->resolveApplicableRules($workflow);
 
+    // Seed the snapshot at challenge-request time so VALIDATION_FAILED
+    // dispatches retain an audit trail of what the lead looked like when
+    // OTP was requested. If this dispatch eventually transitions to RUNNING,
+    // the orchestrator will overwrite with a fresh snapshot taken at
+    // delivery time.
+    $snapshot = $this->leadService->buildDispatchSnapshot($lead, $fingerprint);
+
     $dispatch = LeadDispatch::create([
       'workflow_id' => $workflow->id,
       'lead_id' => $lead->id,
       'fingerprint' => $fingerprint,
+      'lead_snapshot' => $snapshot['lead_snapshot'],
+      'utm_source' => $snapshot['utm_source'],
       'status' => DispatchStatus::PENDING_VALIDATION,
       'strategy_used' => $workflow->strategy?->value,
       'started_at' => now(),
@@ -194,6 +208,13 @@ class ChallengeIssuerService
       ->whereHas('buyers', fn($q) => $q->whereIn('integrations.id', $integrationIds)->where('buyer_validation_rule.is_enabled', true))
       ->with('provider')
       ->get()
+      // Only async validation types (OTP phone/email) produce a user-facing
+      // challenge. Sync types (phone_lookup, email_reputation, ipqs_score) are
+      // evaluated at dispatch time — they have no code to send/verify. Including
+      // them here would route them through sendChallenge and produce spurious
+      // "Invalid parameter" errors from the provider.
+      ->filter(fn(LeadQualityValidationRule $rule) => $rule->isAsync())
+      ->values()
       ->unique('id');
   }
 
