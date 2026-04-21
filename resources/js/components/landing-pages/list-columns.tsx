@@ -12,7 +12,7 @@ const StatusBadge = ({ isActive }) => (
 );
 
 const ActionsCell = ({ row }) => {
-  const { showEditModal, showDeleteModal, showEditVersionsModal } = useLandings();
+  const { showEditModal, showDeleteModal, showVersions } = useLandings();
   const entry = row.original;
   return (
     <div className="flex items-center gap-2">
@@ -27,7 +27,7 @@ const ActionsCell = ({ row }) => {
       >
         <Trash2 className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => showEditVersionsModal(entry)} className="h-8 w-8 p-0">
+      <Button variant="ghost" size="sm" onClick={() => showVersions(entry)} className="h-8 w-8 p-0">
         <SquareArrowOutUpRight className="h-4 w-4" />
       </Button>
     </div>

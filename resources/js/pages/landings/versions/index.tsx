@@ -1,5 +1,5 @@
 import { LandingPagesVersionsActions } from '@/components/landing-versions';
-import { TableLandingPagesVersions } from '@/components/landing-versions/table-landing-pages-version';
+import { TableLandingPagesVersions } from '@/components/landing-versions/table-versions';
 import PageHeader from '@/components/page-header';
 import { LandingPagesVersionProvider } from '@/context/landing-version-provider';
 import AppLayout from '@/layouts/app-layout';

@@ -39,7 +39,7 @@ export function LandingPagesProvider({ children, verticals, companies }) {
     }
   };
 
-  const showEditVersionsModal = async (entry) => {
+  const showVersions = async (entry) => {
    router.get(
          route('landing_pages.versions.index', {
            landing_page: entry.id,
@@ -76,7 +76,7 @@ export function LandingPagesProvider({ children, verticals, companies }) {
         setCurrentRow,
         showCreateModal,
         showEditModal,
-        showEditVersionsModal,
+        showVersions,
         showDeleteModal,
         resetTrigger,
         setResetTrigger,
