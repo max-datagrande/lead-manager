@@ -35,6 +35,11 @@ class TwilioVerifyProvider implements LeadQualityProviderInterface
       return ChallengeResult::failure($this->credentialError($creds, $to));
     }
 
+    // Landings often submit phone fields as raw digits ("9542353075"); Twilio
+    // requires E.164. Auto-prefix US (our default market) when the shape matches
+    // — anything else falls through and Twilio will reject with a clear 400.
+    $to = $this->normalizeDestination((string) $to, (string) $channel);
+
     $url = self::API_BASE . '/Services/' . $creds['verify_service_sid'] . '/Verifications';
     $body = ['To' => (string) $to, 'Channel' => (string) $channel];
 
@@ -90,6 +95,10 @@ class TwilioVerifyProvider implements LeadQualityProviderInterface
     if (!$to || !$this->hasCredentials($creds)) {
       return VerifyResult::failure($this->credentialError($creds, $to));
     }
+
+    // Twilio requires the exact same `To` used in the original Verification,
+    // so we must run the same normalization here — email addresses pass through.
+    $to = $this->normalizeDestination((string) $to, null);
 
     $url = self::API_BASE . '/Services/' . $creds['verify_service_sid'] . '/VerificationCheck';
     $body = ['To' => (string) $to, 'Code' => $code];
@@ -204,6 +213,48 @@ class TwilioVerifyProvider implements LeadQualityProviderInterface
       $json = $response->json() ?? [];
       throw new \RuntimeException($json['message'] ?? "Twilio returned HTTP {$response->status()} while updating friendly name.");
     }
+  }
+
+  /**
+   * Coerce a phone destination into E.164 when the caller sent it in national
+   * format. Email addresses and already-prefixed numbers pass through. Unknown
+   * shapes fall through too — we'd rather Twilio reject with a precise error
+   * than guess wrong and send an SMS to the wrong country.
+   *
+   * The default market is US because that's >95% of current traffic. Landings
+   * needing non-US numbers must send the `+` prefix explicitly.
+   */
+  private function normalizeDestination(string $to, ?string $channel): string
+  {
+    $to = trim($to);
+    if ($to === '') {
+      return $to;
+    }
+
+    // Email channel (or anything that looks like an email) — leave it alone.
+    if ($channel === 'email' || str_contains($to, '@')) {
+      return $to;
+    }
+
+    if (str_starts_with($to, '+')) {
+      return $to;
+    }
+
+    $digits = preg_replace('/\D/', '', $to) ?? '';
+    if ($digits === '') {
+      return $to;
+    }
+
+    // US default: 10-digit local → +1XXXXXXXXXX; 11-digit starting with 1 → +1XXXXXXXXXX.
+    if (strlen($digits) === 10) {
+      return '+1' . $digits;
+    }
+    if (strlen($digits) === 11 && str_starts_with($digits, '1')) {
+      return '+' . $digits;
+    }
+
+    // Unrecognized shape — pass through unchanged.
+    return $to;
   }
 
   /**
