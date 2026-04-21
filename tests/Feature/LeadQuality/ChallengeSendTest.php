@@ -156,5 +156,42 @@ test('send returns 502 and marks dispatch VALIDATION_FAILED when every provider 
 test('send validates required fields', function () {
   $response = postJson('/v1/lead-quality/challenge/send', [], leadQualityHostHeader());
   $response->assertStatus(422);
-  $response->assertJsonValidationErrors(['workflow_id', 'lead_id', 'fingerprint']);
+  // lead_id is now optional — the controller resolves the lead from fingerprint
+  // when it's missing, so only workflow_id + fingerprint are strictly required.
+  $response->assertJsonValidationErrors(['workflow_id', 'fingerprint']);
+});
+
+test('send resolves the lead from fingerprint when lead_id is omitted', function () {
+  Http::fake([
+    'verify.twilio.com/*/Verifications' => Http::response(['sid' => 'VE' . str_repeat('a', 32), 'status' => 'pending'], 201),
+  ]);
+
+  $provider = makeLeadQualityTwilioProvider();
+  [$workflow] = makeWorkflowWithBuyerAndRule($provider);
+
+  // Seed both the traffic log and the lead so resolveLead's fingerprint path
+  // finds a real lead to attach the dispatch to — mirrors what an actual
+  // landing produces via the visitor-register flow.
+  $fingerprint = 'fp-resolve-by-fingerprint';
+  \App\Models\TrafficLog::factory()->create(['fingerprint' => $fingerprint, 'is_bot' => false]);
+  $lead = Lead::factory()->create(['fingerprint' => $fingerprint]);
+
+  $response = postJson(
+    '/v1/lead-quality/challenge/send',
+    [
+      'workflow_id' => $workflow->id,
+      'fingerprint' => $fingerprint,
+      'to' => '+15555551234',
+      'channel' => 'sms',
+    ],
+    leadQualityHostHeader(),
+  );
+
+  $response->assertOk();
+  $response->assertJsonPath('success', true);
+  expect($response->json('data.challenges'))->toHaveCount(1);
+
+  // The dispatch was created attached to the lead we seeded, not a fresh one.
+  $dispatch = LeadDispatch::findOrFail($response->json('data.dispatch_id'));
+  expect($dispatch->lead_id)->toBe($lead->id);
 });
