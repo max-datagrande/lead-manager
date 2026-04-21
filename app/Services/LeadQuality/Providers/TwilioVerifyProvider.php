@@ -169,6 +169,44 @@ class TwilioVerifyProvider implements LeadQualityProviderInterface
   }
 
   /**
+   * Pushes a new FriendlyName to the Verify Service via `POST /Services/{sid}`.
+   * Concrete-only (not in the interface) — it's Twilio-specific config. Throws
+   * on Twilio errors so the caller can show a warning while keeping the local
+   * save intact.
+   */
+  public function syncFriendlyName(LeadQualityProvider $provider, string $friendlyName): void
+  {
+    $creds = $provider->credentials ?? [];
+
+    if (!$this->hasCredentials($creds)) {
+      throw new \RuntimeException('Twilio credentials are incomplete; cannot sync friendly name.');
+    }
+
+    $url = self::API_BASE . '/Services/' . $creds['verify_service_sid'];
+    $body = ['FriendlyName' => $friendlyName];
+
+    $response = $this->recorder->record(
+      fn(): Response => Http::withBasicAuth($creds['account_sid'], $creds['auth_token'])->asForm()->acceptJson()->timeout(10)->post($url, $body),
+      [
+        'module' => 'lead_quality',
+        'service_name' => 'twilio_verify',
+        'service_id' => $provider->id,
+        'operation' => 'sync_friendly_name',
+        'loggable' => $provider,
+        'request_method' => 'POST',
+        'request_url' => $url,
+        'request_body' => $body,
+        'request_headers' => ['Authorization' => 'Basic ***'],
+      ],
+    );
+
+    if (!$response->successful()) {
+      $json = $response->json() ?? [];
+      throw new \RuntimeException($json['message'] ?? "Twilio returned HTTP {$response->status()} while updating friendly name.");
+    }
+  }
+
+  /**
    * @param  array<string, mixed>  $creds
    */
   private function hasCredentials(array $creds): bool

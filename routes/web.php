@@ -13,6 +13,7 @@ use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
 use App\Http\Controllers\OfferwallController;
 use App\Http\Controllers\PerformanceController;
+use App\Http\Controllers\LeadQuality\LeadQualityController;
 use App\Http\Controllers\LeadQuality\ProviderController as LeadQualityProviderController;
 use App\Http\Controllers\LeadQuality\ProviderTestController as LeadQualityProviderTestController;
 use App\Http\Controllers\LeadQuality\ValidationLogController as LeadQualityValidationLogController;
@@ -213,9 +214,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('lead-quality.')
     ->middleware(['role:admin,manager'])
     ->group(function () {
+      Route::get('/', [LeadQualityController::class, 'index'])->name('index');
       Route::post('providers/{provider}/test', [LeadQualityProviderTestController::class, 'test'])
         ->whereNumber('provider')
         ->name('providers.test');
+      Route::post('providers/{provider}/test-send', [LeadQualityProviderTestController::class, 'testSendOtp'])
+        ->whereNumber('provider')
+        ->name('providers.test-send');
+      Route::post('providers/{provider}/test-verify', [LeadQualityProviderTestController::class, 'testVerifyOtp'])
+        ->whereNumber('provider')
+        ->name('providers.test-verify');
       Route::resource('providers', LeadQualityProviderController::class)
         ->except(['show'])
         ->whereNumber('provider');
