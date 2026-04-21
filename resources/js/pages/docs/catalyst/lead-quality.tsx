@@ -10,16 +10,18 @@ const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Lead Quality', href: '/docs/catalyst/lead-quality' },
 ];
 
-const SEND_OPTIONS_TYPE = `interface SendChallengeOptions {
+const SEND_OPTIONS_TYPE = `interface RequestChallengeOptions {
   workflowId: number | string
   leadId?: number | string        // Fallback: visitorData.lead_data.id
   fingerprint?: string             // Fallback: visitorData.fingerprint
   to?: string                      // Destination (phone E.164 / email)
   channel?: 'sms' | 'call' | 'email' | 'whatsapp'
   locale?: string                  // e.g. 'en', 'es'
+  fields?: Record<string, unknown> // Optional merge-update to the lead before
+                                   // the challenge is issued (atomic)
 }`;
 
-const SEND_RESPONSE_TYPE = `interface SendChallengeResponse {
+const SEND_RESPONSE_TYPE = `interface RequestChallengeResponse {
   success: boolean
   message: string
   data: {
@@ -42,9 +44,9 @@ const SEND_RESPONSE_TYPE = `interface SendChallengeResponse {
 }`;
 
 const VERIFY_OPTIONS_TYPE = `interface VerifyChallengeOptions {
-  challengeToken: string            // From SendChallengeResponse
+  challengeToken: string            // From RequestChallengeResponse
   code: string                      // User-entered code
-  to?: string                       // Same destination as sendChallenge
+  to?: string                       // Same destination as requestChallenge
 }`;
 
 const VERIFY_RESPONSE_TYPE = `interface VerifyChallengeResponse {
@@ -74,11 +76,12 @@ const BASIC_EXAMPLE = `Catalyst.on('ready', async () => {
     phone: '+15555551234',
   })
 
-  // 2. Issue the challenge
-  const { data } = await Catalyst.sendChallenge({
+  // 2. Issue the challenge (and optionally persist last-minute fields)
+  const { data } = await Catalyst.requestChallenge({
     workflowId: 42,
     to: '+15555551234',
     channel: 'sms',
+    fields: { requested_at: new Date().toISOString() },
   })
 
   if (data.challenges.length === 0) {
@@ -153,6 +156,7 @@ export default function LeadQuality() {
             <li>{t('lead_quality.send_opt_to')}</li>
             <li>{t('lead_quality.send_opt_channel')}</li>
             <li>{t('lead_quality.send_opt_locale')}</li>
+            <li>{t('lead_quality.send_opt_fields')}</li>
           </ul>
         </div>
 
