@@ -39,8 +39,11 @@ export interface ProviderDetail {
   status: ProviderStatusValue;
   is_enabled: boolean;
   environment: ProviderEnvironmentValue;
-  credentials: Record<string, string>;
+  safe_credentials: Record<string, string>;
+  credential_status: Record<string, boolean>;
+  credential_lengths: Record<string, number>;
   settings: Record<string, string | number | boolean | null | string[]>;
+  friendly_name: string;
   notes: string | null;
 }
 
