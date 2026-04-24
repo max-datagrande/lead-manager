@@ -173,7 +173,7 @@ export interface LeadDispatch {
   fingerprint: string;
   lead_snapshot?: Record<string, string> | null;
   utm_source?: string | null;
-  status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout';
+  status: 'pending' | 'running' | 'sold' | 'not_sold' | 'error' | 'timeout' | 'pending_validation' | 'validation_failed';
   strategy_used: string;
   attempt: number;
   parent_dispatch_id: number | null;
