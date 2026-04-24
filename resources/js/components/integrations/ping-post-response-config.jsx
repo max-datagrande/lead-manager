@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FieldHint } from '@/components/ui/field-hint';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import TagInput from '@/components/ui/tag-input.jsx';
 import { useIntegrations } from '@/hooks/use-integrations';
 
@@ -37,6 +38,11 @@ const POST_HINTS = {
     'JSON path to a rejection reason the buyer returns on a non-error rejection (e.g. {"status":"rejected","reason":"out of coverage area"}).',
     'Only read in step 3 of parsing, after HTTP errors and configured error_path have already been ruled out. The extracted string is persisted to post_results.rejection_reason and surfaced in timeline and logs.',
     'Does not affect the accepted / rejected / error decision — pure metadata. Leave empty when the buyer API has no such field; errors already carry their reason through Error Reason Path.',
+  ],
+  bid_price_path: [
+    'JSON path to the actual revenue returned by the buyer after the post (e.g. "rev" or "data.price").',
+    'When the post is accepted and this path is set, the extracted number becomes the final price on the post result. The Bid Price from the ping is kept as the offered price for drift tracking, and a price-extracted event is logged to the timeline.',
+    'Useful when the buyer decides final pricing server-side — e.g. MediaAlpha selling to a different buyer than the top ping bid, shared sales summing revenue across multiple buyers, or last-minute price adjustments. Leave empty to trust the ping bid as-is.',
   ],
 };
 
@@ -76,6 +82,41 @@ const ERROR_PATH_FIELDS = [
   { key: 'error_path', label: 'Error Path', placeholder: 'e.g. error / status' },
   { key: 'error_value', label: 'Error Value', placeholder: 'e.g. failed — leave empty for truthy check' },
 ];
+
+function PriceOverrideSection({ env, responseConfig, handleChange }) {
+  const enabled = responseConfig.bid_price_path !== null && responseConfig.bid_price_path !== undefined;
+
+  const toggle = (on) => {
+    handleChange('bid_price_path', on ? '' : null);
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-dashed p-4">
+      <div className="flex items-center justify-between gap-3">
+        <Label htmlFor={`post-${env}-override-pricing`} className="flex cursor-pointer items-center text-sm font-medium">
+          Override pricing from post response?
+          <FieldHint text={POST_HINTS.bid_price_path} />
+        </Label>
+        <Switch id={`post-${env}-override-pricing`} checked={enabled} onCheckedChange={toggle} />
+      </div>
+      {enabled && (
+        <div className="space-y-2">
+          <Label htmlFor={`post-${env}-bid-price-path`}>Bid Price Path</Label>
+          <Input
+            id={`post-${env}-bid-price-path`}
+            placeholder="e.g. rev"
+            value={responseConfig.bid_price_path ?? ''}
+            onChange={(e) => handleChange('bid_price_path', e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Extracted value becomes the final price on the post result. The Bid Price from the ping is kept as the offered price so you can track
+            drift.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Parse error_reason_path from DB string (pipe-separated) to array for TagInput.
@@ -128,6 +169,7 @@ export function PingPostResponseConfig({ envType, env }) {
             </div>
           ))}
         </div>
+        {envType === 'post' && <PriceOverrideSection env={env} responseConfig={responseConfig} handleChange={handleChange} />}
         <div className="space-y-4">
           <div>
             <p className="text-sm font-medium">Error Detection</p>
