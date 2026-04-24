@@ -205,6 +205,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::post('dispatches/{dispatch}/retry', [LeadDispatchLogController::class, 'retry'])
         ->whereNumber('dispatch')
         ->name('dispatches.retry');
+      Route::post('dispatches/{dispatch}/force-run', [LeadDispatchLogController::class, 'forceRun'])
+        ->whereNumber('dispatch')
+        ->name('dispatches.force-run');
       Route::get('dispatches/result/{type}/{id}', [LeadDispatchLogController::class, 'resultDetail'])
         ->whereIn('type', ['ping', 'post'])
         ->whereNumber('id')
