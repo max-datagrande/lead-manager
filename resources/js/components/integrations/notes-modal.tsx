@@ -6,11 +6,13 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 
 const MDEditor = lazy(async () => {
   await import('@uiw/react-md-editor/markdown-editor.css');
+  await import('./notes-modal.css');
   return import('@uiw/react-md-editor');
 });
 
 const MDPreview = lazy(async () => {
   await import('@uiw/react-md-editor/markdown-editor.css');
+  await import('./notes-modal.css');
   const mod = await import('@uiw/react-md-editor');
   return { default: mod.default.Markdown };
 });
@@ -90,7 +92,7 @@ export function NotesModal() {
         </header>
 
         <div className="grid min-h-0 flex-1 grid-cols-[70%_30%]">
-          <div className="min-h-0 overflow-hidden border-r">
+          <div className="notes-md-editor-wrapper min-h-0 overflow-hidden border-r">
             <Suspense fallback={<NotesEditorSkeleton />}>
               <MDEditor
                 value={draft}
@@ -105,7 +107,7 @@ export function NotesModal() {
 
           <div className="min-h-0 overflow-auto bg-muted/30 px-6 py-4">
             <Suspense fallback={<NotesEditorSkeleton />}>
-              <MDPreview source={draft} style={{ background: 'transparent' }} />
+              <MDPreview source={draft} className="notes-md-preview" style={{ background: 'transparent' }} />
             </Suspense>
           </div>
         </div>

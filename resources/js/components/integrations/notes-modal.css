@@ -1,0 +1,55 @@
+.notes-md-editor-wrapper .w-md-editor {
+  font-size: 15px;
+}
+
+.notes-md-editor-wrapper .w-md-editor-toolbar {
+  padding: 8px 10px;
+}
+
+.notes-md-editor-wrapper .w-md-editor-toolbar ul > li > button {
+  height: 32px;
+  width: 32px;
+  padding: 6px;
+}
+
+.notes-md-editor-wrapper .w-md-editor-toolbar svg {
+  width: 18px;
+  height: 18px;
+}
+
+.notes-md-editor-wrapper .w-md-editor-toolbar-divider {
+  height: 20px;
+}
+
+.notes-md-editor-wrapper .w-md-editor-text-input,
+.notes-md-editor-wrapper .w-md-editor-text-pre,
+.notes-md-editor-wrapper .w-md-editor-text-pre > code,
+.notes-md-editor-wrapper .w-md-editor-text-pre .code-line {
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+
+.notes-md-editor-wrapper .w-md-editor-text {
+  height: 100%;
+  padding: 14px 18px;
+}
+
+.notes-md-preview {
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.notes-md-preview h1 {
+  font-size: 1.8em;
+}
+.notes-md-preview h2 {
+  font-size: 1.5em;
+}
+.notes-md-preview h3 {
+  font-size: 1.25em;
+}
+
+.notes-md-preview pre,
+.notes-md-preview code {
+  font-size: 0.95em;
+}
