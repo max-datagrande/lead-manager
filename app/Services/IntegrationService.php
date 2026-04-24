@@ -54,6 +54,7 @@ class IntegrationService
       'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
+      'notes' => 'nullable|string',
     ]);
 
     if ($validator->fails()) {
@@ -71,6 +72,7 @@ class IntegrationService
       ]);
 
       $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
+      $this->syncNote($integration, $data['notes'] ?? null);
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->create([
@@ -128,6 +130,7 @@ class IntegrationService
       'environments.*.field_hashes.*.hmac_secret' => 'nullable|string',
       'payload_transformer' => 'nullable|string',
       'use_custom_transformer' => 'nullable|boolean',
+      'notes' => 'nullable|string',
     ]);
 
     if ($validator->fails()) {
@@ -148,6 +151,7 @@ class IntegrationService
       ]);
 
       $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
+      $this->syncNote($integration, $data['notes'] ?? null);
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->updateOrCreate(
@@ -344,6 +348,23 @@ class IntegrationService
         )
         ->toArray(),
     );
+  }
+
+  /**
+   * Sync the markdown note for an integration.
+   *
+   * Empty or null content removes any existing note (no zombie rows with empty content).
+   */
+  private function syncNote(Integration $integration, ?string $content): void
+  {
+    $normalized = is_string($content) ? trim($content) : '';
+
+    if ($normalized === '') {
+      $integration->note()->delete();
+      return;
+    }
+
+    $integration->note()->updateOrCreate(['integration_id' => $integration->id], ['content' => $normalized]);
   }
 
   /**
