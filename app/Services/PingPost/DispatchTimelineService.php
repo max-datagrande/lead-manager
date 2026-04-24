@@ -59,6 +59,7 @@ class DispatchTimelineService
   public const VALIDATION_STARTED = 'validation.started';
   public const VALIDATION_COMPLETED = 'validation.completed';
   public const VALIDATION_FAILED = 'validation.failed';
+  public const VALIDATION_FORCED = 'validation.forced';
   public const QUALITY_NOT_VERIFIED = 'quality.not_verified';
 
   // ─── Postback ───────────────────────────────────────────────────────
