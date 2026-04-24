@@ -35,6 +35,14 @@ class Integration extends Model
   }
 
   /**
+   * Get the markdown note attached to the integration.
+   */
+  public function note(): HasOne
+  {
+    return $this->hasOne(IntegrationNote::class);
+  }
+
+  /**
    * Get the company that owns the integration.
    */
   public function company()

@@ -85,11 +85,20 @@ interface FieldMappingEntry {
   value_mapping?: Record<string, string> | null;
 }
 
+interface IntegrationNoteDB {
+  id: number;
+  integration_id: number;
+  content: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface IntegrationDB extends IntegrationBase {
   id: number;
   environments: EnvironmentDB[];
   request_mapping_config?: Record<string, MappingEntry>;
   token_mappings?: TokenMapping[];
+  note?: IntegrationNoteDB | null;
   updated_at?: string;
 }
 
@@ -126,6 +135,7 @@ export type {
   IntegrationBase,
   IntegrationDB,
   IntegrationForm,
+  IntegrationNoteDB,
   MappingEntry,
   OfferwallResponseConfig,
   PingPostEnvironments,
