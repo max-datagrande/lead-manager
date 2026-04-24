@@ -1,4 +1,4 @@
-import { IntegrationForm, editBreadcrumbs } from '@/components/integrations/index';
+import { IntegrationForm, NotesModal, editBreadcrumbs } from '@/components/integrations/index';
 import PageHeader from '@/components/page-header';
 import { IntegrationsProvider } from '@/context/integrations-provider.jsx';
 import AppLayout from '@/layouts/app-layout';
@@ -16,7 +16,9 @@ const EditIntegrationPage = ({ integration, companies, fields }: EditIntegration
   <IntegrationsProvider integration={integration}>
     <Head title={`Edit ${integration.name}`} />
     <div className="relative flex-1 space-y-6 p-6 md:p-8">
-      <PageHeader title="Edit Integration" description={`Editing ${integration.name}.`} />
+      <PageHeader title="Edit Integration" description={`Editing ${integration.name}.`}>
+        <NotesModal />
+      </PageHeader>
       <IntegrationForm companies={companies} fields={fields} />
     </div>
   </IntegrationsProvider>
