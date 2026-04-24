@@ -28,10 +28,7 @@ const parseHeaders = (headersJson = '{}') => {
 const normalizeEnvRecord = (env) => ({
   ...env,
   request_headers: parseHeaders(env.request_headers),
-  request_body:
-    typeof env.request_body === 'string'
-      ? JSON.parse(env.request_body || '{}')
-      : (env.request_body ?? { template: '', parsers: {} }),
+  request_body: typeof env.request_body === 'string' ? JSON.parse(env.request_body || '{}') : (env.request_body ?? { template: '', parsers: {} }),
   response_config: env.response_config ?? null,
   field_hashes: Array.isArray(env.field_hashes)
     ? env.field_hashes.map((h) => ({
@@ -115,33 +112,31 @@ const serializeEnvs = (type, environments) => {
  * Scan a request_body string/object for {$N} tokens and return a Set of field IDs.
  */
 const scanBodyForTokens = (body) => {
-  if (!body) return new Set()
-  const text = typeof body === 'object' ? JSON.stringify(body) : String(body)
-  const regex = /\{\$(\d+)\}/g
-  const ids = new Set()
-  let m
+  if (!body) return new Set();
+  const text = typeof body === 'object' ? JSON.stringify(body) : String(body);
+  const regex = /\{\$(\d+)\}/g;
+  const ids = new Set();
+  let m;
   while ((m = regex.exec(text)) !== null) {
-    ids.add(parseInt(m[1], 10))
+    ids.add(parseInt(m[1], 10));
   }
-  return ids
-}
+  return ids;
+};
 
 /**
  * Build the initial envTokenSets Map by scanning all environments on mount (edit mode).
  * Returns Map<envKey, Set<fieldId>>.
  */
 const buildInitialEnvTokenSets = (integration) => {
-  if (!integration?.environments?.length) return new Map()
-  const sets = new Map()
+  if (!integration?.environments?.length) return new Map();
+  const sets = new Map();
   for (const env of integration.environments) {
-    const key = integration.type === 'ping-post'
-      ? `${env.env_type}-${env.environment}`
-      : env.environment
-    const ids = scanBodyForTokens(env.request_body)
-    if (ids.size > 0) sets.set(key, ids)
+    const key = integration.type === 'ping-post' ? `${env.env_type}-${env.environment}` : env.environment;
+    const ids = scanBodyForTokens(env.request_body);
+    if (ids.size > 0) sets.set(key, ids);
   }
-  return sets
-}
+  return sets;
+};
 
 /**
  * Build the initial field_mappings array for useForm.
@@ -149,28 +144,29 @@ const buildInitialEnvTokenSets = (integration) => {
  * that have no DB record yet — avoids empty modal on pre-S6 integrations.
  */
 const buildInitialFieldMappings = (integration) => {
-  const dbMappings = integration?.token_mappings?.map((tm) => ({
-    field_id: tm.field_id,
-    data_type: tm.data_type ?? 'string',
-    default_value: tm.default_value ?? null,
-    value_mapping: tm.value_mapping ?? null,
-  })) ?? []
+  const dbMappings =
+    integration?.token_mappings?.map((tm) => ({
+      field_id: tm.field_id,
+      data_type: tm.data_type ?? 'string',
+      default_value: tm.default_value ?? null,
+      value_mapping: tm.value_mapping ?? null,
+    })) ?? [];
 
-  const dbIds = new Set(dbMappings.map((m) => m.field_id))
+  const dbIds = new Set(dbMappings.map((m) => m.field_id));
 
   // Collect all field_ids found in request bodies across all environments
-  const envSets = buildInitialEnvTokenSets(integration)
+  const envSets = buildInitialEnvTokenSets(integration);
   for (const set of envSets.values()) {
     for (const fieldId of set) {
       if (!dbIds.has(fieldId)) {
-        dbMappings.push({ field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null })
-        dbIds.add(fieldId)
+        dbMappings.push({ field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null });
+        dbIds.add(fieldId);
       }
     }
   }
 
-  return dbMappings
-}
+  return dbMappings;
+};
 
 export const IntegrationsContext = createContext(null);
 
@@ -191,18 +187,19 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
     field_mappings: buildInitialFieldMappings(integration),
     payload_transformer: integration?.payload_transformer ?? '',
     use_custom_transformer: integration?.use_custom_transformer ?? false,
+    notes: integration?.note?.content ?? '',
   });
 
   // ── Segregated token sets per environment (not in useForm — local state only) ──
   // Map<envKey, Set<fieldId>>, where envKey = e.g. "ping-development" or "development"
-  const [envTokenSets, setEnvTokenSets] = useState(() => buildInitialEnvTokenSets(integration))
+  const [envTokenSets, setEnvTokenSets] = useState(() => buildInitialEnvTokenSets(integration));
 
   // ── Stable refs for always-fresh closure access (assigned during render) ──────
-  const fieldMappingsRef = useRef(null)
-  fieldMappingsRef.current = data.field_mappings
+  const fieldMappingsRef = useRef(null);
+  fieldMappingsRef.current = data.field_mappings;
 
-  const envTokenSetsRef = useRef(null)
-  envTokenSetsRef.current = envTokenSets
+  const envTokenSetsRef = useRef(null);
+  envTokenSetsRef.current = envTokenSets;
 
   // Transform environments to array format before submission
   transform((formData) => ({
@@ -248,18 +245,18 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
    * @param {number} fieldId
    */
   const onTokenInsert = (envKey, fieldId) => {
-    const prevSets = envTokenSetsRef.current
-    const next = new Map(prevSets)
-    const set = new Set(next.get(envKey) ?? [])
-    set.add(fieldId)
-    next.set(envKey, set)
-    setEnvTokenSets(next)
+    const prevSets = envTokenSetsRef.current;
+    const next = new Map(prevSets);
+    const set = new Set(next.get(envKey) ?? []);
+    set.add(fieldId);
+    next.set(envKey, set);
+    setEnvTokenSets(next);
 
-    const current = fieldMappingsRef.current
+    const current = fieldMappingsRef.current;
     if (!current.some((m) => m.field_id === fieldId)) {
-      setData('field_mappings', [...current, { field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null }])
+      setData('field_mappings', [...current, { field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null }]);
     }
-  }
+  };
 
   /**
    * Called by JsonEditor when a field token pill is deleted from a request_body.
@@ -270,19 +267,22 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
    * @param {number} fieldId
    */
   const onTokenRemove = (envKey, fieldId) => {
-    const prevSets = envTokenSetsRef.current
-    const next = new Map(prevSets)
-    const set = new Set(next.get(envKey) ?? [])
-    set.delete(fieldId)
-    if (set.size === 0) next.delete(envKey)
-    else next.set(envKey, set)
-    setEnvTokenSets(next)
+    const prevSets = envTokenSetsRef.current;
+    const next = new Map(prevSets);
+    const set = new Set(next.get(envKey) ?? []);
+    set.delete(fieldId);
+    if (set.size === 0) next.delete(envKey);
+    else next.set(envKey, set);
+    setEnvTokenSets(next);
 
-    const usedElsewhere = [...next.values()].some((s) => s.has(fieldId))
+    const usedElsewhere = [...next.values()].some((s) => s.has(fieldId));
     if (!usedElsewhere) {
-      setData('field_mappings', fieldMappingsRef.current.filter((m) => m.field_id !== fieldId))
+      setData(
+        'field_mappings',
+        fieldMappingsRef.current.filter((m) => m.field_id !== fieldId),
+      );
     }
-  }
+  };
 
   /**
    * Update the global config for a specific field mapping (data_type, default_value, value_mapping).
@@ -291,10 +291,11 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
    * @param {Partial<{ data_type: string, default_value: string|null, value_mapping: object|null }>} patch
    */
   const updateFieldMapping = (fieldId, patch) => {
-    setData('field_mappings', fieldMappingsRef.current.map((m) =>
-      m.field_id === fieldId ? { ...m, ...patch } : m,
-    ))
-  }
+    setData(
+      'field_mappings',
+      fieldMappingsRef.current.map((m) => (m.field_id === fieldId ? { ...m, ...patch } : m)),
+    );
+  };
 
   /**
    * Update the hash config for a specific (envKey, fieldId) pair.
@@ -307,28 +308,28 @@ export const IntegrationsProvider = ({ children, integration = null }) => {
   const updateFieldHash = (envKey, fieldId, patch) => {
     const nextState = produce(data, (draft) => {
       // Resolve the env slot from the envKey
-      let envSlot
+      let envSlot;
       if (envKey.includes('-')) {
-        const dashIdx = envKey.indexOf('-')
-        const envType = envKey.substring(0, dashIdx)
-        const env = envKey.substring(dashIdx + 1)
-        envSlot = draft.environments[envType]?.[env]
+        const dashIdx = envKey.indexOf('-');
+        const envType = envKey.substring(0, dashIdx);
+        const env = envKey.substring(dashIdx + 1);
+        envSlot = draft.environments[envType]?.[env];
       } else {
-        envSlot = draft.environments[envKey]
+        envSlot = draft.environments[envKey];
       }
-      if (!envSlot) return
+      if (!envSlot) return;
 
-      const hashes = envSlot.field_hashes ?? []
-      const idx = hashes.findIndex((h) => h.field_id === fieldId)
+      const hashes = envSlot.field_hashes ?? [];
+      const idx = hashes.findIndex((h) => h.field_id === fieldId);
       if (idx >= 0) {
-        Object.assign(hashes[idx], patch)
+        Object.assign(hashes[idx], patch);
       } else {
-        hashes.push({ field_id: fieldId, is_hashed: false, hash_algorithm: null, hmac_secret: null, ...patch })
+        hashes.push({ field_id: fieldId, is_hashed: false, hash_algorithm: null, hmac_secret: null, ...patch });
       }
-      envSlot.field_hashes = hashes
-    })
-    setData(nextState)
-  }
+      envSlot.field_hashes = hashes;
+    });
+    setData(nextState);
+  };
 
   const value = {
     isEdit,
