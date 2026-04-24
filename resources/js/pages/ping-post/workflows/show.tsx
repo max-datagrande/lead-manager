@@ -1,12 +1,13 @@
 import PageHeader from '@/components/page-header';
 import { showBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs';
+import { WorkflowSnippets } from '@/components/ping-post/workflows/snippets';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { Workflow } from '@/types/ping-post';
 import { Head, Link, router } from '@inertiajs/react';
-import { Bell, Copy, Edit, Trash2 } from 'lucide-react';
+import { Bell, Code, Copy, Edit, Trash2 } from 'lucide-react';
 import { route } from 'ziggy-js';
 
 interface Props {
@@ -155,6 +156,19 @@ const WorkflowsShow = ({ workflow }: Props) => {
               ) : (
                 <p className="text-sm text-muted-foreground">No alert channels configured.</p>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="h-4 w-4" />
+                Integration snippets
+              </CardTitle>
+              <CardDescription>Copy and paste to dispatch leads to this workflow.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WorkflowSnippets workflow={workflow} />
             </CardContent>
           </Card>
         </div>
