@@ -85,7 +85,7 @@ class IntegrationController extends Controller
   public function edit(Integration $integration)
   {
     return Inertia::render('integrations/edit', [
-      'integration' => $integration->load(['environments.fieldHashes', 'tokenMappings']),
+      'integration' => $integration->load(['environments.fieldHashes', 'tokenMappings', 'note']),
       'companies' => \App\Models\Company::all()->map(fn($company) => ['value' => $company->id, 'label' => $company->name]),
       'fields' => Field::all(['id', 'name', 'label', 'possible_values']),
     ]);
