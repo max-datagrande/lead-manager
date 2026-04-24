@@ -11,8 +11,10 @@ import { useModal } from '@/hooks/use-modal';
 import AppLayout from '@/layouts/app-layout';
 import type { DispatchAttemptSummary, LeadDispatch } from '@/types/ping-post';
 import { Head, Link, router } from '@inertiajs/react';
-import { RefreshCw, ScrollText } from 'lucide-react';
+import axios from 'axios';
+import { Play, RefreshCw, ScrollText } from 'lucide-react';
 import { useMemo } from 'react';
+import { toast } from 'sonner';
 import { route } from 'ziggy-js';
 
 interface Field {
@@ -34,6 +36,7 @@ const DispatchesShow = ({ dispatch, fields = [], allAttempts = [] }: Props) => {
 
   const isTerminal = TERMINAL_STATUSES.includes(dispatch.status as (typeof TERMINAL_STATUSES)[number]);
   const hasRunningRetry = allAttempts.some((a) => a.status === 'running' && a.id !== dispatch.id);
+  const isPendingValidation = dispatch.status === 'pending_validation';
 
   const snapshotRows = useMemo(() => {
     if (!dispatch.lead_snapshot || !fields.length) return [];
@@ -60,6 +63,34 @@ const DispatchesShow = ({ dispatch, fields = [], allAttempts = [] }: Props) => {
 
     if (confirmed) {
       router.post(route('ping-post.dispatches.retry', dispatch.id));
+    }
+  };
+
+  const handleForceRun = async () => {
+    const confirmed = await modal.warnConfirm({
+      title: 'Force Run Dispatch',
+      description: 'This will skip the pending SMS/OTP validation and resume the dispatch immediately.',
+      consequences: [
+        'The lead quality challenge will NOT be verified — the lead proceeds as if it passed',
+        'The dispatch will be queued and executed against the workflow buyers right away',
+        'Your name will be recorded in the timeline as the user who forced the run',
+      ],
+      confirmText: 'Run Now',
+      cancelText: 'Cancel',
+      confirmCode: 'RUN',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const { data } = await axios.post(route('ping-post.dispatches.force-run', dispatch.id));
+      toast.success(data.message ?? 'Dispatch resumed.');
+      router.visit(route('ping-post.dispatches.show', dispatch.id), {
+        preserveScroll: true,
+        preserveState: false,
+      });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? 'Failed to force-run the dispatch.');
     }
   };
 
@@ -90,6 +121,17 @@ const DispatchesShow = ({ dispatch, fields = [], allAttempts = [] }: Props) => {
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Retry
+              </Button>
+            )}
+            {isPendingValidation && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleForceRun}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/50"
+              >
+                <Play className="mr-2 h-4 w-4" />
+                Run
               </Button>
             )}
           </div>

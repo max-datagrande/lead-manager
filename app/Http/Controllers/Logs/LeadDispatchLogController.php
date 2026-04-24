@@ -14,7 +14,9 @@ use App\Models\PingResult;
 use App\Models\PostbackExecution;
 use App\Models\PostResult;
 use App\Models\Workflow;
+use App\Jobs\PingPost\DispatchLeadJob;
 use App\Jobs\PingPost\RetryDispatchJob;
+use App\Services\PingPost\DispatchTimelineService;
 use App\Traits\DatatableTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -225,6 +227,43 @@ class LeadDispatchLogController extends Controller
     RetryDispatchJob::dispatch($dispatch->id);
 
     return back()->with('success', 'Retry dispatch queued. A new attempt will appear shortly.');
+  }
+
+  public function forceRun(Request $request, LeadDispatch $dispatch, DispatchTimelineService $timeline): JsonResponse
+  {
+    if ($dispatch->status !== DispatchStatus::PENDING_VALIDATION) {
+      return response()->json(
+        [
+          'success' => false,
+          'message' => 'Only dispatches in PENDING_VALIDATION can be forced to run.',
+        ],
+        422,
+      );
+    }
+
+    $user = $request->user();
+
+    $dispatch->update(['status' => DispatchStatus::RUNNING]);
+
+    $timeline->logSingle(
+      $dispatch->id,
+      (string) $dispatch->fingerprint,
+      DispatchTimelineService::VALIDATION_FORCED,
+      "Dispatch forced to run by {$user->name}; challenge skipped",
+      [
+        'forced_by_user_id' => $user->id,
+        'forced_by_user_name' => $user->name,
+        'forced_at' => now()->toIso8601String(),
+        'previous_status' => DispatchStatus::PENDING_VALIDATION->value,
+      ],
+    );
+
+    DispatchLeadJob::dispatch($dispatch->workflow_id, $dispatch->lead_id, $dispatch->fingerprint, $dispatch->id);
+
+    return response()->json([
+      'success' => true,
+      'message' => 'Dispatch resumed. It will continue through the workflow shortly.',
+    ]);
   }
 
   public function resultDetail(string $type, int $id): JsonResponse
