@@ -9,6 +9,7 @@ import type { EnvironmentOption, ProviderStatusOption, ProviderStatusValue, Prov
 import { Link } from '@inertiajs/react';
 import { CredentialsFields } from './credentials-fields';
 import { ProviderOtpTester } from './otp-tester';
+import { PhoneValidatorTester } from './phone-validator-tester';
 import { TestConnectionButton } from './test-connection-button';
 
 export interface ProviderFormData {
@@ -188,6 +189,20 @@ export function ProviderForm({
           </CardHeader>
           <CardContent>
             <ProviderOtpTester providerId={providerId} disabled={notImplemented} />
+          </CardContent>
+        </Card>
+      )}
+
+      {isEdit && providerId && data.type === 'melissa' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Phone validation tester</CardTitle>
+            <CardDescription>
+              Validate a phone number in real time against Melissa Global Phone. Bypasses cache so the result is always fresh.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhoneValidatorTester providerId={providerId} disabled={notImplemented} />
           </CardContent>
         </Card>
       )}
