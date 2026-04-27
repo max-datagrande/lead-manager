@@ -67,6 +67,23 @@ class LeadQualityProviderFactory extends Factory
     ]);
   }
 
+  public function melissa(): static
+  {
+    return $this->state([
+      'name' => 'Melissa - ' . $this->faker->unique()->word(),
+      'type' => LeadQualityProviderType::MELISSA,
+      'credentials' => [
+        'license_key' => $this->faker->regexify('[A-Za-z0-9]{20}'),
+      ],
+      'settings' => [
+        'verify_mode' => 'Premium',
+        'time_to_wait' => '5',
+      ],
+      'is_enabled' => true,
+      'status' => ProviderStatus::ACTIVE,
+    ]);
+  }
+
   public function production(): static
   {
     return $this->state(['environment' => 'production']);
