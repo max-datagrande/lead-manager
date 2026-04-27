@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])
         Route::get('leads', fn() => Inertia::render('docs/catalyst/leads'))->name('leads');
         Route::get('share-leads', fn() => Inertia::render('docs/catalyst/share-leads'))->name('share-leads');
         Route::get('lead-quality', fn() => Inertia::render('docs/catalyst/lead-quality'))->name('lead-quality');
+        Route::get('validators', fn() => Inertia::render('docs/catalyst/validators'))->name('validators');
         Route::get('offerwall', fn() => Inertia::render('docs/catalyst/offerwall'))->name('offerwall');
         Route::get('events', fn() => Inertia::render('docs/catalyst/events'))->name('events');
         Route::get('examples', fn() => Inertia::render('docs/catalyst/examples'))->name('examples');

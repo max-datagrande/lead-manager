@@ -14,6 +14,7 @@ const sidebarNavItems: NavItem[] = [
   { title: 'leads', href: '/docs/catalyst/leads', icon: null },
   { title: 'share_leads', href: '/docs/catalyst/share-leads', icon: null },
   { title: 'lead_quality', href: '/docs/catalyst/lead-quality', icon: null },
+  { title: 'validators', href: '/docs/catalyst/validators', icon: null },
   { title: 'offerwall', href: '/docs/catalyst/offerwall', icon: null },
   { title: 'events', href: '/docs/catalyst/events', icon: null },
   { title: 'examples', href: '/docs/catalyst/examples', icon: null },
