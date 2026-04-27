@@ -261,8 +261,8 @@ const dictionary: Dictionary = {
     },
     not_workflow_title: { en: 'Why no workflowId?', es: '\u00bfPor que no hay workflowId?' },
     not_workflow_desc: {
-      en: 'The phone validator is a global utility, not a per-buyer rule. There is no workflowId / buyerId here by design \u2014 the backend resolves the active Melissa provider once and uses it for every landing. If you need per-workflow phone gating, attach a Lead Quality rule to the workflow buyers instead and use requestChallenge.',
-      es: 'El validador de telefono es una utilidad global, no una regla por buyer. No hay workflowId / buyerId aca por diseno \u2014 el backend resuelve el provider Melissa activo una vez y lo usa para todas las landings. Si necesitas un gate de telefono por workflow, asociale una regla de Lead Quality a los buyers del workflow y usa requestChallenge.',
+      en: 'The validator answers a single question: is this phone real? It is a stateless utility \u2014 same phone, same answer, no matter who is asking or where it runs. Tying it to a workflow or a buyer would imply a relationship that does not exist.',
+      es: 'El validador responde una sola pregunta: \u00bfeste telefono es real? Es una utilidad sin estado \u2014 mismo telefono, misma respuesta, sin importar quien pregunta ni desde donde corre. Atarlo a un workflow o a un buyer implicaria una relacion que no existe.',
     },
     options_title: { en: 'ValidatePhoneOptions', es: 'ValidatePhoneOptions' },
     opt_phone: {
@@ -289,8 +289,8 @@ const dictionary: Dictionary = {
     },
     technical_error_title: { en: 'Important: technical errors throw', es: 'Importante: errores tecnicos lanzan excepcion' },
     technical_error_desc: {
-      en: 'When the backend returns 502 (license invalid, Melissa timeout, no provider configured), the SDK throws. Recommended pattern: wrap the call in try/catch and let the OTP path proceed when the pre-filter fails technically. A technical failure in the pre-filter should NEVER block real leads.',
-      es: 'Cuando el backend retorna 502 (license invalida, timeout de Melissa, sin provider configurado), el SDK lanza una excepcion. Patron recomendado: envolver la llamada en try/catch y dejar que el flujo OTP siga cuando el pre-filtro falla tecnicamente. Una falla tecnica del pre-filtro NUNCA debe bloquear leads reales.',
+      en: 'When the backend returns 502 (license invalid, Melissa timeout, no provider configured), the SDK throws. The validator is agnostic to whatever flow surrounds it — the caller decides the policy: block the submit, fall through, retry, log silently. Wrap the call in try/catch and pick the behavior that fits your landing.',
+      es: 'Cuando el backend retorna 502 (license invalida, timeout de Melissa, sin provider configurado), el SDK lanza una excepcion. El validador es agnostico al flujo que lo rodea — el caller decide la politica: bloquear el submit, dejar pasar, reintentar, loguear silenciosamente. Envolver la llamada en try/catch y elegir el comportamiento que mejor le quede a tu landing.',
     },
     cache_title: { en: 'Cache & cost', es: 'Cache y costo' },
     cache_desc: {

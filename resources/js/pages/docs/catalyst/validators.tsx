@@ -31,7 +31,7 @@ const RESPONSE_TYPE = `interface ValidatePhoneResponse {
     | 'invalid_phone'              // PE01 / PE02 / PE03
     | 'disconnected_phone'         // PE11
     | 'high_risk_phone'            // PS19 — disposable
-    // thrown ↓
+    // thrown by the SDK ↓ (caller decides how to handle)
     | 'validation_error'           // license invalid / timeout / no provider
   line_type?: 'cellular' | 'landline' | 'voip' | null
   country?: string | null
@@ -59,15 +59,17 @@ const BASIC_EXAMPLE = `Catalyst.on('ready', async () => {
     // Optional: log the line type for analytics.
     console.log('Phone passed pre-filter:', result.classification, result.line_type)
   } catch (error) {
-    // Technical failure (license / timeout / no provider). Don't block real leads:
-    // we let the OTP path act as the second line of defense.
-    console.warn('Phone pre-filter unavailable, falling through to OTP:', error)
-    preFilterPassed = false
+    // Technical failure (license / timeout / no provider). The SDK is agnostic:
+    // YOU decide the policy. Examples:
+    //   - block the submit (strict): \`return showInlineError(...)\`
+    //   - fall through (permissive): just log and continue
+    //   - retry once: implement your own backoff
+    // This example is permissive — adjust to your landing's needs.
+    console.warn('Phone pre-filter unavailable, continuing without it:', error)
   }
 
-  // Continue to the OTP / dispatch flow as usual.
+  // Continue with whatever your flow is.
   await Catalyst.registerLead(formData)
-  await Catalyst.requestChallenge({ workflowId: 42, to: formData.phone, channel: 'sms' })
 })`;
 
 const EVENT_EXAMPLE = `Catalyst.on('phone:status', function(event) {

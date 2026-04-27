@@ -652,8 +652,8 @@ class CatalystCore {
    *   - `invalid_phone` / `disconnected_phone` / `high_risk_phone` → `valid: false`,
    *     show inline error and abort the submit.
    *   - `validation_error` (license invalid, upstream timeout, no provider configured)
-   *     → SDK throws. Recommended: catch and let the OTP path proceed —
-   *     a technical failure in the pre-filter shouldn't block real leads.
+   *     → SDK throws. The caller decides the policy — block, fall through,
+   *     retry, log. The validator is agnostic to whatever flow surrounds it.
    *
    * The endpoint is workflow-agnostic and does NOT create any
    * `LeadDispatch` / `LeadQualityValidationLog` — just an entry in

@@ -309,7 +309,9 @@ interface ValidatePhoneOptions {
  *   - `pending_or_timeout`    (PS30 — Premium timeout, treat optimistically)
  *
  * `validation_error` is technical (license issue, upstream timeout, no
- * provider configured); the SDK throws when this is the result.
+ * provider configured); the SDK throws when this is the result. The caller
+ * decides what to do — block the submit, let the flow continue, retry, log
+ * silently, whatever the landing's policy is. The SDK is agnostic.
  */
 type ValidatePhoneClassification =
   | 'valid_high_confidence'
