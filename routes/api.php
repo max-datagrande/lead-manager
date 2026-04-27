@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\LeadQuality\ChallengeController as LeadQualityChallengeController;
+use App\Http\Controllers\Api\LeadQuality\PhoneValidationController as LeadQualityPhoneValidationController;
 use App\Http\Controllers\Api\Offerwall\EventController;
 use App\Http\Controllers\Api\Offerwall\MixController as OfferwallMixController;
 use App\Http\Controllers\Api\PerformanceMetricController;
@@ -67,6 +68,9 @@ Route::middleware(['auth.host', 'throttle:10,1'])
   ->group(function () {
     Route::post('challenge/send', [LeadQualityChallengeController::class, 'send'])->name('challenge.send');
     Route::post('challenge/verify', [LeadQualityChallengeController::class, 'verify'])->name('challenge.verify');
+    // Sync phone validation (Melissa). On-submit pre-filter; never blocks the OTP path
+    // for technical errors — see PhoneValidationController for the response contract.
+    Route::post('phone/validate', [LeadQualityPhoneValidationController::class, 'validatePhone'])->name('phone.validate');
   });
 
 // Other file routes
