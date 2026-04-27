@@ -56,7 +56,9 @@ class MelissaProvider implements PhoneValidationProviderInterface, LeadQualityPr
         'module' => 'lead_quality',
         'service_name' => 'melissa',
         'service_id' => $provider->id,
-        'operation' => 'phone_validate',
+        // Caller can override (e.g. admin tester sets 'test_validate_phone'
+        // to keep its smoke-test traffic distinguishable in the logs).
+        'operation' => (string) ($context['operation'] ?? 'phone_validate'),
         'request_method' => 'GET',
         'request_url' => $traceUrl,
         'request_headers' => ['Accept' => 'application/json'],
