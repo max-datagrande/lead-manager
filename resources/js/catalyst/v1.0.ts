@@ -9,10 +9,13 @@ import {
   OfferwallConversionRequest,
   OfferwallConversionResponse,
   OfferwallResponse,
+  PhoneStatusEvent,
   RequestChallengeOptions,
   RequestChallengeResponse,
   ShareLeadOptions,
   ShareLeadResponse,
+  ValidatePhoneOptions,
+  ValidatePhoneResponse,
   VerifyChallengeOptions,
   VerifyChallengeResponse,
   VisitorData,
@@ -638,6 +641,105 @@ class CatalystCore {
   }
 
   /**
+   * Validates a phone number against the configured sync phone-validation
+   * provider (Melissa Global Phone). Designed as an **on-submit pre-filter**
+   * — call once right before `requestChallenge()` (or `shareLead()`) to drop
+   * fakes/disposables/disconnected numbers before spending an SMS credit.
+   *
+   * Behaviour by classification:
+   *   - `valid_high_confidence` / `valid_low_confidence` / `low_confidence`
+   *     / `compliance_risk` / `pending_or_timeout` → `valid: true`, proceed.
+   *   - `invalid_phone` / `disconnected_phone` / `high_risk_phone` → `valid: false`,
+   *     show inline error and abort the submit.
+   *   - `validation_error` (license invalid, upstream timeout, no provider configured)
+   *     → SDK throws. Recommended: catch and let the OTP path proceed —
+   *     a technical failure in the pre-filter shouldn't block real leads.
+   *
+   * The endpoint is workflow-agnostic and does NOT create any
+   * `LeadDispatch` / `LeadQualityValidationLog` — just an entry in
+   * `external_service_requests` per real upstream call (cache hits are free).
+   */
+  async validatePhone({ phone, country, fingerprint }: ValidatePhoneOptions): Promise<ValidatePhoneResponse> {
+    const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
+    if (!resolvedFingerprint) {
+      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
+      this.dispatch('phone:status', { type: 'validate', success: false, error } as PhoneStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    if (!phone) {
+      const error = 'phone is required.';
+      this.dispatch('phone:status', { type: 'validate', success: false, error } as PhoneStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    const payload: Record<string, any> = {
+      fingerprint: resolvedFingerprint,
+      phone,
+    };
+    if (country) payload.country = country;
+
+    try {
+      const res = await fetch(this.getEndpoint('LEAD_QUALITY.PHONE_VALIDATE'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+
+      // 502 → backend mapped a `validation_error` classification (license, timeout,
+      // no provider). Surface it as a thrown error so the caller's catch path
+      // can decide whether to fall through to OTP.
+      if (!res.ok) {
+        const msg = json?.message ?? `HTTP ${res.status}`;
+        this.dispatch('phone:status', {
+          type: 'validate',
+          success: false,
+          error: msg,
+          data: json,
+        } as PhoneStatusEvent);
+        throw new Error(`Catalyst SDK: ${msg}`);
+      }
+
+      // Flatten the envelope so callers read `valid` / `classification` from
+      // the top level, without having to navigate `.data` for every field.
+      const flattened: ValidatePhoneResponse = {
+        success: Boolean(json?.success),
+        message: json?.message ?? '',
+        valid: Boolean(json?.data?.valid),
+        classification: json?.data?.classification ?? 'validation_error',
+        line_type: json?.data?.line_type ?? null,
+        country: json?.data?.country ?? null,
+        carrier: json?.data?.carrier ?? null,
+        normalized_phone: json?.data?.normalized_phone ?? null,
+        error: json?.data?.error ?? null,
+      };
+
+      if (this.config.debug) console.log('Catalyst SDK: Phone validate result.', flattened);
+
+      this.dispatch('phone:status', {
+        type: 'validate',
+        success: flattened.valid,
+        data: flattened,
+      } as PhoneStatusEvent);
+
+      return flattened;
+    } catch (error) {
+      console.error('Catalyst SDK: Error validating phone:', error);
+      this.dispatch('phone:status', {
+        type: 'validate',
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as PhoneStatusEvent);
+      throw error;
+    }
+  }
+
+  /**
    * Registra una conversión de Offerwall.
    * @param data Datos de la conversión
    */
@@ -825,7 +927,9 @@ async function init(): Promise<void> {
         item.length === 4 &&
         typeof possibleResolve === 'function' &&
         typeof possibleReject === 'function' &&
-        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'requestChallenge', 'verifyChallenge'].includes(method);
+        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'requestChallenge', 'verifyChallenge', 'validatePhone'].includes(
+          method,
+        );
 
       if (isPromiseProxy) {
         const args = Array.from((item[1] as ArrayLike<any>) || []);
