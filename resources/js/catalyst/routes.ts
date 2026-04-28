@@ -16,6 +16,7 @@ export const API_ROUTES = {
   LEAD_QUALITY: {
     CHALLENGE_SEND: '/v1/lead-quality/challenge/send',
     CHALLENGE_VERIFY: '/v1/lead-quality/challenge/verify',
+    PHONE_VALIDATE: '/v1/lead-quality/phone/validate',
   },
   METRICS: {
     PERFORMANCE: '/v1/metrics/performance',

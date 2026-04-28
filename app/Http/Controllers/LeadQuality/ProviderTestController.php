@@ -5,10 +5,12 @@ namespace App\Http\Controllers\LeadQuality;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LeadQuality\ProviderOtpTestSendRequest;
 use App\Http\Requests\LeadQuality\ProviderOtpTestVerifyRequest;
+use App\Http\Requests\LeadQuality\ProviderPhoneValidateTestRequest;
 use App\Models\LeadQualityProvider;
 use App\Services\LeadQuality\LeadQualityProviderResolver;
 use App\Services\LeadQuality\OtpProviderTester;
 use Illuminate\Http\JsonResponse;
+use RuntimeException;
 
 class ProviderTestController extends Controller
 {
@@ -69,5 +71,45 @@ class ProviderTestController extends Controller
     $result = $this->otpTester->testVerify($provider, (string) $data['to'], (string) $data['code']);
 
     return response()->json($result, $result['ok'] ? 200 : 422);
+  }
+
+  /**
+   * Admin-only smoke test for sync phone-validation providers (Melissa). Calls
+   * `validatePhone()` directly — bypassing `PhoneValidationService` and its
+   * cache so the admin always sees fresh upstream output. The HTTP exchange
+   * is recorded with `operation=test_validate_phone` to keep it separate
+   * from production traffic.
+   */
+  public function testValidatePhone(ProviderPhoneValidateTestRequest $request, LeadQualityProvider $provider): JsonResponse
+  {
+    $data = $request->validated();
+    $country = strtoupper((string) ($data['country'] ?? 'US'));
+
+    try {
+      $impl = $this->resolver->forPhoneValidation($provider);
+    } catch (\InvalidArgumentException | RuntimeException $e) {
+      return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+
+    $result = $impl->validatePhone($provider, (string) $data['phone'], [
+      'country' => $country,
+      'country_origin' => $country,
+      'trace' => 'admin_test',
+      'operation' => 'test_validate_phone',
+    ]);
+
+    $payload = [
+      'ok' => $result->classification !== 'validation_error',
+      'valid' => $result->valid,
+      'classification' => $result->classification,
+      'line_type' => $result->lineType,
+      'country' => $result->country,
+      'carrier' => $result->carrier,
+      'normalized_phone' => $result->normalizedPhone,
+      'result_codes' => $result->resultCodes,
+      'error' => $result->error,
+    ];
+
+    return response()->json($payload, $payload['ok'] ? 200 : 422);
   }
 }

@@ -9,6 +9,7 @@ import type { EnvironmentOption, ProviderStatusOption, ProviderStatusValue, Prov
 import { Link } from '@inertiajs/react';
 import { CredentialsFields } from './credentials-fields';
 import { ProviderOtpTester } from './otp-tester';
+import { PhoneValidatorTester } from './phone-validator-tester';
 import { TestConnectionButton } from './test-connection-button';
 
 export interface ProviderFormData {
@@ -53,6 +54,10 @@ export function ProviderForm({
 }: Props) {
   const currentType = providerTypes.find((t) => t.value === data.type);
   const notImplemented = currentType && !currentType.is_implemented;
+  // `friendly_name` only makes sense for providers that map it to a remote
+  // resource (Twilio's Verify Service `FriendlyName`). Other provider types
+  // would just see it as dead config.
+  const supportsFriendlyName = data.type === 'twilio_verify';
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -62,28 +67,30 @@ export function ProviderForm({
           <CardDescription>Identify the provider and control whether it is in use.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className={`grid gap-4 ${supportsFriendlyName ? 'md:grid-cols-2' : ''}`}>
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Twilio Verify (Production)" />
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
               <p className="text-xs text-muted-foreground">Internal label for this provider in the admin.</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="friendly_name">Friendly name (SMS sender)</Label>
-              <Input
-                id="friendly_name"
-                value={data.friendly_name}
-                onChange={(e) => setData('friendly_name', e.target.value)}
-                placeholder="DataGrande"
-                maxLength={30}
-              />
-              {errors.friendly_name && <p className="text-xs text-destructive">{errors.friendly_name}</p>}
-              <p className="text-xs text-muted-foreground">
-                Max 30 chars. Appears in the SMS body ("Your <em>{data.friendly_name || '…'}</em> verification code is…"). Synced to Twilio on save;
-                trial accounts keep "SAMPLE TEST" until upgraded.
-              </p>
-            </div>
+            {supportsFriendlyName && (
+              <div className="space-y-2">
+                <Label htmlFor="friendly_name">Friendly name (SMS sender)</Label>
+                <Input
+                  id="friendly_name"
+                  value={data.friendly_name}
+                  onChange={(e) => setData('friendly_name', e.target.value)}
+                  placeholder="DataGrande"
+                  maxLength={30}
+                />
+                {errors.friendly_name && <p className="text-xs text-destructive">{errors.friendly_name}</p>}
+                <p className="text-xs text-muted-foreground">
+                  Max 30 chars. Appears in the SMS body ("Your <em>{data.friendly_name || '…'}</em> verification code is…"). Synced to Twilio on
+                  save; trial accounts keep "SAMPLE TEST" until upgraded.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -188,6 +195,20 @@ export function ProviderForm({
           </CardHeader>
           <CardContent>
             <ProviderOtpTester providerId={providerId} disabled={notImplemented} />
+          </CardContent>
+        </Card>
+      )}
+
+      {isEdit && providerId && data.type === 'melissa' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Phone validation tester</CardTitle>
+            <CardDescription>
+              Validate a phone number in real time against Melissa Global Phone. Bypasses cache so the result is always fresh.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhoneValidatorTester providerId={providerId} disabled={notImplemented} />
           </CardContent>
         </Card>
       )}

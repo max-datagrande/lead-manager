@@ -8,6 +8,7 @@ const dictionary: Dictionary = {
     leads: { en: 'Leads', es: 'Leads' },
     share_leads: { en: 'Share Leads', es: 'Share Leads' },
     lead_quality: { en: 'Lead Quality', es: 'Lead Quality' },
+    validators: { en: 'Validators', es: 'Validadores' },
     offerwall: { en: 'Offerwall', es: 'Offerwall' },
     events: { en: 'Events', es: 'Eventos' },
     examples: { en: 'Examples', es: 'Ejemplos' },
@@ -244,6 +245,62 @@ const dictionary: Dictionary = {
     backend_auto_dispatch_desc: {
       en: 'When verifyChallenge returns verified: true, the server internally queues the dispatch using the existing LeadDispatch row. The landing must NOT also call shareLead() \u2014 doing so would produce a duplicate dispatch attempt.',
       es: 'Cuando verifyChallenge retorna verified: true, el servidor internamente encola el dispatch usando el LeadDispatch existente. La landing NO debe llamar shareLead() adicionalmente \u2014 hacerlo producira un intento de despacho duplicado.',
+    },
+  },
+
+  validators: {
+    title: { en: 'Validators (Phone)', es: 'Validadores (Tel\u00e9fono)' },
+    description: {
+      en: 'Sync, workflow-agnostic data-quality checks. Today only the phone validator is exposed (Melissa Global Phone). Designed as an on-submit pre-filter: call once right before requestChallenge() (or shareLead()) to drop fakes, disposables, and disconnected numbers before spending an SMS credit.',
+      es: 'Validaciones de calidad sincronas, independientes del workflow. Hoy expone solo el validador de telefono (Melissa Global Phone). Pensado como pre-filtro on-submit: lo llamas una sola vez justo antes de requestChallenge() (o shareLead()) para descartar numeros falsos, disposables o desconectados antes de gastar un SMS.',
+    },
+    when_title: { en: 'When to use it', es: 'Cuando usarlo' },
+    when_desc: {
+      en: 'On-submit, never on-input or on-blur. The user has already pressed "Submit" and is waiting for feedback; one extra ~1s round-trip to Melissa is acceptable. Calling it on every keystroke would burn provider credits with no UX gain.',
+      es: 'On-submit, nunca on-input ni on-blur. El usuario ya apreto "Enviar" y esta esperando feedback; un round-trip extra de ~1s a Melissa es aceptable. Llamarlo en cada keystroke quema creditos del provider sin ganancia de UX.',
+    },
+    not_workflow_title: { en: 'Why no workflowId?', es: '\u00bfPor que no hay workflowId?' },
+    not_workflow_desc: {
+      en: 'The validator answers a single question: is this phone real? It is a stateless utility \u2014 same phone, same answer, no matter who is asking or where it runs. Tying it to a workflow or a buyer would imply a relationship that does not exist.',
+      es: 'El validador responde una sola pregunta: \u00bfeste telefono es real? Es una utilidad sin estado \u2014 mismo telefono, misma respuesta, sin importar quien pregunta ni desde donde corre. Atarlo a un workflow o a un buyer implicaria una relacion que no existe.',
+    },
+    options_title: { en: 'ValidatePhoneOptions', es: 'ValidatePhoneOptions' },
+    opt_phone: {
+      en: 'phone (required) \u2014 Raw user input is fine. The backend normalizes it to E.164 for cache keying, so equivalent shapes (8006354772, +1 800-635-4772) hit the same cache entry.',
+      es: 'phone (requerido) \u2014 El input crudo del usuario es valido. El backend lo normaliza a E.164 para el cache key, asi formas equivalentes (8006354772, +1 800-635-4772) impactan la misma entrada de cache.',
+    },
+    opt_country: {
+      en: 'country (optional) \u2014 ISO2 code, defaults to "US". Forwarded to Melissa as the suspected country (ctry param).',
+      es: 'country (opcional) \u2014 Codigo ISO2, default "US". Se envia a Melissa como el pais sugerido (parametro ctry).',
+    },
+    opt_fingerprint: {
+      en: 'fingerprint (optional) \u2014 Falls back to visitorData.fingerprint automatically. Used only as a trace marker in our logs; it does not influence which provider runs.',
+      es: 'fingerprint (opcional) \u2014 Toma visitorData.fingerprint automaticamente. Solo se usa como marcador de trace en nuestros logs; no influye en que provider corre.',
+    },
+    response_title: { en: 'ValidatePhoneResponse', es: 'ValidatePhoneResponse' },
+    response_desc: {
+      en: 'The SDK flattens the envelope so callers read valid / classification from the top level. The classification carries the business interpretation; valid is the boolean shorthand most landings will use directly.',
+      es: 'El SDK aplana el envelope para que el caller lea valid / classification desde el nivel raiz. El classification carga la interpretacion de negocio; valid es la version booleana directa que la mayoria de landings va a usar.',
+    },
+    classifications_title: { en: 'Classifications', es: 'Clasificaciones' },
+    classifications_desc: {
+      en: 'Outcomes that come back as valid: true (proceed): valid_high_confidence (PS22), valid_low_confidence (PS01), low_confidence (PS20 only), compliance_risk (PS18 / DNC), pending_or_timeout (PS30). Outcomes that come back as valid: false (block): invalid_phone (PE01/PE02/PE03), disconnected_phone (PE11), high_risk_phone (PS19 / disposable). The technical outcome validation_error (license invalid, upstream timeout, no provider configured) is surfaced as a thrown error \u2014 see the error-handling note below.',
+      es: 'Outcomes que vuelven como valid: true (continuar): valid_high_confidence (PS22), valid_low_confidence (PS01), low_confidence (solo PS20), compliance_risk (PS18 / DNC), pending_or_timeout (PS30). Outcomes que vuelven como valid: false (bloquear): invalid_phone (PE01/PE02/PE03), disconnected_phone (PE11), high_risk_phone (PS19 / disposable). El outcome tecnico validation_error (license invalida, timeout del upstream, sin provider configurado) se propaga como excepcion \u2014 ver la nota de manejo de errores abajo.',
+    },
+    technical_error_title: { en: 'Important: technical errors throw', es: 'Importante: errores tecnicos lanzan excepcion' },
+    technical_error_desc: {
+      en: 'When the backend returns 502 (license invalid, Melissa timeout, no provider configured), the SDK throws. The validator is agnostic to whatever flow surrounds it — the caller decides the policy: block the submit, fall through, retry, log silently. Wrap the call in try/catch and pick the behavior that fits your landing.',
+      es: 'Cuando el backend retorna 502 (license invalida, timeout de Melissa, sin provider configurado), el SDK lanza una excepcion. El validador es agnostico al flujo que lo rodea — el caller decide la politica: bloquear el submit, dejar pasar, reintentar, loguear silenciosamente. Envolver la llamada en try/catch y elegir el comportamiento que mejor le quede a tu landing.',
+    },
+    cache_title: { en: 'Cache & cost', es: 'Cache y costo' },
+    cache_desc: {
+      en: 'The backend caches results by normalized phone for 5 minutes by default (configurable per provider via settings.cache_ttl). Identical retries within that window are served from cache and never reach Melissa. Auditing invariant: one row in external_service_requests = one real upstream call. Cache hits are free.',
+      es: 'El backend cachea los resultados por numero normalizado durante 5 minutos por defecto (configurable por provider via settings.cache_ttl). Reintentos identicos dentro de esa ventana se sirven desde cache y nunca llegan a Melissa. Invariante de auditoria: una fila en external_service_requests = una llamada real al upstream. Los cache hits son gratis.',
+    },
+    event_title: { en: 'Event: phone:status', es: 'Evento: phone:status' },
+    event_desc: {
+      en: "Unified lifecycle event for the validator. Payload: { type: 'validate', success, data?, error? }. Subscribe with Catalyst.on('phone:status', handler) for analytics or shared loaders.",
+      es: "Evento unificado de ciclo de vida del validador. Payload: { type: 'validate', success, data?, error? }. Subscribirse con Catalyst.on('phone:status', handler) para analytics o loaders compartidos.",
     },
   },
 

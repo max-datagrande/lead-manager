@@ -34,6 +34,15 @@ const FIELDS_BY_TYPE: Record<string, FieldSpec[]> = {
     { key: 'api_key', label: 'API Key', placeholder: '••••••••', secret: true, helper: 'IPQS — placeholder, integration not implemented in V1.' },
   ],
   email_validator: [{ key: 'api_key', label: 'API Key', placeholder: '••••••••', secret: true, helper: 'Placeholder — no implementation yet.' }],
+  melissa: [
+    {
+      key: 'license_key',
+      label: 'License Key',
+      placeholder: '••••••••••••••••••••',
+      secret: true,
+      helper: 'Melissa Global Phone v4 license key. Stored encrypted; leave blank on edit to keep current.',
+    },
+  ],
 };
 
 interface Props {

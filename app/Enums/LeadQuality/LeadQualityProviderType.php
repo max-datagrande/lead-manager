@@ -7,6 +7,7 @@ enum LeadQualityProviderType: string
   case TWILIO_VERIFY = 'twilio_verify';
   case IPQS = 'ipqs';
   case EMAIL_VALIDATOR = 'email_validator';
+  case MELISSA = 'melissa';
 
   public function label(): string
   {
@@ -14,13 +15,14 @@ enum LeadQualityProviderType: string
       self::TWILIO_VERIFY => 'Twilio Verify',
       self::IPQS => 'IPQS',
       self::EMAIL_VALIDATOR => 'Email Validator',
+      self::MELISSA => 'Melissa Data',
     };
   }
 
   public function isImplemented(): bool
   {
     return match ($this) {
-      self::TWILIO_VERIFY => true,
+      self::TWILIO_VERIFY, self::MELISSA => true,
       self::IPQS, self::EMAIL_VALIDATOR => false,
     };
   }

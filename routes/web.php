@@ -229,6 +229,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
       Route::post('providers/{provider}/test-verify', [LeadQualityProviderTestController::class, 'testVerifyOtp'])
         ->whereNumber('provider')
         ->name('providers.test-verify');
+      Route::post('providers/{provider}/test-validate-phone', [LeadQualityProviderTestController::class, 'testValidatePhone'])
+        ->whereNumber('provider')
+        ->name('providers.test-validate-phone');
       Route::resource('providers', LeadQualityProviderController::class)
         ->except(['show'])
         ->whereNumber('provider');

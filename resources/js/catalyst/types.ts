@@ -272,6 +272,86 @@ interface ChallengeStatusEvent {
 }
 
 /**
+ * Options for `validatePhone()`. Sync pre-submit phone validation against
+ * Melissa Global Phone. Called right before `requestChallenge()` (or
+ * `shareLead()`) to filter out fakes/disposables/disconnected numbers
+ * before spending an SMS credit.
+ *
+ * The validator is **workflow-agnostic** by design — it is a global
+ * utility, not a per-buyer rule. There is no `workflowId` here.
+ *
+ * - `phone` is required — raw user input is fine, the backend normalizes
+ *   it for cache keying.
+ * - `country` defaults to `US` when omitted (forwarded as `ctry` to Melissa).
+ * - `fingerprint` falls back to `visitorData.fingerprint` automatically.
+ */
+interface ValidatePhoneOptions {
+  phone: string;
+  country?: string;
+  fingerprint?: string;
+}
+
+/**
+ * Possible classifications returned by Melissa, mapped from the upstream
+ * codes (PS22, PE01, PS19, etc.). See backend `PhoneValidationResult` for
+ * the canonical mapping.
+ *
+ * Hard-rejected when `valid: false` and classification is one of:
+ *   - `invalid_phone`        → bad shape / unknown number
+ *   - `disconnected_phone`   → number was disconnected
+ *   - `high_risk_phone`      → disposable / temporary phone
+ *
+ * Soft-accepted (`valid: true`) classifications:
+ *   - `valid_high_confidence` (PS22 — Premium real-time confirmed)
+ *   - `valid_low_confidence`  (PS01)
+ *   - `low_confidence`        (PS20 only)
+ *   - `compliance_risk`       (PS18 — DNC, surface to caller)
+ *   - `pending_or_timeout`    (PS30 — Premium timeout, treat optimistically)
+ *
+ * `validation_error` is technical (license issue, upstream timeout, no
+ * provider configured); the SDK throws when this is the result. The caller
+ * decides what to do — block the submit, let the flow continue, retry, log
+ * silently, whatever the landing's policy is. The SDK is agnostic.
+ */
+type ValidatePhoneClassification =
+  | 'valid_high_confidence'
+  | 'valid_low_confidence'
+  | 'low_confidence'
+  | 'compliance_risk'
+  | 'pending_or_timeout'
+  | 'invalid_phone'
+  | 'disconnected_phone'
+  | 'high_risk_phone'
+  | 'validation_error';
+
+/**
+ * Response from POST /v1/lead-quality/phone/validate. The SDK flattens the
+ * envelope so the caller can read `valid` directly.
+ */
+interface ValidatePhoneResponse {
+  success: boolean;
+  message: string;
+  valid: boolean;
+  classification: ValidatePhoneClassification;
+  line_type?: 'cellular' | 'landline' | 'voip' | null;
+  country?: string | null;
+  carrier?: string | null;
+  normalized_phone?: string | null;
+  error?: string | null;
+}
+
+/**
+ * Emitted on `phone:status` for analytics / loaders. Mirrors the shape of
+ * `ChallengeStatusEvent` but with `type: 'validate'`.
+ */
+interface PhoneStatusEvent {
+  type: 'validate';
+  success: boolean;
+  data?: ValidatePhoneResponse;
+  error?: any;
+}
+
+/**
  * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
  */
 interface CatalystPlaceholder {
@@ -296,10 +376,14 @@ export {
   type OfferwallConversionRequest,
   type OfferwallConversionResponse,
   type OfferwallResponse,
+  type PhoneStatusEvent,
   type RequestChallengeOptions,
   type RequestChallengeResponse,
   type ShareLeadOptions,
   type ShareLeadResponse,
+  type ValidatePhoneClassification,
+  type ValidatePhoneOptions,
+  type ValidatePhoneResponse,
   type VerifyChallengeOptions,
   type VerifyChallengeResponse,
   type VisitorData,
