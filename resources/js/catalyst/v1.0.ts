@@ -367,7 +367,7 @@ class CatalystCore {
 
   async getOfferwall({ mixId, placement, fingerprint, data = {} }: GetOfferwallOptions): Promise<OfferwallResponse> {
     if (!fingerprint) {
-      fingerprint = this.visitorData?.fingerprint;
+      fingerprint = this.getFingerprint();
     }
     if (!fingerprint) {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante. Asegúrate de que el SDK esté inicializado.');
@@ -520,7 +520,7 @@ class CatalystCore {
     fields,
     createOnMiss,
   }: RequestChallengeOptions): Promise<RequestChallengeResponse> {
-    const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
+    const resolvedFingerprint = fingerprint ?? this.getFingerprint();
     if (!resolvedFingerprint) {
       const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
       this.dispatch('challenge:status', { type: 'send', success: false, error } as ChallengeStatusEvent);
@@ -660,7 +660,7 @@ class CatalystCore {
    * `external_service_requests` per real upstream call (cache hits are free).
    */
   async validatePhone({ phone, country, fingerprint }: ValidatePhoneOptions): Promise<ValidatePhoneResponse> {
-    const resolvedFingerprint = fingerprint ?? this.visitorData?.fingerprint;
+    const resolvedFingerprint = fingerprint ?? this.getFingerprint();
     if (!resolvedFingerprint) {
       const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
       this.dispatch('phone:status', { type: 'validate', success: false, error } as PhoneStatusEvent);
@@ -821,7 +821,7 @@ class CatalystCore {
    */
   reportPerformance(loadTimeMs: number): void {
     const data = {
-      fingerprint: this.visitorData?.fingerprint ?? null,
+      fingerprint: this.getFingerprint() ?? null,
       host: window.location.hostname,
       load_time_ms: loadTimeMs,
     };
@@ -969,7 +969,12 @@ async function init(): Promise<void> {
 
     // 4. Fire-and-forget: reportar métrica de tiempo de carga (no bloquea nada)
     const startTime = (placeholder as any)._startTime;
-    console.log('Catalyst SDK: Load time start:', startTime);
+    if (catalystInstance.config.debug && !startTime) {
+      console.error('Catalyst SDK: The upload timestamp was not found.');
+    }
+    if (catalystInstance.config.debug && startTime) {
+      console.log('Catalyst SDK: Load time start:', startTime);
+    }
     if (startTime && visitorData) {
       const loadTimeMs = Math.round(performance.now() - startTime);
       catalystInstance.reportPerformance(loadTimeMs);
