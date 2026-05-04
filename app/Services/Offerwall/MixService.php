@@ -89,6 +89,7 @@ class MixService
 
           $requestsData[$integration->id] = [
             'integration' => $integration,
+            'env' => $prodEnv,
             'url' => $url,
             'payload' => $payload,
             'method' => $method,
@@ -121,8 +122,9 @@ class MixService
 
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
-            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration, $prodEnv);
-            $offers = $this->integrationService->applyOfferFallbacks($offers, $integration, $prodEnv);
+            $integrationEnv = $requestData['env'];
+            $offers = $this->integrationService->parseOfferwallResponse($response->json(), $integration, $integrationEnv);
+            $offers = $this->integrationService->applyOfferFallbacks($offers, $integration, $integrationEnv);
             $offers = $this->enrichOffersWithToken($offers, $mixLog->id, $integration->id);
             $aggregatedOffers = array_merge($aggregatedOffers, $offers);
           }
