@@ -10,8 +10,8 @@ export interface SearchableSelectOption {
   label: string;
 }
 
-interface SearchableSelectProps {
-  options: readonly SearchableSelectOption[];
+interface SearchableSelectProps<T extends SearchableSelectOption = SearchableSelectOption> {
+  options: readonly T[];
   value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
@@ -19,9 +19,15 @@ interface SearchableSelectProps {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
+  /**
+   * Optional renderer for dropdown items and the selected trigger label.
+   * Receives the matched option. Defaults to `option.label` as plain text.
+   * Fuzzy search still uses `option.label`.
+   */
+  renderOption?: (option: T) => React.ReactNode;
 }
 
-export function SearchableSelect({
+export function SearchableSelect<T extends SearchableSelectOption = SearchableSelectOption>({
   options,
   value,
   onValueChange,
@@ -30,7 +36,8 @@ export function SearchableSelect({
   emptyMessage = 'No results found.',
   className,
   disabled = false,
-}: SearchableSelectProps) {
+  renderOption,
+}: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
 
   const selectedOption = options.find((opt) => opt.value === value);
@@ -45,7 +52,7 @@ export function SearchableSelect({
           disabled={disabled}
           className={cn('w-full justify-between font-normal transition-none', !selectedOption && 'text-muted-foreground', className)}
         >
-          <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+          <span className="truncate">{selectedOption ? (renderOption ? renderOption(selectedOption) : selectedOption.label) : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -64,7 +71,7 @@ export function SearchableSelect({
                     setOpen(false);
                   }}
                 >
-                  {option.label}
+                  {renderOption ? renderOption(option) : option.label}
                   <Check className={cn('ml-auto h-4 w-4', value === option.value ? 'opacity-100' : 'opacity-0')} />
                 </CommandItem>
               ))}
