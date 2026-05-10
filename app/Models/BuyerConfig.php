@@ -19,6 +19,7 @@ class BuyerConfig extends Model
     'conditional_pricing_rules',
     'postback_pending_days',
     'sell_on_zero_price',
+    'schedule_timezone',
   ];
 
   protected $casts = [
