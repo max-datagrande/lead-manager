@@ -1,3 +1,4 @@
+import { ScheduleSection } from '@/components/ping-post/buyers/schedule-section';
 import { CapRuleEditor } from '@/components/ping-post/cap-rule-editor';
 import { ConditionalPricingEditor } from '@/components/ping-post/conditional-pricing-editor';
 import { EligibilityRuleEditor } from '@/components/ping-post/eligibility-rule-editor';
@@ -13,7 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { useBuyers } from '@/hooks/use-buyers';
 import { cn } from '@/lib/utils';
 import type { SharedData } from '@/types';
-import type { Integration } from '@/types/ping-post';
+import type { Integration, TimezoneOption } from '@/types/ping-post';
 import { Link, usePage } from '@inertiajs/react';
 import { type LucideIcon, AlertTriangle, Copy, DollarSign, ExternalLink, GitBranch, RotateCcw, TrendingUp } from 'lucide-react';
 import { route } from 'ziggy-js';
@@ -39,9 +40,10 @@ interface Props {
   companies?: Array<{ id: number; name: string }>;
   fields?: { id: number; name: string; label?: string; possible_values?: string[] | null }[];
   externalPostbacks?: ExternalPostback[];
+  timezones?: TimezoneOption[];
 }
 
-export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [], externalPostbacks = [] }: Props) {
+export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [], externalPostbacks = [], timezones = [] }: Props) {
   const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers();
   const { auth } = usePage<SharedData>().props;
   const isAdmin = auth.user?.role === 'admin';
@@ -365,8 +367,26 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
             completo (OR). Si ninguno matchea, el buyer es omitido sin contar como rechazo.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <EligibilityRuleEditor rules={data.eligibility_rules} onChange={(rules) => setData('eligibility_rules', rules)} fields={fields} />
+
+          <div className="space-y-3 border-t pt-6">
+            <div>
+              <h3 className="text-base font-medium">Lead Receiving Schedule</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Ventanas horarias en las que este buyer puede recibir leads. Si no hay ventanas, el buyer es elegible 24/7. Fuera de cualquier
+                ventana, el buyer es omitido sin contar como rechazo.
+              </p>
+            </div>
+            <ScheduleSection
+              windows={data.schedule_windows}
+              timezone={data.schedule_timezone}
+              timezones={timezones}
+              errors={errors}
+              onWindowsChange={(windows) => setData('schedule_windows', windows)}
+              onTimezoneChange={(tz) => setData('schedule_timezone', tz)}
+            />
+          </div>
         </CardContent>
       </Card>
 
