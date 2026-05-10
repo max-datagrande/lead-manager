@@ -35,6 +35,14 @@ export interface EligibilityRule {
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty';
   value: string | string[] | null;
   sort_order: number;
+  group_index: number;
+}
+
+export interface EligibilityFieldOption {
+  id: number;
+  name: string;
+  label?: string;
+  possible_values?: string[] | null;
 }
 
 export interface CapRule {

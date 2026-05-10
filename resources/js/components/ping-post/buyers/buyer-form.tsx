@@ -26,24 +26,24 @@ const PRICING_META: Record<string, { icon: LucideIcon; description: string }> = 
 };
 
 interface ExternalPostback {
-  id: number
-  uuid: string
-  name: string
-  param_mappings: Record<string, string>
-  generated_url: string
+  id: number;
+  uuid: string;
+  name: string;
+  param_mappings: Record<string, string>;
+  generated_url: string;
 }
 
 interface Props {
   integrations?: Integration[];
   priceSources?: Array<{ value: string; label: string }>;
   companies?: Array<{ id: number; name: string }>;
-  fields?: { id: number; name: string }[];
+  fields?: { id: number; name: string; label?: string; possible_values?: string[] | null }[];
   externalPostbacks?: ExternalPostback[];
 }
 
 export function BuyerForm({ integrations = [], priceSources = [], companies = [], fields = [], externalPostbacks = [] }: Props) {
-  const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers()
-  const { auth } = usePage<SharedData>().props
+  const { isEdit, data, errors, processing, handleSubmit, setData } = useBuyers();
+  const { auth } = usePage<SharedData>().props;
   const isAdmin = auth.user?.role === 'admin';
 
   const selectedIntegration = integrations.find((i) => i.id === data.integration_id) ?? null;
@@ -360,9 +360,9 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
         <CardHeader>
           <CardTitle>Eligibility Rules</CardTitle>
           <CardDescription>
-            Filtros que determinan si un lead puede ser enviado a este buyer. El lead debe cumplir
-            <strong> todas</strong> las reglas para ser elegible. Si no cumple alguna, el buyer es omitido sin contar como rechazo. Ejemplo: solo
-            leads de CA y TX, con edad ≥ 25.
+            Filtros que determinan si un lead puede ser enviado a este buyer. Cada <strong>rule set</strong> es un conjunto de condiciones que deben
+            cumplirse <strong>todas</strong> (AND). Si configurás varios rule sets, el lead es elegible cuando <strong>al menos uno</strong> matchea
+            completo (OR). Si ninguno matchea, el buyer es omitido sin contar como rechazo.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -400,29 +400,29 @@ export function BuyerForm({ integrations = [], priceSources = [], companies = []
 // ─── Pricing Webhook Section ──────────────────────────────────────────────────
 
 interface PricingWebhookProps {
-  externalPostbacks: ExternalPostback[]
-  pricingPostback: { postback_id: number; identifier_token: string; price_token: string } | null
-  onChange: (value: { postback_id: number; identifier_token: string; price_token: string } | null) => void
-  errors: Record<string, string>
+  externalPostbacks: ExternalPostback[];
+  pricingPostback: { postback_id: number; identifier_token: string; price_token: string } | null;
+  onChange: (value: { postback_id: number; identifier_token: string; price_token: string } | null) => void;
+  errors: Record<string, string>;
 }
 
 function PricingWebhookSection({ externalPostbacks, pricingPostback, onChange, errors }: PricingWebhookProps) {
-  const selectedPostback = externalPostbacks.find((p) => p.id === pricingPostback?.postback_id) ?? null
-  const internalTokens = selectedPostback ? [...new Set(Object.values(selectedPostback.param_mappings))] : []
+  const selectedPostback = externalPostbacks.find((p) => p.id === pricingPostback?.postback_id) ?? null;
+  const internalTokens = selectedPostback ? [...new Set(Object.values(selectedPostback.param_mappings))] : [];
 
   const handlePostbackChange = (postbackId: string) => {
     if (postbackId === 'none') {
-      onChange(null)
-      return
+      onChange(null);
+      return;
     }
-    onChange({ postback_id: Number(postbackId), identifier_token: '', price_token: '' })
-  }
+    onChange({ postback_id: Number(postbackId), identifier_token: '', price_token: '' });
+  };
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
       <div>
         <h4 className="text-sm font-medium">Pricing Webhook</h4>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           Vincula un postback externo para recibir la confirmación de precio del buyer. Cuando el partner dispara la URL, el sistema resuelve el
           precio pendiente automáticamente.
         </p>
@@ -479,10 +479,7 @@ function PricingWebhookSection({ externalPostbacks, pricingPostback, onChange, e
                 Price Token
                 <FieldHint text="El token que contiene el precio confirmado por el buyer." />
               </Label>
-              <Select
-                value={pricingPostback.price_token || undefined}
-                onValueChange={(v) => onChange({ ...pricingPostback, price_token: v })}
-              >
+              <Select value={pricingPostback.price_token || undefined} onValueChange={(v) => onChange({ ...pricingPostback, price_token: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select token..." />
                 </SelectTrigger>
@@ -494,16 +491,14 @@ function PricingWebhookSection({ externalPostbacks, pricingPostback, onChange, e
                   ))}
                 </SelectContent>
               </Select>
-              {errors['pricing_postback.price_token'] && (
-                <p className="text-sm text-destructive">{errors['pricing_postback.price_token']}</p>
-              )}
+              {errors['pricing_postback.price_token'] && <p className="text-sm text-destructive">{errors['pricing_postback.price_token']}</p>}
             </div>
           </div>
 
           {selectedPostback.generated_url && (
             <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">Generated URL</Label>
-              <div className="bg-muted flex items-center gap-2 rounded-md p-3">
+              <Label className="text-xs text-muted-foreground">Generated URL</Label>
+              <div className="flex items-center gap-2 rounded-md bg-muted p-3">
                 <code className="flex-1 truncate text-xs">{selectedPostback.generated_url}</code>
                 <Button
                   type="button"
@@ -515,11 +510,11 @@ function PricingWebhookSection({ externalPostbacks, pricingPostback, onChange, e
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <p className="text-muted-foreground text-xs">Comparte esta URL con el buyer para recibir confirmaciones de precio.</p>
+              <p className="text-xs text-muted-foreground">Comparte esta URL con el buyer para recibir confirmaciones de precio.</p>
             </div>
           )}
         </>
       )}
     </div>
-  )
+  );
 }
