@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BuyerEligibilityRule extends Model
 {
-  protected $fillable = ['integration_id', 'field', 'operator', 'value', 'sort_order'];
+  protected $fillable = ['integration_id', 'field', 'operator', 'value', 'sort_order', 'group_index'];
 
   protected $casts = [
     'value' => 'array',

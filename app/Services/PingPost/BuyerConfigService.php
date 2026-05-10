@@ -44,7 +44,7 @@ class BuyerConfigService
   /**
    * Replace all eligibility rules for the integration.
    *
-   * @param  array<int, array{field: string, operator: string, value: mixed, sort_order?: int}>  $rules
+   * @param  array<int, array{field: string, operator: string, value: mixed, sort_order?: int, group_index?: int}>  $rules
    */
   public function syncEligibilityRules(Integration $integration, array $rules): void
   {
@@ -54,8 +54,9 @@ class BuyerConfigService
       $integration->eligibilityRules()->create([
         'field' => $rule['field'],
         'operator' => $rule['operator'],
-        'value' => $rule['value'],
+        'value' => $rule['value'] ?? null,
         'sort_order' => $rule['sort_order'] ?? $index,
+        'group_index' => $rule['group_index'] ?? 0,
       ]);
     }
   }

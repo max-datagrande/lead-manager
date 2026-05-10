@@ -132,7 +132,13 @@ it('returns null skip reason when all rules pass', function () {
 it('is_empty passes when field is missing from lead data', function () {
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'is_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -143,7 +149,13 @@ it('is_empty passes when field is missing from lead data', function () {
 it('is_not_empty fails when field is missing from lead data', function () {
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_not_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'is_not_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -157,7 +169,13 @@ it('is_not_empty passes for array field with values', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_not_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'is_not_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -169,7 +187,13 @@ it('is_not_empty fails for array field with empty string', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_not_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'is_not_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -181,7 +205,13 @@ it('is_empty passes for array field with empty string', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'is_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'is_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -193,7 +223,13 @@ it('eq checks if any array element matches', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'eq', 'value' => 'back pain', 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'eq',
+    'value' => 'back pain',
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -206,7 +242,13 @@ it('in checks if any array element is in the rule values', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'in', 'value' => ['back pain', 'knee pain'], 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'in',
+    'value' => ['back pain', 'knee pain'],
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -219,7 +261,13 @@ it('not_in checks that no array element is in the rule values', function () {
   Field::factory()->create(['name' => 'injuries', 'is_array' => true]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'injuries', 'operator' => 'not_in', 'value' => ['back pain', 'knee pain'], 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injuries',
+    'operator' => 'not_in',
+    'value' => ['back pain', 'knee pain'],
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
@@ -232,11 +280,234 @@ it('does not split non-array fields by semicolon', function () {
   Field::factory()->create(['name' => 'comments', 'is_array' => false]);
   $integration = Integration::factory()->pingPost()->create();
 
-  BuyerEligibilityRule::create(['integration_id' => $integration->id, 'field' => 'comments', 'operator' => 'is_not_empty', 'value' => null, 'sort_order' => 0]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'comments',
+    'operator' => 'is_not_empty',
+    'value' => null,
+    'sort_order' => 0,
+  ]);
 
   $integration->load('eligibilityRules');
   $checker = app(EligibilityCheckerService::class);
 
   // "a;b" should stay as a plain string, not be split
   expect($checker->isEligible($integration, ['comments' => 'hello; world']))->toBeTrue();
+});
+
+// ─── Grouped rules (OR-of-AND) ───────────────────────────────────────────────
+
+it('treats a single group as AND across its rules', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'age',
+    'operator' => 'gte',
+    'value' => 18,
+    'sort_order' => 1,
+    'group_index' => 0,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $checker = app(EligibilityCheckerService::class);
+
+  expect($checker->isEligible($integration, ['state' => 'CA', 'age' => 25]))->toBeTrue();
+  expect($checker->isEligible($integration, ['state' => 'CA', 'age' => 16]))->toBeFalse();
+});
+
+it('returns eligible when at least one group fully matches (OR)', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  // Group 0: state=CA AND age>=21
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'age',
+    'operator' => 'gte',
+    'value' => 21,
+    'sort_order' => 1,
+    'group_index' => 0,
+  ]);
+
+  // Group 1: state=TX AND age>=18
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'TX',
+    'sort_order' => 2,
+    'group_index' => 1,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'age',
+    'operator' => 'gte',
+    'value' => 18,
+    'sort_order' => 3,
+    'group_index' => 1,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $checker = app(EligibilityCheckerService::class);
+
+  // Matches group 0
+  expect($checker->isEligible($integration, ['state' => 'CA', 'age' => 25]))->toBeTrue();
+  // Matches group 1
+  expect($checker->isEligible($integration, ['state' => 'TX', 'age' => 19]))->toBeTrue();
+  // Matches neither
+  expect($checker->isEligible($integration, ['state' => 'CA', 'age' => 18]))->toBeFalse();
+  expect($checker->isEligible($integration, ['state' => 'NY', 'age' => 30]))->toBeFalse();
+});
+
+it('returns ineligible when every group has at least one failing rule', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'TX',
+    'sort_order' => 1,
+    'group_index' => 1,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $checker = app(EligibilityCheckerService::class);
+
+  expect($checker->isEligible($integration, ['state' => 'NY']))->toBeFalse();
+});
+
+// ─── Skip reason with grouped rules and actual value ─────────────────────────
+
+it('formats skip reason listing every failed group with actual value', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'in',
+    'value' => ['CA', 'TX'],
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injured',
+    'operator' => 'eq',
+    'value' => 'yes',
+    'sort_order' => 1,
+    'group_index' => 1,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['state' => 'NY']);
+
+  expect($reason)
+    ->toContain('Set 1 failed at field=state operator=in actual=NY')
+    ->toContain('Set 2 failed at field=injured operator=eq actual=(missing)')
+    ->toContain('; ');
+});
+
+it('formats null lead value as "null" in skip reason', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['state' => null]);
+
+  expect($reason)->toContain('actual=null');
+});
+
+it('formats empty string lead value as "(empty)" in skip reason', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['state' => '']);
+
+  expect($reason)->toContain('actual=(empty)');
+});
+
+it('formats boolean false lead value as "false" in skip reason', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'injured',
+    'operator' => 'eq',
+    'value' => 'yes',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['injured' => false]);
+
+  expect($reason)->toContain('actual=false');
+});
+
+it('returns null skip reason when at least one group passes', function () {
+  $integration = Integration::factory()->pingPost()->create();
+
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'CA',
+    'sort_order' => 0,
+    'group_index' => 0,
+  ]);
+  BuyerEligibilityRule::create([
+    'integration_id' => $integration->id,
+    'field' => 'state',
+    'operator' => 'eq',
+    'value' => 'TX',
+    'sort_order' => 1,
+    'group_index' => 1,
+  ]);
+
+  $integration->load('eligibilityRules');
+  $reason = app(EligibilityCheckerService::class)->getSkipReason($integration, ['state' => 'CA']);
+
+  expect($reason)->toBeNull();
 });

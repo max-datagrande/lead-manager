@@ -49,6 +49,22 @@ class StoreBuyerConfigRequest extends FormRequest
       'pricing_postback.identifier_token' => ['required_with:pricing_postback', 'string', 'max:100'],
       'pricing_postback.price_token' => ['required_with:pricing_postback', 'string', 'max:100'],
       'sell_on_zero_price' => ['boolean'],
+
+      // Eligibility rules (flat array; group_index defines OR-of-AND grouping)
+      'eligibility_rules' => ['nullable', 'array'],
+      'eligibility_rules.*.field' => ['required', 'string', 'max:100'],
+      'eligibility_rules.*.operator' => [
+        'required',
+        'string',
+        Rule::in(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'not_in', 'is_empty', 'is_not_empty']),
+      ],
+      'eligibility_rules.*.value' => [
+        'exclude_if:eligibility_rules.*.operator,is_empty',
+        'exclude_if:eligibility_rules.*.operator,is_not_empty',
+        'required',
+      ],
+      'eligibility_rules.*.sort_order' => ['nullable', 'integer', 'min:0'],
+      'eligibility_rules.*.group_index' => ['nullable', 'integer', 'min:0'],
     ];
   }
 }
