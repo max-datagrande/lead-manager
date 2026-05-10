@@ -45,6 +45,7 @@ class BuyerController extends Controller
       'priceSources' => PriceSource::toArray(),
       'fields' => Field::orderBy('name')->get(['id', 'name', 'label', 'possible_values']),
       'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
+      'timezones' => $this->scheduleTimezones(),
     ]);
   }
 
@@ -74,6 +75,10 @@ class BuyerController extends Controller
       $this->configService->syncCapRules($buyer->integration, $request->input('caps', []));
     }
 
+    if ($request->has('schedule_windows')) {
+      $this->configService->syncScheduleWindows($buyer, $request->input('schedule_windows', []));
+    }
+
     return redirect()->route('ping-post.buyers.index')->with('success', 'Buyer created successfully.');
   }
 
@@ -88,7 +93,7 @@ class BuyerController extends Controller
 
   public function edit(Buyer $buyer): Response
   {
-    $buyer->load(['integration', 'buyerConfig.pricingPostback', 'eligibilityRules', 'capRules']);
+    $buyer->load(['integration', 'buyerConfig.pricingPostback', 'eligibilityRules', 'capRules', 'scheduleWindows']);
 
     return Inertia::render('ping-post/buyers/edit', [
       'buyer' => $buyer,
@@ -98,6 +103,7 @@ class BuyerController extends Controller
       'priceSources' => PriceSource::toArray(),
       'fields' => Field::orderBy('name')->get(['id', 'name', 'label', 'possible_values']),
       'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
+      'timezones' => $this->scheduleTimezones(),
     ]);
   }
 
@@ -134,6 +140,10 @@ class BuyerController extends Controller
       $this->configService->syncCapRules($buyer->integration, $request->input('caps', []));
     }
 
+    if ($request->has('schedule_windows')) {
+      $this->configService->syncScheduleWindows($buyer, $request->input('schedule_windows', []));
+    }
+
     return redirect()->route('ping-post.buyers.show', $buyer)->with('success', 'Buyer updated successfully.');
   }
 
@@ -164,8 +174,45 @@ class BuyerController extends Controller
   /**
    * Strip buyer-level fields from validated data to get only BuyerConfig fields.
    */
+  /**
+   * Supported timezones for the Lead Receiving Schedule selector.
+   *
+   * @return array<int, array{value: string, label: string}>
+   */
+  private function scheduleTimezones(): array
+  {
+    return array_map(function (array $tz): array {
+      $name = $tz['prefix'] ?? str_replace('_', ' ', $tz['value']);
+      $offset = $tz['value'] === 'UTC' ? null : $this->currentUtcOffset($tz['value']);
+      $description = $tz['description'] ?? null;
+
+      // Flat string for SearchableSelect fuzzy search.
+      $searchLabel = $name . ($offset ? " ({$offset})" : '') . ($description ? " {$description}" : '');
+
+      return [
+        'value' => $tz['value'],
+        'label' => $searchLabel,
+        'name' => $name,
+        'offset' => $offset,
+        'description' => $description,
+      ];
+    }, config('timezones.schedule', []));
+  }
+
+  private function currentUtcOffset(string $timezone): string
+  {
+    $offsetSeconds = (new \DateTimeZone($timezone))->getOffset(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
+    $hours = intdiv($offsetSeconds, 3600);
+    $minutes = abs(intdiv($offsetSeconds % 3600, 60));
+    $sign = $hours >= 0 ? '+' : '-';
+
+    $hoursStr = (string) abs($hours);
+
+    return $minutes === 0 ? "UTC{$sign}{$hoursStr}" : sprintf('UTC%s%s:%02d', $sign, $hoursStr, $minutes);
+  }
+
   private function extractConfigData(array $validated): array
   {
-    return array_diff_key($validated, array_flip(['name', 'integration_id', 'company_id', 'is_active', 'pricing_postback']));
+    return array_diff_key($validated, array_flip(['name', 'integration_id', 'company_id', 'is_active', 'pricing_postback', 'schedule_windows']));
   }
 }
