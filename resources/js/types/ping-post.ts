@@ -15,6 +15,14 @@ export interface Integration {
   environments?: EnvironmentDB[];
 }
 
+export interface PricingPostbackPivot {
+  id: number;
+  pivot: {
+    identifier_token: string;
+    price_token: string;
+  };
+}
+
 export interface BuyerConfig {
   id: number;
   integration_id: number;
@@ -27,6 +35,7 @@ export interface BuyerConfig {
   postback_pending_days: number;
   sell_on_zero_price: boolean;
   schedule_timezone: string | null;
+  pricing_postback?: PricingPostbackPivot[];
 }
 
 export interface ScheduleWindow {
