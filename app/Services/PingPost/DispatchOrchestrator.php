@@ -36,6 +36,7 @@ class DispatchOrchestrator
     private readonly DispatchTimelineService $timeline,
     private readonly \App\Services\LeadQuality\LeadQualityCheckerService $leadQuality,
     private readonly \App\Services\LeadService $leadService,
+    private readonly ScheduleCheckerService $schedule,
   ) {}
 
   /**
@@ -795,6 +796,8 @@ class DispatchOrchestrator
         'integration.tokenMappings.field',
         'integration.eligibilityRules',
         'integration.capRules',
+        'integration.buyer.scheduleWindows',
+        'integration.buyer.buyerConfig',
       ])
       ->get();
 
@@ -825,6 +828,19 @@ class DispatchOrchestrator
           'reason' => 'duplicate',
         ]);
         $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'duplicate');
+        return false;
+      }
+
+      $buyer = $integration->buyer;
+
+      if ($buyer && !$this->schedule->isWithinSchedule($buyer)) {
+        $scheduleReason = $this->schedule->getSkipReason($buyer);
+        $this->timeline->log(DispatchTimelineService::BUYER_FILTERED, "Buyer {$integration->name} filtered: outside schedule", [
+          'integration_id' => $integration->id,
+          'reason' => 'schedule_out_of_window',
+          'detail' => $scheduleReason,
+        ]);
+        $this->bufferBuyerEvent($dispatch->id, $integration->id, 'filtered', 'schedule_out_of_window', $scheduleReason);
         return false;
       }
 
