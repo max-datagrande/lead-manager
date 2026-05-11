@@ -43,7 +43,7 @@ class BuyerController extends Controller
     return Inertia::render('ping-post/buyers/create', [
       'integrations' => $integrations,
       'priceSources' => PriceSource::toArray(),
-      'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
+      'fields' => Field::orderBy('name')->get(['id', 'name', 'label', 'possible_values']),
       'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
     ]);
   }
@@ -96,7 +96,7 @@ class BuyerController extends Controller
         ->orderBy('name')
         ->get(['id', 'name', 'type']),
       'priceSources' => PriceSource::toArray(),
-      'fields' => Field::orderBy('name')->get(['id', 'name', 'label']),
+      'fields' => Field::orderBy('name')->get(['id', 'name', 'label', 'possible_values']),
       'externalPostbacks' => Postback::external()->active()->with('platform')->get(),
     ]);
   }
