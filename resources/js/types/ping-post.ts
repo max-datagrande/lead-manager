@@ -15,6 +15,14 @@ export interface Integration {
   environments?: EnvironmentDB[];
 }
 
+export interface PricingPostbackPivot {
+  id: number;
+  pivot: {
+    identifier_token: string;
+    price_token: string;
+  };
+}
+
 export interface BuyerConfig {
   id: number;
   integration_id: number;
@@ -26,6 +34,25 @@ export interface BuyerConfig {
   conditional_pricing_rules: Array<{ conditions: Array<{ field: string; op: string; value: any }>; price: number }> | null;
   postback_pending_days: number;
   sell_on_zero_price: boolean;
+  schedule_timezone: string | null;
+  pricing_postback?: PricingPostbackPivot[];
+}
+
+export interface ScheduleWindow {
+  id?: number;
+  buyer_id?: number;
+  days_of_week: number[];
+  start_time: string;
+  end_time: string;
+  sort_order: number;
+}
+
+export interface TimezoneOption {
+  value: string;
+  label: string;
+  name: string;
+  offset: string | null;
+  description: string | null;
 }
 
 export interface EligibilityRule {
@@ -64,6 +91,7 @@ export interface Buyer {
   buyer_config?: BuyerConfig | null;
   eligibility_rules?: EligibilityRule[];
   cap_rules?: CapRule[];
+  schedule_windows?: ScheduleWindow[];
   created_at: string;
   updated_at: string;
 }

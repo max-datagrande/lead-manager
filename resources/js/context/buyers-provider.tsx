@@ -41,6 +41,12 @@ function buildInitialData(buyer: Buyer | null) {
     conditional_pricing_rules: cfg?.conditional_pricing_rules ?? [],
     eligibility_rules: buyer?.eligibility_rules ?? [],
     caps: buyer?.cap_rules ?? [],
+    schedule_timezone: cfg?.schedule_timezone ?? 'America/New_York',
+    schedule_windows: (buyer?.schedule_windows ?? []).map((w) => ({
+      ...w,
+      start_time: typeof w.start_time === 'string' ? w.start_time.slice(0, 5) : w.start_time,
+      end_time: typeof w.end_time === 'string' ? w.end_time.slice(0, 5) : w.end_time,
+    })),
   };
 }
 

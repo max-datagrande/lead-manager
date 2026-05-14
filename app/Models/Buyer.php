@@ -45,4 +45,9 @@ class Buyer extends Model
   {
     return $this->hasMany(BuyerCapRule::class, 'integration_id', 'integration_id');
   }
+
+  public function scheduleWindows(): HasMany
+  {
+    return $this->hasMany(BuyerScheduleWindow::class)->orderBy('sort_order');
+  }
 }

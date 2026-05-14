@@ -2,6 +2,7 @@
 
 namespace App\Services\PingPost;
 
+use App\Models\Buyer;
 use App\Models\BuyerConfig;
 use App\Models\Integration;
 
@@ -75,6 +76,25 @@ class BuyerConfigService
         'period' => $cap['period'],
         'max_leads' => $cap['max_leads'] ?? null,
         'max_revenue' => $cap['max_revenue'] ?? null,
+      ]);
+    }
+  }
+
+  /**
+   * Replace all schedule windows for a buyer.
+   *
+   * @param  array<int, array{days_of_week: array<int>, start_time: string, end_time: string, sort_order?: int}>  $windows
+   */
+  public function syncScheduleWindows(Buyer $buyer, array $windows): void
+  {
+    $buyer->scheduleWindows()->delete();
+
+    foreach ($windows as $index => $window) {
+      $buyer->scheduleWindows()->create([
+        'days_of_week' => array_values(array_map('intval', $window['days_of_week'])),
+        'start_time' => $window['start_time'],
+        'end_time' => $window['end_time'],
+        'sort_order' => $window['sort_order'] ?? $index,
       ]);
     }
   }

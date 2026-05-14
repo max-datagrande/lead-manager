@@ -65,6 +65,15 @@ class StoreBuyerConfigRequest extends FormRequest
       ],
       'eligibility_rules.*.sort_order' => ['nullable', 'integer', 'min:0'],
       'eligibility_rules.*.group_index' => ['nullable', 'integer', 'min:0'],
+
+      // Lead Receiving Schedule (recurrent day-of-week + time range, single timezone per buyer)
+      'schedule_timezone' => ['nullable', 'string', 'max:64'],
+      'schedule_windows' => ['nullable', 'array'],
+      'schedule_windows.*.days_of_week' => ['required', 'array', 'min:1'],
+      'schedule_windows.*.days_of_week.*' => ['integer', 'min:0', 'max:6'],
+      'schedule_windows.*.start_time' => ['required', 'date_format:H:i'],
+      'schedule_windows.*.end_time' => ['required', 'date_format:H:i', 'after:schedule_windows.*.start_time'],
+      'schedule_windows.*.sort_order' => ['nullable', 'integer', 'min:0'],
     ];
   }
 }
