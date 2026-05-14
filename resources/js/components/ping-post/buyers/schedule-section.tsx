@@ -8,6 +8,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { ScheduleWindow, TimezoneOption } from '@/types/ping-post';
 import { Plus, Trash2 } from 'lucide-react';
 
+/* Constants */
+const DAYS: Array<{ value: number; short: string; label: string }> = [
+  { value: 0, short: 'S', label: 'Sunday' },
+  { value: 1, short: 'M', label: 'Monday' },
+  { value: 2, short: 'T', label: 'Tuesday' },
+  { value: 3, short: 'W', label: 'Wednesday' },
+  { value: 4, short: 'T', label: 'Thursday' },
+  { value: 5, short: 'F', label: 'Friday' },
+  { value: 6, short: 'S', label: 'Saturday' },
+];
+
+/* Helper functions */
 function renderTimezone(tz: TimezoneOption) {
   return (
     <div className="flex w-full items-center justify-between gap-2">
@@ -24,25 +36,6 @@ function renderTimezone(tz: TimezoneOption) {
   );
 }
 
-interface Props {
-  windows: ScheduleWindow[];
-  timezone: string;
-  timezones: TimezoneOption[];
-  errors: Record<string, string>;
-  onWindowsChange: (windows: ScheduleWindow[]) => void;
-  onTimezoneChange: (tz: string) => void;
-}
-
-const DAYS: Array<{ value: number; short: string; label: string }> = [
-  { value: 0, short: 'S', label: 'Sunday' },
-  { value: 1, short: 'M', label: 'Monday' },
-  { value: 2, short: 'T', label: 'Tuesday' },
-  { value: 3, short: 'W', label: 'Wednesday' },
-  { value: 4, short: 'T', label: 'Thursday' },
-  { value: 5, short: 'F', label: 'Friday' },
-  { value: 6, short: 'S', label: 'Saturday' },
-];
-
 function emptyWindow(sortOrder: number): ScheduleWindow {
   return {
     days_of_week: [],
@@ -56,6 +49,18 @@ function emptyWindow(sortOrder: number): ScheduleWindow {
 function trimSeconds(value: string): string {
   return value.length > 5 ? value.slice(0, 5) : value;
 }
+
+/* Props */
+interface Props {
+  windows: ScheduleWindow[];
+  timezone: string;
+  timezones: TimezoneOption[];
+  errors: Record<string, string>;
+  onWindowsChange: (windows: ScheduleWindow[]) => void;
+  onTimezoneChange: (tz: string) => void;
+}
+
+
 
 export function ScheduleSection({ windows, timezone, timezones, errors, onWindowsChange, onTimezoneChange }: Props) {
   const updateWindow = (index: number, patch: Partial<ScheduleWindow>) => {
@@ -72,7 +77,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-1.5 max-w-2xl">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="schedule_timezone">Timezone</Label>
         <SearchableSelect
           options={timezones}
@@ -140,7 +145,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
                         type="time"
                         value={trimSeconds(window.start_time)}
                         onChange={(e) => updateWindow(index, { start_time: e.target.value })}
-                        className="w-28"
+                        className="w-fit pr-1 cursor-pointer"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -152,7 +157,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
                         type="time"
                         value={trimSeconds(window.end_time)}
                         onChange={(e) => updateWindow(index, { end_time: e.target.value })}
-                        className="w-28"
+                        className="w-fit pr-1 cursor-pointer"
                       />
                     </div>
                   </div>
