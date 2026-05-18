@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Models\LandingPage;
 
 class Vertical extends Model
 {
+  use HasFactory;
+
   protected $fillable = ['name', 'description', 'active', 'user_id', 'updated_user_id'];
 
   private function getAuthUserId()
