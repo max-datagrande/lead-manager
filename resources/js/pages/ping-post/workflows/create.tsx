@@ -1,14 +1,14 @@
-import { createBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs'
-import { WorkflowForm } from '@/components/ping-post/workflows/workflow-form'
-import PageHeader from '@/components/page-header'
-import { WorkflowsProvider } from '@/context/workflows-provider'
-import AppLayout from '@/layouts/app-layout'
-import type { Buyer } from '@/types/ping-post'
-import { Head } from '@inertiajs/react'
+import PageHeader from '@/components/page-header';
+import { createBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs';
+import { WorkflowForm } from '@/components/ping-post/workflows/workflow-form';
+import { WorkflowsProvider } from '@/context/workflows-provider';
+import AppLayout from '@/layouts/app-layout';
+import type { Buyer } from '@/types/ping-post';
+import { Head } from '@inertiajs/react';
 
 interface Props {
-  buyers: Buyer[]
-  strategies: Array<{ value: string; label: string }>
+  buyers: Buyer[];
+  strategies: Array<{ value: string; label: string }>;
 }
 
 const WorkflowsCreate = ({ buyers, strategies }: Props) => (
@@ -19,7 +19,7 @@ const WorkflowsCreate = ({ buyers, strategies }: Props) => (
       <WorkflowForm />
     </div>
   </WorkflowsProvider>
-)
+);
 
-WorkflowsCreate.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={createBreadcrumbs} />
-export default WorkflowsCreate
+WorkflowsCreate.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={createBreadcrumbs} />;
+export default WorkflowsCreate;

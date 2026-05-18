@@ -1,37 +1,37 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
-import type { DispatchTimelineLog } from '@/types/ping-post'
-import { ChevronRight } from 'lucide-react'
-import { useState } from 'react'
-import { ResultDetailButton } from './result-detail-modal'
-import { getDotColor, TimelineEventBadge } from './timeline-event-badge'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
+import type { DispatchTimelineLog } from '@/types/ping-post';
+import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { ResultDetailButton } from './result-detail-modal';
+import { getDotColor, TimelineEventBadge } from './timeline-event-badge';
 
 function formatRelativeMs(ms: number): string {
-  if (ms < 1000) return `+${ms}ms`
-  return `+${(ms / 1000).toFixed(2)}s`
+  if (ms < 1000) return `+${ms}ms`;
+  return `+${(ms / 1000).toFixed(2)}s`;
 }
 
 function parseTimestamp(ts: string): number {
   // Normalize to ISO: handle "2026-04-07 16:13:00.123456" and "2026-04-07T16:13:00.000000Z"
-  const normalized = ts.replace(' ', 'T')
-  return new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z').getTime()
+  const normalized = ts.replace(' ', 'T');
+  return new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z').getTime();
 }
 
 interface EntryProps {
-  log: DispatchTimelineLog
-  relativeMs: number
+  log: DispatchTimelineLog;
+  relativeMs: number;
 }
 
 function TimelineLogEntry({ log, relativeMs }: EntryProps) {
-  const [expanded, setExpanded] = useState(false)
-  const hasContext = log.context !== null && Object.keys(log.context).length > 0
-  const pingResultId = log.context?.ping_result_id as number | undefined
-  const postResultId = log.context?.post_result_id as number | undefined
+  const [expanded, setExpanded] = useState(false);
+  const hasContext = log.context !== null && Object.keys(log.context).length > 0;
+  const pingResultId = log.context?.ping_result_id as number | undefined;
+  const postResultId = log.context?.post_result_id as number | undefined;
 
   return (
     <div className="relative pb-6 pl-8 last:pb-0">
       {/* Dot on the line */}
-      <div className={cn('absolute left-0 top-1 h-3 w-3 rounded-full ring-2 ring-background', getDotColor(log.event))} />
+      <div className={cn('absolute top-1 left-0 h-3 w-3 rounded-full ring-2 ring-background', getDotColor(log.event))} />
 
       <div className="flex flex-wrap items-start gap-2">
         {/* Relative timestamp */}
@@ -65,33 +65,29 @@ function TimelineLogEntry({ log, relativeMs }: EntryProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 interface Props {
-  logs: DispatchTimelineLog[]
+  logs: DispatchTimelineLog[];
 }
 
 export function TimelineLogList({ logs }: Props) {
   if (logs.length === 0) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        No timeline events recorded for this dispatch.
-      </p>
-    )
+    return <p className="py-12 text-center text-sm text-muted-foreground">No timeline events recorded for this dispatch.</p>;
   }
 
-  const baseTime = parseTimestamp(logs[0].logged_at)
+  const baseTime = parseTimestamp(logs[0].logged_at);
 
   return (
     <div className="relative ml-1.5">
       {/* Vertical connecting line */}
-      <div className="absolute left-[5px] top-1 bottom-0 w-px bg-border" />
+      <div className="absolute top-1 bottom-0 left-[5px] w-px bg-border" />
 
       {logs.map((log) => {
-        const relativeMs = parseTimestamp(log.logged_at) - baseTime
-        return <TimelineLogEntry key={log.id} log={log} relativeMs={relativeMs} />
+        const relativeMs = parseTimestamp(log.logged_at) - baseTime;
+        return <TimelineLogEntry key={log.id} log={log} relativeMs={relativeMs} />;
       })}
     </div>
-  )
+  );
 }

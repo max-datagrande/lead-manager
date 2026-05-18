@@ -7,7 +7,6 @@ import { createContext, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
 export const PostbackQueueContext = createContext(null);
 
-
 export function PostbackQueueProvider({ children, initialState }) {
   const modal = useModal();
   const filters = useRef(initialState?.filters ?? []);

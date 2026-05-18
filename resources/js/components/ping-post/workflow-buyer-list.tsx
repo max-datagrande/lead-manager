@@ -1,42 +1,28 @@
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
-import type { Buyer, WorkflowBuyer } from '@/types/ping-post'
-import {
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  type DragEndEvent,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  arrayMove,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus, ShieldAlert, Trash2, Users } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import type { Buyer, WorkflowBuyer } from '@/types/ping-post';
+import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, Plus, ShieldAlert, Trash2, Users } from 'lucide-react';
 
 // ── Sortable row (regular buyers only, no fallback) ────────────────────────────
 
 interface SortableRowProps {
-  item: WorkflowBuyer
-  position: number
-  availableBuyers: Buyer[]
-  strategy: string
-  onUpdate: (updates: Partial<WorkflowBuyer>) => void
-  onRemove: () => void
+  item: WorkflowBuyer;
+  position: number;
+  availableBuyers: Buyer[];
+  strategy: string;
+  onUpdate: (updates: Partial<WorkflowBuyer>) => void;
+  onRemove: () => void;
 }
 
 function SortableRow({ item, position, availableBuyers, strategy, onUpdate, onRemove }: SortableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.buyer_id! })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.buyer_id! });
 
   return (
     <div
@@ -45,7 +31,7 @@ function SortableRow({ item, position, availableBuyers, strategy, onUpdate, onRe
       className={cn(
         'flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 transition-all',
         isDragging && 'opacity-50 shadow-lg',
-        !item.is_active && 'opacity-60 bg-muted/30',
+        !item.is_active && 'bg-muted/30 opacity-60',
       )}
     >
       {/* Drag handle + position */}
@@ -92,38 +78,26 @@ function SortableRow({ item, position, availableBuyers, strategy, onUpdate, onRe
 
       {/* Active toggle */}
       <div className="flex shrink-0 items-center gap-1.5">
-        <Switch
-          checked={item.is_active}
-          onCheckedChange={(v) => onUpdate({ is_active: v })}
-          id={`active-${item.buyer_id}`}
-          className="scale-90"
-        />
+        <Switch checked={item.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} id={`active-${item.buyer_id}`} className="scale-90" />
         <Label htmlFor={`active-${item.buyer_id}`} className="cursor-pointer text-xs text-muted-foreground">
           Active
         </Label>
       </div>
 
-      <Button
-        variant="ghost-destructive"
-        size="icon"
-        onClick={onRemove}
-        type="button"
-        className="ml-auto h-8 w-8 shrink-0"
-        aria-label="Remove buyer"
-      >
+      <Button variant="ghost-destructive" size="icon" onClick={onRemove} type="button" className="ml-auto h-8 w-8 shrink-0" aria-label="Remove buyer">
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
 
 // ── Fallback row (single, amber, no drag) ──────────────────────────────────────
 
 interface FallbackRowProps {
-  item: WorkflowBuyer
-  availableBuyers: Buyer[]
-  onUpdate: (updates: Partial<WorkflowBuyer>) => void
-  onRemove: () => void
+  item: WorkflowBuyer;
+  availableBuyers: Buyer[];
+  onUpdate: (updates: Partial<WorkflowBuyer>) => void;
+  onRemove: () => void;
 }
 
 function FallbackRow({ item, availableBuyers, onUpdate, onRemove }: FallbackRowProps) {
@@ -174,82 +148,92 @@ function FallbackRow({ item, availableBuyers, onUpdate, onRemove }: FallbackRowP
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
 interface Props {
-  buyers: WorkflowBuyer[]
-  availableBuyers: Buyer[]
-  strategy: string
-  onChange: (buyers: WorkflowBuyer[]) => void
+  buyers: WorkflowBuyer[];
+  availableBuyers: Buyer[];
+  strategy: string;
+  onChange: (buyers: WorkflowBuyer[]) => void;
 }
 
 export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange }: Props) {
-  const regularBuyers = buyers.filter((b) => !b.is_fallback)
-  const fallbackBuyer = buyers.find((b) => b.is_fallback) ?? null
+  const regularBuyers = buyers.filter((b) => !b.is_fallback);
+  const fallbackBuyer = buyers.find((b) => b.is_fallback) ?? null;
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   // Persist fallback when updating regular list
   const commitRegular = (updated: WorkflowBuyer[]) => {
-    onChange(fallbackBuyer ? [...updated, fallbackBuyer] : updated)
-  }
+    onChange(fallbackBuyer ? [...updated, fallbackBuyer] : updated);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIndex = regularBuyers.findIndex((b) => b.buyer_id === active.id)
-    const newIndex = regularBuyers.findIndex((b) => b.buyer_id === over.id)
-    commitRegular(arrayMove(regularBuyers, oldIndex, newIndex).map((b, i) => ({ ...b, position: i })))
-  }
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = regularBuyers.findIndex((b) => b.buyer_id === active.id);
+    const newIndex = regularBuyers.findIndex((b) => b.buyer_id === over.id);
+    commitRegular(arrayMove(regularBuyers, oldIndex, newIndex).map((b, i) => ({ ...b, position: i })));
+  };
 
   const addBuyer = () => {
-    const used = new Set(buyers.map((b) => b.buyer_id))
-    const next = availableBuyers.find((b) => !used.has(b.id))
-    if (!next) return
+    const used = new Set(buyers.map((b) => b.buyer_id));
+    const next = availableBuyers.find((b) => !used.has(b.id));
+    if (!next) return;
     commitRegular([
       ...regularBuyers,
-      { buyer_id: next.id, integration_id: next.integration_id, position: regularBuyers.length, is_fallback: false, buyer_group: 'primary', is_active: true },
-    ])
-  }
+      {
+        buyer_id: next.id,
+        integration_id: next.integration_id,
+        position: regularBuyers.length,
+        is_fallback: false,
+        buyer_group: 'primary',
+        is_active: true,
+      },
+    ]);
+  };
 
   const removeRegularAt = (index: number) => {
-    commitRegular(regularBuyers.filter((_, i) => i !== index).map((b, i) => ({ ...b, position: i })))
-  }
+    commitRegular(regularBuyers.filter((_, i) => i !== index).map((b, i) => ({ ...b, position: i })));
+  };
 
   const updateRegularAt = (index: number, updates: Partial<WorkflowBuyer>) => {
-    commitRegular(regularBuyers.map((b, i) => (i === index ? { ...b, ...updates } : b)))
-  }
+    commitRegular(regularBuyers.map((b, i) => (i === index ? { ...b, ...updates } : b)));
+  };
 
   const addFallback = () => {
-    const used = new Set(buyers.map((b) => b.buyer_id))
-    const next = availableBuyers.find((b) => !used.has(b.id))
-    if (!next) return
+    const used = new Set(buyers.map((b) => b.buyer_id));
+    const next = availableBuyers.find((b) => !used.has(b.id));
+    if (!next) return;
     onChange([
       ...regularBuyers,
-      { buyer_id: next.id, integration_id: next.integration_id, position: regularBuyers.length, is_fallback: true, buyer_group: 'primary', is_active: true },
-    ])
-  }
+      {
+        buyer_id: next.id,
+        integration_id: next.integration_id,
+        position: regularBuyers.length,
+        is_fallback: true,
+        buyer_group: 'primary',
+        is_active: true,
+      },
+    ]);
+  };
 
   const updateFallback = (updates: Partial<WorkflowBuyer>) => {
-    if (!fallbackBuyer) return
-    onChange([...regularBuyers, { ...fallbackBuyer, ...updates }])
-  }
+    if (!fallbackBuyer) return;
+    onChange([...regularBuyers, { ...fallbackBuyer, ...updates }]);
+  };
 
-  const removeFallback = () => onChange(regularBuyers)
+  const removeFallback = () => onChange(regularBuyers);
 
-  const canAddMore = availableBuyers.length > buyers.length
-  const isEmpty = regularBuyers.length === 0 && !fallbackBuyer
-  const showFallbackSection = regularBuyers.length > 0 || fallbackBuyer !== null
+  const canAddMore = availableBuyers.length > buyers.length;
+  const isEmpty = regularBuyers.length === 0 && !fallbackBuyer;
+  const showFallbackSection = regularBuyers.length > 0 || fallbackBuyer !== null;
 
   return (
     <div className="space-y-2">
-
       {/* ── Empty state ─────────────────────────────────────────────────── */}
       {isEmpty && (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-6 py-10 text-center">
@@ -298,12 +282,7 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
 
           {/* Fallback row */}
           {fallbackBuyer ? (
-            <FallbackRow
-              item={fallbackBuyer}
-              availableBuyers={availableBuyers}
-              onUpdate={updateFallback}
-              onRemove={removeFallback}
-            />
+            <FallbackRow item={fallbackBuyer} availableBuyers={availableBuyers} onUpdate={updateFallback} onRemove={removeFallback} />
           ) : canAddMore ? (
             <button
               type="button"
@@ -318,12 +297,13 @@ export function WorkflowBuyerList({ buyers, availableBuyers, strategy, onChange 
             <Alert>
               <ShieldAlert className="h-4 w-4 text-muted-foreground" />
               <AlertDescription>
-                No available buyers to assign as fallback. All configured buyers are already in the workflow. Remove one from the list above to assign it as fallback.
+                No available buyers to assign as fallback. All configured buyers are already in the workflow. Remove one from the list above to assign
+                it as fallback.
               </AlertDescription>
             </Alert>
           )}
         </div>
       )}
     </div>
-  )
+  );
 }

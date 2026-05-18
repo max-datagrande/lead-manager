@@ -86,8 +86,8 @@ export function ProviderForm({
                 />
                 {errors.friendly_name && <p className="text-xs text-destructive">{errors.friendly_name}</p>}
                 <p className="text-xs text-muted-foreground">
-                  Max 30 chars. Appears in the SMS body ("Your <em>{data.friendly_name || '…'}</em> verification code is…"). Synced to Twilio on
-                  save; trial accounts keep "SAMPLE TEST" until upgraded.
+                  Max 30 chars. Appears in the SMS body ("Your <em>{data.friendly_name || '…'}</em> verification code is…"). Synced to Twilio on save;
+                  trial accounts keep "SAMPLE TEST" until upgraded.
                 </p>
               </div>
             )}

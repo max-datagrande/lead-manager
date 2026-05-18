@@ -1,37 +1,37 @@
-import { useForm } from '@inertiajs/react'
-import { createContext, useMemo } from 'react'
-import { route } from 'ziggy-js'
-import type { Buyer, Workflow, WorkflowBuyer } from '@/types/ping-post'
+import type { Buyer, Workflow, WorkflowBuyer } from '@/types/ping-post';
+import { useForm } from '@inertiajs/react';
+import { createContext, useMemo } from 'react';
+import { route } from 'ziggy-js';
 
 interface WorkflowFormData {
-  name: string
-  execution_mode: string
-  strategy: string
-  global_timeout_ms: number
-  is_active: boolean
-  cascade_on_post_rejection: boolean
-  cascade_max_retries: number
-  advance_on_rejection: boolean
-  advance_on_timeout: boolean
-  advance_on_error: boolean
-  buyers: WorkflowBuyer[]
+  name: string;
+  execution_mode: string;
+  strategy: string;
+  global_timeout_ms: number;
+  is_active: boolean;
+  cascade_on_post_rejection: boolean;
+  cascade_max_retries: number;
+  advance_on_rejection: boolean;
+  advance_on_timeout: boolean;
+  advance_on_error: boolean;
+  buyers: WorkflowBuyer[];
 }
 
 interface WorkflowsContextValue {
-  isEdit: boolean
-  data: WorkflowFormData
-  errors: Record<string, string>
-  processing: boolean
-  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
-  setData: (key: string, value: any) => void
-  availableBuyers: Buyer[]
-  strategies: Array<{ value: string; label: string }>
+  isEdit: boolean;
+  data: WorkflowFormData;
+  errors: Record<string, string>;
+  processing: boolean;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  setData: (key: string, value: any) => void;
+  availableBuyers: Buyer[];
+  strategies: Array<{ value: string; label: string }>;
 }
 
-export const WorkflowsContext = createContext<WorkflowsContextValue | null>(null)
+export const WorkflowsContext = createContext<WorkflowsContextValue | null>(null);
 
 function buildInitialData(workflow: Workflow | null, availableBuyers: Buyer[]): WorkflowFormData {
-  const integrationToBuyer = new Map(availableBuyers.map((b) => [b.integration_id, b.id]))
+  const integrationToBuyer = new Map(availableBuyers.map((b) => [b.integration_id, b.id]));
 
   return {
     name: workflow?.name ?? '',
@@ -55,31 +55,31 @@ function buildInitialData(workflow: Workflow | null, availableBuyers: Buyer[]): 
       is_active: wb.is_active,
       integration: wb.integration,
     })),
-  }
+  };
 }
 
 interface Props {
-  children: React.ReactNode
-  workflow?: Workflow | null
-  availableBuyers?: Buyer[]
-  strategies?: Array<{ value: string; label: string }>
+  children: React.ReactNode;
+  workflow?: Workflow | null;
+  availableBuyers?: Buyer[];
+  strategies?: Array<{ value: string; label: string }>;
 }
 
 export function WorkflowsProvider({ children, workflow = null, availableBuyers = [], strategies = [] }: Props) {
-  const isEdit = !!workflow
-  const initialData = useMemo(() => buildInitialData(workflow, availableBuyers), [workflow?.id])
+  const isEdit = !!workflow;
+  const initialData = useMemo(() => buildInitialData(workflow, availableBuyers), [workflow?.id]);
 
-  const { data, setData, post, put, processing, errors } = useForm(initialData)
+  const { data, setData, post, put, processing, errors } = useForm(initialData);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const options = { preserveScroll: true }
+    e.preventDefault();
+    const options = { preserveScroll: true };
     if (isEdit && workflow?.id) {
-      put(route('ping-post.workflows.update', workflow.id), options)
+      put(route('ping-post.workflows.update', workflow.id), options);
     } else {
-      post(route('ping-post.workflows.store'), options)
+      post(route('ping-post.workflows.store'), options);
     }
-  }
+  };
 
   const value: WorkflowsContextValue = {
     isEdit,
@@ -90,7 +90,7 @@ export function WorkflowsProvider({ children, workflow = null, availableBuyers =
     setData: setData as any,
     availableBuyers,
     strategies,
-  }
+  };
 
-  return <WorkflowsContext.Provider value={value}>{children}</WorkflowsContext.Provider>
+  return <WorkflowsContext.Provider value={value}>{children}</WorkflowsContext.Provider>;
 }

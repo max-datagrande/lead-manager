@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useIntegrations } from '@/hooks/use-integrations'
-import { Settings2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useIntegrations } from '@/hooks/use-integrations';
+import { Settings2 } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 const MAPPING_FIELDS = [
   { key: 'title', label: 'Title', supportsFallback: true },
@@ -16,49 +16,49 @@ const MAPPING_FIELDS = [
   { key: 'cpc', label: 'CPC' },
   { key: 'display_name', label: 'Display Name' },
   { key: 'company', label: 'Company' },
-]
+];
 
 const DEFAULT_RESPONSE_CONFIG = {
   offer_list_path: '',
   mapping: { title: '', description: '', logo_url: '', click_url: '', impression_url: '', cpc: '', display_name: '', company: '' },
   fallbacks: {},
-}
+};
 
 export function OfferwallParserConfig({ env }) {
-  const timer = useRef(null)
-  const { data, handleEnvironmentChange } = useIntegrations()
-  const envConfig = data.environments[env]?.response_config ?? DEFAULT_RESPONSE_CONFIG
+  const timer = useRef(null);
+  const { data, handleEnvironmentChange } = useIntegrations();
+  const envConfig = data.environments[env]?.response_config ?? DEFAULT_RESPONSE_CONFIG;
 
-  const [offerListPathRef, setOfferListPathRef] = useState(envConfig.offer_list_path ?? '')
-  const [mapping, setMapping] = useState(envConfig.mapping ?? {})
-  const [fallbacks, setFallbacks] = useState(envConfig.fallbacks ?? {})
+  const [offerListPathRef, setOfferListPathRef] = useState(envConfig.offer_list_path ?? '');
+  const [mapping, setMapping] = useState(envConfig.mapping ?? {});
+  const [fallbacks, setFallbacks] = useState(envConfig.fallbacks ?? {});
 
   const handlePathChange = (e) => {
-    const newValue = e.target.value
-    setOfferListPathRef(newValue)
-    if (timer.current) clearTimeout(timer.current)
+    const newValue = e.target.value;
+    setOfferListPathRef(newValue);
+    if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      handleEnvironmentChange(env, 'response_config', { ...envConfig, offer_list_path: newValue })
-    }, 500)
-  }
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, offer_list_path: newValue });
+    }, 500);
+  };
 
   const handleMappingChange = (key, value) => {
-    const newEntry = { [key]: value }
-    setMapping({ ...mapping, ...newEntry })
-    if (timer.current) clearTimeout(timer.current)
+    const newEntry = { [key]: value };
+    setMapping({ ...mapping, ...newEntry });
+    if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      handleEnvironmentChange(env, 'response_config', { ...envConfig, mapping: { ...(envConfig.mapping ?? {}), ...newEntry } })
-    }, 500)
-  }
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, mapping: { ...(envConfig.mapping ?? {}), ...newEntry } });
+    }, 500);
+  };
 
   const handleFallbackChange = (key, value) => {
-    const newFallbacks = { ...fallbacks, [key]: value }
-    setFallbacks(newFallbacks)
-    if (timer.current) clearTimeout(timer.current)
+    const newFallbacks = { ...fallbacks, [key]: value };
+    setFallbacks(newFallbacks);
+    if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      handleEnvironmentChange(env, 'response_config', { ...envConfig, fallbacks: { ...(envConfig.fallbacks ?? {}), [key]: value } })
-    }, 500)
-  }
+      handleEnvironmentChange(env, 'response_config', { ...envConfig, fallbacks: { ...(envConfig.fallbacks ?? {}), [key]: value } });
+    }, 500);
+  };
 
   return (
     <Card className="mt-6">
@@ -105,7 +105,7 @@ export function OfferwallParserConfig({ env }) {
                           <Label htmlFor={`fallback-${field.key}`} className="text-sm font-medium">
                             Fallback for {field.label}
                           </Label>
-                          <p className="text-muted-foreground text-xs">Used when the API returns empty or null for this field.</p>
+                          <p className="text-xs text-muted-foreground">Used when the API returns empty or null for this field.</p>
                           <Input
                             id={`fallback-${field.key}`}
                             value={fallbacks[field.key] ?? ''}
@@ -123,5 +123,5 @@ export function OfferwallParserConfig({ env }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

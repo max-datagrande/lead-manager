@@ -1,26 +1,26 @@
-import { EnvironmentDetails } from '@/components/integrations'
-import { showBreadcrumbs } from '@/components/integrations/breadcrumbs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import AppLayout from '@/layouts/app-layout'
-import { EnvironmentDB, IntegrationDB, MappingEntry } from '@/types/integrations'
-import { useUrlParam } from '@/hooks/use-url-param'
-import { Head, Link } from '@inertiajs/react'
-import { Radio, Send } from 'lucide-react'
+import { EnvironmentDetails } from '@/components/integrations';
+import { showBreadcrumbs } from '@/components/integrations/breadcrumbs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUrlParam } from '@/hooks/use-url-param';
+import AppLayout from '@/layouts/app-layout';
+import { EnvironmentDB, IntegrationDB, MappingEntry } from '@/types/integrations';
+import { Head, Link } from '@inertiajs/react';
+import { Radio, Send } from 'lucide-react';
 
 function relativeDate(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const days = Math.floor(diff / 86_400_000)
-  if (days === 0) return 'today'
-  if (days === 1) return 'yesterday'
-  if (days < 30) return `${days} days ago`
-  const months = Math.floor(days / 30)
-  return months === 1 ? '1 month ago' : `${months} months ago`
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86_400_000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
 interface Props {
-  integration: IntegrationDB
+  integration: IntegrationDB;
 }
 
 function EmptyEnvironment() {
@@ -28,7 +28,7 @@ function EmptyEnvironment() {
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed px-6 py-10 text-center">
       <p className="text-sm text-muted-foreground">No configuration found for this environment.</p>
     </div>
-  )
+  );
 }
 
 function PingPostEnvContent({
@@ -36,13 +36,13 @@ function PingPostEnvContent({
   integrationId,
   mappingConfig,
 }: {
-  environments: EnvironmentDB[]
-  integrationId: number
-  mappingConfig: Record<string, MappingEntry>
+  environments: EnvironmentDB[];
+  integrationId: number;
+  mappingConfig: Record<string, MappingEntry>;
 }) {
-  const [envType, setEnvType] = useUrlParam('envType', 'ping')
-  const pingEnv = environments.find((e) => e.env_type === 'ping') ?? null
-  const postEnv = environments.find((e) => e.env_type === 'post') ?? null
+  const [envType, setEnvType] = useUrlParam('envType', 'ping');
+  const pingEnv = environments.find((e) => e.env_type === 'ping') ?? null;
+  const postEnv = environments.find((e) => e.env_type === 'post') ?? null;
 
   return (
     <Tabs value={envType} onValueChange={setEnvType} className="mt-3">
@@ -63,14 +63,14 @@ function PingPostEnvContent({
         {postEnv ? <EnvironmentDetails integrationId={integrationId} env={postEnv} mappingConfig={mappingConfig} /> : <EmptyEnvironment />}
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
 function PingPostTabs({ integration }: { integration: IntegrationDB }) {
-  const [env, setEnv] = useUrlParam('env', 'development')
-  const devEnvs = integration.environments.filter((e) => e.environment === 'development')
-  const prodEnvs = integration.environments.filter((e) => e.environment === 'production')
-  const mappingConfig = integration.request_mapping_config ?? {}
+  const [env, setEnv] = useUrlParam('env', 'development');
+  const devEnvs = integration.environments.filter((e) => e.environment === 'development');
+  const prodEnvs = integration.environments.filter((e) => e.environment === 'production');
+  const mappingConfig = integration.request_mapping_config ?? {};
 
   return (
     <Tabs value={env} onValueChange={setEnv}>
@@ -89,14 +89,14 @@ function PingPostTabs({ integration }: { integration: IntegrationDB }) {
         <PingPostEnvContent environments={prodEnvs} integrationId={integration.id} mappingConfig={mappingConfig} />
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
 function FlatTabs({ integration }: { integration: IntegrationDB }) {
-  const [env, setEnv] = useUrlParam('env', 'development')
-  const devEnv = integration.environments.find((e) => e.environment === 'development') ?? null
-  const prodEnv = integration.environments.find((e) => e.environment === 'production') ?? null
-  const mappingConfig = integration.request_mapping_config ?? {}
+  const [env, setEnv] = useUrlParam('env', 'development');
+  const devEnv = integration.environments.find((e) => e.environment === 'development') ?? null;
+  const prodEnv = integration.environments.find((e) => e.environment === 'production') ?? null;
+  const mappingConfig = integration.request_mapping_config ?? {};
 
   return (
     <Tabs value={env} onValueChange={setEnv}>
@@ -115,14 +115,14 @@ function FlatTabs({ integration }: { integration: IntegrationDB }) {
         {prodEnv ? <EnvironmentDetails integrationId={integration.id} env={prodEnv} mappingConfig={mappingConfig} /> : <EmptyEnvironment />}
       </TabsContent>
     </Tabs>
-  )
+  );
 }
 
 const TYPE_LABELS: Record<string, string> = {
   'ping-post': 'Ping-Post',
   'post-only': 'Post Only',
   offerwall: 'Offerwall',
-}
+};
 
 const ShowIntegration = ({ integration }: Props) => {
   return (
@@ -137,11 +137,7 @@ const ShowIntegration = ({ integration }: Props) => {
               <Badge variant="secondary" className="font-mono text-xs">
                 {TYPE_LABELS[integration.type] ?? integration.type}
               </Badge>
-              {integration.updated_at && (
-                <span className="text-xs text-muted-foreground">
-                  Updated {relativeDate(integration.updated_at)}
-                </span>
-              )}
+              {integration.updated_at && <span className="text-xs text-muted-foreground">Updated {relativeDate(integration.updated_at)}</span>}
             </div>
           </div>
           <Link href={route('integrations.edit', integration.id)}>
@@ -149,22 +145,16 @@ const ShowIntegration = ({ integration }: Props) => {
           </Link>
         </div>
 
-        <div>
-          {integration.type === 'ping-post' ? (
-            <PingPostTabs integration={integration} />
-          ) : (
-            <FlatTabs integration={integration} />
-          )}
-        </div>
+        <div>{integration.type === 'ping-post' ? <PingPostTabs integration={integration} /> : <FlatTabs integration={integration} />}</div>
       </div>
     </>
-  )
-}
+  );
+};
 
 ShowIntegration.layout = (page: React.ReactNode & { props: Props }) => {
-  const { integration } = page.props
-  const breadcrumbs = showBreadcrumbs(integration)
-  return <AppLayout children={page} breadcrumbs={breadcrumbs} />
-}
+  const { integration } = page.props;
+  const breadcrumbs = showBreadcrumbs(integration);
+  return <AppLayout children={page} breadcrumbs={breadcrumbs} />;
+};
 
-export default ShowIntegration
+export default ShowIntegration;

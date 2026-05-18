@@ -1,50 +1,50 @@
-import { ServerTable } from '@/components/data-table/server-table'
-import PageHeader from '@/components/page-header'
-import { type PostbackExecution } from '@/components/postbacks/executions'
-import { createExecutionColumns } from '@/components/postbacks/executions/list-columns'
-import { useServerTable } from '@/hooks/use-server-table'
-import AppLayout from '@/layouts/app-layout'
-import { type BreadcrumbItem, type PageLink } from '@/types'
-import { Head } from '@inertiajs/react'
-import type { ReactNode } from 'react'
+import { ServerTable } from '@/components/data-table/server-table';
+import PageHeader from '@/components/page-header';
+import { type PostbackExecution } from '@/components/postbacks/executions';
+import { createExecutionColumns } from '@/components/postbacks/executions/list-columns';
+import { useServerTable } from '@/hooks/use-server-table';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type PageLink } from '@/types';
+import { Head } from '@inertiajs/react';
+import type { ReactNode } from 'react';
 
-const executionColumns = createExecutionColumns()
+const executionColumns = createExecutionColumns();
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Postbacks', href: '/postbacks' },
   { title: 'Executions', href: '/postbacks/executions' },
-]
+];
 
 interface IndexProps {
   rows: {
-    data: PostbackExecution[]
-    current_page: number
-    last_page: number
-    links: PageLink[]
-    per_page: number
-    total: number
-  }
+    data: PostbackExecution[];
+    current_page: number;
+    last_page: number;
+    links: PageLink[];
+    per_page: number;
+    total: number;
+  };
   meta: {
-    total: number
-    per_page: number
-    current_page: number
-    last_page: number
-    from: number
-    to: number
-  }
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+    from: number;
+    to: number;
+  };
   state: {
-    search?: string
-    sort?: string
-    filters?: any[]
-    page?: number
-    per_page?: number
-  }
+    search?: string;
+    sort?: string;
+    filters?: any[];
+    page?: number;
+    per_page?: number;
+  };
   data: {
-    statusOptions: Array<{ value: string; label: string }>
-    sourceOptions: Array<{ value: string; label: string }>
-    fireModeOptions: Array<{ value: string; label: string }>
-    postbacks: Array<{ id: number; name: string }>
-  }
+    statusOptions: Array<{ value: string; label: string }>;
+    sourceOptions: Array<{ value: string; label: string }>;
+    fireModeOptions: Array<{ value: string; label: string }>;
+    postbacks: Array<{ id: number; name: string }>;
+  };
 }
 
 const Index = ({ rows, meta, state, data }: IndexProps) => {
@@ -52,7 +52,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
     routeName: 'postbacks.executions.index',
     initialState: state,
     defaultPageSize: 25,
-  })
+  });
 
   return (
     <>
@@ -101,8 +101,8 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
         />
       </div>
     </>
-  )
-}
+  );
+};
 
-Index.layout = (page: ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />
-export default Index
+Index.layout = (page: ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />;
+export default Index;

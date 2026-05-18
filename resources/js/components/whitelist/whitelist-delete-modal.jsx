@@ -93,7 +93,9 @@ export default function WhitelistDeleteModal({ id, entry }) {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <p>Are you sure you want to delete <strong>{getDisplayName()}</strong>?</p>
+            <p>
+              Are you sure you want to delete <strong>{getDisplayName()}</strong>?
+            </p>
           </AlertDescription>
         </Alert>
       </div>

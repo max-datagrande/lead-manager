@@ -1,56 +1,56 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
-import axios from 'axios'
-import { ExternalLink, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { route } from 'ziggy-js'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import axios from 'axios';
+import { ExternalLink, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { route } from 'ziggy-js';
 
 interface ResultData {
-  id: number
-  status: string
-  http_status_code: number | null
-  duration_ms: number | null
-  bid_price?: number | null
-  price_offered?: number | null
-  price_final?: number | null
-  rejection_reason?: string | null
-  skip_reason?: string | null
-  request_url: string | null
-  request_payload: Record<string, any> | null
-  request_headers: Record<string, any> | null
-  response_body: Record<string, any> | null
-  integration?: { name: string } | null
+  id: number;
+  status: string;
+  http_status_code: number | null;
+  duration_ms: number | null;
+  bid_price?: number | null;
+  price_offered?: number | null;
+  price_final?: number | null;
+  rejection_reason?: string | null;
+  skip_reason?: string | null;
+  request_url: string | null;
+  request_payload: Record<string, any> | null;
+  request_headers: Record<string, any> | null;
+  response_body: Record<string, any> | null;
+  integration?: { name: string } | null;
 }
 
 interface Props {
-  type: 'ping' | 'post'
-  resultId: number
+  type: 'ping' | 'post';
+  resultId: number;
 }
 
 export function ResultDetailButton({ type, resultId }: Props) {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<ResultData | null>(null)
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<ResultData | null>(null);
 
   const handleOpen = async () => {
-    setOpen(true)
-    if (data) return
-    setLoading(true)
+    setOpen(true);
+    if (data) return;
+    setLoading(true);
     try {
-      const url = route('ping-post.dispatches.result-detail', { type, id: resultId })
-      const res = await axios.get(url)
-      setData(res.data)
+      const url = route('ping-post.dispatches.result-detail', { type, id: resultId });
+      const res = await axios.get(url);
+      setData(res.data);
     } catch (e) {
-      console.error('Failed to load result detail', e)
+      console.error('Failed to load result detail', e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const label = type === 'ping' ? 'Ping' : 'Post'
-  const price = data?.bid_price ?? data?.price_offered ?? data?.price_final
+  const label = type === 'ping' ? 'Ping' : 'Post';
+  const price = data?.bid_price ?? data?.price_offered ?? data?.price_final;
 
   return (
     <>
@@ -70,9 +70,7 @@ export function ResultDetailButton({ type, resultId }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {label} Result #{resultId}
-              {data?.integration?.name && (
-                <span className="text-sm font-normal text-muted-foreground">· {data.integration.name}</span>
-              )}
+              {data?.integration?.name && <span className="text-sm font-normal text-muted-foreground">· {data.integration.name}</span>}
             </DialogTitle>
           </DialogHeader>
 
@@ -90,9 +88,7 @@ export function ResultDetailButton({ type, resultId }: Props) {
                 {price != null && <span className="font-medium text-green-600">${Number(price).toFixed(2)}</span>}
               </div>
 
-              {(data.rejection_reason || data.skip_reason) && (
-                <p className="text-sm text-destructive">{data.rejection_reason ?? data.skip_reason}</p>
-              )}
+              {(data.rejection_reason || data.skip_reason) && <p className="text-sm text-destructive">{data.rejection_reason ?? data.skip_reason}</p>}
 
               <Separator />
 
@@ -112,19 +108,17 @@ export function ResultDetailButton({ type, resultId }: Props) {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
 
 function Section({ title, content, json, mono }: { title: string; content?: string | null; json?: Record<string, any> | null; mono?: boolean }) {
-  const display = json ? JSON.stringify(json, null, 2) : content
-  if (!display) return null
+  const display = json ? JSON.stringify(json, null, 2) : content;
+  if (!display) return null;
 
   return (
     <div>
       <p className="mb-1 text-xs font-medium text-muted-foreground">{title}</p>
-      <pre className={`max-h-56 overflow-auto rounded-md bg-muted p-3 text-xs ${mono ? 'break-all' : ''}`}>
-        {display}
-      </pre>
+      <pre className={`max-h-56 overflow-auto rounded-md bg-muted p-3 text-xs ${mono ? 'break-all' : ''}`}>{display}</pre>
     </div>
-  )
+  );
 }

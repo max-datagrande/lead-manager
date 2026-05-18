@@ -927,9 +927,16 @@ async function init(): Promise<void> {
         item.length === 4 &&
         typeof possibleResolve === 'function' &&
         typeof possibleReject === 'function' &&
-        ['registerLead', 'updateLead', 'getOfferwall', 'convertOfferwall', 'shareLead', 'requestChallenge', 'verifyChallenge', 'validatePhone'].includes(
-          method,
-        );
+        [
+          'registerLead',
+          'updateLead',
+          'getOfferwall',
+          'convertOfferwall',
+          'shareLead',
+          'requestChallenge',
+          'verifyChallenge',
+          'validatePhone',
+        ].includes(method);
 
       if (isPromiseProxy) {
         const args = Array.from((item[1] as ArrayLike<any>) || []);

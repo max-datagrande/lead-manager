@@ -1,34 +1,34 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { CapRule } from '@/types/ping-post'
-import { Plus, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { CapRule } from '@/types/ping-post';
+import { Plus, Trash2 } from 'lucide-react';
 
 const PERIODS = [
   { value: 'day', label: 'Daily' },
   { value: 'week', label: 'Weekly' },
   { value: 'month', label: 'Monthly' },
   { value: 'year', label: 'Yearly' },
-]
+];
 
 interface Props {
-  caps: CapRule[]
-  onChange: (caps: CapRule[]) => void
+  caps: CapRule[];
+  onChange: (caps: CapRule[]) => void;
 }
 
 export function CapRuleEditor({ caps, onChange }: Props) {
   const addCap = () => {
-    onChange([...caps, { period: 'day', max_leads: null, max_revenue: null }])
-  }
+    onChange([...caps, { period: 'day', max_leads: null, max_revenue: null }]);
+  };
 
   const removeCap = (index: number) => {
-    onChange(caps.filter((_, i) => i !== index))
-  }
+    onChange(caps.filter((_, i) => i !== index));
+  };
 
   const updateCap = (index: number, key: keyof CapRule, value: any) => {
-    onChange(caps.map((c, i) => (i === index ? { ...c, [key]: value } : c)))
-  }
+    onChange(caps.map((c, i) => (i === index ? { ...c, [key]: value } : c)));
+  };
 
   return (
     <div className="space-y-3">
@@ -82,5 +82,5 @@ export function CapRuleEditor({ caps, onChange }: Props) {
         Add Cap
       </Button>
     </div>
-  )
+  );
 }

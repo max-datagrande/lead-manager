@@ -1,30 +1,25 @@
-import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { usePlatforms } from '@/hooks/use-platforms'
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table'
-import { Edit, Trash2 } from 'lucide-react'
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { usePlatforms } from '@/hooks/use-platforms';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
+import { Edit, Trash2 } from 'lucide-react';
 
 const ActionsCell = ({ row }) => {
-  const { showEditModal, showDeleteModal } = usePlatforms()
-  const entry = row.original
+  const { showEditModal, showDeleteModal } = usePlatforms();
+  const entry = row.original;
 
   return (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(entry)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
-  )
-}
+  );
+};
 
 export const columns = [
   {
@@ -51,11 +46,11 @@ export const columns = [
     accessorKey: 'token_mappings',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Token Mappings" />,
     cell: ({ row }) => {
-      const mappings = row.original.token_mappings ?? {}
+      const mappings = row.original.token_mappings ?? {};
       console.log(mappings);
-      const entries = Object.entries(mappings)
+      const entries = Object.entries(mappings);
       console.log({ entries });
-      if (!entries.length) return <span className="text-muted-foreground">—</span>
+      if (!entries.length) return <span className="text-muted-foreground">—</span>;
       return (
         <div className="flex flex-wrap gap-1">
           {entries.map(([external, internal]) => (
@@ -64,7 +59,7 @@ export const columns = [
             </Badge>
           ))}
         </div>
-      )
+      );
     },
     enableSorting: false,
     enableHiding: true,
@@ -88,4 +83,4 @@ export const columns = [
     enableSorting: false,
     enableHiding: false,
   },
-]
+];

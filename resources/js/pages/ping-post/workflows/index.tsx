@@ -1,13 +1,13 @@
-import { indexBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs'
-import { WorkflowActions } from '@/components/ping-post/workflows/actions'
-import { TableWorkflows } from '@/components/ping-post/workflows/table-workflows'
-import PageHeader from '@/components/page-header'
-import AppLayout from '@/layouts/app-layout'
-import type { Workflow } from '@/types/ping-post'
-import { Head } from '@inertiajs/react'
+import PageHeader from '@/components/page-header';
+import { WorkflowActions } from '@/components/ping-post/workflows/actions';
+import { indexBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs';
+import { TableWorkflows } from '@/components/ping-post/workflows/table-workflows';
+import AppLayout from '@/layouts/app-layout';
+import type { Workflow } from '@/types/ping-post';
+import { Head } from '@inertiajs/react';
 
 interface Props {
-  workflows: { data: Workflow[] }
+  workflows: { data: Workflow[] };
 }
 
 const WorkflowsIndex = ({ workflows }: Props) => (
@@ -20,7 +20,7 @@ const WorkflowsIndex = ({ workflows }: Props) => (
       <TableWorkflows entries={workflows.data} />
     </div>
   </>
-)
+);
 
-WorkflowsIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />
-export default WorkflowsIndex
+WorkflowsIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />;
+export default WorkflowsIndex;

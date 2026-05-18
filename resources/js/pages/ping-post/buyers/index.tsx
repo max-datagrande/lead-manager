@@ -1,13 +1,13 @@
-import { BuyerActions } from '@/components/ping-post/buyers/actions'
-import { indexBreadcrumbs } from '@/components/ping-post/buyers/breadcrumbs'
-import { TableBuyers } from '@/components/ping-post/buyers/table-buyers'
-import PageHeader from '@/components/page-header'
-import AppLayout from '@/layouts/app-layout'
-import type { Buyer } from '@/types/ping-post'
-import { Head } from '@inertiajs/react'
+import PageHeader from '@/components/page-header';
+import { BuyerActions } from '@/components/ping-post/buyers/actions';
+import { indexBreadcrumbs } from '@/components/ping-post/buyers/breadcrumbs';
+import { TableBuyers } from '@/components/ping-post/buyers/table-buyers';
+import AppLayout from '@/layouts/app-layout';
+import type { Buyer } from '@/types/ping-post';
+import { Head } from '@inertiajs/react';
 
 interface Props {
-  buyers: { data: Buyer[] }
+  buyers: { data: Buyer[] };
 }
 
 const BuyersIndex = ({ buyers }: Props) => (
@@ -20,7 +20,7 @@ const BuyersIndex = ({ buyers }: Props) => (
       <TableBuyers entries={buyers.data} />
     </div>
   </>
-)
+);
 
-BuyersIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />
-export default BuyersIndex
+BuyersIndex.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={indexBreadcrumbs} />;
+export default BuyersIndex;

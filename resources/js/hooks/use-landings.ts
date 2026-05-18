@@ -13,4 +13,3 @@ export function useVersions() {
   if (!context) throw new Error('useLandingVersions must be used within LandingPagesVersionsProvider');
   return context;
 }
-

@@ -1,26 +1,26 @@
-import PageHeader from '@/components/page-header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import AppLayout from '@/layouts/app-layout'
-import type { BreadcrumbItem } from '@/types'
-import { Head, Link } from '@inertiajs/react'
-import { ListChecks, ScrollText, ShieldCheck } from 'lucide-react'
-import type { ReactNode } from 'react'
+import PageHeader from '@/components/page-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { ListChecks, ScrollText, ShieldCheck } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Lead Quality', href: '#' }]
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Lead Quality', href: '#' }];
 
 interface Props {
-  providers_count: number
-  rules_count: number
-  logs_count: number
+  providers_count: number;
+  rules_count: number;
+  logs_count: number;
 }
 
 interface ModuleCard {
-  title: string
-  description: string
-  href: string
-  icon: ReactNode
-  count: number
-  countLabel: string
+  title: string;
+  description: string;
+  href: string;
+  icon: ReactNode;
+  count: number;
+  countLabel: string;
 }
 
 const Index = ({ providers_count, rules_count, logs_count }: Props) => {
@@ -49,7 +49,7 @@ const Index = ({ providers_count, rules_count, logs_count }: Props) => {
       count: logs_count,
       countLabel: 'log',
     },
-  ]
+  ];
 
   return (
     <>
@@ -65,7 +65,7 @@ const Index = ({ providers_count, rules_count, logs_count }: Props) => {
                     {card.icon}
                   </div>
                   <div className="flex-1 space-y-1">
-                    <CardTitle className="text-base font-semibold leading-tight">{card.title}</CardTitle>
+                    <CardTitle className="text-base leading-tight font-semibold">{card.title}</CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {card.count} {card.countLabel}
                       {card.count !== 1 ? 's' : ''}
@@ -81,9 +81,9 @@ const Index = ({ providers_count, rules_count, logs_count }: Props) => {
         </div>
       </div>
     </>
-  )
-}
+  );
+};
 
-Index.layout = (page: ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />
+Index.layout = (page: ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />;
 
-export default Index
+export default Index;

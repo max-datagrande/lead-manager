@@ -1,15 +1,11 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { useVersions } from '@/hooks/use-landings';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Edit, Trash2 } from 'lucide-react';
-import { useVersions } from '@/hooks/use-landings';
 
-const StatusBadge = ({ status }) => (
-  <Badge variant={status ? 'default' : 'destructive'}>
-    {status ? 'Active' : 'Inactive'}
-  </Badge>
-);
+const StatusBadge = ({ status }) => <Badge variant={status ? 'default' : 'destructive'}>{status ? 'Active' : 'Inactive'}</Badge>;
 
 const ActionsCell = ({ row }) => {
   const { showEditModal, showDeleteModal } = useVersions();
@@ -17,21 +13,11 @@ const ActionsCell = ({ row }) => {
 
   return (
     <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showEditModal(entry)}
-        className="h-8 w-8 p-0"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(entry)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
@@ -58,12 +44,7 @@ export const columns = [
     accessorKey: 'fullUrl',
     header: ({ column }) => <DataTableColumnHeader column={column} title="URL" />,
     cell: ({ cell }) => (
-      <a
-        href={cell.getValue()}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-500 underline text-sm"
-      >
+      <a href={cell.getValue()} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 underline">
         {cell.getValue()}
       </a>
     ),
@@ -81,9 +62,7 @@ export const columns = [
     cell: ({ row }) => (
       <div className="text-sm">
         <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
-        <div className="text-xs text-gray-500">
-          {formatDateTimeUTC(row.original.created_at)}
-        </div>
+        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
       </div>
     ),
     enableSorting: true,

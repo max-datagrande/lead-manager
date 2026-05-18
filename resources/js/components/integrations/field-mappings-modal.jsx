@@ -1,47 +1,47 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
-import { useDebouncedFunction } from '@/hooks/use-debounce'
-import { useIntegrations } from '@/hooks/use-integrations'
-import { Search, Settings2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { useDebouncedFunction } from '@/hooks/use-debounce';
+import { useIntegrations } from '@/hooks/use-integrations';
+import { Search, Settings2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * Isolated textarea with local display state + debounced draft update.
  * Validity check (border color) also lives here — no parent re-renders while typing.
  */
 function RawJsonTextarea({ initialValue, rowCount, onChange }) {
-  const [text, setText] = useState(initialValue ?? '{}')
-  const [isValid, setIsValid] = useState(true)
-  const debouncedOnChange = useDebouncedFunction(onChange, 250)
+  const [text, setText] = useState(initialValue ?? '{}');
+  const [isValid, setIsValid] = useState(true);
+  const debouncedOnChange = useDebouncedFunction(onChange, 250);
 
   useEffect(() => {
-    setText(initialValue ?? '{}')
-  }, [initialValue])
+    setText(initialValue ?? '{}');
+  }, [initialValue]);
 
   const handleChange = (e) => {
-    const newText = e.target.value
-    setText(newText)
+    const newText = e.target.value;
+    setText(newText);
     try {
-      const parsed = JSON.parse(newText)
+      const parsed = JSON.parse(newText);
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-        setIsValid(true)
-        debouncedOnChange(parsed)
+        setIsValid(true);
+        debouncedOnChange(parsed);
       } else {
-        setIsValid(false)
+        setIsValid(false);
       }
     } catch {
-      setIsValid(false)
+      setIsValid(false);
     }
-  }
+  };
 
   return (
     <textarea
-      className={`w-full rounded-md border bg-background px-3 py-2 font-mono text-xs outline-none transition-colors focus:ring-1 ${
+      className={`w-full rounded-md border bg-background px-3 py-2 font-mono text-xs transition-colors outline-none focus:ring-1 ${
         isValid ? 'border-border focus:ring-ring' : 'border-destructive focus:ring-destructive'
       }`}
       rows={rowCount}
@@ -49,7 +49,7 @@ function RawJsonTextarea({ initialValue, rowCount, onChange }) {
       onChange={handleChange}
       spellCheck={false}
     />
-  )
+  );
 }
 
 /**
@@ -57,13 +57,13 @@ function RawJsonTextarea({ initialValue, rowCount, onChange }) {
  * Prevents parent re-renders on every keystroke.
  */
 function ValueMappingInput({ value: externalValue, onChange }) {
-  const [value, setValue] = useState(externalValue ?? '')
-  const debouncedOnChange = useDebouncedFunction(onChange, 250)
+  const [value, setValue] = useState(externalValue ?? '');
+  const debouncedOnChange = useDebouncedFunction(onChange, 250);
 
   // Sync when external value changes (e.g. raw JSON mode overwrites it)
   useEffect(() => {
-    setValue(externalValue ?? '')
-  }, [externalValue])
+    setValue(externalValue ?? '');
+  }, [externalValue]);
 
   return (
     <Input
@@ -71,11 +71,11 @@ function ValueMappingInput({ value: externalValue, onChange }) {
       placeholder="mapped value"
       value={value}
       onChange={(e) => {
-        setValue(e.target.value)
-        debouncedOnChange(e.target.value)
+        setValue(e.target.value);
+        debouncedOnChange(e.target.value);
       }}
     />
-  )
+  );
 }
 
 const DATA_TYPES = [
@@ -83,7 +83,7 @@ const DATA_TYPES = [
   { value: 'integer', label: 'Integer' },
   { value: 'float', label: 'Float' },
   { value: 'boolean', label: 'Boolean' },
-]
+];
 
 /**
  * Global modal for editing field mapping config for all tokens currently in use
@@ -95,114 +95,114 @@ const DATA_TYPES = [
  * @param {{ fields: Array<{ id: number, name: string, label?: string, possible_values?: string[] }> }} props
  */
 export function FieldMappingsModal({ fields = [] }) {
-  const { data, setData } = useIntegrations()
-  const [open, setOpen] = useState(false)
+  const { data, setData } = useIntegrations();
+  const [open, setOpen] = useState(false);
 
   // ── Local draft state (isolated from parent) ──────────────────────────────
-  const [draft, setDraft] = useState([])
-  const [expandedMappings, setExpandedMappings] = useState({})
-  const [rawModes, setRawModes] = useState({})
-  const [search, setSearch] = useState('')
+  const [draft, setDraft] = useState([]);
+  const [expandedMappings, setExpandedMappings] = useState({});
+  const [rawModes, setRawModes] = useState({});
+  const [search, setSearch] = useState('');
 
-  const fieldById = (fieldId) => fields.find((f) => f.id === fieldId)
+  const fieldById = (fieldId) => fields.find((f) => f.id === fieldId);
 
   // ── Scan all request bodies for active {$N} tokens ────────────────────────
   const getActiveTokenIds = () => {
-    const ids = new Set()
-    const regex = /\{\$(\d+)\}/g
+    const ids = new Set();
+    const regex = /\{\$(\d+)\}/g;
 
     const scanBody = (body) => {
-      if (!body) return
-      const text = typeof body === 'object' ? JSON.stringify(body) : String(body)
-      let m
-      while ((m = regex.exec(text)) !== null) ids.add(parseInt(m[1], 10))
-    }
+      if (!body) return;
+      const text = typeof body === 'object' ? JSON.stringify(body) : String(body);
+      let m;
+      while ((m = regex.exec(text)) !== null) ids.add(parseInt(m[1], 10));
+    };
 
     // Walk environments — flat (offerwall/post-only) or nested (ping-post)
     for (const val of Object.values(data.environments ?? {})) {
       if (val?.request_body !== undefined) {
-        scanBody(val.request_body)
+        scanBody(val.request_body);
       } else if (typeof val === 'object') {
         for (const inner of Object.values(val)) {
-          if (inner?.request_body !== undefined) scanBody(inner.request_body)
+          if (inner?.request_body !== undefined) scanBody(inner.request_body);
         }
       }
     }
-    return ids
-  }
+    return ids;
+  };
 
   // ── Dialog lifecycle ──────────────────────────────────────────────────────
   const handleOpenChange = (next) => {
     if (next) {
-      const activeIds = getActiveTokenIds()
-      setDraft((data.field_mappings ?? []).filter((m) => activeIds.has(m.field_id)).map((m) => ({ ...m })))
-      setExpandedMappings({})
-      setRawModes({})
-      setSearch('')
+      const activeIds = getActiveTokenIds();
+      setDraft((data.field_mappings ?? []).filter((m) => activeIds.has(m.field_id)).map((m) => ({ ...m })));
+      setExpandedMappings({});
+      setRawModes({});
+      setSearch('');
     }
-    setOpen(next)
-  }
+    setOpen(next);
+  };
 
   // Sort alphabetically by field name, then filter by search term
   const filteredDraft = useMemo(() => {
     const sorted = [...draft].sort((a, b) => {
-      const nameA = fieldById(a.field_id)?.name ?? ''
-      const nameB = fieldById(b.field_id)?.name ?? ''
-      return nameA.localeCompare(nameB)
-    })
-    if (!search) return sorted
-    const q = search.toLowerCase()
+      const nameA = fieldById(a.field_id)?.name ?? '';
+      const nameB = fieldById(b.field_id)?.name ?? '';
+      return nameA.localeCompare(nameB);
+    });
+    if (!search) return sorted;
+    const q = search.toLowerCase();
     return sorted.filter((m) => {
-      const field = fieldById(m.field_id)
-      return (field?.name ?? '').toLowerCase().includes(q) || (field?.label ?? '').toLowerCase().includes(q)
-    })
-  }, [draft, search, fields])
+      const field = fieldById(m.field_id);
+      return (field?.name ?? '').toLowerCase().includes(q) || (field?.label ?? '').toLowerCase().includes(q);
+    });
+  }, [draft, search, fields]);
 
   const handleSave = () => {
-    const activeIds = getActiveTokenIds()
-    const draftById = new Map(draft.map((m) => [m.field_id, m]))
+    const activeIds = getActiveTokenIds();
+    const draftById = new Map(draft.map((m) => [m.field_id, m]));
     const updated = (data.field_mappings ?? [])
       .filter((m) => activeIds.has(m.field_id))
       .map((m) => {
-        const d = draftById.get(m.field_id)
-        return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m
-      })
-    setData('field_mappings', updated)
-    setOpen(false)
-  }
+        const d = draftById.get(m.field_id);
+        return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m;
+      });
+    setData('field_mappings', updated);
+    setOpen(false);
+  };
 
   // ── Draft helpers ─────────────────────────────────────────────────────────
   const updateDraft = (fieldId, patch) => {
-    setDraft((prev) => prev.map((m) => (m.field_id === fieldId ? { ...m, ...patch } : m)))
-  }
+    setDraft((prev) => prev.map((m) => (m.field_id === fieldId ? { ...m, ...patch } : m)));
+  };
 
   const toggleExpand = (fieldId) => {
-    setExpandedMappings((prev) => ({ ...prev, [fieldId]: !prev[fieldId] }))
-  }
+    setExpandedMappings((prev) => ({ ...prev, [fieldId]: !prev[fieldId] }));
+  };
 
   const toggleRawMode = (fieldId) => {
-    setRawModes((prev) => ({ ...prev, [fieldId]: !prev[fieldId] }))
-  }
+    setRawModes((prev) => ({ ...prev, [fieldId]: !prev[fieldId] }));
+  };
 
   // Called by RawJsonTextarea only when the JSON is valid (already parsed)
   const handleRawChange = (fieldId, parsed) => {
-    updateDraft(fieldId, { value_mapping: Object.keys(parsed).length > 0 ? parsed : null })
-  }
+    updateDraft(fieldId, { value_mapping: Object.keys(parsed).length > 0 ? parsed : null });
+  };
 
   const handleValueMappingChange = (fieldId, rawValue, mappedValue) => {
-    const mapping = draft.find((m) => m.field_id === fieldId)
-    const current = mapping?.value_mapping ?? {}
-    const updated = { ...current }
+    const mapping = draft.find((m) => m.field_id === fieldId);
+    const current = mapping?.value_mapping ?? {};
+    const updated = { ...current };
     if (mappedValue) {
-      updated[rawValue] = mappedValue
+      updated[rawValue] = mappedValue;
     } else {
-      delete updated[rawValue]
+      delete updated[rawValue];
     }
-    updateDraft(fieldId, { value_mapping: Object.keys(updated).length > 0 ? updated : null })
-  }
+    updateDraft(fieldId, { value_mapping: Object.keys(updated).length > 0 ? updated : null });
+  };
 
   // Badge count uses data (not draft) so the trigger button stays accurate before opening
-  const totalMappings = (data.field_mappings ?? []).length
+  const totalMappings = (data.field_mappings ?? []).length;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -218,21 +218,15 @@ export function FieldMappingsModal({ fields = [] }) {
           <DialogTitle>Field Mappings</DialogTitle>
           {draft.length > 0 && (
             <div className="relative mt-2">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-8 pl-8 text-xs"
-                placeholder="Search fields..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input className="h-8 pl-8 text-xs" placeholder="Search fields..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           )}
         </DialogHeader>
 
         {draft.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No field tokens in use. Insert a field with{' '}
-            <kbd className="rounded border px-1 font-mono text-xs">@</kbd> in a request body editor.
+            No field tokens in use. Insert a field with <kbd className="rounded border px-1 font-mono text-xs">@</kbd> in a request body editor.
           </p>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -246,15 +240,13 @@ export function FieldMappingsModal({ fields = [] }) {
 
             <div className="divide-y">
               {filteredDraft.map((mapping) => {
-                const field = fieldById(mapping.field_id)
-                const label = field?.label ?? field?.name ?? `Field #${mapping.field_id}`
-                const technicalName = field?.name ?? null
-                const possibleValues = Array.isArray(field?.possible_values)
-                  ? field.possible_values.filter(Boolean)
-                  : []
-                const mappedCount = mapping.value_mapping ? Object.keys(mapping.value_mapping).length : 0
-                const isExpanded = expandedMappings[mapping.field_id] ?? false
-                const isRaw = rawModes[mapping.field_id] ?? false
+                const field = fieldById(mapping.field_id);
+                const label = field?.label ?? field?.name ?? `Field #${mapping.field_id}`;
+                const technicalName = field?.name ?? null;
+                const possibleValues = Array.isArray(field?.possible_values) ? field.possible_values.filter(Boolean) : [];
+                const mappedCount = mapping.value_mapping ? Object.keys(mapping.value_mapping).length : 0;
+                const isExpanded = expandedMappings[mapping.field_id] ?? false;
+                const isRaw = rawModes[mapping.field_id] ?? false;
 
                 return (
                   <div key={mapping.field_id}>
@@ -262,23 +254,14 @@ export function FieldMappingsModal({ fields = [] }) {
                       {/* Field name */}
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{label}</p>
-                        {technicalName && label !== technicalName && (
-                          <p className="font-mono text-xs text-muted-foreground">{technicalName}</p>
-                        )}
+                        {technicalName && label !== technicalName && <p className="font-mono text-xs text-muted-foreground">{technicalName}</p>}
                       </div>
 
                       {/* Value map badge — right after field name */}
                       <div>
                         {possibleValues.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpand(mapping.field_id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Badge
-                              variant={mappedCount > 0 ? 'secondary' : 'outline'}
-                              className="text-xs transition-colors hover:bg-accent"
-                            >
+                          <button type="button" onClick={() => toggleExpand(mapping.field_id)} className="flex items-center gap-1">
+                            <Badge variant={mappedCount > 0 ? 'secondary' : 'outline'} className="text-xs transition-colors hover:bg-accent">
                               {mappedCount > 0 ? `${mappedCount} mapped` : 'No map'}
                             </Badge>
                           </button>
@@ -286,10 +269,7 @@ export function FieldMappingsModal({ fields = [] }) {
                       </div>
 
                       {/* Data Type */}
-                      <Select
-                        value={mapping.data_type ?? 'string'}
-                        onValueChange={(val) => updateDraft(mapping.field_id, { data_type: val })}
-                      >
+                      <Select value={mapping.data_type ?? 'string'} onValueChange={(val) => updateDraft(mapping.field_id, { data_type: val })}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
@@ -313,16 +293,12 @@ export function FieldMappingsModal({ fields = [] }) {
 
                     {/* Expandable value mapping section — animated */}
                     {possibleValues.length > 0 && isExpanded && (
-                      <div className="animate-in fade-in slide-in-from-top-2 duration-150 border-t bg-muted/30 px-4 py-3">
+                      <div className="border-t bg-muted/30 px-4 py-3 duration-150 animate-in fade-in slide-in-from-top-2">
                         <div className="mb-3 flex items-center justify-between">
                           <Label className="text-xs text-muted-foreground">Value Mapping</Label>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Raw JSON</span>
-                            <Switch
-                              checked={isRaw}
-                              onCheckedChange={() => toggleRawMode(mapping.field_id)}
-                              className="scale-75"
-                            />
+                            <Switch checked={isRaw} onCheckedChange={() => toggleRawMode(mapping.field_id)} className="scale-75" />
                           </div>
                         </div>
 
@@ -349,7 +325,7 @@ export function FieldMappingsModal({ fields = [] }) {
                       </div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
           </div>
@@ -365,5 +341,5 @@ export function FieldMappingsModal({ fields = [] }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import { DataTableContent } from '@/components/data-table/table-content'
-import { DataTableHeader } from '@/components/data-table/table-header'
-import { DataTablePagination } from '@/components/data-table/table-pagination'
-import { DataTableToolbar } from '@/components/data-table/toolbar'
-import { Table, TableBody } from '@/components/ui/table'
-import type { Workflow } from '@/types/ping-post'
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTableHeader } from '@/components/data-table/table-header';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { Table, TableBody } from '@/components/ui/table';
+import type { Workflow } from '@/types/ping-post';
 import {
   getCoreRowModel,
   getFacetedRowModel,
@@ -12,9 +12,9 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table'
-import { useState } from 'react'
-import { workflowColumns } from './list-columns'
+} from '@tanstack/react-table';
+import { useState } from 'react';
+import { workflowColumns } from './list-columns';
 
 const toolbarConfig = {
   dateRange: { column: 'created_at', label: 'Created At' },
@@ -37,17 +37,17 @@ const toolbarConfig = {
       ],
     },
   ],
-}
+};
 
 interface Props {
-  entries: Workflow[]
+  entries: Workflow[];
 }
 
 export function TableWorkflows({ entries }: Props) {
-  const [sorting, setSorting] = useState([{ id: 'id', desc: true }])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
-  const [columnFilters, setColumnFilters] = useState<any[]>([])
+  const [sorting, setSorting] = useState([{ id: 'id', desc: true }]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
+  const [columnFilters, setColumnFilters] = useState<any[]>([]);
 
   const table = useReactTable({
     data: entries,
@@ -64,7 +64,7 @@ export function TableWorkflows({ entries }: Props) {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: 'includesString',
-  })
+  });
 
   return (
     <div className="space-y-4">
@@ -77,5 +77,5 @@ export function TableWorkflows({ entries }: Props) {
       </Table>
       <DataTablePagination table={table} />
     </div>
-  )
+  );
 }

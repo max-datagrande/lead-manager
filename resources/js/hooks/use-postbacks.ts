@@ -1,12 +1,12 @@
-import { PostbacksContext } from '@/context/postbacks-provider'
-import { useContext } from 'react'
+import { PostbacksContext } from '@/context/postbacks-provider';
+import { useContext } from 'react';
 
 function usePostbacks() {
-  const context = useContext(PostbacksContext)
+  const context = useContext(PostbacksContext);
   if (!context) {
-    throw new Error('usePostbacks must be used within a PostbacksProvider')
+    throw new Error('usePostbacks must be used within a PostbacksProvider');
   }
-  return context
+  return context;
 }
 
-export { usePostbacks }
+export { usePostbacks };
