@@ -2,12 +2,12 @@ import { FormModal } from '@/components/landing-pages/index';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { useForm, usePage, router } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
 
 export const LandingPagesContext = createContext(null);
 
-export function LandingPagesProvider({ children, verticals, companies }) {
+export function LandingPagesProvider({ children, verticals, companies, availableColumns }) {
   const { filters } = usePage().props as any;
   const modal = useModal();
   const { addMessage: setNotify } = useToast();
@@ -21,7 +21,9 @@ export function LandingPagesProvider({ children, verticals, companies }) {
 
   const showCreateModal = async () => {
     try {
-      const result = await modal.openAsync(<FormModal entry={null} verticals={verticals} companies={companies} />);
+      const result = await modal.openAsync(
+        <FormModal entry={null} verticals={verticals} companies={companies} availableColumns={availableColumns} />,
+      );
       console.log(result);
     } catch (error) {
       setNotify('Error creating landing page', 'error');
@@ -31,7 +33,9 @@ export function LandingPagesProvider({ children, verticals, companies }) {
 
   const showEditModal = async (entry) => {
     try {
-      const result = await modal.openAsync(<FormModal entry={entry} isEdit={true} verticals={verticals} companies={companies} />);
+      const result = await modal.openAsync(
+        <FormModal entry={entry} isEdit={true} verticals={verticals} companies={companies} availableColumns={availableColumns} />,
+      );
       console.log(result);
     } catch (error) {
       setNotify('Error updating landing page', 'error');
@@ -40,11 +44,11 @@ export function LandingPagesProvider({ children, verticals, companies }) {
   };
 
   const showVersions = async (entry) => {
-   router.get(
-         route('landing_pages.versions.index', {
-           landing_page: entry.id,
-         }),
-       );
+    router.get(
+      route('landing_pages.versions.index', {
+        landing_page: entry.id,
+      }),
+    );
   };
 
   const deleteEntry = (entry) => {

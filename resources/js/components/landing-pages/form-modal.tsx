@@ -1,3 +1,4 @@
+import { ColumnMultiSelect } from '@/components/landing-pages/column-multi-select';
 import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -5,9 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
+import type { AvailableColumns, LandingPageColumn } from '@/types/models/landing-page';
 import { useForm } from '@inertiajs/react';
-export default function FormModal({ entry, isEdit = false, verticals = [], companies = [] }) {
 
+const EMPTY_AVAILABLE: AvailableColumns = { fields: [], traffic: [] };
+
+export default function FormModal({ entry, isEdit = false, verticals = [], companies = [], availableColumns = EMPTY_AVAILABLE }) {
   const modal = useModal();
   const modalId = useCurrentModalId();
 
@@ -18,13 +22,12 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
     vertical_id: entry?.vertical_id ? String(entry.vertical_id) : '',
     company_id: entry?.company_id ? String(entry.company_id) : '',
     active: entry?.active ?? true,
+    columns: (entry?.columns ?? []) as LandingPageColumn[],
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const url = isEdit
-      ? route('landing_pages.update', entry.id)
-      : route('landing_pages.store');
+    const url = isEdit ? route('landing_pages.update', entry.id) : route('landing_pages.store');
     const options = {
       preserveState: true,
       preserveScroll: true,
@@ -46,9 +49,7 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
     <>
       <DialogHeader>
         <DialogTitle>{isEdit ? 'Edit Landing Page' : 'Create Landing Page'}</DialogTitle>
-        <DialogDescription>
-          {isEdit ? 'Edit the landing page details' : 'Add a new landing page'}
-        </DialogDescription>
+        <DialogDescription>{isEdit ? 'Edit the landing page details' : 'Add a new landing page'}</DialogDescription>
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,13 +69,7 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
         {/* URL */}
         <div className="space-y-2">
           <Label htmlFor="url">URL</Label>
-          <Input
-            id="url"
-            type="text"
-            value={data.url}
-            onChange={(e) => setData('url', e.target.value)}
-            placeholder="https://example.com/landing"
-          />
+          <Input id="url" type="text" value={data.url} onChange={(e) => setData('url', e.target.value)} placeholder="https://example.com/landing" />
           {errors.url && <p className="text-sm text-destructive">{errors.url}</p>}
         </div>
 
@@ -112,7 +107,9 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
         {/* Company — only shown when is_external is true */}
         {data.is_external && (
           <div className="space-y-2">
-            <Label htmlFor="company_id">Company <span className="text-destructive">*</span></Label>
+            <Label htmlFor="company_id">
+              Company <span className="text-destructive">*</span>
+            </Label>
             <Select value={data.company_id} onValueChange={(val) => setData('company_id', val)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a company" />
@@ -131,12 +128,15 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
 
         {/* Active */}
         <div className="flex items-center space-x-2">
-          <Switch
-            id="active"
-            checked={data.active}
-            onCheckedChange={(checked) => setData('active', checked)}
-          />
+          <Switch id="active" checked={data.active} onCheckedChange={(checked) => setData('active', checked)} />
           <Label htmlFor="active">Active</Label>
+        </div>
+
+        {/* Columns — Lead Fields + Traffic columns this landing collects */}
+        <div className="space-y-2">
+          <Label>Columns</Label>
+          <ColumnMultiSelect value={data.columns} onChange={(next) => setData('columns', next)} available={availableColumns} />
+          {errors.columns && <p className="text-sm text-destructive">{errors.columns}</p>}
         </div>
 
         {/* Actions */}
