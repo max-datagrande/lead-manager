@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUserTimezone } from '@/hooks/use-user-timezone';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { format } from 'date-fns';
 import { Activity, Gauge, TrendingDown, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -126,13 +126,13 @@ function PerformanceIndex({ metrics, stats, hosts, filters }: PageProps) {
     }));
   }, [metrics]);
 
-  const handleDateUpdate = ({ range }: { range: { from?: Date; to?: Date } }) => {
+  const { timezone } = useUserTimezone();
+
+  const handleDateUpdate = ({ range }: { range: { from: string; to: string } | null }) => {
     const params: Record<string, string> = {};
-    if (range.from) {
-      params.from = format(range.from, 'yyyy-MM-dd');
-    }
-    if (range.to) {
-      params.to = format(range.to, 'yyyy-MM-dd');
+    if (range) {
+      params.from = range.from;
+      params.to = range.to;
     }
     if (filters.host) {
       params.host = filters.host;
@@ -178,7 +178,7 @@ function PerformanceIndex({ metrics, stats, hosts, filters }: PageProps) {
                 ))}
               </SelectContent>
             </Select>
-            <DateRangePicker initialDateFrom={filters.from} initialDateTo={filters.to} onUpdate={handleDateUpdate} showCompare={false} />
+            <DateRangePicker initialDateFrom={filters.from} initialDateTo={filters.to} defaultTimezone={timezone} onUpdate={handleDateUpdate} />
           </div>
         </PageHeader>
 
