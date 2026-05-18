@@ -35,6 +35,10 @@ class Field extends Model
 
     static::updated($clearTokenCache);
     static::deleted($clearTokenCache);
+
+    static::deleting(function (Field $field) {
+      LandingPageColumn::query()->where('source', LandingPageColumn::SOURCE_FIELD)->where('reference', (string) $field->id)->delete();
+    });
   }
   public function leadFieldResponses()
   {
