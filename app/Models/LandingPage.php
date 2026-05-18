@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class LandingPage extends Model
 {
+  use HasFactory;
+
   protected $fillable = ['name', 'url', 'is_external', 'vertical_id', 'company_id', 'active', 'user_id', 'updated_user_id'];
   private function getAuthUserId()
   {
@@ -41,6 +44,11 @@ class LandingPage extends Model
 
   public function versions()
   {
-      return $this->hasMany(LandingPageVersion::class);
+    return $this->hasMany(LandingPageVersion::class);
+  }
+
+  public function columns()
+  {
+    return $this->hasMany(LandingPageColumn::class);
   }
 }
