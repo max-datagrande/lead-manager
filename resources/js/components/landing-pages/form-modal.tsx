@@ -1,4 +1,4 @@
-import { ColumnMultiSelect } from '@/components/landing-pages/column-multi-select';
+import { TokenComboboxMulti, type NamespacedToken } from '@/components/core/token-combobox';
 import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,12 +8,21 @@ import { Switch } from '@/components/ui/switch';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import type { AvailableColumns, LandingPageColumn } from '@/types/models/landing-page';
 import { useForm } from '@inertiajs/react';
+import { useMemo } from 'react';
 
 const EMPTY_AVAILABLE: AvailableColumns = { fields: [], traffic: [] };
 
 export default function FormModal({ entry, isEdit = false, verticals = [], companies = [], availableColumns = EMPTY_AVAILABLE }) {
   const modal = useModal();
   const modalId = useCurrentModalId();
+
+  const availableTokens = useMemo<NamespacedToken[]>(
+    () => [
+      ...availableColumns.fields.map((f) => ({ ...f, source: 'field', reference: String(f.id) })),
+      ...availableColumns.traffic.map((t) => ({ ...t, source: 'traffic', reference: t.name })),
+    ],
+    [availableColumns],
+  );
 
   const { data, setData, post, put, processing, errors, reset } = useForm({
     name: entry?.name ?? '',
@@ -135,7 +144,7 @@ export default function FormModal({ entry, isEdit = false, verticals = [], compa
         {/* Columns — Lead Fields + Traffic columns this landing collects */}
         <div className="space-y-2">
           <Label>Columns</Label>
-          <ColumnMultiSelect value={data.columns} onChange={(next) => setData('columns', next)} available={availableColumns} />
+          <TokenComboboxMulti value={data.columns} onChange={(next) => setData('columns', next as LandingPageColumn[])} tokens={availableTokens} />
           {errors.columns && <p className="text-sm text-destructive">{errors.columns}</p>}
         </div>
 
