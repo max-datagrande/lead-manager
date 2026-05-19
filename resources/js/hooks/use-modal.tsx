@@ -264,11 +264,13 @@ function ModalRoot({ stack, onCloseId }: { stack: ModalItem[]; onCloseId: (id: n
         const maxWidth = item.options?.maxWidth || 'sm:max-w-lg';
 
         const className = item.options?.className || '';
-        const finalClassName = `no-scrollbar max-h-[90vh] overflow-y-auto ${maxWidth} w-full ${className}`.trim();
+        const finalClassName = `${maxWidth} w-full ${className}`.trim();
 
         return (
           <Dialog key={item.id} open onOpenChange={(open) => !open && onCloseId(item.id)}>
-            <DialogContent className={finalClassName}>{item.node}</DialogContent>
+            <DialogContent className={finalClassName}>
+              <div className="no-scrollbar max-h-[90vh]">{item.node}</div>
+            </DialogContent>
           </Dialog>
         );
       })}
