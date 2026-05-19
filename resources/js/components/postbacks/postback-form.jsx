@@ -1,4 +1,4 @@
-import { TokenCombobox } from '@/components/postbacks/token-combobox';
+import { TokenCombobox } from '@/components/core/token-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
