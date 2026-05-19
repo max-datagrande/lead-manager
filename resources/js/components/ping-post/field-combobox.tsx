@@ -28,7 +28,7 @@ export function FieldCombobox({ value, onChange, fields, usedFields = [], placeh
           aria-expanded={open}
           className={cn('justify-between font-normal', !value && 'text-muted-foreground', className)}
         >
-          <span className="truncate">{value ? (fields.find((f) => f.name === value)?.label || value) : placeholder}</span>
+          <span className="truncate">{value ? fields.find((f) => f.name === value)?.label || value : placeholder}</span>
           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

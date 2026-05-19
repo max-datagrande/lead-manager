@@ -1,15 +1,11 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { useVerticals } from '@/hooks/use-verticals';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Edit, Trash2 } from 'lucide-react';
 
-const StatusBadge = ({ isActive }) => (
-  <Badge variant={isActive ? 'default' : 'destructive'}>
-    {isActive ? 'Active' : 'Inactive'}
-  </Badge>
-);
+const StatusBadge = ({ isActive }) => <Badge variant={isActive ? 'default' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>;
 
 const ActionsCell = ({ row }) => {
   const { showEditModal, showDeleteModal } = useVerticals();
@@ -19,12 +15,7 @@ const ActionsCell = ({ row }) => {
       <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(entry)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>

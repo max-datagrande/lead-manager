@@ -21,4 +21,3 @@ interface IndexProps {
 }
 
 export type { IndexProps, InternalTokenOption, Platform };
-

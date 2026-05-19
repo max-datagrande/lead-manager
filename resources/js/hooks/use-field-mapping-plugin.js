@@ -1,31 +1,31 @@
-import { linter } from '@codemirror/lint'
-import { Decoration, EditorView, WidgetType } from '@codemirror/view'
-import { RangeSetBuilder, StateField } from '@codemirror/state'
+import { linter } from '@codemirror/lint';
+import { RangeSetBuilder, StateField } from '@codemirror/state';
+import { Decoration, EditorView, WidgetType } from '@codemirror/view';
 
-const TOKEN_REGEX = /\{\$(\d+)\}/g
+const TOKEN_REGEX = /\{\$(\d+)\}/g;
 
 export class FieldWidget extends WidgetType {
   constructor(fieldId, fieldName) {
-    super()
-    this.fieldId = fieldId
-    this.fieldName = fieldName
+    super();
+    this.fieldId = fieldId;
+    this.fieldName = fieldName;
   }
 
   toDOM() {
-    const span = document.createElement('span')
-    span.className = 'cm-field-pill'
-    span.dataset.fieldId = String(this.fieldId)
-    span.textContent = this.fieldName
-    return span
+    const span = document.createElement('span');
+    span.className = 'cm-field-pill';
+    span.dataset.fieldId = String(this.fieldId);
+    span.textContent = this.fieldName;
+    return span;
   }
 
   eq(other) {
-    return other.fieldId === this.fieldId && other.fieldName === this.fieldName
+    return other.fieldId === this.fieldId && other.fieldName === this.fieldName;
   }
 
   // Allow events to propagate so the outer click handler can detect pill clicks
   ignoreEvent() {
-    return false
+    return false;
   }
 }
 
@@ -48,57 +48,56 @@ export const fieldPillTheme = EditorView.baseTheme({
   '.cm-field-pill:hover': {
     background: 'color-mix(in oklch, var(--primary) 25%, transparent)',
   },
-})
+});
 
 function buildDecorations(state, fieldMap) {
-  const builder = new RangeSetBuilder()
-  const doc = state.doc.toString()
-  TOKEN_REGEX.lastIndex = 0
-  let match
+  const builder = new RangeSetBuilder();
+  const doc = state.doc.toString();
+  TOKEN_REGEX.lastIndex = 0;
+  let match;
   while ((match = TOKEN_REGEX.exec(doc)) !== null) {
-    const fieldId = parseInt(match[1], 10)
-    const field = fieldMap.get(fieldId)
-    const name = field ? (field.label ?? field.name) : `#${fieldId}`
+    const fieldId = parseInt(match[1], 10);
+    const field = fieldMap.get(fieldId);
+    const name = field ? (field.label ?? field.name) : `#${fieldId}`;
 
-    let from = match.index
-    let to = match.index + match[0].length
+    let from = match.index;
+    let to = match.index + match[0].length;
 
     // Extend the decoration to absorb surrounding quotes so the pill
     // renders without visible quote characters.
     // Escaped quotes first (\"{$N}\") for tokens inside nested JSON strings,
     // then regular quotes ("{$N}") for normal JSON values.
-    if (from > 1 && doc[from - 2] === '\\' && doc[from - 1] === '"' &&
-        to + 1 < doc.length && doc[to] === '\\' && doc[to + 1] === '"') {
-      from -= 2
-      to += 2
+    if (from > 1 && doc[from - 2] === '\\' && doc[from - 1] === '"' && to + 1 < doc.length && doc[to] === '\\' && doc[to + 1] === '"') {
+      from -= 2;
+      to += 2;
     } else if (from > 0 && doc[from - 1] === '"' && to < doc.length && doc[to] === '"') {
-      from -= 1
-      to += 1
+      from -= 1;
+      to += 1;
     }
 
-    builder.add(from, to, Decoration.replace({ widget: new FieldWidget(fieldId, name) }))
+    builder.add(from, to, Decoration.replace({ widget: new FieldWidget(fieldId, name) }));
   }
-  return builder.finish()
+  return builder.finish();
 }
 
 // Detects extra surrounding quotes around field tokens (e.g. ""{$N}") and shows one
 // friendly hint per token — avoids duplicate messages from leading + trailing passes.
-const BARE_TOKEN_REGEX = /\{\$\d+\}/g
+const BARE_TOKEN_REGEX = /\{\$\d+\}/g;
 
 export const tokenDoubleQuoteLinter = linter((view) => {
-  const diagnostics = []
-  const doc = view.state.doc.toString()
+  const diagnostics = [];
+  const doc = view.state.doc.toString();
 
-  BARE_TOKEN_REGEX.lastIndex = 0
-  let match
+  BARE_TOKEN_REGEX.lastIndex = 0;
+  let match;
   while ((match = BARE_TOKEN_REGEX.exec(doc)) !== null) {
-    const pre = match.index > 1 ? doc[match.index - 2] : ''
-    const post = doc[match.index + match[0].length + 1] ?? ''
+    const pre = match.index > 1 ? doc[match.index - 2] : '';
+    const post = doc[match.index + match[0].length + 1] ?? '';
     // Ignore escaped quotes (\") — they're part of nested JSON strings, not extra wrappers
-    const preEscape = match.index > 2 ? doc[match.index - 3] : ''
-    const postEscape = doc[match.index + match[0].length] ?? ''
-    const hasExtraLeading = pre === '"' && preEscape !== '\\'
-    const hasExtraTrailing = post === '"' && postEscape !== '\\'
+    const preEscape = match.index > 2 ? doc[match.index - 3] : '';
+    const postEscape = doc[match.index + match[0].length] ?? '';
+    const hasExtraLeading = pre === '"' && preEscape !== '\\';
+    const hasExtraTrailing = post === '"' && postEscape !== '\\';
 
     if (hasExtraLeading || hasExtraTrailing) {
       diagnostics.push({
@@ -106,12 +105,12 @@ export const tokenDoubleQuoteLinter = linter((view) => {
         to: match.index + match[0].length + (hasExtraTrailing ? 2 : 1),
         severity: 'warning',
         message: 'Field tokens already include their own quotes — remove the extra " to avoid duplication.',
-      })
+      });
     }
   }
 
-  return diagnostics
-})
+  return diagnostics;
+});
 
 /**
  * Creates a CodeMirror StateField that scans the document for {$N} tokens
@@ -125,6 +124,6 @@ export function createFieldMappingPlugin(fieldMap) {
     create: (state) => buildDecorations(state, fieldMap),
     update: (decs, tr) => (tr.docChanged ? buildDecorations(tr.state, fieldMap) : decs),
     provide: (f) => EditorView.decorations.from(f),
-  })
-  return { stateField, extensions: [stateField, fieldPillTheme] }
+  });
+  return { stateField, extensions: [stateField, fieldPillTheme] };
 }

@@ -1,13 +1,13 @@
-import { type DispatchLog, type PostbackExecution } from '@/components/postbacks/executions'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, CheckCircle, Clock, Globe } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { type DispatchLog, type PostbackExecution } from '@/components/postbacks/executions';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, CheckCircle, Clock, Globe } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface DispatchLogsViewerProps {
-  execution: PostbackExecution
+  execution: PostbackExecution;
 }
 
 function statusBadge(statusCode: number | null, errorMessage: string | null) {
@@ -17,7 +17,7 @@ function statusBadge(statusCode: number | null, errorMessage: string | null) {
         <CheckCircle className="mr-1 h-3 w-3" />
         {statusCode} OK
       </Badge>
-    )
+    );
   }
   if (statusCode !== null && statusCode >= 400) {
     return (
@@ -25,7 +25,7 @@ function statusBadge(statusCode: number | null, errorMessage: string | null) {
         <AlertCircle className="mr-1 h-3 w-3" />
         {statusCode}
       </Badge>
-    )
+    );
   }
   if (errorMessage) {
     return (
@@ -33,42 +33,42 @@ function statusBadge(statusCode: number | null, errorMessage: string | null) {
         <AlertCircle className="mr-1 h-3 w-3" />
         Network Error
       </Badge>
-    )
+    );
   }
   return (
     <Badge variant="secondary">
       <Clock className="mr-1 h-3 w-3" />
       {statusCode ?? 'Pending'}
     </Badge>
-  )
+  );
 }
 
 export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
-  const [logs, setLogs] = useState<DispatchLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [logs, setLogs] = useState<DispatchLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        setLoading(true)
-        const res = await fetch(`/postbacks/executions/${execution.id}/dispatch-logs`)
-        const json = await res.json()
+        setLoading(true);
+        const res = await fetch(`/postbacks/executions/${execution.id}/dispatch-logs`);
+        const json = await res.json();
         if (json.success) {
-          setLogs(json.data)
+          setLogs(json.data);
         } else {
-          setError('Error loading dispatch logs')
+          setError('Error loading dispatch logs');
         }
       } catch {
-        setError('Connection error')
+        setError('Connection error');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchLogs()
-  }, [execution.id])
+    };
+    fetchLogs();
+  }, [execution.id]);
 
-  const title = `Dispatch Logs — ${execution.execution_uuid.slice(0, 8)}…`
+  const title = `Dispatch Logs — ${execution.execution_uuid.slice(0, 8)}…`;
 
   if (loading) {
     return (
@@ -77,12 +77,12 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="sr-only">HTTP dispatch attempt logs for this execution.</DialogDescription>
         </DialogHeader>
-        <div className="flex items-center justify-center p-8 gap-2 text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 p-8 text-muted-foreground">
           <Clock className="h-4 w-4 animate-spin" />
           <span>Loading logs...</span>
         </div>
       </>
-    )
+    );
   }
 
   if (error) {
@@ -92,12 +92,12 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="sr-only">HTTP dispatch attempt logs for this execution.</DialogDescription>
         </DialogHeader>
-        <div className="flex items-center justify-center p-8 gap-2 text-destructive">
+        <div className="flex items-center justify-center gap-2 p-8 text-destructive">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </div>
       </>
-    )
+    );
   }
 
   if (logs.length === 0) {
@@ -107,12 +107,12 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="sr-only">HTTP dispatch attempt logs for this execution.</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col items-center justify-center p-8 gap-2 text-muted-foreground">
+        <div className="flex flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
           <Globe className="h-8 w-8" />
           <p>No dispatch logs yet for this execution.</p>
         </div>
       </>
-    )
+    );
   }
 
   return (
@@ -120,9 +120,7 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
-          {execution.outbound_url && (
-            <span className="font-mono text-xs break-all">{execution.outbound_url}</span>
-          )}
+          {execution.outbound_url && <span className="font-mono text-xs break-all">{execution.outbound_url}</span>}
         </DialogDescription>
       </DialogHeader>
       <Tabs defaultValue={logs[0].id.toString()} className="w-full">
@@ -150,8 +148,8 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex gap-2 text-sm font-medium">
-                      <span className="font-mono bg-accent text-accent-foreground px-1.5 rounded-md flex flex-items">{log.request_method}</span>
-                      <span className="break-all font-mono text-xs text-muted-foreground whitespace-nowrap">{log.request_url}</span>
+                      <span className="flex-items flex rounded-md bg-accent px-1.5 font-mono text-accent-foreground">{log.request_method}</span>
+                      <span className="font-mono text-xs break-all whitespace-nowrap text-muted-foreground">{log.request_url}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{log.response_time_ms ?? 0}ms</span>
@@ -178,8 +176,8 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
                 )}
                 {log.response_body && (
                   <div className="space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Response Body</p>
-                    <pre className="rounded-md bg-muted p-3 text-xs font-mono overflow-auto max-h-60 whitespace-pre-wrap break-all">
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Response Body</p>
+                    <pre className="max-h-60 overflow-auto rounded-md bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
                       {log.response_body}
                     </pre>
                   </div>
@@ -190,5 +188,5 @@ export function DispatchLogsViewer({ execution }: DispatchLogsViewerProps) {
         ))}
       </Tabs>
     </>
-  )
+  );
 }

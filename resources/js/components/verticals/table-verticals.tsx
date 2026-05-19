@@ -3,18 +3,18 @@ import { DataTableHeader } from '@/components/data-table/table-header';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
+import { useVerticals } from '@/hooks/use-verticals';
 import {
   getCoreRowModel,
-  getFilteredRowModel,
   getFacetedRowModel,
   getFacetedUniqueValues,
+  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { columns } from './list-columns';
-import { useVerticals } from '@/hooks/use-verticals';
 
 const toolbarConfig = {
   dateRange: { column: 'created_at', label: 'Created At' },
@@ -45,18 +45,9 @@ export function TableVerticals({ entries }) {
   } = useVerticals();
 
   // Separate date filters from real column filters
-  const fromFilter = useMemo(
-    () => columnFilters.find((f) => f.id === 'from_date'),
-    [columnFilters]
-  );
-  const toFilter = useMemo(
-    () => columnFilters.find((f) => f.id === 'to_date'),
-    [columnFilters]
-  );
-  const realColumnFilters = useMemo(
-    () => columnFilters.filter((f) => f.id !== 'from_date' && f.id !== 'to_date'),
-    [columnFilters]
-  );
+  const fromFilter = useMemo(() => columnFilters.find((f) => f.id === 'from_date'), [columnFilters]);
+  const toFilter = useMemo(() => columnFilters.find((f) => f.id === 'to_date'), [columnFilters]);
+  const realColumnFilters = useMemo(() => columnFilters.filter((f) => f.id !== 'from_date' && f.id !== 'to_date'), [columnFilters]);
 
   // Apply date range filter on entries
   const filteredEntries = useMemo(() => {
@@ -83,11 +74,7 @@ export function TableVerticals({ entries }) {
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: (updater) => {
       const next = typeof updater === 'function' ? updater(realColumnFilters) : updater;
-      setColumnFilters([
-        ...next,
-        ...(fromFilter ? [fromFilter] : []),
-        ...(toFilter ? [toFilter] : []),
-      ]);
+      setColumnFilters([...next, ...(fromFilter ? [fromFilter] : []), ...(toFilter ? [toFilter] : [])]);
     },
     getPaginationRowModel: getPaginationRowModel(),
     getCoreRowModel: getCoreRowModel(),

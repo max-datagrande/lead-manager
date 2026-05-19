@@ -1,13 +1,20 @@
-import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { DataTableContent } from '@/components/data-table/table-content'
-import { DataTableHeader } from '@/components/data-table/table-header'
-import { DataTablePagination } from '@/components/data-table/table-pagination'
-import { DataTableToolbar } from '@/components/data-table/toolbar'
-import { Table, TableBody } from '@/components/ui/table'
-import type { Buyer } from '@/types/ping-post'
-import { getCoreRowModel, getFilteredRowModel, getFacetedRowModel, getFacetedUniqueValues, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table'
-import { useState } from 'react'
-import { buyerColumns } from './list-columns'
+import { DataTableContent } from '@/components/data-table/table-content';
+import { DataTableHeader } from '@/components/data-table/table-header';
+import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { DataTableToolbar } from '@/components/data-table/toolbar';
+import { Table, TableBody } from '@/components/ui/table';
+import type { Buyer } from '@/types/ping-post';
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { useState } from 'react';
+import { buyerColumns } from './list-columns';
 
 const toolbarConfig = {
   dateRange: { column: 'created_at', label: 'Created At' },
@@ -29,17 +36,17 @@ const toolbarConfig = {
       ],
     },
   ],
-}
+};
 
 interface Props {
-  entries: Buyer[]
+  entries: Buyer[];
 }
 
 export function TableBuyers({ entries }: Props) {
-  const [sorting, setSorting] = useState([{ id: 'id', desc: true }])
-  const [globalFilter, setGlobalFilter] = useState('')
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 })
-  const [columnFilters, setColumnFilters] = useState<any[]>([])
+  const [sorting, setSorting] = useState([{ id: 'id', desc: true }]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
+  const [columnFilters, setColumnFilters] = useState<any[]>([]);
 
   const table = useReactTable({
     data: entries,
@@ -56,7 +63,7 @@ export function TableBuyers({ entries }: Props) {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     globalFilterFn: 'includesString',
-  })
+  });
 
   return (
     <div className="space-y-4">
@@ -69,5 +76,5 @@ export function TableBuyers({ entries }: Props) {
       </Table>
       <DataTablePagination table={table} />
     </div>
-  )
+  );
 }

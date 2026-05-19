@@ -3,6 +3,7 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { useUserTimezone } from '@/hooks/use-user-timezone';
 import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
@@ -20,6 +21,7 @@ export function DataTableToolbar({
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
+  const { timezone } = useUserTimezone();
   // Extraer valores iniciales de fecha de los filtros existentes
   const currentFilters = table.getState().columnFilters;
   const fromDateFilter = currentFilters.find((filter) => filter.id === 'from_date');
@@ -68,20 +70,17 @@ export function DataTableToolbar({
           <DateRangePicker
             initialDateFrom={initialDateFrom}
             initialDateTo={initialDateTo}
-            onUpdate={({ range: { from, to } }) => {
+            defaultTimezone={timezone}
+            onUpdate={({ range }) => {
               const currentFilters = table.getState().columnFilters;
               const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
-              const hasValidValues = from && to;
               table.setColumnFilters(
-                !hasValidValues
-                  ? otherFilters
-                  : [...otherFilters, { id: 'from_date', value: from.toISOString() }, { id: 'to_date', value: to.toISOString() }],
+                !range ? otherFilters : [...otherFilters, { id: 'from_date', value: range.from }, { id: 'to_date', value: range.to }],
               );
             }}
             isReset={reset}
             align="end"
             locale="en-US"
-            showCompare={false}
           />
         </div>
       </div>

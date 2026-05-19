@@ -1,9 +1,9 @@
+import CopyToClipboard from '@/components/copy-to-clipboard';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { route } from 'ziggy-js';
-import CopyToClipboard from '@/components/copy-to-clipboard';
 
 interface LeadDetailsModalProps {
   fingerprint: string;

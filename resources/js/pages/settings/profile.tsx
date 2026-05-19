@@ -1,6 +1,7 @@
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -8,6 +9,8 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TimezoneSelect } from '@/components/ui/timezone-select';
+import { DEFAULT_TIMEZONE } from '@/hooks/use-user-timezone';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
@@ -20,6 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
   const { auth } = usePage<SharedData>().props;
+  const [timezone, setTimezone] = useState<string>(auth.user.timezone ?? DEFAULT_TIMEZONE);
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
@@ -70,6 +74,17 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                   />
 
                   <InputError className="mt-2" message={errors.email} />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="timezone">Timezone</Label>
+
+                  <TimezoneSelect value={timezone} onValueChange={setTimezone} className="mt-1" />
+                  <input type="hidden" name="timezone" value={timezone} />
+
+                  <p className="text-xs text-muted-foreground">Used as the default timezone in date pickers across the admin.</p>
+
+                  <InputError className="mt-2" message={errors.timezone} />
                 </div>
 
                 {mustVerifyEmail && auth.user.email_verified_at === null && (

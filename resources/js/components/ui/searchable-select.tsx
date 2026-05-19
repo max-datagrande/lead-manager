@@ -25,6 +25,8 @@ interface SearchableSelectProps<T extends SearchableSelectOption = SearchableSel
    * Fuzzy search still uses `option.label`.
    */
   renderOption?: (option: T) => React.ReactNode;
+  /** Optional node rendered before the label inside the trigger button (e.g. an icon). */
+  triggerIcon?: React.ReactNode;
 }
 
 export function SearchableSelect<T extends SearchableSelectOption = SearchableSelectOption>({
@@ -37,6 +39,7 @@ export function SearchableSelect<T extends SearchableSelectOption = SearchableSe
   className,
   disabled = false,
   renderOption,
+  triggerIcon,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = useState(false);
 
@@ -52,7 +55,10 @@ export function SearchableSelect<T extends SearchableSelectOption = SearchableSe
           disabled={disabled}
           className={cn('w-full justify-between font-normal transition-none', !selectedOption && 'text-muted-foreground', className)}
         >
-          <span className="truncate">{selectedOption ? (renderOption ? renderOption(selectedOption) : selectedOption.label) : placeholder}</span>
+          {triggerIcon && <span className="mr-2 inline-flex shrink-0 items-center">{triggerIcon}</span>}
+          <span className="flex min-w-0 flex-1 items-center truncate">
+            {selectedOption ? (renderOption ? renderOption(selectedOption) : selectedOption.label) : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

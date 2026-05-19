@@ -10,7 +10,9 @@ import { Plus, RefreshCw } from 'lucide-react';
  */
 export const FieldsActions = () => {
   const { showCreateModal, confirmSync } = useFields();
-  const { props: { app } } = usePage<SharedData>();
+  const {
+    props: { app },
+  } = usePage<SharedData>();
   const isLocalEnv = app.env === 'local';
 
   return (

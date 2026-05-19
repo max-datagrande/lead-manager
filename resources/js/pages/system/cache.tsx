@@ -87,7 +87,12 @@ const CachePage = ({ entries }: CachePageProps) => {
                         <p>Source: {entry.source}</p>
                         {entry.pattern && <p className="italic">Pattern-based ({entry.count ?? 0} keys)</p>}
                       </div>
-                      <Button variant={!entry.exists ? "secondary" : "destructive"} size="sm" onClick={() => handlePurge(entry)} disabled={!entry.exists}>
+                      <Button
+                        variant={!entry.exists ? 'secondary' : 'destructive'}
+                        size="sm"
+                        onClick={() => handlePurge(entry)}
+                        disabled={!entry.exists}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                         Purge
                       </Button>

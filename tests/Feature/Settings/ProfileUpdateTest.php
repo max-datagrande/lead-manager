@@ -27,6 +27,47 @@ test('profile information can be updated', function () {
   expect($user->email_verified_at)->toBeNull();
 });
 
+test('timezone can be saved with a supported value', function () {
+  $user = User::factory()->create();
+
+  $response = $this->actingAs($user)->patch('/settings/profile', [
+    'name' => $user->name,
+    'email' => $user->email,
+    'timezone' => 'America/New_York',
+  ]);
+
+  $response->assertSessionHasNoErrors()->assertRedirect('/settings/profile');
+
+  expect($user->refresh()->timezone)->toBe('America/New_York');
+});
+
+test('timezone can be cleared by sending null', function () {
+  $user = User::factory()->create(['timezone' => 'America/New_York']);
+
+  $response = $this->actingAs($user)->patch('/settings/profile', [
+    'name' => $user->name,
+    'email' => $user->email,
+    'timezone' => null,
+  ]);
+
+  $response->assertSessionHasNoErrors();
+  expect($user->refresh()->timezone)->toBeNull();
+});
+
+test('timezone outside the supported list is rejected', function () {
+  $user = User::factory()->create();
+
+  $response = $this->actingAs($user)
+    ->from('/settings/profile')
+    ->patch('/settings/profile', [
+      'name' => $user->name,
+      'email' => $user->email,
+      'timezone' => 'Mars/Olympus_Mons',
+    ]);
+
+  $response->assertSessionHasErrors('timezone');
+});
+
 test('email verification status is unchanged when the email address is unchanged', function () {
   $user = User::factory()->create();
 

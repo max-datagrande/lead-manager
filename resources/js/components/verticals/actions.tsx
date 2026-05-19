@@ -6,7 +6,9 @@ import { Plus, RefreshCw } from 'lucide-react';
 
 export const VerticalsActions = () => {
   const { showCreateModal, confirmSync } = useVerticals();
-  const { props: { app } } = usePage<SharedData>();
+  const {
+    props: { app },
+  } = usePage<SharedData>();
   const isLocalEnv = app.env === 'local';
 
   return (

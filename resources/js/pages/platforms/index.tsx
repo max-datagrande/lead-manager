@@ -1,11 +1,11 @@
-import { PlatformsActions, TablePlatforms } from '@/components/platforms/index'
-import PageHeader from '@/components/page-header'
-import { PlatformsProvider } from '@/context/platforms-provider'
-import AppLayout from '@/layouts/app-layout'
-import type { BreadcrumbItem } from '@/types'
-import { type IndexProps } from '@/types/models/platform'
-import { Head } from '@inertiajs/react'
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Platforms', href: '/platforms' }]
+import PageHeader from '@/components/page-header';
+import { PlatformsActions, TablePlatforms } from '@/components/platforms/index';
+import { PlatformsProvider } from '@/context/platforms-provider';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { type IndexProps } from '@/types/models/platform';
+import { Head } from '@inertiajs/react';
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Platforms', href: '/platforms' }];
 
 const Index = ({ platforms, companies, internalTokens }: IndexProps) => {
   return (
@@ -21,5 +21,5 @@ const Index = ({ platforms, companies, internalTokens }: IndexProps) => {
   );
 };
 
-Index.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />
-export default Index
+Index.layout = (page: React.ReactNode) => <AppLayout children={page} breadcrumbs={breadcrumbs} />;
+export default Index;

@@ -1,5 +1,5 @@
-import { VerticalsActions, TableVerticals } from '@/components/verticals';
 import PageHeader from '@/components/page-header';
+import { TableVerticals, VerticalsActions } from '@/components/verticals';
 import { VerticalsProvider } from '@/context/verticals-provider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';

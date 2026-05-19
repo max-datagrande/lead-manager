@@ -27,12 +27,20 @@ export interface NavItem {
   subItems?: NavSubItem[];
 }
 type ServicesConfig = Record<string, any>;
+export interface TimezoneOption {
+  value: string;
+  label: string;
+  name: string;
+  offset: string | null;
+  description: string | null;
+}
 export interface SharedData {
   name: string;
   quote: { message: string; author: string };
   auth: Auth;
   ziggy: Config & { location: string };
   sidebarOpen: boolean;
+  timezones: TimezoneOption[];
   app: {
     env: string;
     services: ServicesConfig;
@@ -59,6 +67,7 @@ export interface User {
   email: string;
   avatar?: string;
   email_verified_at: string | null;
+  timezone: string | null;
   created_at: string;
   updated_at: string;
   [key: string]: unknown; // This allows for additional properties...

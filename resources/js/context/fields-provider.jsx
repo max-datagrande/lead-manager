@@ -22,7 +22,9 @@ export function FieldsProvider({ children, initialState }) {
     pageIndex: 0, //initial page index
     pageSize: 10, //default page size
   });
-  const { props: { flash } } = usePage();
+  const {
+    props: { flash },
+  } = usePage();
   const { delete: destroy, processing } = useForm();
 
   useEffect(() => {

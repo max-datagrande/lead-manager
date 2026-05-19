@@ -35,8 +35,8 @@ export default function Overview() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="pb-2 pr-4 font-medium">Property</th>
-                  <th className="pb-2 pr-4 font-medium">Type</th>
+                  <th className="pr-4 pb-2 font-medium">Property</th>
+                  <th className="pr-4 pb-2 font-medium">Type</th>
                   <th className="pb-2 font-medium">{t('overview.config_title')}</th>
                 </tr>
               </thead>

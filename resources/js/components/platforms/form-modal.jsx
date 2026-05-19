@@ -1,65 +1,70 @@
-import { Button } from '@/components/ui/button'
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { SearchableSelect } from '@/components/ui/searchable-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCurrentModalId, useModal } from '@/hooks/use-modal'
-import { useForm } from '@inertiajs/react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCurrentModalId, useModal } from '@/hooks/use-modal';
+import { useForm } from '@inertiajs/react';
+import { Plus, Trash2 } from 'lucide-react';
 
 export default function FormModal({ entry, companies = [], internalTokens = [], isEdit = false }) {
-  const modal = useModal()
-  const modalId = useCurrentModalId()
+  const modal = useModal();
+  const modalId = useCurrentModalId();
 
-  const initialMappings = entry?.token_mappings && Object.keys(entry.token_mappings).length
-    ? Object.entries(entry.token_mappings).map(([external, internal]) => ({ external, internal }))
-    : [{ external: '', internal: '' }]
+  const initialMappings =
+    entry?.token_mappings && Object.keys(entry.token_mappings).length
+      ? Object.entries(entry.token_mappings).map(([external, internal]) => ({ external, internal }))
+      : [{ external: '', internal: '' }];
 
   const { data, setData, post, put, processing, errors, reset, transform } = useForm({
     name: entry?.name ?? '',
     company_id: entry?.company_id ?? '',
     token_mappings: initialMappings,
-  })
+  });
 
   transform((formData) => {
-    const mappingsObj = {}
+    const mappingsObj = {};
     formData.token_mappings.forEach(({ external, internal }) => {
       if (external.trim() && internal) {
-        mappingsObj[external.trim()] = internal
+        mappingsObj[external.trim()] = internal;
       }
-    })
-    return { ...formData, token_mappings: mappingsObj }
-  })
+    });
+    return { ...formData, token_mappings: mappingsObj };
+  });
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    const url = isEdit ? route('platforms.update', entry.id) : route('platforms.store')
+    e.preventDefault();
+    const url = isEdit ? route('platforms.update', entry.id) : route('platforms.store');
     const options = {
       preserveState: true,
       preserveScroll: true,
       onSuccess: () => {
-        modal.resolve(modalId, true)
-        reset()
+        modal.resolve(modalId, true);
+        reset();
       },
-    }
+    };
 
     if (isEdit) {
-      put(url, options)
+      put(url, options);
     } else {
-      post(url, options)
+      post(url, options);
     }
-  }
+  };
 
-  const addMapping = () => setData('token_mappings', [...data.token_mappings, { external: '', internal: '' }])
+  const addMapping = () => setData('token_mappings', [...data.token_mappings, { external: '', internal: '' }]);
 
-  const removeMapping = (index) => setData('token_mappings', data.token_mappings.filter((_, i) => i !== index))
+  const removeMapping = (index) =>
+    setData(
+      'token_mappings',
+      data.token_mappings.filter((_, i) => i !== index),
+    );
 
   const updateMapping = (index, field, value) =>
     setData(
       'token_mappings',
       data.token_mappings.map((m, i) => (i === index ? { ...m, [field]: value } : m)),
-    )
+    );
 
   return (
     <>
@@ -141,7 +146,15 @@ export default function FormModal({ entry, companies = [], internalTokens = [], 
         </div>
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => { modal.resolve(modalId, false); reset() }} disabled={processing}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              modal.resolve(modalId, false);
+              reset();
+            }}
+            disabled={processing}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={processing}>
@@ -150,5 +163,5 @@ export default function FormModal({ entry, companies = [], internalTokens = [], 
         </div>
       </form>
     </>
-  )
+  );
 }

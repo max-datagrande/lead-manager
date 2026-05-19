@@ -162,7 +162,7 @@
 }
 
 /* ── Local environment theme (navy) ─────────────────────────────────────── */
-:root[data-env="local"] {
+:root[data-env='local'] {
   --primary: oklch(0.58 0.14 240);
   --primary-foreground: oklch(0.98 0 0);
   --ring: oklch(0.58 0.14 240);
@@ -170,13 +170,13 @@
   --sidebar-foreground: oklch(0.88 0.02 240);
   --sidebar-primary: oklch(0.58 0.14 240);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.30 0.07 240);
+  --sidebar-accent: oklch(0.3 0.07 240);
   --sidebar-accent-foreground: oklch(0.88 0.02 240);
   --sidebar-border: oklch(0.32 0.06 240);
   --sidebar-ring: oklch(0.58 0.14 240);
 }
 
-:root.dark[data-env="local"] {
+:root.dark[data-env='local'] {
   --primary: oklch(0.65 0.14 240);
   --primary-foreground: oklch(0.98 0 0);
   --ring: oklch(0.65 0.14 240);
@@ -191,12 +191,12 @@
 }
 
 /* ── Development / Staging environment theme (slate) ────────────────────── */
-:root[data-env="development"],
-:root[data-env="staging"] {
+:root[data-env='development'],
+:root[data-env='staging'] {
   --primary: oklch(0.55 0.03 255);
   --primary-foreground: oklch(0.98 0 0);
   --ring: oklch(0.55 0.03 255);
-  --sidebar: oklch(0.30 0.02 255);
+  --sidebar: oklch(0.3 0.02 255);
   --sidebar-foreground: oklch(0.88 0.01 255);
   --sidebar-primary: oklch(0.55 0.03 255);
   --sidebar-primary-foreground: oklch(0.98 0 0);
@@ -206,8 +206,8 @@
   --sidebar-ring: oklch(0.55 0.03 255);
 }
 
-:root.dark[data-env="development"],
-:root.dark[data-env="staging"] {
+:root.dark[data-env='development'],
+:root.dark[data-env='staging'] {
   --primary: oklch(0.62 0.03 255);
   --primary-foreground: oklch(0.98 0 0);
   --ring: oklch(0.62 0.03 255);
@@ -217,7 +217,7 @@
   --sidebar-primary-foreground: oklch(0.98 0 0);
   --sidebar-accent: oklch(0.28 0.02 255);
   --sidebar-accent-foreground: oklch(0.85 0.01 255);
-  --sidebar-border: oklch(0.30 0.02 255);
+  --sidebar-border: oklch(0.3 0.02 255);
   --sidebar-ring: oklch(0.62 0.03 255);
 }
 
@@ -302,7 +302,7 @@
     cursor: pointer;
   }
   label {
-    @apply text-sm font-medium text-muted-foreground block;
+    @apply block text-sm font-medium text-muted-foreground;
   }
 
   /* Prevent focus zoom on mobile devices */

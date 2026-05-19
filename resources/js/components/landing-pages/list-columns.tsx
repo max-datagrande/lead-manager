@@ -1,15 +1,11 @@
+import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DataTableColumnHeader } from '@/components/data-table/column-header';
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { useLandings } from '@/hooks/use-landings';
-import { Edit, Trash2, SquareArrowOutUpRight } from 'lucide-react';
+import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
+import { Edit, SquareArrowOutUpRight, Trash2 } from 'lucide-react';
 
-const StatusBadge = ({ isActive }) => (
-  <Badge variant={isActive ? 'default' : 'destructive'}>
-    {isActive ? 'Active' : 'Inactive'}
-  </Badge>
-);
+const StatusBadge = ({ isActive }) => <Badge variant={isActive ? 'default' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>;
 
 const ActionsCell = ({ row }) => {
   const { showEditModal, showDeleteModal, showVersions } = useLandings();
@@ -19,12 +15,7 @@ const ActionsCell = ({ row }) => {
       <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => showDeleteModal(entry)}
-        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-      >
+      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
         <Trash2 className="h-4 w-4" />
       </Button>
       <Button variant="ghost" size="sm" onClick={() => showVersions(entry)} className="h-8 w-8 p-0">
@@ -52,7 +43,7 @@ export const columns = [
     accessorKey: 'url',
     header: ({ column }) => <DataTableColumnHeader column={column} title="URL" />,
     cell: ({ cell }) => (
-      <a href={cell.getValue()} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline text-sm">
+      <a href={cell.getValue()} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 underline">
         {cell.getValue()}
       </a>
     ),
@@ -80,6 +71,20 @@ export const columns = [
       return filterValue.includes(String(row.original.is_external));
     },
     enableSorting: true,
+    enableHiding: true,
+  },
+  {
+    accessorKey: 'columns',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Columns" />,
+    cell: ({ row }) => {
+      const count = row.original.columns?.length ?? 0;
+      return (
+        <Badge variant={count > 0 ? 'secondary' : 'outline'} className="font-normal">
+          {count} column{count === 1 ? '' : 's'}
+        </Badge>
+      );
+    },
+    enableSorting: false,
     enableHiding: true,
   },
   {

@@ -7,8 +7,8 @@
  */
 export function extractUrlParams(url) {
   try {
-    return [...new URL(url).searchParams.entries()].map(([key, value]) => ({ key, value }))
+    return [...new URL(url).searchParams.entries()].map(([key, value]) => ({ key, value }));
   } catch {
-    return []
+    return [];
   }
 }

@@ -7,7 +7,7 @@ export function DataTableHeader({ table }) {
       {table.getHeaderGroups().map((headerGroup) => (
         <TableRow key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
-            <TableHead key={header.id} colSpan={header.colSpan} className="empty:p-0 whitespace-nowrap">
+            <TableHead key={header.id} colSpan={header.colSpan} className="whitespace-nowrap empty:p-0">
               {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
             </TableHead>
           ))}

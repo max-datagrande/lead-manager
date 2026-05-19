@@ -1,6 +1,6 @@
-import { useLocale } from '@/hooks/use-locale';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useLocale } from '@/hooks/use-locale';
 
 export function LanguageToggle() {
   const { locale, setLocale } = useLocale();

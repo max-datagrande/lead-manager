@@ -21,7 +21,12 @@ const ActionsCell = ({ row }) => {
         </Button>
       )}
       {entry.type === 'internal' && (
-        <Button variant="ghost" size="sm" onClick={() => router.visit(route('postbacks.internal.fire-form', entry.id))} className="h-8 w-8 p-0 text-primary hover:text-primary">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.visit(route('postbacks.internal.fire-form', entry.id))}
+          className="h-8 w-8 p-0 text-primary hover:text-primary"
+        >
           <Play className="h-4 w-4" />
         </Button>
       )}

@@ -94,7 +94,7 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     accessorKey: 'id',
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />,
     cell: ({ row }) => (
-      <Link href={route('ping-post.dispatches.show', row.original.id)} className="font-mono text-xs hover:underline px-2">
+      <Link href={route('ping-post.dispatches.show', row.original.id)} className="px-2 font-mono text-xs hover:underline">
         #{row.original.id}
       </Link>
     ),
@@ -103,7 +103,11 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
   {
     accessorKey: 'fingerprint',
     header: 'Fingerprint',
-    cell: ({ cell }) => <span className="font-mono text-xs text-muted-foreground whitespace-nowrap max-w-25 text-ellipsis block overflow-hidden">{String(cell.getValue())}</span>,
+    cell: ({ cell }) => (
+      <span className="block max-w-25 overflow-hidden font-mono text-xs text-ellipsis whitespace-nowrap text-muted-foreground">
+        {String(cell.getValue())}
+      </span>
+    ),
     enableSorting: false,
   },
   {
@@ -172,5 +176,5 @@ export const dispatchColumns: ColumnDef<LeadDispatch>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
     cell: ({ cell }) => <FormattedDateTime date={cell.getValue<string>()} />,
     enableSorting: true,
-  }
+  },
 ];

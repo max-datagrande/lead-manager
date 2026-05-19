@@ -1,12 +1,12 @@
-import { PlatformsContext } from '@/context/platforms-provider'
-import { useContext } from 'react'
+import { PlatformsContext } from '@/context/platforms-provider';
+import { useContext } from 'react';
 
 function usePlatforms() {
-  const context = useContext(PlatformsContext)
+  const context = useContext(PlatformsContext);
   if (!context) {
-    throw new Error('usePlatforms must be used within a PlatformsProvider')
+    throw new Error('usePlatforms must be used within a PlatformsProvider');
   }
-  return context
+  return context;
 }
 
-export { usePlatforms }
+export { usePlatforms };

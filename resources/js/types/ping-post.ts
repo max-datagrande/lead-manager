@@ -47,13 +47,7 @@ export interface ScheduleWindow {
   sort_order: number;
 }
 
-export interface TimezoneOption {
-  value: string;
-  label: string;
-  name: string;
-  offset: string | null;
-  description: string | null;
-}
+export type { TimezoneOption } from '@/types';
 
 export interface EligibilityRule {
   id?: number;

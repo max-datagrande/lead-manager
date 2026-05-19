@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
-import { LayoutGrid, Radio, Send } from 'lucide-react'
+import { cn } from '@/lib/utils';
+import { LayoutGrid, Radio, Send } from 'lucide-react';
 
 const TYPES = [
   {
@@ -20,21 +20,21 @@ const TYPES = [
     description: 'Display offers to users via an offerwall widget.',
     icon: LayoutGrid,
   },
-] as const
+] as const;
 
-type IntegrationType = (typeof TYPES)[number]['value']
+type IntegrationType = (typeof TYPES)[number]['value'];
 
 interface IntegrationTypeCardsProps {
-  value: IntegrationType
-  onChange?: (value: IntegrationType) => void
-  readonly?: boolean
+  value: IntegrationType;
+  onChange?: (value: IntegrationType) => void;
+  readonly?: boolean;
 }
 
 export function IntegrationTypeCards({ value, onChange, readonly = false }: IntegrationTypeCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {TYPES.map(({ value: typeValue, label, description, icon: Icon }) => {
-        const selected = value === typeValue
+        const selected = value === typeValue;
         return (
           <button
             key={typeValue}
@@ -58,8 +58,8 @@ export function IntegrationTypeCards({ value, onChange, readonly = false }: Inte
             </div>
             <p className="text-xs leading-snug text-muted-foreground">{description}</p>
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button'
-import { router } from '@inertiajs/react'
-import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button';
+import { router } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 
 export const PostbacksActions = () => {
   return (
@@ -8,5 +8,5 @@ export const PostbacksActions = () => {
       <Plus className="h-4 w-4" />
       New Postback
     </Button>
-  )
-}
+  );
+};

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\TimezoneOptions;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -59,6 +60,7 @@ class HandleInertiaRequests extends Middleware
         'env' => config('app.env'),
         'services' => config('services'),
       ],
+      'timezones' => fn(): array => TimezoneOptions::all(),
     ];
   }
 }

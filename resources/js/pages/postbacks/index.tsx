@@ -66,9 +66,7 @@ const Index = ({ rows, active_type }: Props) => {
               key={f.value}
               onClick={() => handleTypeFilter(f.value)}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                active_type === f.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                active_type === f.value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
               }`}
             >
               {f.label}

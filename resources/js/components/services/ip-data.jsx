@@ -41,11 +41,11 @@ const CardStats = ({ className }) => {
     <Card className={cn(className, 'justify-between')}>
       <CardHeader>
         <CardTitle className="flex flex-col text-base">
-          <div className='flex items-center gap-2'>
+          <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" />
             IP API
           </div>
-        <CardDescription>Pending Requests</CardDescription>
+          <CardDescription>Pending Requests</CardDescription>
         </CardTitle>
       </CardHeader>
       <CardContent>

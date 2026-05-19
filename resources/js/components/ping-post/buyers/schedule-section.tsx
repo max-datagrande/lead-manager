@@ -1,8 +1,7 @@
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { TimezoneSelect } from '@/components/ui/timezone-select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ScheduleWindow, TimezoneOption } from '@/types/ping-post';
@@ -20,22 +19,6 @@ const DAYS: Array<{ value: number; short: string; label: string }> = [
 ];
 
 /* Helper functions */
-function renderTimezone(tz: TimezoneOption) {
-  return (
-    <div className="flex w-full items-center justify-between gap-2">
-      <span className="truncate">
-        {tz.name}
-        {tz.offset && <span className="ml-1 text-xs text-muted-foreground">({tz.offset})</span>}
-      </span>
-      {tz.description && (
-        <Badge variant="muted" className="shrink-0">
-          {tz.description}
-        </Badge>
-      )}
-    </div>
-  );
-}
-
 function emptyWindow(sortOrder: number): ScheduleWindow {
   return {
     days_of_week: [],
@@ -60,8 +43,6 @@ interface Props {
   onTimezoneChange: (tz: string) => void;
 }
 
-
-
 export function ScheduleSection({ windows, timezone, timezones, errors, onWindowsChange, onTimezoneChange }: Props) {
   const updateWindow = (index: number, patch: Partial<ScheduleWindow>) => {
     onWindowsChange(windows.map((w, i) => (i === index ? { ...w, ...patch } : w)));
@@ -79,15 +60,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
     <div className="space-y-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="schedule_timezone">Timezone</Label>
-        <SearchableSelect
-          options={timezones}
-          value={timezone}
-          onValueChange={onTimezoneChange}
-          placeholder="Select timezone..."
-          searchPlaceholder="Search timezone..."
-          emptyMessage="No timezones match."
-          renderOption={renderTimezone}
-        />
+        <TimezoneSelect value={timezone} onValueChange={onTimezoneChange} timezones={timezones} />
         <p className="text-xs text-muted-foreground">Applies to all schedule windows below.</p>
       </div>
 
@@ -145,7 +118,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
                         type="time"
                         value={trimSeconds(window.start_time)}
                         onChange={(e) => updateWindow(index, { start_time: e.target.value })}
-                        className="w-fit pr-1 cursor-pointer"
+                        className="w-fit cursor-pointer pr-1"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -157,7 +130,7 @@ export function ScheduleSection({ windows, timezone, timezones, errors, onWindow
                         type="time"
                         value={trimSeconds(window.end_time)}
                         onChange={(e) => updateWindow(index, { end_time: e.target.value })}
-                        className="w-fit pr-1 cursor-pointer"
+                        className="w-fit cursor-pointer pr-1"
                       />
                     </div>
                   </div>
