@@ -35,16 +35,23 @@ const postColors: Record<string, string> = {
   skipped: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
 
+// Combined map for the buyer-events view (covers ping + post statuses + buyer-event types).
+const eventColors: Record<string, string> = {
+  ...pingColors,
+  ...postColors,
+  filtered: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+};
+
 const formatLabel = (s: string) => s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 interface Props {
   status: string;
-  variant?: 'dispatch' | 'ping' | 'post';
+  variant?: 'dispatch' | 'ping' | 'post' | 'event';
   className?: string;
 }
 
 export function StatusBadge({ status, variant = 'dispatch', className }: Props) {
-  const map = variant === 'ping' ? pingColors : variant === 'post' ? postColors : dispatchColors;
+  const map = variant === 'ping' ? pingColors : variant === 'post' ? postColors : variant === 'event' ? eventColors : dispatchColors;
   const color = map[status] ?? 'bg-gray-100 text-gray-600';
   return (
     <Badge variant="outline" className={cn('border-0 font-medium', color, className)}>
