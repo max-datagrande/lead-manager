@@ -4,6 +4,7 @@ import type { SharedData } from '@/types';
 import { type NavGroup as NavGroupType } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
+  Activity,
   Bell,
   BookOpen,
   Bug,
@@ -164,6 +165,11 @@ const ShareLeadsGroup: NavGroupType = {
       title: 'Dispatch Logs',
       href: route('ping-post.dispatches.index'),
       icon: ClipboardList,
+    },
+    {
+      title: 'Buyer Events',
+      href: route('ping-post.buyer-events.index'),
+      icon: Activity,
     },
   ],
 };

@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\Logs\BuyerEventLogController;
 use App\Http\Controllers\Logs\LeadDispatchLogController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
 use App\Http\Controllers\Offerwall\TesterController;
@@ -212,6 +213,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->whereIn('type', ['ping', 'post'])
         ->whereNumber('id')
         ->name('dispatches.result-detail');
+
+      // Buyer Events — unified view of post_results + ping_results + dispatch_buyer_events
+      Route::get('buyer-events/export', [BuyerEventLogController::class, 'export'])->name('buyer-events.export');
+      Route::get('buyer-events', [BuyerEventLogController::class, 'index'])->name('buyer-events.index');
     });
 
   // Lead Quality — providers, validation rules, logs
