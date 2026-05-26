@@ -9,6 +9,7 @@ use App\Models\IntegrationEnvironmentFieldHash;
 use App\Models\IntegrationFieldMapping;
 use App\Services\IntegrationServiceException;
 use App\Support\RequestBodyTokenExtractor;
+use Illuminate\Support\Collection;
 use Maxidev\Logger\TailLogger;
 
 /**
@@ -72,9 +73,8 @@ class IntegrationMappingReconciler
   {
     $current = $integration->tokenMappings->keyBy('field_id');
     $overridesByField = collect($overrides)->keyBy('field_id');
-    $tokenLookup = array_flip($tokens);
 
-    $orphans = $current->filter(fn($mapping) => !isset($tokenLookup[$mapping->field_id]));
+    $orphans = $this->rowsNotReferencedByTokens($current, $tokens);
 
     foreach ($orphans as $orphan) {
       $hadDefault = $orphan->default_value !== null && $orphan->default_value !== '';
@@ -129,9 +129,8 @@ class IntegrationMappingReconciler
     $env->load('fieldHashes');
     $current = $env->fieldHashes->keyBy('field_id');
     $overridesByField = collect($overrides)->keyBy('field_id');
-    $tokenLookup = array_flip($tokens);
 
-    $orphans = $current->filter(fn($hash) => !isset($tokenLookup[$hash->field_id]));
+    $orphans = $this->rowsNotReferencedByTokens($current, $tokens);
 
     foreach ($orphans as $orphan) {
       if ($orphan->is_hashed) {
@@ -162,5 +161,29 @@ class IntegrationMappingReconciler
 
       IntegrationEnvironmentFieldHash::updateOrCreate(['integration_environment_id' => $env->id, 'field_id' => $fieldId], $attributes);
     }
+  }
+
+  /**
+   * Filter the rows whose field_id is no longer referenced by any body token (orphans).
+   *
+   * Both integration_field_mappings and integration_environment_field_hashes hang off a
+   * field_id that must mirror the {$<id>} tokens in the request bodies. A row whose field_id
+   * is absent from $tokens has lost its token and must be dropped.
+   *
+   * Two deliberate choices here:
+   * - $tokens is flipped into a hash map so the membership test is an O(1) isset() per row,
+   *   instead of a linear in_array() scan inside the filter loop.
+   * - We read $row->field_id from the model itself rather than the Collection key, so the
+   *   result does not depend on whether/how the caller keyed the Collection.
+   *
+   * @param  Collection<int, \Illuminate\Database\Eloquent\Model>  $rows
+   * @param  array<int, int>  $tokens
+   * @return Collection<int, \Illuminate\Database\Eloquent\Model>
+   */
+  private function rowsNotReferencedByTokens(Collection $rows, array $tokens): Collection
+  {
+    $tokenLookup = array_flip($tokens);
+
+    return $rows->filter(fn($row) => !isset($tokenLookup[$row->field_id]));
   }
 }
