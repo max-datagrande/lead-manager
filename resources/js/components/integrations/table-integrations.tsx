@@ -38,6 +38,17 @@ export function TableIntegrations({ entries }) {
     value: name,
   }));
 
+  const typeOptions = [
+    { label: 'Ping-Post', value: 'ping-post' },
+    { label: 'Post-Only', value: 'post-only' },
+    { label: 'Offerwall', value: 'offerwall' },
+  ];
+
+  const statusOptions = [
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+  ];
+
   const showDeleteModal = async (integrationToDelete: any) => {
     const confirmed = await confirm({
       title: 'Delete Integration',
@@ -115,6 +126,16 @@ export function TableIntegrations({ entries }) {
                   columnId: 'company',
                   title: 'Company',
                   options: companyOptions,
+                },
+                {
+                  columnId: 'type',
+                  title: 'Type',
+                  options: typeOptions,
+                },
+                {
+                  columnId: 'is_active',
+                  title: 'Status',
+                  options: statusOptions,
                 },
               ],
               dateRange: { column: 'created_at', label: 'Created At' },
