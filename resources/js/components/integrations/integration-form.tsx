@@ -7,11 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { computeMappingSync } from '@/lib/integration-mapping-sync';
 import { Radio, Send } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { EnvironmentTab } from './enviroments-tab';
 import { FieldMappingsModal } from './field-mappings-modal';
 import { IntegrationTypeCards } from './integration-type-selector';
+import { MappingSyncBanner } from './mapping-sync-banner';
 import { OfferwallParserConfig } from './offerwall-parser-config';
 import { PingPostResponseConfig } from './ping-post-response-config';
 import { PostOnlyResponseConfig } from './post-only-response-config';
@@ -109,6 +111,16 @@ function FlatEnvironmentTabs({ fields }: { fields: any[] }) {
 export function IntegrationForm({ companies = [], fields = [] }) {
   const { isEdit, data, errors, processing, handleSubmit, handleTypeChange, setData } = useIntegrations();
   const formRef = useRef<HTMLFormElement>(null);
+  const [mappingsOpen, setMappingsOpen] = useState(false);
+
+  // Single source of truth for the body<->mappings divergence. Derived from the
+  // form data so it is always fresh; both the banner and the modal read from it,
+  // so opening the modal via "Show me" or via the Field Mappings button shows
+  // (and highlights) the exact same set of fields needing a value mapping.
+  const { needsValueMapping, orphansWithConfig } = useMemo(
+    () => computeMappingSync(data.environments, data.field_mappings ?? [], fields),
+    [data.environments, data.field_mappings, fields],
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -158,8 +170,16 @@ export function IntegrationForm({ companies = [], fields = [] }) {
           <Label htmlFor="is_active">Active</Label>
           <Switch id="is_active" checked={data.is_active} onCheckedChange={(checked) => setData('is_active', checked)} />
         </div>
-        <FieldMappingsModal fields={fields} />
+        <FieldMappingsModal fields={fields} open={mappingsOpen} onOpenChange={setMappingsOpen} highlightFieldIds={needsValueMapping} />
       </div>
+
+      {/* Pre-save advisory: fields needing a value mapping / orphaned configured mappings */}
+      <MappingSyncBanner
+        fields={fields}
+        needsValueMapping={needsValueMapping}
+        orphansWithConfig={orphansWithConfig}
+        onShow={() => setMappingsOpen(true)}
+      />
 
       {/* Environment Tabs */}
       {data.type === 'ping-post' ? <PingPostEnvironmentTabs fields={fields} /> : <FlatEnvironmentTabs fields={fields} />}
