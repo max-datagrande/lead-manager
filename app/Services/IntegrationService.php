@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
-use App\Models\IntegrationFieldMapping;
 use App\Models\OfferwallResponseConfig;
 use App\Models\PingResponseConfig;
 use App\Models\PostResponseConfig;
+use App\Services\Integrations\IntegrationMappingReconciler;
 use Illuminate\Support\Arr;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +18,8 @@ use Exception;
 
 class IntegrationService
 {
+  public function __construct(private IntegrationMappingReconciler $reconciler) {}
+
   /**
    * Get all integrations.
    */
@@ -71,8 +73,9 @@ class IntegrationService
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
       $this->syncNote($integration, $data['notes'] ?? null);
+
+      $hashOverridesByEnv = [];
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->create([
@@ -87,8 +90,13 @@ class IntegrationService
         ]);
 
         $this->saveResponseConfig($env, $envData['response_config'] ?? null);
-        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
+
+        if (!empty($envData['field_hashes'])) {
+          $hashOverridesByEnv[$env->id] = $envData['field_hashes'];
+        }
       }
+
+      $this->reconciler->reconcile($integration, $data['field_mappings'] ?? [], $hashOverridesByEnv);
 
       return $integration;
     });
@@ -150,8 +158,9 @@ class IntegrationService
         'use_custom_transformer' => $data['use_custom_transformer'] ?? false,
       ]);
 
-      $this->syncTokenMappings($integration, $data['field_mappings'] ?? []);
       $this->syncNote($integration, $data['notes'] ?? null);
+
+      $hashOverridesByEnv = [];
 
       foreach ($data['environments'] as $envData) {
         $env = $integration->environments()->updateOrCreate(
@@ -167,8 +176,13 @@ class IntegrationService
         );
 
         $this->saveResponseConfig($env, $envData['response_config'] ?? null);
-        $this->syncFieldHashes($env, $envData['field_hashes'] ?? []);
+
+        if (!empty($envData['field_hashes'])) {
+          $hashOverridesByEnv[$env->id] = $envData['field_hashes'];
+        }
       }
+
+      $this->reconciler->reconcile($integration, $data['field_mappings'] ?? [], $hashOverridesByEnv);
 
       return $integration;
     });
@@ -324,33 +338,6 @@ class IntegrationService
   }
 
   /**
-   * Sync token mappings for an integration (delete + recreate).
-   *
-   * @param  array<int, array{field_id: int, data_type?: string, default_value?: string, value_mapping?: array}>  $mappings
-   */
-  private function syncTokenMappings(Integration $integration, array $mappings): void
-  {
-    $integration->tokenMappings()->delete();
-
-    if (empty($mappings)) {
-      return;
-    }
-
-    $integration->tokenMappings()->createMany(
-      collect($mappings)
-        ->map(
-          fn($m) => [
-            'field_id' => $m['field_id'],
-            'data_type' => $m['data_type'] ?? 'string',
-            'default_value' => $m['default_value'] ?? null,
-            'value_mapping' => !empty($m['value_mapping']) ? $m['value_mapping'] : null,
-          ],
-        )
-        ->toArray(),
-    );
-  }
-
-  /**
    * Sync the markdown note for an integration.
    *
    * Empty or null content removes any existing note (no zombie rows with empty content).
@@ -365,33 +352,6 @@ class IntegrationService
     }
 
     $integration->note()->updateOrCreate(['integration_id' => $integration->id], ['content' => $normalized]);
-  }
-
-  /**
-   * Sync field hash configs for an environment (delete + recreate).
-   *
-   * @param  array<int, array{field_id: int, is_hashed?: bool, hash_algorithm?: string, hmac_secret?: string}>  $hashes
-   */
-  private function syncFieldHashes(IntegrationEnvironment $env, array $hashes): void
-  {
-    $env->fieldHashes()->delete();
-
-    if (empty($hashes)) {
-      return;
-    }
-
-    $env->fieldHashes()->createMany(
-      collect($hashes)
-        ->map(
-          fn($h) => [
-            'field_id' => $h['field_id'],
-            'is_hashed' => $h['is_hashed'] ?? false,
-            'hash_algorithm' => $h['hash_algorithm'] ?? null,
-            'hmac_secret' => $h['hmac_secret'] ?? null,
-          ],
-        )
-        ->toArray(),
-    );
   }
 
   /**

@@ -53,11 +53,13 @@ it('creates an integration with field_mappings', function () {
   $field = Field::factory()->create(['name' => 'email']);
 
   $service = app(IntegrationService::class);
-  $service->createIntegration(
-    makeIntegrationPayload([
-      'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
-    ]),
-  );
+  $body = json_encode(['email' => '{$' . $field->id . '}']);
+  $payload = makeIntegrationPayload([
+    'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
+  ]);
+  $payload['environments'][0]['request_body'] = $body;
+  $payload['environments'][1]['request_body'] = $body;
+  $service->createIntegration($payload);
 
   $integration = Integration::latest()->first();
 
@@ -73,18 +75,20 @@ it('creates field_mapping with value_mapping', function () {
   $field = Field::factory()->create(['name' => 'homeowner']);
 
   $service = app(IntegrationService::class);
-  $service->createIntegration(
-    makeIntegrationPayload([
-      'field_mappings' => [
-        [
-          'field_id' => $field->id,
-          'data_type' => 'string',
-          'default_value' => 'own',
-          'value_mapping' => ['own' => '1', 'rent' => '0'],
-        ],
+  $body = json_encode(['homeowner' => '{$' . $field->id . '}']);
+  $payload = makeIntegrationPayload([
+    'field_mappings' => [
+      [
+        'field_id' => $field->id,
+        'data_type' => 'string',
+        'default_value' => 'own',
+        'value_mapping' => ['own' => '1', 'rent' => '0'],
       ],
-    ]),
-  );
+    ],
+  ]);
+  $payload['environments'][0]['request_body'] = $body;
+  $payload['environments'][1]['request_body'] = $body;
+  $service->createIntegration($payload);
 
   $mapping = IntegrationFieldMapping::where('field_id', $field->id)->first();
 
@@ -112,7 +116,7 @@ it('creates field_hashes per environment', function () {
         'url' => 'https://buyer.example.com/post',
         'method' => 'POST',
         'request_headers' => [],
-        'request_body' => null,
+        'request_body' => json_encode(['email' => '{$' . $field->id . '}']),
         'response_config' => null,
         'field_hashes' => [['field_id' => $field->id, 'is_hashed' => true, 'hash_algorithm' => 'md5', 'hmac_secret' => null]],
       ],
@@ -149,23 +153,26 @@ it('syncs field_mappings on update — adds new, removes old', function () {
   $fieldB = Field::factory()->create(['name' => 'phone']);
 
   $service = app(IntegrationService::class);
-  $service->createIntegration(
-    makeIntegrationPayload([
-      'field_mappings' => [['field_id' => $fieldA->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
-    ]),
-  );
+  $createPayload = makeIntegrationPayload([
+    'field_mappings' => [['field_id' => $fieldA->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
+  ]);
+  $bodyA = json_encode(['email' => '{$' . $fieldA->id . '}']);
+  $createPayload['environments'][0]['request_body'] = $bodyA;
+  $createPayload['environments'][1]['request_body'] = $bodyA;
+  $service->createIntegration($createPayload);
 
   $integration = Integration::latest()->first();
   expect($integration->tokenMappings)->toHaveCount(1);
 
   // Update: swap fieldA out, add fieldB
-  $service->updateIntegration(
-    $integration,
-    makeIntegrationPayload([
-      'company_id' => $integration->company_id,
-      'field_mappings' => [['field_id' => $fieldB->id, 'data_type' => 'integer', 'default_value' => '0', 'value_mapping' => null]],
-    ]),
-  );
+  $updatePayload = makeIntegrationPayload([
+    'company_id' => $integration->company_id,
+    'field_mappings' => [['field_id' => $fieldB->id, 'data_type' => 'integer', 'default_value' => '0', 'value_mapping' => null]],
+  ]);
+  $bodyB = json_encode(['phone' => '{$' . $fieldB->id . '}']);
+  $updatePayload['environments'][0]['request_body'] = $bodyB;
+  $updatePayload['environments'][1]['request_body'] = $bodyB;
+  $service->updateIntegration($integration, $updatePayload);
 
   $integration->refresh();
 
@@ -179,15 +186,17 @@ it('syncs field_mappings on update — adds new, removes old', function () {
     ->toBe('0');
 });
 
-it('clears all field_mappings when updated with empty array', function () {
+it('clears all field_mappings when the body removes every token', function () {
   $field = Field::factory()->create(['name' => 'zip_code']);
 
   $service = app(IntegrationService::class);
-  $service->createIntegration(
-    makeIntegrationPayload([
-      'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
-    ]),
-  );
+  $createPayload = makeIntegrationPayload([
+    'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => null, 'value_mapping' => null]],
+  ]);
+  $body = json_encode(['zip' => '{$' . $field->id . '}']);
+  $createPayload['environments'][0]['request_body'] = $body;
+  $createPayload['environments'][1]['request_body'] = $body;
+  $service->createIntegration($createPayload);
 
   $integration = Integration::latest()->first();
   expect($integration->tokenMappings)->toHaveCount(1);
@@ -210,11 +219,13 @@ it('duplicates integration including field_mappings', function () {
   $field = Field::factory()->create(['name' => 'state']);
 
   $service = app(IntegrationService::class);
-  $service->createIntegration(
-    makeIntegrationPayload([
-      'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => 'FL', 'value_mapping' => null]],
-    ]),
-  );
+  $createPayload = makeIntegrationPayload([
+    'field_mappings' => [['field_id' => $field->id, 'data_type' => 'string', 'default_value' => 'FL', 'value_mapping' => null]],
+  ]);
+  $body = json_encode(['state' => '{$' . $field->id . '}']);
+  $createPayload['environments'][0]['request_body'] = $body;
+  $createPayload['environments'][1]['request_body'] = $body;
+  $service->createIntegration($createPayload);
 
   $original = Integration::latest('id')->first();
   $service->duplicateIntegration($original, 'Copy of Test');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RequestBodyTokenExtractor;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -56,6 +57,26 @@ class Integration extends Model
   public function tokenMappings(): HasMany
   {
     return $this->hasMany(IntegrationFieldMapping::class);
+  }
+
+  /**
+   * Union of all {$<id>} field IDs referenced across every environment's request_body.
+   *
+   * @return array<int, int>
+   */
+  public function getAllRequestBodyTokens(): array
+  {
+    $ids = [];
+    foreach ($this->environments as $env) {
+      foreach (RequestBodyTokenExtractor::extractFieldIds($env->request_body) as $id) {
+        $ids[$id] = true;
+      }
+    }
+
+    $unique = array_keys($ids);
+    sort($unique);
+
+    return $unique;
   }
 
   /**
