@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useDebouncedFunction } from '@/hooks/use-debounce';
 import { useIntegrations } from '@/hooks/use-integrations';
+import { scanAllBodyTokens } from '@/lib/integration-mapping-sync';
 import { Search, Settings2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -92,11 +93,19 @@ const DATA_TYPES = [
  * Draft-based: all edits are local until "Save" — avoids re-rendering the page
  * (and CodeMirror editors) on every keystroke.
  *
- * @param {{ fields: Array<{ id: number, name: string, label?: string, possible_values?: string[] }> }} props
+ * Supports controlled open via `open` / `onOpenChange` (so other components — e.g.
+ * the MappingSyncBanner — can open it); falls back to internal state otherwise.
+ *
+ * `highlightFieldIds` softly highlights (and auto-expands) the given rows on open —
+ * used by the MappingSyncBanner "Show me" action to point at fields needing a mapping.
+ *
+ * @param {{ fields: Array<{ id: number, name: string, label?: string, possible_values?: string[] }>, open?: boolean, onOpenChange?: (open: boolean) => void, highlightFieldIds?: number[] }} props
  */
-export function FieldMappingsModal({ fields = [] }) {
+export function FieldMappingsModal({ fields = [], open: openProp, onOpenChange: onOpenChangeProp, highlightFieldIds = [] }) {
   const { data, setData } = useIntegrations();
-  const [open, setOpen] = useState(false);
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = openProp ?? openInternal;
+  const setOpen = onOpenChangeProp ?? setOpenInternal;
 
   // ── Local draft state (isolated from parent) ──────────────────────────────
   const [draft, setDraft] = useState([]);
@@ -106,42 +115,27 @@ export function FieldMappingsModal({ fields = [] }) {
 
   const fieldById = (fieldId) => fields.find((f) => f.id === fieldId);
 
-  // ── Scan all request bodies for active {$N} tokens ────────────────────────
-  const getActiveTokenIds = () => {
-    const ids = new Set();
-    const regex = /\{\$(\d+)\}/g;
-
-    const scanBody = (body) => {
-      if (!body) return;
-      const text = typeof body === 'object' ? JSON.stringify(body) : String(body);
-      let m;
-      while ((m = regex.exec(text)) !== null) ids.add(parseInt(m[1], 10));
-    };
-
-    // Walk environments — flat (offerwall/post-only) or nested (ping-post)
-    for (const val of Object.values(data.environments ?? {})) {
-      if (val?.request_body !== undefined) {
-        scanBody(val.request_body);
-      } else if (typeof val === 'object') {
-        for (const inner of Object.values(val)) {
-          if (inner?.request_body !== undefined) scanBody(inner.request_body);
-        }
-      }
-    }
-    return ids;
+  // ── Build the draft from the tokens currently in use ──────────────────────
+  // The bodies are the source of truth: every active {$N} token gets a draft row.
+  // Existing mappings keep their config; tokens added by raw-text edits (with no
+  // mapping row yet) appear with defaults so they can be configured before save.
+  const buildDraft = () => {
+    const activeIds = scanAllBodyTokens(data.environments ?? {});
+    const byId = new Map((data.field_mappings ?? []).map((m) => [m.field_id, m]));
+    return [...activeIds].map((fieldId) => byId.get(fieldId) ?? { field_id: fieldId, data_type: 'string', default_value: null, value_mapping: null });
   };
 
   // ── Dialog lifecycle ──────────────────────────────────────────────────────
-  const handleOpenChange = (next) => {
-    if (next) {
-      const activeIds = getActiveTokenIds();
-      setDraft((data.field_mappings ?? []).filter((m) => activeIds.has(m.field_id)).map((m) => ({ ...m })));
-      setExpandedMappings({});
-      setRawModes({});
-      setSearch('');
-    }
-    setOpen(next);
-  };
+  // Rebuild the draft whenever the modal opens — covers both the trigger button
+  // and programmatic opens (banner) since onOpenChange does not fire for the latter.
+  useEffect(() => {
+    if (!open) return;
+    setDraft(buildDraft().map((m) => ({ ...m })));
+    // Auto-expand the highlighted rows so the value mapping editor is visible right away.
+    setExpandedMappings(Object.fromEntries(highlightFieldIds.map((id) => [id, true])));
+    setRawModes({});
+    setSearch('');
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sort alphabetically by field name, then filter by search term
   const filteredDraft = useMemo(() => {
@@ -159,14 +153,14 @@ export function FieldMappingsModal({ fields = [] }) {
   }, [draft, search, fields]);
 
   const handleSave = () => {
-    const activeIds = getActiveTokenIds();
-    const draftById = new Map(draft.map((m) => [m.field_id, m]));
-    const updated = (data.field_mappings ?? [])
-      .filter((m) => activeIds.has(m.field_id))
-      .map((m) => {
-        const d = draftById.get(m.field_id);
-        return d ? { ...m, data_type: d.data_type, default_value: d.default_value, value_mapping: d.value_mapping } : m;
-      });
+    // The draft is built from the active body tokens, so it already is the
+    // canonical set (the modal blocks body edits while open). Persist it as-is.
+    const updated = draft.map((m) => ({
+      field_id: m.field_id,
+      data_type: m.data_type ?? 'string',
+      default_value: m.default_value ?? null,
+      value_mapping: m.value_mapping ?? null,
+    }));
     setData('field_mappings', updated);
     setOpen(false);
   };
@@ -205,7 +199,7 @@ export function FieldMappingsModal({ fields = [] }) {
   const totalMappings = (data.field_mappings ?? []).length;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant="black" className="gap-2">
           <Settings2 className="size-4" />
@@ -229,9 +223,9 @@ export function FieldMappingsModal({ fields = [] }) {
             No field tokens in use. Insert a field with <kbd className="rounded border px-1 font-mono text-xs">@</kbd> in a request body editor.
           </p>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-md overflow-hidden">
             {/* Table header — Field | Value Map | Data Type | Default Value */}
-            <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.5fr_1fr_1fr] items-center gap-3 border-b bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">
+            <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.5fr_1fr_1fr] items-center gap-3 border-b bg-primary px-4 py-2 text-xs font-medium text-white">
               <span>Field</span>
               <span>Value Map</span>
               <span>Data Type</span>
@@ -247,9 +241,10 @@ export function FieldMappingsModal({ fields = [] }) {
                 const mappedCount = mapping.value_mapping ? Object.keys(mapping.value_mapping).length : 0;
                 const isExpanded = expandedMappings[mapping.field_id] ?? false;
                 const isRaw = rawModes[mapping.field_id] ?? false;
+                const isHighlighted = highlightFieldIds.includes(mapping.field_id);
 
                 return (
-                  <div key={mapping.field_id}>
+                  <div key={mapping.field_id} className={isHighlighted ? 'bg-muted-foreground/10 transition-colors' : 'transition-colors'}>
                     <div className="grid grid-cols-[1.5fr_0.5fr_1fr_1fr] items-center gap-3 px-4 py-3">
                       {/* Field name */}
                       <div className="min-w-0">
@@ -293,7 +288,7 @@ export function FieldMappingsModal({ fields = [] }) {
 
                     {/* Expandable value mapping section — animated */}
                     {possibleValues.length > 0 && isExpanded && (
-                      <div className="border-t bg-muted/30 px-4 py-3 duration-150 animate-in fade-in slide-in-from-top-2">
+                      <div className="border-t bg-muted px-4 py-3 duration-150 animate-in fade-in slide-in-from-top-2">
                         <div className="mb-3 flex items-center justify-between">
                           <Label className="text-xs text-muted-foreground">Value Mapping</Label>
                           <div className="flex items-center gap-2">
