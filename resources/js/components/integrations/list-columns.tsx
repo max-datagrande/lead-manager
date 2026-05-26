@@ -106,11 +106,14 @@ export const columns = [
     accessorKey: 'type',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Type" />,
     cell: ({ row }) => <TypeBadge type={row.original.type} />,
+    filterFn: (row, id, value) => value.includes(row.original.type),
   },
   {
+    id: 'is_active',
     accessorKey: 'is_active',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
     cell: ({ row }) => <StatusBadge isActive={row.original.is_active} />,
+    filterFn: (row, id, value) => value.includes(row.original.is_active ? 'active' : 'inactive'),
   },
   {
     accessorKey: 'created_at',
