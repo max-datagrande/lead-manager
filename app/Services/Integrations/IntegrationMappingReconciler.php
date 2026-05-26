@@ -9,7 +9,6 @@ use App\Models\IntegrationEnvironmentFieldHash;
 use App\Models\IntegrationFieldMapping;
 use App\Services\IntegrationServiceException;
 use App\Support\RequestBodyTokenExtractor;
-use Illuminate\Support\Collection;
 use Maxidev\Logger\TailLogger;
 
 /**
@@ -59,7 +58,7 @@ class IntegrationMappingReconciler
     }
 
     $first = $missing[0];
-    throw new IntegrationServiceException("Token {\$" . $first . '} en el request_body referencia un field que no existe.', [
+    throw new IntegrationServiceException("Token {\$" . $first . '} in the request_body references a field that does not exist.', [
       'integration_id' => $integration->id,
       'missing_field_ids' => $missing,
     ]);
@@ -72,10 +71,10 @@ class IntegrationMappingReconciler
   private function reconcileMappings(Integration $integration, array $tokens, array $overrides): void
   {
     $current = $integration->tokenMappings->keyBy('field_id');
-    $tokenSet = array_fill_keys($tokens, true);
     $overridesByField = collect($overrides)->keyBy('field_id');
+    $tokenLookup = array_flip($tokens);
 
-    $orphans = $current->reject(fn($mapping, $fieldId) => isset($tokenSet[$fieldId]));
+    $orphans = $current->filter(fn($mapping) => !isset($tokenLookup[$mapping->field_id]));
 
     foreach ($orphans as $orphan) {
       $hadDefault = $orphan->default_value !== null && $orphan->default_value !== '';
@@ -129,10 +128,10 @@ class IntegrationMappingReconciler
     $tokens = RequestBodyTokenExtractor::extractFieldIds($env->request_body);
     $env->load('fieldHashes');
     $current = $env->fieldHashes->keyBy('field_id');
-    $tokenSet = array_fill_keys($tokens, true);
     $overridesByField = collect($overrides)->keyBy('field_id');
+    $tokenLookup = array_flip($tokens);
 
-    $orphans = $current->reject(fn($hash, $fieldId) => isset($tokenSet[$fieldId]));
+    $orphans = $current->filter(fn($hash) => !isset($tokenLookup[$hash->field_id]));
 
     foreach ($orphans as $orphan) {
       if ($orphan->is_hashed) {
