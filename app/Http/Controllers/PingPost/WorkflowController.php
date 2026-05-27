@@ -11,13 +11,14 @@ use App\Models\AlertChannel;
 use App\Models\Buyer;
 use App\Models\Postback;
 use App\Models\Workflow;
+use App\Services\Integrations\IntegrationSchemaCollector;
 use App\Services\PingPost\WorkflowService;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class WorkflowController extends Controller
 {
-  public function __construct(private readonly WorkflowService $workflowService) {}
+  public function __construct(private readonly WorkflowService $workflowService, private readonly IntegrationSchemaCollector $schemaCollector) {}
 
   public function index(): Response
   {
@@ -55,6 +56,7 @@ class WorkflowController extends Controller
 
     return Inertia::render('ping-post/workflows/show', [
       'workflow' => $workflow,
+      'schema' => Inertia::defer(fn() => $this->schemaCollector->forWorkflow($workflow)),
     ]);
   }
 

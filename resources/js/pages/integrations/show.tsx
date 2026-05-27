@@ -1,12 +1,13 @@
 import { EnvironmentDetails } from '@/components/integrations';
 import { showBreadcrumbs } from '@/components/integrations/breadcrumbs';
+import { SchemaSection } from '@/components/schema-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUrlParam } from '@/hooks/use-url-param';
 import AppLayout from '@/layouts/app-layout';
 import { EnvironmentDB, IntegrationDB, MappingEntry } from '@/types/integrations';
-import { Head, Link } from '@inertiajs/react';
+import { Deferred, Head, Link } from '@inertiajs/react';
 import { Radio, Send } from 'lucide-react';
 
 function relativeDate(dateStr: string): string {
@@ -21,6 +22,7 @@ function relativeDate(dateStr: string): string {
 
 interface Props {
   integration: IntegrationDB;
+  schema?: Record<string, unknown>;
 }
 
 function EmptyEnvironment() {
@@ -124,7 +126,7 @@ const TYPE_LABELS: Record<string, string> = {
   offerwall: 'Offerwall',
 };
 
-const ShowIntegration = ({ integration }: Props) => {
+const ShowIntegration = ({ integration, schema }: Props) => {
   return (
     <>
       <Head title={`Integration | ${integration.name}`} />
@@ -146,6 +148,13 @@ const ShowIntegration = ({ integration }: Props) => {
         </div>
 
         <div>{integration.type === 'ping-post' ? <PingPostTabs integration={integration} /> : <FlatTabs integration={integration} />}</div>
+
+        <Deferred data="schema" fallback={<SchemaSection />}>
+          <SchemaSection
+            schema={schema}
+            description="Validation schema of every field used across this integration's request bodies. Copy it and hand it to an AI agent so the frontend payload matches what gets dispatched."
+          />
+        </Deferred>
       </div>
     </>
   );
