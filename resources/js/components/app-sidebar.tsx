@@ -230,6 +230,11 @@ const AdminGroup: NavGroupType = {
       href: route('whitelist.index'),
       icon: Shield,
     },
+    {
+      title: 'Mapping Findings',
+      href: route('admin.mapping-findings.index'),
+      icon: ListChecks,
+    },
   ],
 };
 

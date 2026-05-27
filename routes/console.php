@@ -24,3 +24,9 @@ Schedule::call(function () {
 Schedule::command('ping-post:expire-postbacks')->daily()->name('ping-post:expire-postbacks')->withoutOverlapping()->onOneServer();
 
 Schedule::command('lead-quality:expire-validation')->everyFiveMinutes()->name('lead-quality:expire-validation')->withoutOverlapping()->onOneServer();
+
+Schedule::command('integrations:scan-unmapped-value-mappings')
+  ->everyThirtyMinutes()
+  ->name('integrations:scan-unmapped-value-mappings')
+  ->withoutOverlapping()
+  ->onOneServer();
