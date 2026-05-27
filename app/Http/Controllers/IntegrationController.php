@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Field;
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use App\Services\Integrations\IntegrationSchemaCollector;
 use App\Services\IntegrationService;
 use App\Services\IntegrationServiceException;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class IntegrationController extends Controller
 {
   protected $integrationService;
 
-  public function __construct(IntegrationService $integrationService)
+  public function __construct(IntegrationService $integrationService, protected IntegrationSchemaCollector $schemaCollector)
   {
     $this->integrationService = $integrationService;
   }
@@ -76,6 +77,7 @@ class IntegrationController extends Controller
 
     return Inertia::render('integrations/show', [
       'integration' => $integration,
+      'schema' => Inertia::defer(fn() => $this->schemaCollector->forIntegration($integration)),
     ]);
   }
 

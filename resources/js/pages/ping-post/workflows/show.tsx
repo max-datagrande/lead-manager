@@ -1,17 +1,19 @@
 import PageHeader from '@/components/page-header';
 import { showBreadcrumbs } from '@/components/ping-post/workflows/breadcrumbs';
 import { WorkflowSnippets } from '@/components/ping-post/workflows/snippets';
+import { SchemaSection } from '@/components/schema-section';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { Workflow } from '@/types/ping-post';
-import { Head, Link, router } from '@inertiajs/react';
+import { Deferred, Head, Link, router } from '@inertiajs/react';
 import { Bell, Code, Copy, Edit, Trash2 } from 'lucide-react';
 import { route } from 'ziggy-js';
 
 interface Props {
   workflow: Workflow;
+  schema?: Record<string, unknown>;
 }
 
 const STRATEGY_LABELS: Record<string, string> = {
@@ -20,7 +22,7 @@ const STRATEGY_LABELS: Record<string, string> = {
   combined: 'Combined',
 };
 
-const WorkflowsShow = ({ workflow }: Props) => {
+const WorkflowsShow = ({ workflow, schema }: Props) => {
   const handleDelete = () => {
     if (confirm(`Delete workflow "${workflow.name}"?`)) {
       router.delete(route('ping-post.workflows.destroy', workflow.id));
@@ -171,6 +173,15 @@ const WorkflowsShow = ({ workflow }: Props) => {
               <WorkflowSnippets workflow={workflow} />
             </CardContent>
           </Card>
+
+          <Deferred data="schema" fallback={<SchemaSection card className="lg:col-span-2" />}>
+            <SchemaSection
+              card
+              className="lg:col-span-2"
+              schema={schema}
+              description="Aggregated validation schema across every integration in this workflow. Copy it and hand it to an AI agent so the frontend payload matches what gets dispatched."
+            />
+          </Deferred>
         </div>
       </div>
     </>
