@@ -140,9 +140,19 @@ class Integration extends Model
 
   /**
    * Truncate the table.
+   *
+   * PostgreSQL uses TRUNCATE ... RESTART IDENTITY CASCADE to reset the sequence
+   * and cascade in one shot. SQLite (tests) has no TRUNCATE, so fall back to a
+   * delete that relies on the FK cascadeOnDelete to clear environments/mappings.
    */
   public static function truncate()
   {
-    DB::statement('TRUNCATE TABLE integrations RESTART IDENTITY CASCADE');
+    if (DB::connection()->getDriverName() === 'pgsql') {
+      DB::statement('TRUNCATE TABLE integrations RESTART IDENTITY CASCADE');
+
+      return;
+    }
+
+    static::query()->delete();
   }
 }

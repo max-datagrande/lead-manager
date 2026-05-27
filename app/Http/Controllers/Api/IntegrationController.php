@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Traits\ResetsSequences;
 use App\Models\Integration;
 use App\Models\IntegrationEnvironment;
+use App\Models\IntegrationEnvironmentFieldHash;
+use App\Models\IntegrationFieldMapping;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,8 @@ class IntegrationController extends Controller
     return [
       'integrations' => Integration::all(),
       'environments' => IntegrationEnvironment::all(),
+      'fieldMappings' => IntegrationFieldMapping::all(),
+      'fieldHashes' => IntegrationEnvironmentFieldHash::all(),
     ];
   }
 
@@ -67,6 +71,9 @@ class IntegrationController extends Controller
       // Ensure we have a plain, numerically-indexed array for the 'insert' method.
       $integrationsToInsert = is_array($data['integrations']) ? array_values($data['integrations']) : [];
       $environmentsToInsert = is_array($data['environments']) ? array_values($data['environments']) : [];
+      // `?? null` defensivo: si prod aun no tiene el export nuevo, el sync no rompe (queda sin mappings hasta el deploy).
+      $fieldMappingsToInsert = is_array($data['fieldMappings'] ?? null) ? array_values($data['fieldMappings']) : [];
+      $fieldHashesToInsert = is_array($data['fieldHashes'] ?? null) ? array_values($data['fieldHashes']) : [];
 
       if (empty($integrationsToInsert)) {
         return response()->json(['message' => 'No integrations to import from production.']);
@@ -87,10 +94,25 @@ class IntegrationController extends Controller
           }
           $newIntegration->save();
           $environments = collect($environmentsToInsert)->filter(fn($env) => $env['integration_id'] == $newIntegration->id);
-          //Insert environments
+          // Insert environments preserving the prod id so field_hashes (anchored to integration_environment_id) keep matching.
           foreach ($environments as $environment) {
-            $data = [...$environment, 'integration_id' => $newIntegration->id];
-            IntegrationEnvironment::create($data);
+            $newEnvironment = new IntegrationEnvironment();
+            $newEnvironment->fill([...$environment, 'integration_id' => $newIntegration->id]);
+            if (isset($environment['id'])) {
+              $newEnvironment->id = $environment['id'];
+            }
+            $newEnvironment->save();
+          }
+          // Insert field mappings (faithful copy — value_mapping/default_value preserved, NOT through the reconciler).
+          $mappings = collect($fieldMappingsToInsert)->filter(fn($mapping) => $mapping['integration_id'] == $newIntegration->id);
+          foreach ($mappings as $mapping) {
+            IntegrationFieldMapping::create([...$mapping, 'integration_id' => $newIntegration->id]);
+          }
+          // Insert per-environment field hashes, linked via the preserved environment ids.
+          $envIds = $environments->pluck('id');
+          $hashes = collect($fieldHashesToInsert)->filter(fn($hash) => $envIds->contains($hash['integration_environment_id']));
+          foreach ($hashes as $hash) {
+            IntegrationEnvironmentFieldHash::create($hash);
           }
           DB::commit();
           $migrations[] = [
