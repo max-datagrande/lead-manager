@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class LandingPageVersion extends Model
 {
+  use HasFactory;
+
   protected $fillable = ['landing_page_id', 'name', 'description', 'path', 'status'];
 
   public function landingPage()

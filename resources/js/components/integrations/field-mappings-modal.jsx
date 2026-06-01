@@ -223,7 +223,7 @@ export function FieldMappingsModal({ fields = [], open: openProp, onOpenChange: 
             No field tokens in use. Insert a field with <kbd className="rounded border px-1 font-mono text-xs">@</kbd> in a request body editor.
           </p>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-md overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-hidden overflow-y-auto rounded-md">
             {/* Table header — Field | Value Map | Data Type | Default Value */}
             <div className="sticky top-0 z-10 grid grid-cols-[1.5fr_0.5fr_1fr_1fr] items-center gap-3 border-b bg-primary px-4 py-2 text-xs font-medium text-white">
               <span>Field</span>
