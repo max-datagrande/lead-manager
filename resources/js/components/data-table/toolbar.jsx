@@ -11,6 +11,26 @@ import { useEffect, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
 import { DataTableViewOptions } from './view-options';
 
+/**
+ * Shared toolbar for ServerTable instances across the admin.
+ *
+ * CONTRACT — every page that customizes `toolbarConfig` MUST include `dateRange`:
+ *
+ *   toolbarConfig={{
+ *     searchPlaceholder: '...',
+ *     filters: [...],
+ *     dateRange: { column: 'created_at', label: 'Created At' },
+ *   }}
+ *
+ * The default below kicks in only if `config` is fully undefined. If a page
+ * passes `{ filters: [...] }` without `dateRange`, the destructure silently
+ * yields `dateRange === undefined` and the right-side block crashes with
+ * "Cannot read properties of undefined (reading 'label')".
+ *
+ * Date filtering is wired through `from_date` / `to_date` column filters,
+ * so the consuming controller must also include those in its `filterConfig`
+ * (see DatatableTrait) for the picker to actually narrow results.
+ */
 export function DataTableToolbar({
   table,
   searchPlaceholder = 'Filter...',

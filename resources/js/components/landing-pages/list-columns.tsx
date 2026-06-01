@@ -3,7 +3,7 @@ import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLandings } from '@/hooks/use-landings';
-import { router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Edit, List, SquareArrowOutUpRight, Trash2 } from 'lucide-react';
 import { route } from 'ziggy-js';
 
@@ -17,14 +17,10 @@ const ActionsCell = ({ row }) => {
       <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0" title="Edit">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.visit(route('landing_pages.leads', entry.id))}
-        className="h-8 w-8 p-0"
-        title="View leads"
-      >
-        <List className="h-4 w-4" />
+      <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0" title="View leads">
+        <Link href={route('landing_pages.leads', entry.id)}>
+          <List className="h-4 w-4" />
+        </Link>
       </Button>
       <Button
         variant="ghost"
@@ -35,8 +31,10 @@ const ActionsCell = ({ row }) => {
       >
         <Trash2 className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => showVersions(entry)} className="h-8 w-8 p-0" title="Versions">
-        <SquareArrowOutUpRight className="h-4 w-4" />
+      <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0" title="Versions">
+        <Link href={route('landing_pages.versions.index', { landing_page: entry.id })}>
+          <SquareArrowOutUpRight className="h-4 w-4" />
+        </Link>
       </Button>
     </div>
   );
