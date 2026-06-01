@@ -54,15 +54,16 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
   };
 
   const normalizeSlug = (value: string) => {
-    if (!value) return '';
+    const slug = (value ?? '').trim().replace(/^\/+|\/+$/g, '');
 
-    let slug = value.trim();
+    // Slug vacio (o solo "/") = home de la landing.
+    if (slug === '') {
+      return '/';
+    }
 
     if (/https?:\/\//i.test(slug) || /\./.test(slug)) {
       return '__INVALID__';
     }
-
-    slug = slug.replace(/^\/+|\/+$/g, '');
 
     return `/${slug}/`;
   };
@@ -110,8 +111,11 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
 
               setData('path', raw);
             }}
-            placeholder="e.g. v1"
+            placeholder="e.g. v1 — use / for the home"
           />
+          <p className="text-xs text-muted-foreground">
+            Simple slug (e.g. <code>v1</code> → <code>/v1/</code>). For the landing's home page, enter <code>/</code>.
+          </p>
           {errors.path && <p className="text-sm text-destructive">{errors.path}</p>}
         </div>
 
