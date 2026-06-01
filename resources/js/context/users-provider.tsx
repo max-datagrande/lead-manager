@@ -2,8 +2,9 @@ import { UserDeactivateModal, UserFormModal } from '@/components/users';
 import { useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { getSortState } from '@/utils/table';
-import { usePage } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { createContext, useState } from 'react';
+import { route } from 'ziggy-js';
 
 export const UsersContext = createContext<any>(null);
 
@@ -44,6 +45,27 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const showSendResetModal = async (user: any) => {
+    const confirmed = await modal.warnConfirm({
+      title: 'Send password reset link',
+      description: `An email with a password reset link will be sent to ${user.email}.`,
+      consequences: ['The user receives an email with a link to set a new password.', 'Any previous reset link for this user will stop working.'],
+      confirmText: 'Send link',
+      confirmCode: user.email,
+    });
+
+    if (!confirmed) return;
+
+    router.post(
+      route('admin.users.password-reset', user.id),
+      {},
+      {
+        preserveScroll: true,
+        onError: () => notify('Error sending password reset link.', 'error'),
+      },
+    );
+  };
+
   return (
     <UsersContext.Provider
       value={{
@@ -52,6 +74,7 @@ export function UsersProvider({ children }: { children: React.ReactNode }) {
         showCreateModal,
         showEditModal,
         showDeactivateModal,
+        showSendResetModal,
         resetTrigger,
         setResetTrigger,
         sorting,

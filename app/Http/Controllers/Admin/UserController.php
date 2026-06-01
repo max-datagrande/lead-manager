@@ -69,6 +69,24 @@ class UserController extends Controller
   }
 
   /**
+   * Enviar un enlace de restablecimiento de contraseña al usuario.
+   */
+  public function sendPasswordReset(User $user): RedirectResponse
+  {
+    if (!$user->is_active) {
+      add_flash_message(type: 'error', message: 'Cannot send a password reset link to an inactive user.');
+
+      return to_route('admin.users.index');
+    }
+
+    Password::sendResetLink(['email' => $user->email]);
+
+    add_flash_message(type: 'success', message: "Password reset link sent to {$user->email}.");
+
+    return to_route('admin.users.index');
+  }
+
+  /**
    * Desactivar usuario.
    */
   public function destroy(Request $request, User $user): RedirectResponse

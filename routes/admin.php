@@ -12,6 +12,10 @@ Route::middleware(['auth', 'verified', 'admin'])
     Route::resource('users', UserController::class)
       ->except(['show', 'create', 'edit'])
       ->whereNumber('user');
+    Route::post('users/{user}/password-reset', [UserController::class, 'sendPasswordReset'])
+      ->name('users.password-reset')
+      ->middleware('throttle:6,1')
+      ->whereNumber('user');
     Route::resource('whitelist', WhitelistEntryController::class)
       ->except(['show', 'create', 'edit'])
       ->whereNumber('whitelist');
