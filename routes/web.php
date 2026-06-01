@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Form\FieldController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\LandingPageLeadsController;
 use App\Http\Controllers\Logs\BuyerEventLogController;
 use App\Http\Controllers\Logs\LeadDispatchLogController;
 use App\Http\Controllers\Logs\OfferwallMixLogController;
@@ -151,6 +152,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
   // Verticals
   Route::resource('verticals', VerticalController::class)->whereNumber('vertical');
   Route::resource('landing_pages', LandingPageController::class)->whereNumber('landing_page');
+  Route::get('landing_pages/{landing_page}/leads', [LandingPageLeadsController::class, 'index'])
+    ->whereNumber('landing_page')
+    ->name('landing_pages.leads');
   // Alert Channels
   Route::resource('alert-channels', AlertChannelController::class)
     ->except(['show', 'create', 'edit'])

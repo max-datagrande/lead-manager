@@ -73,6 +73,16 @@ class Lead extends Model
   }
 
   /**
+   * Convenience hasOne pointing to the most recent traffic log by created_at.
+   * `visit_date` is a DATE column (no time component) so it's not granular enough
+   * to disambiguate visits within the same day.
+   */
+  public function latestTrafficLog()
+  {
+    return $this->hasOne(TrafficLog::class, 'fingerprint', 'fingerprint')->latestOfMany('created_at');
+  }
+
+  /**
    * Retrieve the latest known host from the traffic logs.
    */
   public function getHostAttribute()

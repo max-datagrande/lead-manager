@@ -6,6 +6,7 @@ use App\Http\Requests\LandingPages\StoreRequest;
 use App\Http\Requests\LandingPages\UpdateRequest;
 use App\Models\Company;
 use App\Models\LandingPage;
+use App\Models\LandingPageColumn;
 use App\Models\Vertical;
 use App\Services\InternalTokenResolverService;
 use Inertia\Inertia;
@@ -85,14 +86,15 @@ class LandingPageController extends Controller
     return [
       'fields' => $tokens['fields'],
       'traffic' => collect($tokens['traffic'])
-        ->map(
-          fn($token) => [
+        ->map(function ($token) {
+          $key = str_replace('traffic.', '', $token['name']);
+          return [
             'id' => $token['id'],
-            'name' => str_replace('traffic.', '', $token['name']),
-            'label' => $token['label'],
+            'name' => $key,
+            'label' => LandingPageColumn::trafficLabel($key),
             'group' => $token['group'],
-          ],
-        )
+          ];
+        })
         ->values()
         ->all(),
     ];
