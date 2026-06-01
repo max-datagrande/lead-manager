@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -284,11 +285,11 @@ trait DatatableTrait
         break;
 
       case 'from_date':
-        $query->whereDate($column, '>=', $value);
+        $query->where($column, '>=', $this->normalizeDateBound($value, false));
         break;
 
       case 'to_date':
-        $query->whereDate($column, '<=', $value);
+        $query->where($column, '<=', $this->normalizeDateBound($value, true));
         break;
 
       case 'upper':
@@ -303,6 +304,36 @@ trait DatatableTrait
         }
         break;
     }
+  }
+
+  /**
+   * Normaliza un bound de fecha/datetime a wall-clock UTC ('Y-m-d H:i:s').
+   *
+   * Los filtros from_date/to_date comparan contra el timestamp completo de la
+   * columna (no DATE truncado), respetando hora y offset del valor recibido.
+   *
+   * - Valor date-only (YYYY-MM-DD): se expande a un bound inclusivo de dia
+   *   completo (00:00:00 para from, 23:59:59 para to), preservando la
+   *   semantica previa de whereDate para consumidores que mandan fecha pelada.
+   * - Valor full timestamp (ISO 8601 con offset/Z, ej. emitido por el
+   *   DateRangePicker): se parsea y convierte al instante UTC exacto.
+   *
+   * Se normaliza con Carbon a 'Y-m-d H:i:s' (en vez de pasar el ISO crudo)
+   * para que la comparacion sea correcta tanto en PostgreSQL (timestamptz)
+   * como en SQLite (columnas de texto en los tests).
+   *
+   * @param string $value Fecha o datetime entrante (date-only o ISO 8601)
+   * @param bool $isEnd True para el bound superior (to_date), false para from_date
+   *
+   * @return string Timestamp UTC en formato 'Y-m-d H:i:s'
+   */
+  private function normalizeDateBound(string $value, bool $isEnd): string
+  {
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+      $value .= $isEnd ? ' 23:59:59' : ' 00:00:00';
+    }
+
+    return Carbon::parse($value)->utc()->format('Y-m-d H:i:s');
   }
 
   /**
