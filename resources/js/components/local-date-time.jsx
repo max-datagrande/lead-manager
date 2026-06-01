@@ -1,5 +1,5 @@
+import { useDisplayTimezone } from '@/components/data-table/table-timezone';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useUserTimezone } from '@/hooks/use-user-timezone';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
 /**
@@ -11,7 +11,7 @@ import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
  * En tablas usar <FormattedDateTime /> (dos lineas: TZ usuario + subtitulo UTC).
  */
 const LocalDateTime = ({ date, className = '' }) => {
-  const { timezone } = useUserTimezone();
+  const timezone = useDisplayTimezone();
 
   if (!date) {
     return <span className={className}>—</span>;

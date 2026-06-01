@@ -1,9 +1,11 @@
+import { TIMEZONE_FILTER_ID } from '@/components/data-table/table-timezone';
 import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useUserTimezone } from '@/hooks/use-user-timezone';
+import { utcIsoToLocalDate } from '@/lib/timezone';
 import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DataTableFacetedFilter } from './faceted-filter';
@@ -21,14 +23,19 @@ export function DataTableToolbar({
   const isFiltered = table.getState().columnFilters.length > 0 || table.getState().globalFilter;
   const [reset, setReset] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
-  const { timezone } = useUserTimezone();
+  const { timezone: userTimezone } = useUserTimezone();
   // Extraer valores iniciales de fecha de los filtros existentes
   const currentFilters = table.getState().columnFilters;
   const fromDateFilter = currentFilters.find((filter) => filter.id === 'from_date');
   const toDateFilter = currentFilters.find((filter) => filter.id === 'to_date');
+  const timezoneFilter = currentFilters.find((filter) => filter.id === TIMEZONE_FILTER_ID);
 
-  const initialDateFrom = fromDateFilter ? new Date(fromDateFilter.value) : undefined;
-  const initialDateTo = toDateFilter ? new Date(toDateFilter.value) : undefined;
+  // TZ activo de la vista: el persistido junto al filtro, o el del perfil como default.
+  const activeTimezone = typeof timezoneFilter?.value === 'string' ? timezoneFilter.value : userTimezone;
+
+  // Hidratar el picker con el wall-clock en el TZ activo (no en el del browser).
+  const initialDateFrom = fromDateFilter ? utcIsoToLocalDate(fromDateFilter.value, activeTimezone) : undefined;
+  const initialDateTo = toDateFilter ? utcIsoToLocalDate(toDateFilter.value, activeTimezone) : undefined;
 
   const handleSearch = (event) => {
     setGlobalSearch(event.target.value);
@@ -70,12 +77,22 @@ export function DataTableToolbar({
           <DateRangePicker
             initialDateFrom={initialDateFrom}
             initialDateTo={initialDateTo}
-            defaultTimezone={timezone}
-            onUpdate={({ range }) => {
+            defaultTimezone={activeTimezone}
+            onUpdate={({ range, timezone }) => {
               const currentFilters = table.getState().columnFilters;
-              const otherFilters = currentFilters.filter((filter) => filter.id !== 'from_date' && filter.id !== 'to_date');
+              const otherFilters = currentFilters.filter(
+                (filter) => filter.id !== 'from_date' && filter.id !== 'to_date' && filter.id !== TIMEZONE_FILTER_ID,
+              );
+              // Persistimos el TZ elegido junto al rango para que filtro y render usen el mismo.
               table.setColumnFilters(
-                !range ? otherFilters : [...otherFilters, { id: 'from_date', value: range.from }, { id: 'to_date', value: range.to }],
+                !range
+                  ? otherFilters
+                  : [
+                      ...otherFilters,
+                      { id: 'from_date', value: range.from },
+                      { id: 'to_date', value: range.to },
+                      { id: TIMEZONE_FILTER_ID, value: timezone },
+                    ],
               );
             }}
             isReset={reset}
