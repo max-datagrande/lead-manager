@@ -93,3 +93,42 @@ test('non admin cannot access users admin section', function () {
 
   $response->assertRedirect(route('home'));
 });
+
+test('admin can send a password reset link to an active user', function () {
+  Notification::fake();
+
+  $admin = User::factory()->create(['role' => 'admin']);
+  $user = User::factory()->create(['is_active' => true]);
+
+  $response = actingAs($admin)->post(route('admin.users.password-reset', $user));
+
+  $response->assertRedirect(route('admin.users.index'));
+
+  Notification::assertSentTo($user, ResetPassword::class);
+});
+
+test('sending a reset link to an inactive user does nothing', function () {
+  Notification::fake();
+
+  $admin = User::factory()->create(['role' => 'admin']);
+  $user = User::factory()->create(['is_active' => false]);
+
+  $response = actingAs($admin)->post(route('admin.users.password-reset', $user));
+
+  $response->assertRedirect(route('admin.users.index'));
+
+  Notification::assertNothingSent();
+});
+
+test('non admin cannot send a password reset link', function () {
+  Notification::fake();
+
+  $user = User::factory()->create(['role' => 'user']);
+  $target = User::factory()->create(['is_active' => true]);
+
+  $response = actingAs($user)->post(route('admin.users.password-reset', $target));
+
+  $response->assertRedirect(route('home'));
+
+  Notification::assertNothingSent();
+});

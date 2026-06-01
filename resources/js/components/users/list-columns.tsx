@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/use-users';
 import { formatDateTime } from '@/utils/table';
-import { Edit, ShieldOff } from 'lucide-react';
+import { Edit, KeyRound, ShieldOff } from 'lucide-react';
 
 const RoleBadge = ({ role }: { role: string }) => {
   const variant = role === 'admin' ? 'default' : role === 'manager' ? 'secondary' : 'outline';
@@ -16,7 +16,7 @@ const StatusBadge = ({ isActive }: { isActive: boolean }) => {
 };
 
 const ActionsCell = ({ row }) => {
-  const { authUser, showEditModal, showDeactivateModal } = useUsers();
+  const { authUser, showEditModal, showDeactivateModal, showSendResetModal } = useUsers();
   const user = row.original;
 
   return (
@@ -24,6 +24,11 @@ const ActionsCell = ({ row }) => {
       <Button variant="ghost" size="sm" onClick={() => showEditModal(user)} className="h-8 w-8 p-0">
         <Edit className="h-4 w-4" />
       </Button>
+      {user.is_active && (
+        <Button variant="ghost" size="sm" onClick={() => showSendResetModal(user)} className="h-8 w-8 p-0" title="Send password reset link">
+          <KeyRound className="h-4 w-4" />
+        </Button>
+      )}
       {user.is_active && (
         <Button
           variant="ghost"
