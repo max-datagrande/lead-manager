@@ -8,6 +8,11 @@ interface ServerTableOptions {
   initialState: any;
   defaultPageSize?: number;
   includeInReload?: string[];
+  /**
+   * Route parameters for parameterized routes (e.g. `landing_pages.leads` needs `{ landing_page: id }`).
+   * Default `undefined` works for unparameterized routes.
+   */
+  routeParams?: Record<string, any> | any[];
 }
 
 interface ServerTableState {
@@ -24,7 +29,13 @@ interface ServerTableState {
   resetPagination: () => void;
 }
 
-export function useServerTable({ routeName, initialState, defaultPageSize = 10, includeInReload = [] }: ServerTableOptions): ServerTableState {
+export function useServerTable({
+  routeName,
+  initialState,
+  defaultPageSize = 10,
+  includeInReload = [],
+  routeParams,
+}: ServerTableOptions): ServerTableState {
   const isFirstRender = useRef(true);
 
   // Estado inicial
@@ -72,7 +83,7 @@ export function useServerTable({ routeName, initialState, defaultPageSize = 10, 
       onFinish: () => setIsLoading(false),
     };
 
-    router.get(route(routeName), payload, options);
+    router.get(route(routeName, routeParams), payload, options);
   };
 
   // Efecto principal: cuando cambian filtros o sorting, resetear página y fetch

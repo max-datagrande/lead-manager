@@ -87,6 +87,7 @@ const Leads = ({ rows, meta, state, data }: LeadsPageProps) => {
 
   const table = useServerTable({
     routeName: 'landing_pages.leads',
+    routeParams: { landing_page: landing_page.id },
     initialState: state,
     defaultPageSize: 25,
   });
