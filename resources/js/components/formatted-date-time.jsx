@@ -1,8 +1,8 @@
-import { useUserTimezone } from '@/hooks/use-user-timezone';
+import { useDisplayTimezone } from '@/components/data-table/table-timezone';
 import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 
 const FormattedDateTime = ({ date }) => {
-  const { timezone } = useUserTimezone();
+  const timezone = useDisplayTimezone();
 
   if (!date) {
     return null;

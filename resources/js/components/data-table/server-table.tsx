@@ -1,6 +1,7 @@
 import { DataTableContent } from '@/components/data-table/table-content';
 import { DataTableHeader } from '@/components/data-table/table-header';
 import { DataTablePagination } from '@/components/data-table/table-pagination';
+import { getTimezoneFromFilters, TableTimezoneProvider } from '@/components/data-table/table-timezone';
 import { DataTableToolbar } from '@/components/data-table/toolbar';
 import { Table, TableBody } from '@/components/ui/table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
@@ -51,6 +52,9 @@ export function ServerTable<TData>({
 }: ServerTableProps<TData>) {
   const { pageIndex, pageSize } = pagination;
 
+  // TZ activo de la vista (elegido en el DateRangePicker). null -> render usa el TZ del perfil.
+  const viewTimezone = getTimezoneFromFilters(columnFilters);
+
   const resetPagination = () => {
     setPagination({ pageIndex: 0, pageSize });
   };
@@ -91,7 +95,7 @@ export function ServerTable<TData>({
   });
 
   return (
-    <>
+    <TableTimezoneProvider timezone={viewTimezone}>
       {toolbarConfig && (
         <div className="mb-4">
           <div className="mb-4 flex justify-between gap-2">
@@ -123,6 +127,6 @@ export function ServerTable<TData>({
         </Table>
       </div>
       {!isLoading && <DataTablePagination table={table} />}
-    </>
+    </TableTimezoneProvider>
   );
 }
