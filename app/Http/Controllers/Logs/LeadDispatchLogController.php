@@ -13,6 +13,7 @@ use App\Models\LeadDispatch;
 use App\Models\PingResult;
 use App\Models\PostbackExecution;
 use App\Models\PostResult;
+use App\Models\TrafficLog;
 use App\Models\Workflow;
 use App\Jobs\PingPost\DispatchLeadJob;
 use App\Jobs\PingPost\RetryDispatchJob;
@@ -36,10 +37,16 @@ class LeadDispatchLogController extends Controller
     $originalSort = $request->input('sort', '');
     $query = $this->buildDispatchQuery($request);
 
+    // Global search is applied manually here because s10 (tracking platform click
+    // id) lives on traffic_logs, not lead_dispatches, so it can't go through the
+    // trait's base-column LIKE search. Passing an empty searchableColumns keeps the
+    // trait from double-applying it.
+    $this->applyDispatchSearch($query, trim((string) $request->input('search', '')));
+
     $table = $this->processDatatableQuery(
       query: $query,
       request: $request,
-      searchableColumns: ['fingerprint', 'dispatch_uuid', 'utm_source'],
+      searchableColumns: [],
       filterConfig: self::FILTER_CONFIG,
       allowedSort: self::ALLOWED_SORT,
       defaultSort: 'created_at:desc',
@@ -104,7 +111,7 @@ class LeadDispatchLogController extends Controller
   public function report(Request $request): StreamedResponse
   {
     $query = $this->buildDispatchQuery($request);
-    $this->applyGlobalSearch($query, $request->input('search', ''), ['fingerprint', 'dispatch_uuid', 'utm_source']);
+    $this->applyDispatchSearch($query, trim((string) $request->input('search', '')));
     $this->applyColumnFilters($query, json_decode($request->input('filters', '[]'), true) ?? [], self::FILTER_CONFIG);
 
     $delimiter = $request->input('os') === 'windows' ? ';' : ',';
@@ -290,6 +297,29 @@ class LeadDispatchLogController extends Controller
   ];
 
   private const ALLOWED_SORT = ['id', 'status', 'strategy_used', 'final_price', 'total_duration_ms', 'created_at', 'utm_source'];
+
+  /**
+   * Apply the dispatch global search as an OR group over the base columns plus a
+   * cross-table match on `traffic_logs.s10` (tracking platform click id) resolved
+   * by fingerprint. No-op when the search term is empty.
+   *
+   * Shared between index() and report() so both stay in sync.
+   */
+  private function applyDispatchSearch(\Illuminate\Database\Eloquent\Builder $query, string $search): void
+  {
+    if ($search === '') {
+      return;
+    }
+
+    $like = "%{$search}%";
+
+    $query->where(function ($w) use ($search, $like) {
+      $w->orWhere('fingerprint', 'like', $like)
+        ->orWhere('dispatch_uuid', 'like', $like)
+        ->orWhere('utm_source', 'like', $like)
+        ->orWhereIn('fingerprint', TrafficLog::query()->where('s10', $search)->select('fingerprint'));
+    });
+  }
 
   /**
    * Build the base dispatch query with filters and join-based sorts.
