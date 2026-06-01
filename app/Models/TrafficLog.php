@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TrafficLog extends Model
 {
@@ -28,6 +29,8 @@ class TrafficLog extends Model
     'os',
     'referrer',
     'host',
+    'landing_id',
+    'landing_page_version_id',
     'path_visited',
     'query_params',
     's1',
@@ -56,7 +59,19 @@ class TrafficLog extends Model
     'query_params' => 'array',
     'visit_date' => 'date',
     'is_bot' => 'boolean',
+    'landing_id' => 'integer',
+    'landing_page_version_id' => 'integer',
     'created_at' => 'datetime',
     'updated_at' => 'datetime',
   ];
+
+  public function landingPage(): BelongsTo
+  {
+    return $this->belongsTo(LandingPage::class, 'landing_id');
+  }
+
+  public function landingPageVersion(): BelongsTo
+  {
+    return $this->belongsTo(LandingPageVersion::class, 'landing_page_version_id');
+  }
 }

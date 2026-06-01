@@ -51,4 +51,9 @@ class LandingPage extends Model
   {
     return $this->hasMany(LandingPageColumn::class);
   }
+
+  public function trafficLogs()
+  {
+    return $this->hasMany(TrafficLog::class, 'landing_id');
+  }
 }

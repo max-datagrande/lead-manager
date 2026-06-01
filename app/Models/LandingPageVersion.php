@@ -12,4 +12,9 @@ class LandingPageVersion extends Model
   {
     return $this->belongsTo(LandingPage::class);
   }
+
+  public function trafficLogs()
+  {
+    return $this->hasMany(TrafficLog::class, 'landing_page_version_id');
+  }
 }
