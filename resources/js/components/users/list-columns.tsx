@@ -1,8 +1,8 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/use-users';
-import { formatDateTime } from '@/utils/table';
 import { Edit, KeyRound, ShieldOff } from 'lucide-react';
 
 const RoleBadge = ({ role }: { role: string }) => {
@@ -85,11 +85,12 @@ export const usersColumns = [
     id: 'email_verified_at',
     accessorKey: 'email_verified_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Verified" />,
-    cell: ({ row }) => (
-      <div className="text-sm text-muted-foreground">
-        {row.original.email_verified_at ? formatDateTime(row.original.email_verified_at) : 'Pending'}
-      </div>
-    ),
+    cell: ({ row }) =>
+      row.original.email_verified_at ? (
+        <FormattedDateTime date={row.original.email_verified_at} />
+      ) : (
+        <div className="text-sm text-muted-foreground">Pending</div>
+      ),
     enableSorting: true,
     enableHiding: true,
   },
@@ -97,7 +98,7 @@ export const usersColumns = [
     id: 'created_at',
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
-    cell: ({ row }) => <div className="text-sm text-muted-foreground">{formatDateTime(row.original.created_at)}</div>,
+    cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
     enableSorting: true,
     enableHiding: true,
   },

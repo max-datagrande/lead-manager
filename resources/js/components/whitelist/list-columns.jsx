@@ -1,8 +1,8 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useWhitelist } from '@/hooks/use-whitelist';
-import { formatDateTime } from '@/utils/table';
 import { Edit, Globe, Server, Trash2 } from 'lucide-react';
 
 // Componente para mostrar el tipo de entrada
@@ -79,14 +79,14 @@ export const whitelistColumns = [
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
-    cell: ({ row }) => <div className="text-sm text-muted-foreground">{formatDateTime(row.original.created_at)}</div>,
+    cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'updated_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
-    cell: ({ row }) => <div className="text-sm text-muted-foreground">{formatDateTime(row.original.updated_at)}</div>,
+    cell: ({ row }) => <FormattedDateTime date={row.original.updated_at} />,
     enableSorting: true,
     enableHiding: true,
   },

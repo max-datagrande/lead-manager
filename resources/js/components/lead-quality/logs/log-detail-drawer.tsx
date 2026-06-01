@@ -1,8 +1,8 @@
+import { LocalDateTime } from '@/components/local-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { ValidationLogDetail } from '@/types/models/lead-quality';
-import { formatDateTime } from '@/utils/table';
 import { AlertCircle, FileSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { StatusBadge } from './status-badge';
@@ -95,10 +95,10 @@ export function LogDetailDrawer({ logId, open, onOpenChange, onOpenTechnical }: 
 
             <section>
               <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Timing</h3>
-              <Field label="Created" value={formatDateTime(log.created_at)} />
-              <Field label="Started" value={log.started_at ? formatDateTime(log.started_at) : null} />
-              <Field label="Resolved" value={log.resolved_at ? formatDateTime(log.resolved_at) : null} />
-              <Field label="Expires" value={log.expires_at ? formatDateTime(log.expires_at) : null} />
+              <Field label="Created" value={<LocalDateTime date={log.created_at} />} />
+              <Field label="Started" value={log.started_at ? <LocalDateTime date={log.started_at} /> : null} />
+              <Field label="Resolved" value={log.resolved_at ? <LocalDateTime date={log.resolved_at} /> : null} />
+              <Field label="Expires" value={log.expires_at ? <LocalDateTime date={log.expires_at} /> : null} />
             </section>
 
             <section>

@@ -1,10 +1,10 @@
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLeadQualityRules } from '@/hooks/use-lead-quality-rules';
 import type { RuleRow, RuleStatusValue } from '@/types/models/lead-quality';
-import { formatDateTime } from '@/utils/table';
 import { AlertCircle, Edit, Trash2 } from 'lucide-react';
 
 const STATUS_VARIANT: Record<RuleStatusValue, 'default' | 'secondary' | 'outline' | 'destructive'> = {
@@ -103,7 +103,9 @@ export function TableRules({ entries }: { entries: RuleRow[] }) {
                     {!row.is_enabled && <span className="text-xs text-muted-foreground">not enabled</span>}
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{formatDateTime(row.updated_at)}</TableCell>
+                <TableCell>
+                  <FormattedDateTime date={row.updated_at} />
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => goToEdit(row)}>

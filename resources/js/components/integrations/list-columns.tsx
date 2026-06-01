@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 
 // --- Type Definitions ---
 type Integration = {
@@ -118,24 +118,14 @@ export const columns = [
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
-        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'updated_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
-        <div className="text-xs whitespace-nowrap text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.updated_at} />,
     enableSorting: true,
     enableHiding: true,
   },

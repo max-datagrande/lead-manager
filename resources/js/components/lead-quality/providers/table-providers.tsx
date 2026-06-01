@@ -1,9 +1,9 @@
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLeadQualityProviders } from '@/hooks/use-lead-quality-providers';
 import type { ProviderRow, ProviderStatusValue } from '@/types/models/lead-quality';
-import { formatDateTime } from '@/utils/table';
 import { Edit, Trash2 } from 'lucide-react';
 
 const STATUS_VARIANT: Record<ProviderStatusValue, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -63,7 +63,9 @@ export function TableProviders({ entries }: { entries: ProviderRow[] }) {
               <TableCell>
                 <span className="font-mono text-sm">{row.validation_rules_count}</span>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{formatDateTime(row.updated_at)}</TableCell>
+              <TableCell>
+                <FormattedDateTime date={row.updated_at} />
+              </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => goToEdit(row)}>

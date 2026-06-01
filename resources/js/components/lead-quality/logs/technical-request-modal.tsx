@@ -1,7 +1,7 @@
+import { LocalDateTime } from '@/components/local-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ExternalRequestRow } from '@/types/models/lead-quality';
-import { formatDateTime } from '@/utils/table';
 import { AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -104,7 +104,7 @@ export function TechnicalRequestModal({ logId, open, onOpenChange }: Props) {
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {req.duration_ms !== null && <span className="mr-3">{req.duration_ms} ms</span>}
-                      {req.requested_at && formatDateTime(req.requested_at)}
+                      {req.requested_at && <LocalDateTime date={req.requested_at} />}
                     </div>
                   </div>
 

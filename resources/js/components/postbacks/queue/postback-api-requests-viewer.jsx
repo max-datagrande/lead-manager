@@ -1,10 +1,10 @@
+import { LocalDateTime } from '@/components/local-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import JsonViewer from '@/components/ui/json-viewer';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatDateTime } from '@/utils/table';
 import { AlertCircle, CheckCircle, Clock, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -191,7 +191,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <span>Service: {request.service}</span>
                           <span>•</span>
-                          <span>{formatDateTime(request.created_at)}</span>
+                          <LocalDateTime date={request.created_at} />
                           <span>•</span>
                           <span className={`font-mono ${request.response_time_ms > 5000 ? 'text-red-600' : ''}`}>
                             {request.response_time_ms || 0}ms
@@ -275,7 +275,7 @@ export function PostbackApiRequestsViewer({ postbackId }) {
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(request.status_code, request.error_message)}
-                          <span className="text-xs text-gray-500">{formatDateTime(request.created_at)}</span>
+                          <LocalDateTime date={request.created_at} className="text-xs text-gray-500" />
                         </div>
                       </div>
                     ))}
