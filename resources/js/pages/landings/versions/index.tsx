@@ -36,7 +36,7 @@ interface Versions {
   landing_page_id: number;
   name: string;
   description: string;
-  url: string;
+  path: string;
   status: boolean;
   created_at: string;
   updated_at: string;

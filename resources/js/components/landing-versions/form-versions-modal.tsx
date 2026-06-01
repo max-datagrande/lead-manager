@@ -13,16 +13,16 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
   const { data, setData, post, put, processing, errors, reset } = useForm({
     name: entry?.name ?? '',
     description: entry?.description ?? '',
-    url: entry?.url ?? '',
+    path: entry?.path ?? '',
     status: entry?.status ?? true,
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    data.url = normalizeSlug(data.url);
+    data.path = normalizeSlug(data.path);
 
-    if (data.url === '__INVALID__' || !data.url.trim()) {
+    if (data.path === '__INVALID__' || !data.path.trim()) {
       alert('Invalid slug. Only simple paths like "v1" are allowed.');
       return;
     }
@@ -94,12 +94,12 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
           {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
         </div>
 
-        {/* URL */}
+        {/* Path */}
         <div className="space-y-2">
-          <Label htmlFor="url">URL</Label>
+          <Label htmlFor="path">Path</Label>
           <Input
-            id="url"
-            value={data.url}
+            id="path"
+            value={data.path}
             onChange={(e) => {
               const raw = e.target.value;
 
@@ -108,11 +108,11 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
                 return;
               }
 
-              setData('url', raw);
+              setData('path', raw);
             }}
             placeholder="e.g. v1"
           />
-          {errors.url && <p className="text-sm text-destructive">{errors.url}</p>}
+          {errors.path && <p className="text-sm text-destructive">{errors.path}</p>}
         </div>
 
         {/* Status */}
@@ -127,7 +127,7 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
             Cancel
           </Button>
 
-          <Button type="submit" disabled={processing || !data.name.trim() || !data.url.trim()}>
+          <Button type="submit" disabled={processing || !data.name.trim() || !data.path.trim()}>
             {processing ? 'Saving...' : isEdit ? 'Update' : 'Create'}
           </Button>
         </div>

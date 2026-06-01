@@ -90,6 +90,24 @@ class CacheRegistryService
       'source' => 'GeolocationService',
       'pattern' => true,
     ]);
+
+    $this->register('landing-pages:resolver:host:*', [
+      'label' => 'Landing Resolver Host Cache',
+      'description' => 'Cached host-to-landing_id lookups for traffic log resolution. Pattern-based, many keys.',
+      'ttl' => 600,
+      'group' => 'Landing Pages',
+      'source' => 'LandingPageResolverService',
+      'pattern' => true,
+    ]);
+
+    $this->register('landing-pages:resolver:version:*', [
+      'label' => 'Landing Resolver Version Cache',
+      'description' => 'Cached path-to-version_id lookups per landing for traffic log resolution. Pattern-based, many keys.',
+      'ttl' => 600,
+      'group' => 'Landing Pages',
+      'source' => 'LandingPageResolverService',
+      'pattern' => true,
+    ]);
   }
 
   private function register(string $key, array $meta): void
