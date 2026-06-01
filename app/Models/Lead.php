@@ -74,12 +74,18 @@ class Lead extends Model
 
   /**
    * Convenience hasOne pointing to the most recent traffic log by created_at.
-   * `visit_date` is a DATE column (no time component) so it's not granular enough
-   * to disambiguate visits within the same day.
+   *
+   * Avoids `latestOfMany()` because Laravel adds a secondary `MAX(id)` aggregate
+   * as tiebreaker on the model's primary key, and `traffic_logs.id` is UUID —
+   * PostgreSQL has no `MAX(uuid)` so the query throws `function max(uuid) does not exist`.
+   *
+   * `hasOne + orderByDesc(created_at)` works correctly: eager loading pulls all
+   * matching rows and Laravel picks the first per parent. With the global DESC
+   * sort, the first row per fingerprint IS its latest log.
    */
   public function latestTrafficLog()
   {
-    return $this->hasOne(TrafficLog::class, 'fingerprint', 'fingerprint')->latestOfMany('created_at');
+    return $this->hasOne(TrafficLog::class, 'fingerprint', 'fingerprint')->orderByDesc('created_at');
   }
 
   /**
