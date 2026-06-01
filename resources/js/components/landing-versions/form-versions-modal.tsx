@@ -111,10 +111,10 @@ export function FormModalVersion({ entry, landingPageId, isEdit = false }) {
 
               setData('path', raw);
             }}
-            placeholder="e.g. v1 — usa / para el home"
+            placeholder="e.g. v1 — use / for the home"
           />
           <p className="text-xs text-muted-foreground">
-            Slug simple (ej. <code>v1</code> → <code>/v1/</code>). Para la pagina principal de la landing, escribi <code>/</code>.
+            Simple slug (e.g. <code>v1</code> → <code>/v1/</code>). For the landing's home page, enter <code>/</code>.
           </p>
           {errors.path && <p className="text-sm text-destructive">{errors.path}</p>}
         </div>
