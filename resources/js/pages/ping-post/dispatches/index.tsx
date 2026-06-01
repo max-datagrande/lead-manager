@@ -105,7 +105,7 @@ const DispatchesIndex = ({ rows, state, meta, data, dispatches_with_executions, 
           globalFilter={table.globalFilter}
           setGlobalFilter={table.setGlobalFilter}
           toolbarConfig={{
-            searchPlaceholder: 'Search fingerprint, UUID, UTM...',
+            searchPlaceholder: 'Search fingerprint, UUID, UTM, Click ID...',
             filters: [
               {
                 columnId: 'workflow_id',
