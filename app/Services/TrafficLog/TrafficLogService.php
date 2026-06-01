@@ -5,6 +5,7 @@ namespace App\Services\TrafficLog;
 use App\Models\TrafficLog;
 use App\Services\BotDetectorService;
 use App\Services\GeolocationService;
+use App\Services\LandingPageResolverService;
 use App\Services\UtmService;
 use Illuminate\Http\Request;
 use Maxidev\Logger\TailLogger;
@@ -33,6 +34,7 @@ class TrafficLogService
     private FingerprintGeneratorService $fingerprintGenerator,
     private GeolocationService $geolocationService,
     private UtmService $utmService,
+    private LandingPageResolverService $landingPageResolver,
     protected Request $request,
   ) {}
 
@@ -133,6 +135,15 @@ class TrafficLogService
         $newTraffic->state = $geolocation['region'] ?? null;
         $newTraffic->city = $geolocation['city'] ?? null;
         $newTraffic->postal_code = $geolocation['postal'] ?? null;
+
+        // Vincular la visita con su LandingPage/version (id explicito del SDK o auto-deteccion por host)
+        $resolved = $this->landingPageResolver->resolve(
+          landingId: isset($data['landing_id']) ? (int) $data['landing_id'] : null,
+          host: $landingHost,
+          pathVisited: $data['current_page'],
+        );
+        $newTraffic->landing_id = $resolved['landing_id'];
+        $newTraffic->landing_page_version_id = $resolved['landing_page_version_id'];
 
         // Crear el registro en la base de datos
         $newTraffic->save();

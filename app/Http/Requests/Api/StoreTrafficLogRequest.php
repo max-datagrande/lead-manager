@@ -44,6 +44,10 @@ class StoreTrafficLogRequest extends FormRequest
       //Page path visited
       'current_page' => 'required|string|max:2000',
 
+      // Landing page id (opcional, enviado por el SDK). Validacion estricta:
+      // un id invalido/stale devuelve 422 en vez de caer a auto-deteccion por host.
+      'landing_id' => 'nullable|integer|exists:landing_pages,id',
+
       // Control de detección de bot (opcional)
       'is_bot' => 'nullable|boolean', // Si no se especifica, usamos BotDetectorService
 
@@ -73,6 +77,8 @@ class StoreTrafficLogRequest extends FormRequest
       'query_params.array' => 'Query parameters must be an object',
       'current_page.required' => 'Path visited is required',
       'current_page.max' => 'Path visited must not exceed 2000 characters',
+      'landing_id.integer' => 'The landing_id must be an integer',
+      'landing_id.exists' => 'The landing_id does not match any landing page',
       'is_bot.boolean' => 'The is_bot field must be true or false',
       's1.max' => 'The s1 field must not exceed 255 characters',
       's2.max' => 'The s2 field must not exceed 255 characters',
