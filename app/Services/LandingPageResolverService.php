@@ -77,7 +77,9 @@ class LandingPageResolverService
       return $landing?->id ?? self::NO_MATCH;
     });
 
-    return $cached === self::NO_MATCH ? null : $cached;
+    // Cast a int: algunos cache drivers (ej. Redis sin serializer) devuelven "0"/"1" como
+    // string, y "0" === 0 es false -> el sentinela se filtraria como landing_id 0 (FK invalida).
+    return (int) $cached === self::NO_MATCH ? null : (int) $cached;
   }
 
   /**
@@ -102,7 +104,7 @@ class LandingPageResolverService
       return $version?->id ?? self::NO_MATCH;
     });
 
-    return $cached === self::NO_MATCH ? null : $cached;
+    return (int) $cached === self::NO_MATCH ? null : (int) $cached;
   }
 
   /**
@@ -121,10 +123,13 @@ class LandingPageResolverService
   }
 
   /**
-   * Recorta espacios y trailing slash para comparar paths de forma estable.
+   * Normaliza el path a un slash inicial unico y sin slash final.
+   *
+   * El path_visited historico es heterogeneo: `rates`, `rates/`, `/rates/` conviven para la
+   * misma pagina. Sin esto matchearian distinto. `/` y null/'' -> '/'.
    */
   private function normalizePath(string $path): string
   {
-    return rtrim(trim($path), '/');
+    return '/' . trim(trim($path), '/');
   }
 }

@@ -72,13 +72,33 @@ it('resuelve aunque el host venga con punto final o en mayusculas', function () 
   expect($this->resolver->resolve(null, 'MOONAUTOINSURANCE.TEST', '/')['landing_id'])->toBe($landing->id);
 });
 
-it('no resuelve subdominios arbitrarios (queda para el ticket de alias)', function () {
+it('un subdominio sin landing propia no resuelve (no se pliega al apex)', function () {
   makeLanding('http://moonautoinsurance.test/');
 
   $result = $this->resolver->resolve(null, 'quotes.moonautoinsurance.test', '/');
 
   expect($result['landing_id'])->toBeNull();
   expect($result['landing_page_version_id'])->toBeNull();
+});
+
+it('un subdominio con su propia landing resuelve a esa landing, no al apex', function () {
+  $apex = makeLanding('http://moonautoinsurance.test/');
+  $quotes = makeLanding('http://quotes.moonautoinsurance.test/');
+
+  $result = $this->resolver->resolve(null, 'quotes.moonautoinsurance.test', '/');
+
+  expect($result['landing_id'])->toBe($quotes->id);
+  expect($result['landing_id'])->not->toBe($apex->id);
+});
+
+it('matchea la misma version sin importar slashes (rates, rates/, /rates/)', function () {
+  $landing = makeLanding('http://moonautoinsurance.test/');
+  $version = makeVersion($landing, '/rates');
+
+  foreach (['rates', 'rates/', '/rates/', '/rates'] as $path) {
+    $result = $this->resolver->resolve($landing->id, 'moonautoinsurance.test', $path);
+    expect($result['landing_page_version_id'])->toBe($version->id, "fallo para path '{$path}'");
+  }
 });
 
 it('deja version_id en null cuando no hay version para ese path', function () {
@@ -98,6 +118,16 @@ it('devuelve ambos null cuando el host no matchea ninguna landing', function () 
 
   expect($result['landing_id'])->toBeNull();
   expect($result['landing_page_version_id'])->toBeNull();
+});
+
+it('no filtra el sentinela cuando el cache devuelve el valor como string', function () {
+  // Simula un cache driver (ej. Redis sin serializer) que devuelve "0" string en vez de int 0.
+  // Sin el cast a int, "0" !== 0 y el sentinela se escribiria como landing_id 0 (FK invalida).
+  Cache::put('landing-pages:resolver:host:unknown-domain.test', '0', 600);
+
+  $result = $this->resolver->resolve(null, 'unknown-domain.test', '/');
+
+  expect($result['landing_id'])->toBeNull();
 });
 
 it('cachea el lookup de host: el segundo resolve no consulta landing_pages', function () {
