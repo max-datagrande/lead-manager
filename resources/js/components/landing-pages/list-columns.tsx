@@ -3,7 +3,9 @@ import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useLandings } from '@/hooks/use-landings';
-import { Edit, SquareArrowOutUpRight, Trash2 } from 'lucide-react';
+import { router } from '@inertiajs/react';
+import { Edit, List, SquareArrowOutUpRight, Trash2 } from 'lucide-react';
+import { route } from 'ziggy-js';
 
 const StatusBadge = ({ isActive }) => <Badge variant={isActive ? 'default' : 'destructive'}>{isActive ? 'Active' : 'Inactive'}</Badge>;
 
@@ -12,13 +14,28 @@ const ActionsCell = ({ row }) => {
   const entry = row.original;
   return (
     <div className="flex items-center gap-2">
-      <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0">
+      <Button variant="ghost" size="sm" onClick={() => showEditModal(entry)} className="h-8 w-8 p-0" title="Edit">
         <Edit className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => showDeleteModal(entry)} className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.visit(route('landing_pages.leads', entry.id))}
+        className="h-8 w-8 p-0"
+        title="View leads"
+      >
+        <List className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => showDeleteModal(entry)}
+        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+        title="Delete"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="sm" onClick={() => showVersions(entry)} className="h-8 w-8 p-0">
+      <Button variant="ghost" size="sm" onClick={() => showVersions(entry)} className="h-8 w-8 p-0" title="Versions">
         <SquareArrowOutUpRight className="h-4 w-4" />
       </Button>
     </div>

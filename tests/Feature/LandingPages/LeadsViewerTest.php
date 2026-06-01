@@ -43,12 +43,12 @@ it('returns baseline descriptors when the landing has no columns configured', fu
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
   $response->assertOk();
-  $props = $response->viewData('page')['props'];
+  $data = $response->viewData('page')['props']['data'];
 
-  expect($props['using_defaults'])->toBeTrue();
-  expect($props['descriptors'])->toHaveCount(10);
+  expect($data['using_defaults'])->toBeTrue();
+  expect($data['descriptors'])->toHaveCount(10);
 
-  $byKey = collect($props['descriptors'])->keyBy('key');
+  $byKey = collect($data['descriptors'])->keyBy('key');
   expect($byKey)->toHaveKeys([
     'meta:id',
     'meta:created_at',
@@ -80,7 +80,7 @@ it('returns configured descriptors using the column configuration', function () 
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
   $response->assertOk();
-  $descriptors = $response->viewData('page')['props']['descriptors'];
+  $descriptors = $response->viewData('page')['props']['data']['descriptors'];
 
   expect($descriptors)->toHaveCount(3);
   expect(collect($descriptors)->pluck('key')->all())->toEqualCanonicalizing(['field:' . $field->id, 'traffic:s10', 'traffic:ip_address']);
@@ -103,8 +103,8 @@ it('only returns leads whose traffic logs match the landing', function () {
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingA->id));
 
   $response->assertOk();
-  $leads = $response->viewData('page')['props']['leads'];
-  expect($leads['total'])->toBe(2);
+  $meta = $response->viewData('page')['props']['meta'];
+  expect($meta['total'])->toBe(2);
 });
 
 it('resolves field-source values from lead_field_responses', function () {
@@ -122,7 +122,7 @@ it('resolves field-source values from lead_field_responses', function () {
 
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
-  $row = collect($response->viewData('page')['props']['leads']['data'])->firstWhere('id', $lead->id);
+  $row = collect($response->viewData('page')['props']['rows']['data'])->firstWhere('id', $lead->id);
   expect($row['values']['field:' . $field->id])->toBe('jane@example.com');
 });
 
@@ -137,7 +137,7 @@ it('resolves traffic-source values from the latest traffic log', function () {
 
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
-  $row = collect($response->viewData('page')['props']['leads']['data'])->firstWhere('id', $lead->id);
+  $row = collect($response->viewData('page')['props']['rows']['data'])->firstWhere('id', $lead->id);
   expect($row['values']['traffic:postal_code'])->toBe('90210');
 });
 
@@ -153,15 +153,15 @@ it('exposes the version catalog of the landing and attaches version per row', fu
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
   $props = $response->viewData('page')['props'];
-  expect(collect($props['versions'])->pluck('id')->all())->toEqualCanonicalizing([$versionA->id, $versionB->id]);
+  expect(collect($props['data']['versions'])->pluck('id')->all())->toEqualCanonicalizing([$versionA->id, $versionB->id]);
 
-  $rows = collect($props['leads']['data'])->keyBy('id');
+  $rows = collect($props['rows']['data'])->keyBy('id');
   expect($rows[$leadA->id]['version']['path'])->toBe('/offers/');
   expect($rows[$leadB->id]['version']['path'])->toBe('/quote/v2');
   expect($rows[$leadNoVersion->id]['version'])->toBeNull();
 });
 
-it('filters leads by version when ?version is provided', function () {
+it('filters leads by version when the version filter is set', function () {
   $landingPage = LandingPage::factory()->create();
   $versionA = LandingPageVersion::factory()->create(['landing_page_id' => $landingPage->id]);
   $versionB = LandingPageVersion::factory()->create(['landing_page_id' => $landingPage->id]);
@@ -170,12 +170,13 @@ it('filters leads by version when ?version is provided', function () {
   attachLeadToLanding($landingPage, $versionA);
   attachLeadToLanding($landingPage, $versionB);
 
-  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id) . '?version=' . $versionA->id);
+  $filtersJson = json_encode([['id' => 'version', 'value' => [$versionA->id]]]);
+  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id) . '?filters=' . urlencode($filtersJson));
 
   $response->assertOk();
   $props = $response->viewData('page')['props'];
-  expect($props['leads']['total'])->toBe(2);
-  expect($props['selected_version'])->toBe($versionA->id);
+  expect($props['meta']['total'])->toBe(2);
+  expect($props['data']['selected_versions'])->toBe([$versionA->id]);
 });
 
 it('paginates with a default size of 25 sorted by created_at desc', function () {
@@ -190,8 +191,8 @@ it('paginates with a default size of 25 sorted by created_at desc', function () 
   $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
 
   $props = $response->viewData('page')['props'];
-  expect($props['leads']['per_page'])->toBe(25);
-  $rows = $props['leads']['data'];
+  expect($props['meta']['per_page'])->toBe(25);
+  $rows = $props['rows']['data'];
   expect($rows[0]['id'])->toBe($newest->id);
   expect($rows[count($rows) - 1]['id'])->toBe($first->id);
 });

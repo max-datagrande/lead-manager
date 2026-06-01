@@ -7,12 +7,16 @@ use App\Models\LandingPage;
 use App\Models\LandingPageColumn;
 use App\Models\Lead;
 use App\Models\TrafficLog;
+use App\Traits\DatatableTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class LandingPageLeadsController extends Controller
 {
+  use DatatableTrait;
+
   /**
    * Baseline column set surfaced when a landing has no `landing_page_columns` configured.
    *
@@ -43,29 +47,52 @@ class LandingPageLeadsController extends Controller
       ->get(['id', 'path', 'name'])
       ->all();
 
-    $selectedVersion = $request->integer('version') ?: null;
+    // Version filter lives in the same `filters` blob the datatable toolbar uses,
+    // but is applied to the traffic_logs subquery (not the leads table).
+    $filters = json_decode($request->input('filters', '[]'), true) ?? [];
+    $versionFilter = collect($filters)->firstWhere('id', 'version');
+    $selectedVersions = collect(Arr::wrap($versionFilter['value'] ?? []))
+      ->filter(fn($v) => $v !== '' && $v !== null)
+      ->map(fn($v) => (int) $v)
+      ->values()
+      ->all();
 
     $fingerprintSubquery = TrafficLog::query()
       ->where('landing_id', $landingPage->id)
-      ->when($selectedVersion, fn($q) => $q->where('landing_page_version_id', $selectedVersion))
+      ->when(!empty($selectedVersions), fn($q) => $q->whereIn('landing_page_version_id', $selectedVersions))
       ->select('fingerprint');
 
-    $leads = Lead::query()
+    $query = Lead::query()
       ->whereIn('fingerprint', $fingerprintSubquery)
-      ->with(['leadFieldResponses.field', 'latestTrafficLog.landingPageVersion'])
-      ->orderByDesc('created_at')
-      ->paginate(25)
-      ->withQueryString();
+      ->with(['leadFieldResponses.field', 'latestTrafficLog.landingPageVersion']);
 
-    $leads->through(fn(Lead $lead) => $this->transformLead($lead, $descriptors));
+    // Default page size for this viewer is 25 (DatatableTrait default is 10).
+    if (!$request->has('per_page')) {
+      $request->merge(['per_page' => 25]);
+    }
+
+    $table = $this->processDatatableQuery(
+      query: $query,
+      request: $request,
+      searchableColumns: [],
+      filterConfig: [],
+      allowedSort: ['id', 'created_at'],
+      defaultSort: 'created_at:desc',
+    );
+
+    $table['rows']->through(fn(Lead $lead) => $this->transformLead($lead, $descriptors));
 
     return Inertia::render('landings/leads', [
-      'landingPage' => $landingPage->only(['id', 'name', 'url']),
-      'descriptors' => $descriptors,
-      'leads' => $leads,
-      'versions' => $versions,
-      'selected_version' => $selectedVersion,
-      'using_defaults' => $usingDefaults,
+      'rows' => $table['rows'],
+      'meta' => $table['meta'],
+      'state' => $table['state'],
+      'data' => [
+        'landing_page' => $landingPage->only(['id', 'name', 'url']),
+        'descriptors' => $descriptors,
+        'versions' => $versions,
+        'selected_versions' => $selectedVersions,
+        'using_defaults' => $usingDefaults,
+      ],
     ]);
   }
 
