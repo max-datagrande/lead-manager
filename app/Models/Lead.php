@@ -87,6 +87,6 @@ class Lead extends Model
    */
   public function getHostAttribute()
   {
-    return $this->trafficLogs()->latest('visit_date')->value('host');
+    return $this->trafficLogs()->latest('created_at')->value('host');
   }
 }
