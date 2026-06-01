@@ -10,17 +10,17 @@ function serializeSort(sorting) {
   const { id, desc } = sorting[0];
   return `${id}:${desc ? 'desc' : 'asc'}`;
 }
-function formatOnlyDate(d) {
+function formatOnlyDate(d, tz) {
   if (!d) return '—';
-  return dayjs(d).format('YYYY-MM-DD');
+  return (tz ? dayjs(d).tz(tz) : dayjs(d)).format('YYYY-MM-DD');
 }
 function formatOnlyDateUTC(d) {
   if (!d) return '—';
   return dayjs(d).utc().format('YYYY-MM-DD [UTC]');
 }
-function formatDateTime(d) {
+function formatDateTime(d, tz) {
   if (!d) return '—';
-  return dayjs(d).format('YYYY-MM-DD HH:mm');
+  return (tz ? dayjs(d).tz(tz) : dayjs(d)).format('YYYY-MM-DD HH:mm');
 }
 
 function formatDateTimeUTC(d) {
@@ -28,9 +28,9 @@ function formatDateTimeUTC(d) {
   return dayjs(d).utc().format('YYYY-MM-DD HH:mm [UTC]');
 }
 
-function formatVisitDate(d) {
+function formatVisitDate(d, tz) {
   if (!d) return '—';
-  return dayjs(d).format('YYYY-MM-DD');
+  return (tz ? dayjs(d).tz(tz) : dayjs(d)).format('YYYY-MM-DD');
 }
 
 function getSortState(sortData) {

@@ -1,12 +1,12 @@
 import CopyToClipboard from '@/components/copy-to-clipboard';
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePostbackQueue } from '@/hooks/use-postback-queue';
 import { capitalize } from '@/utils/string';
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { SlidersHorizontal } from 'lucide-react';
 // --- Columnas TanStack ---
 const vendors = {
@@ -156,36 +156,21 @@ export const createPostbackColumns = () => [
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
-    cell: ({ row }) => (
-      <div className="text-sm whitespace-nowrap">
-        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'updated_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
-    cell: ({ row }) => (
-      <div className="text-sm whitespace-nowrap">
-        <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.updated_at} />,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'processed_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Processed At" />,
-    cell: ({ row }) => (
-      <div className="text-sm whitespace-nowrap">
-        <div className="font-medium">{formatDateTime(row.original.processed_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.processed_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.processed_at} />,
     enableSorting: true,
     enableHiding: true,
   },

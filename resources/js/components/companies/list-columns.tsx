@@ -1,8 +1,8 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCompanies } from '@/hooks/use-companies';
-import { formatDateTime, formatDateTimeUTC } from '@/utils/table';
 import { Edit, Trash2 } from 'lucide-react';
 
 // Componente para mostrar el estado activo/inactivo
@@ -60,24 +60,14 @@ export const columns = [
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created At" />,
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{formatDateTime(row.original.created_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.created_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
     enableSorting: true,
     enableHiding: true,
   },
   {
     accessorKey: 'updated_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Updated At" />,
-    cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{formatDateTime(row.original.updated_at)}</div>
-        <div className="text-xs text-gray-500">{formatDateTimeUTC(row.original.updated_at)}</div>
-      </div>
-    ),
+    cell: ({ row }) => <FormattedDateTime date={row.original.updated_at} />,
     enableSorting: true,
     enableHiding: true,
   },

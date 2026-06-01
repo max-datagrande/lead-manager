@@ -1,8 +1,8 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
+import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { ValidationLogRow } from '@/types/models/lead-quality';
-import { formatDateTime } from '@/utils/table';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Eye } from 'lucide-react';
 import { StatusBadge } from './status-badge';
@@ -82,7 +82,7 @@ export function createLogColumns({ onOpenDetail }: ColumnContext): ColumnDef<Val
     {
       accessorKey: 'created_at',
       header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
-      cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatDateTime(row.original.created_at)}</span>,
+      cell: ({ row }) => <FormattedDateTime date={row.original.created_at} />,
       enableSorting: true,
     },
     {
