@@ -75,7 +75,10 @@ class LandingPageLeadsController extends Controller
       query: $query,
       request: $request,
       searchableColumns: [],
-      filterConfig: [],
+      filterConfig: [
+        'from_date' => ['type' => 'from_date', 'column' => 'leads.created_at'],
+        'to_date' => ['type' => 'to_date', 'column' => 'leads.created_at'],
+      ],
       allowedSort: ['id', 'created_at'],
       defaultSort: 'created_at:desc',
     );

@@ -149,6 +149,7 @@ const Leads = ({ rows, meta, state, data }: LeadsPageProps) => {
                     },
                   ]
                 : [],
+            dateRange: { column: 'created_at', label: 'Created At' },
           }}
         />
       </div>
