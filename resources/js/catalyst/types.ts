@@ -154,6 +154,22 @@ interface OfferwallConversionResponse {
 }
 
 /**
+ * Optional postback-fire config attached to a `convertOfferwall()` call.
+ * When present and valid, the SDK fires an internal postback alongside the
+ * conversion — fire-and-forget, BEFORE the awaited conversion request.
+ *
+ * The landing owns these values (the UUID lives in the landing, per offerwall
+ * integration). `uuid` and `source` are required; if either is missing/empty
+ * the postback is skipped with a console warning and the conversion still
+ * proceeds. Empty `fields` values are dropped (and warned) before firing.
+ */
+interface ConvertOfferwallPostback {
+  uuid: string;
+  source: string;
+  fields?: Record<string, string | number>;
+}
+
+/**
  * Options for the shareLead method.
  */
 interface ShareLeadOptions {
@@ -352,6 +368,48 @@ interface PhoneStatusEvent {
 }
 
 /**
+ * Options for `firePostback()`. Fires an internal postback against
+ * GET /v1/postback/fire/{uuid}/{fingerprint}/{source}?<fields>.
+ *
+ * - `uuid` is the internal postback UUID (required).
+ * - `source` is the PostbackSource value that fills the `{source}` path
+ *   segment (e.g. 'manual', 'offerwall'). Passed through as-is; the backend
+ *   validates it (422 on an unknown value).
+ * - `fields` are sent as flat query params; the backend persists each one
+ *   that matches a Field name on the lead resolved from the fingerprint.
+ * - `fingerprint` falls back to `visitorData.fingerprint` automatically,
+ *   matching the rest of the SDK.
+ */
+interface FirePostbackOptions {
+  uuid: string;
+  source: string;
+  fields?: Record<string, string | number>;
+  fingerprint?: string;
+}
+
+/**
+ * Flattened response from the internal postback fire endpoint. The SDK
+ * lifts `execution_uuid` / `status` out of the envelope so the caller can
+ * read them at the top level (mirrors verifyChallenge/validatePhone).
+ */
+interface FirePostbackResponse {
+  success: boolean;
+  message: string;
+  executionUuid?: string;
+  status?: string;
+}
+
+/**
+ * Emitted on `postback:status` for analytics / loaders. Mirrors the shape
+ * of `ShareStatusEvent` / `ChallengeStatusEvent`.
+ */
+interface PostbackStatusEvent {
+  success: boolean;
+  data?: FirePostbackResponse;
+  error?: any;
+}
+
+/**
  * Define la forma del objeto "placeholder" que existe en `window` antes de la inicialización.
  */
 interface CatalystPlaceholder {
@@ -369,7 +427,10 @@ export {
   type ChallengeError,
   type ChallengeIssued,
   type ChallengeStatusEvent,
+  type ConvertOfferwallPostback,
   type EventCallback,
+  type FirePostbackOptions,
+  type FirePostbackResponse,
   type GetOfferwallOptions,
   type LeadStatusEvent,
   type Offer,
@@ -377,6 +438,7 @@ export {
   type OfferwallConversionResponse,
   type OfferwallResponse,
   type PhoneStatusEvent,
+  type PostbackStatusEvent,
   type RequestChallengeOptions,
   type RequestChallengeResponse,
   type ShareLeadOptions,
