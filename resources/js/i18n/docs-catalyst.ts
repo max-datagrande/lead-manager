@@ -95,6 +95,26 @@ const dictionary: Dictionary = {
       en: "Returns the current visitor's fingerprint string, or null if not yet initialized.",
       es: 'Retorna el string del fingerprint del visitante actual, o null si a\u00fan no se ha inicializado.',
     },
+    update_title: { en: 'updateVisit()', es: 'updateVisit()' },
+    update_desc: {
+      en: 'Patches tracking columns of the already-registered visit, matched by the internal fingerprint (you do not pass a visit id). Built for late-arriving attribution: when traffic lands directly on the page without a ClickFlare redirect (e.g. Google Ads / YouTube), the visit is first logged without s10, and the click_id only appears asynchronously in the cf_click_id cookie. Once available, call updateVisit to persist it. It is NOT fire-and-forget: the returned promise always resolves an UpdateVisitResult (never rejects), so you can use success to unblock your CTA. Idempotent.',
+      es: 'Actualiza columnas de tracking de la visita ya registrada, matcheando por el fingerprint interno (no pas\u00e1s un visit id). Pensado para atribuci\u00f3n que llega tarde: cuando el tr\u00e1fico cae directo a la p\u00e1gina sin redirect de ClickFlare (ej. Google Ads / YouTube), la visita se registra sin s10 y el click_id reci\u00e9n aparece de forma as\u00edncrona en la cookie cf_click_id. Cuando est\u00e1 disponible, llam\u00e1s a updateVisit para persistirlo. NO es fire-and-forget: la promesa siempre resuelve un UpdateVisitResult (nunca rechaza), as\u00ed que pod\u00e9s usar success para destrabar tu CTA. Idempotente.',
+    },
+    update_input_title: { en: 'Input', es: 'Entrada' },
+    update_input_desc: {
+      en: 'A flat object. s10 (the click_id) is the main use case. The payload is open: extra tracking columns are added at the same level (no nesting). The SDK injects the fingerprint for you.',
+      es: 'Un objeto plano. s10 (el click_id) es el caso de uso principal. El payload es libre: columnas de tracking extra se agregan al mismo nivel (sin anidar). El SDK inyecta el fingerprint por vos.',
+    },
+    update_result_title: { en: 'Return Type: UpdateVisitResult', es: 'Tipo de retorno: UpdateVisitResult' },
+    update_result_desc: {
+      en: 'The promise always resolves this object. On success, s10 echoes the persisted value and updated_at carries the ISO timestamp. On failure, error.code is one of NO_ACTIVE_VISIT (the visit was not registered yet), NETWORK_ERROR (the backend persist failed) or UNKNOWN (invalid input, e.g. missing s10).',
+      es: 'La promesa siempre resuelve este objeto. En \u00e9xito, s10 hace eco del valor persistido y updated_at trae el timestamp ISO. En fallo, error.code es uno de NO_ACTIVE_VISIT (la visita a\u00fan no se hab\u00eda registrado), NETWORK_ERROR (fall\u00f3 la persistencia en el backend) o UNKNOWN (entrada inv\u00e1lida, ej. falta s10).',
+    },
+    update_event_title: { en: "Event: 'catalyst:visit:updated'", es: "Evento: 'catalyst:visit:updated'" },
+    update_event_desc: {
+      en: 'In addition to resolving the promise, updateVisit dispatches a window CustomEvent carrying the UpdateVisitResult in event.detail. Use it if you prefer a DOM listener over awaiting the call.',
+      es: 'Adem\u00e1s de resolver la promesa, updateVisit dispara un CustomEvent en window con el UpdateVisitResult en event.detail. \u00datil si prefer\u00eds un listener del DOM en vez de await sobre la llamada.',
+    },
   },
 
   leads: {
