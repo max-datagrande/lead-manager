@@ -50,7 +50,7 @@ it('returns baseline descriptors when the landing has no columns configured', fu
 
   $byKey = collect($data['descriptors'])->keyBy('key');
   expect($byKey)->toHaveKeys([
-    'meta:id',
+    'meta:fingerprint',
     'meta:created_at',
     'traffic:postal_code',
     'traffic:ip_address',
@@ -177,6 +177,39 @@ it('filters leads by version when the version filter is set', function () {
   $props = $response->viewData('page')['props'];
   expect($props['meta']['total'])->toBe(2);
   expect($props['data']['selected_versions'])->toBe([$versionA->id]);
+});
+
+it('filters leads by device_type, state and os using latest traffic columns', function () {
+  $landingPage = LandingPage::factory()->create();
+
+  $desktopUS = attachLeadToLanding($landingPage, null, ['device_type' => 'desktop', 'state' => 'CA', 'os' => 'Windows NT 10.0']);
+  $mobileUS = attachLeadToLanding($landingPage, null, ['device_type' => 'mobile', 'state' => 'CA', 'os' => 'iOS 17.5']);
+  $desktopOther = attachLeadToLanding($landingPage, null, ['device_type' => 'desktop', 'state' => 'NY', 'os' => 'Linux']);
+
+  $filtersJson = json_encode([['id' => 'device_type', 'value' => ['desktop']]]);
+  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id) . '?filters=' . urlencode($filtersJson));
+  expect($response->viewData('page')['props']['meta']['total'])->toBe(2);
+
+  $filtersJson = json_encode([['id' => 'state', 'value' => ['CA']]]);
+  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id) . '?filters=' . urlencode($filtersJson));
+  expect($response->viewData('page')['props']['meta']['total'])->toBe(2);
+
+  // OS uses LIKE matching so "Windows" matches "Windows NT 10.0".
+  $filtersJson = json_encode([['id' => 'os', 'value' => ['Windows']]]);
+  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id) . '?filters=' . urlencode($filtersJson));
+  $rows = $response->viewData('page')['props']['rows']['data'];
+  expect(collect($rows)->pluck('id')->all())->toBe([$desktopUS->id]);
+});
+
+it('exposes static filter_options catalogs to the frontend', function () {
+  $landingPage = LandingPage::factory()->create();
+
+  $response = actingAs($this->user)->get(route('landing_pages.leads', $landingPage->id));
+  $options = $response->viewData('page')['props']['data']['filter_options'];
+
+  expect(collect($options['device_type'])->pluck('value')->all())->toEqualCanonicalizing(['mobile', 'desktop']);
+  expect(collect($options['state'])->pluck('value')->all())->toContain('CA', 'NY', 'TX');
+  expect(collect($options['os'])->pluck('value')->all())->toEqualCanonicalizing(['Windows', 'Mac', 'iOS', 'Android', 'Linux']);
 });
 
 it('paginates with a default size of 25 sorted by created_at desc', function () {
