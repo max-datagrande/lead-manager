@@ -99,13 +99,14 @@ class CatalystCore {
     if (!this.config.api_url) {
       throw new Error('Catalyst SDK: api_url has not been configured. The visitor cannot be registered.');
     }
-
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryParams = Object.fromEntries(Array.from(urlParams.entries()).map(([key, value]) => [key.toLowerCase(), value]));
     const payload = {
       landing_id: this.landingId,
       user_agent: navigator.userAgent,
       referer: this.getReferer() ?? null,
       current_page: window.location.pathname,
-      query_params: Object.fromEntries(new URLSearchParams(window.location.search)),
+      query_params: queryParams,
     };
     let headers = {
       'Content-Type': 'application/json',
@@ -332,7 +333,6 @@ class CatalystCore {
   enableDebugMode(): void {
     console.group('Catalyst SDK [Debug Mode]');
     console.log('Catalyst SDK Config:', this.config);
-    console.log('API URL:', this.config.api_url);
     console.groupEnd();
   }
 
@@ -412,7 +412,7 @@ class CatalystCore {
 
       return json;
     } catch (error) {
-      console.error(`Catalyst SDK: Error obteniendo offerwall ${mixId}:`, error);
+      console.error(`Catalyst SDK: Error getting offerwall ${mixId}:`, error);
       this.dispatch('offerwall:error', { mixId, error });
       throw error;
     }
@@ -969,10 +969,6 @@ class CatalystCore {
     const url = this.getEndpoint('METRICS.PERFORMANCE');
     if (!url) return;
 
-    if (this.config.debug) {
-      console.log('Catalyst SDK: Reporting performance metric', { url, ...data });
-    }
-
     let headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -985,17 +981,11 @@ class CatalystCore {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
-    })
-      .then((res) => {
-        if (this.config.debug) {
-          console.log(`Catalyst SDK: Performance metric reported (${res.status})`, { load_time_ms: loadTimeMs });
-        }
-      })
-      .catch((err) => {
-        if (this.config.debug) {
-          console.warn('Catalyst SDK: Failed to report performance metric', err);
-        }
-      });
+    }).catch((err) => {
+      if (this.config.debug) {
+        console.warn('Catalyst SDK: Failed to report performance metric', err);
+      }
+    });
   }
 
   // --- Helpers Privados ---
@@ -1101,9 +1091,6 @@ async function init(): Promise<void> {
   let visitorData: VisitorData | null = null;
   try {
     visitorData = await catalystInstance.initVisitor();
-    if (catalystInstance.config.debug) {
-      console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
-    }
   } catch (error) {
     console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
   } finally {
@@ -1120,9 +1107,6 @@ async function init(): Promise<void> {
     const startTime = (placeholder as any)._startTime;
     if (catalystInstance.config.debug && !startTime) {
       console.error('Catalyst SDK: The upload timestamp was not found.');
-    }
-    if (catalystInstance.config.debug && startTime) {
-      console.log('Catalyst SDK: Load time start:', startTime);
     }
     if (startTime && visitorData) {
       const loadTimeMs = Math.round(performance.now() - startTime);
