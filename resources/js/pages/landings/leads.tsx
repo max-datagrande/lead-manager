@@ -72,6 +72,10 @@ function buildLeadColumns(descriptors: ColumnDescriptor[]) {
 
     cols.push({
       id: columnId,
+      // accessorFn is required for `column.getCanSort()` to return true — TanStack
+      // refuses to mark a column as sortable when it has no accessor, even if
+      // enableSorting is true. The value lives nested in `row.values[key]`.
+      accessorFn: (row: LeadRow) => row.values?.[descriptor.key] ?? null,
       header: ({ column }: any) => <DataTableColumnHeader column={column} title={descriptor.label} />,
       cell: ({ row }: any) => {
         const value = row.original.values?.[descriptor.key];
