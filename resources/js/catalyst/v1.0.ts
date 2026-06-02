@@ -3,13 +3,17 @@ import {
   CatalystConfig,
   CatalystPlaceholder,
   ChallengeStatusEvent,
+  ConvertOfferwallPostback,
   EventCallback,
+  FirePostbackOptions,
+  FirePostbackResponse,
   GetOfferwallOptions,
   LeadStatusEvent,
   OfferwallConversionRequest,
   OfferwallConversionResponse,
   OfferwallResponse,
   PhoneStatusEvent,
+  PostbackStatusEvent,
   RequestChallengeOptions,
   RequestChallengeResponse,
   ShareLeadOptions,
@@ -741,9 +745,16 @@ class CatalystCore {
 
   /**
    * Registra una conversión de Offerwall.
-   * @param data Datos de la conversión
+   *
+   * Opcionalmente, si `data.postback` viene seteado, dispara un postback
+   * interno ANTES (fire-and-forget, sin await) de registrar la conversión
+   * ordinaria. La landing decide el UUID, el source y los fields a enviar.
+   *
+   * @param data Datos de la conversión (+ config opcional de postback)
    */
-  async convertOfferwall(data: Omit<OfferwallConversionRequest, 'fingerprint'>): Promise<OfferwallConversionResponse> {
+  async convertOfferwall(
+    data: Omit<OfferwallConversionRequest, 'fingerprint'> & { postback?: ConvertOfferwallPostback },
+  ): Promise<OfferwallConversionResponse> {
     if (!this.visitorData?.fingerprint) {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante.');
     }
@@ -754,6 +765,13 @@ class CatalystCore {
 
     if (data.amount === undefined || data.amount === null) {
       throw new Error('Catalyst SDK: amount is required.');
+    }
+
+    // Optionally fire an internal postback alongside the conversion.
+    // Fire-and-forget (no await) and BEFORE the conversion request, so a
+    // misconfigured or failing postback never blocks or breaks the conversion.
+    if (data.postback) {
+      this.fireOfferwallPostback(data.postback);
     }
 
     const payload: OfferwallConversionRequest = {
@@ -786,6 +804,129 @@ class CatalystCore {
     } catch (error) {
       console.error('Catalyst SDK: Error registrando conversión de offerwall:', error);
       this.dispatch('offerwall:conversion', { success: false, error });
+      throw error;
+    }
+  }
+
+  // ===================================================================================
+  // INTERNAL POSTBACK FIRE
+  // ===================================================================================
+
+  /**
+   * Validates and fires the optional postback config passed to
+   * `convertOfferwall`. Fire-and-forget: never awaited and never rejects the
+   * caller. Missing `uuid`/`source` or empty field values only emit console
+   * warnings; the conversion always proceeds.
+   */
+  private fireOfferwallPostback(postback: ConvertOfferwallPostback): void {
+    const { uuid, source, fields } = postback;
+
+    if (!uuid || !source) {
+      console.warn('Catalyst SDK: convertOfferwall received a `postback` config but `uuid` and/or `source` are empty — postback was NOT fired.');
+      return;
+    }
+
+    const cleanFields: Record<string, string | number> = {};
+    const emptyKeys: string[] = [];
+    for (const [key, value] of Object.entries(fields ?? {})) {
+      if (value === null || value === undefined || value === '') {
+        emptyKeys.push(key);
+        continue;
+      }
+      cleanFields[key] = value;
+    }
+
+    if (emptyKeys.length > 0) {
+      console.warn(`Catalyst SDK: offerwall postback fields with empty values were skipped: ${emptyKeys.join(', ')}.`);
+    }
+
+    // Fire-and-forget: never await, never let it reject the conversion flow.
+    this.firePostback({ uuid, source, fields: cleanFields }).catch((err) => {
+      console.warn('Catalyst SDK: offerwall postback fire failed.', err);
+    });
+  }
+
+  /**
+   * Fires an internal postback configured in the admin against
+   * `GET /v1/postback/fire/{uuid}/{fingerprint}/{source}?<fields>`.
+   *
+   * Unlike the rest of the SDK (POST + JSON body), this endpoint is a GET:
+   * `fields` travel as flat query params and the backend persists each one
+   * that matches a Field name on the lead resolved from the fingerprint.
+   *
+   * `source` fills the `{source}` path segment and is passed through as-is;
+   * the backend validates it against `PostbackSource` (422 on unknown).
+   * `fingerprint` falls back to `visitorData.fingerprint`.
+   */
+  async firePostback({ uuid, source, fields = {}, fingerprint }: FirePostbackOptions): Promise<FirePostbackResponse> {
+    const resolvedFingerprint = fingerprint ?? this.getFingerprint();
+    if (!resolvedFingerprint) {
+      const error = 'No visitor fingerprint available. Make sure the SDK is initialized.';
+      this.dispatch('postback:status', { success: false, error } as PostbackStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    if (!uuid) {
+      const error = 'uuid is required.';
+      this.dispatch('postback:status', { success: false, error } as PostbackStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    if (!source) {
+      const error = 'source is required.';
+      this.dispatch('postback:status', { success: false, error } as PostbackStatusEvent);
+      throw new Error(`Catalyst SDK: ${error}`);
+    }
+
+    const base = this.getEndpoint('POSTBACK.FIRE_INTERNAL');
+    let url = `${base}${uuid}/${encodeURIComponent(resolvedFingerprint)}/${encodeURIComponent(source)}`;
+
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(fields)) {
+      if (value === undefined || value === null) continue;
+      query.append(key, String(value));
+    }
+    const queryString = query.toString();
+    if (queryString) url += `?${queryString}`;
+
+    try {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      const json = await res.json();
+
+      const flattened: FirePostbackResponse = res.ok
+        ? {
+            success: Boolean(json?.success),
+            message: json?.message ?? 'Postback fired.',
+            executionUuid: json?.data?.execution_uuid,
+            status: json?.data?.status,
+          }
+        : {
+            success: false,
+            message: json?.message ?? `HTTP ${res.status}`,
+          };
+
+      if (!res.ok) {
+        this.dispatch('postback:status', { success: false, error: flattened.message, data: flattened } as PostbackStatusEvent);
+        throw new Error(`Catalyst SDK: ${flattened.message}`);
+      }
+
+      if (this.config.debug) console.log('Catalyst SDK: Internal postback fired.', flattened);
+
+      this.dispatch('postback:status', { success: true, data: flattened } as PostbackStatusEvent);
+
+      return flattened;
+    } catch (error) {
+      console.error(`Catalyst SDK: Error firing internal postback ${uuid}:`, error);
+      this.dispatch('postback:status', {
+        success: false,
+        error: error instanceof Error ? error.message : error,
+      } as PostbackStatusEvent);
       throw error;
     }
   }
@@ -936,6 +1077,7 @@ async function init(): Promise<void> {
           'requestChallenge',
           'verifyChallenge',
           'validatePhone',
+          'firePostback',
         ].includes(method);
 
       if (isPromiseProxy) {

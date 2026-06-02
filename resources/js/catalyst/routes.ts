@@ -10,6 +10,9 @@ export const API_ROUTES = {
     TRIGGER: '/v1/offerwall/mix/', // + ID
     CONVERSION: '/v1/offerwall/events/conversion',
   },
+  POSTBACK: {
+    FIRE_INTERNAL: '/v1/postback/fire/', // + {uuid}/{fingerprint}/{source}?<fields>
+  },
   SHARE_LEADS: {
     DISPATCH: '/v1/share-leads/dispatch/', // + workflow ID
   },
