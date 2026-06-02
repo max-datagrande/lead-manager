@@ -99,13 +99,14 @@ class CatalystCore {
     if (!this.config.api_url) {
       throw new Error('Catalyst SDK: api_url has not been configured. The visitor cannot be registered.');
     }
-
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryParams = Object.fromEntries(Array.from(urlParams.entries()).map(([key, value]) => [key.toLowerCase(), value]));
     const payload = {
       landing_id: this.landingId,
       user_agent: navigator.userAgent,
       referer: this.getReferer() ?? null,
       current_page: window.location.pathname,
-      query_params: Object.fromEntries(new URLSearchParams(window.location.search)),
+      query_params: queryParams,
     };
     let headers = {
       'Content-Type': 'application/json',
@@ -332,7 +333,6 @@ class CatalystCore {
   enableDebugMode(): void {
     console.group('Catalyst SDK [Debug Mode]');
     console.log('Catalyst SDK Config:', this.config);
-    console.log('API URL:', this.config.api_url);
     console.groupEnd();
   }
 
@@ -412,7 +412,7 @@ class CatalystCore {
 
       return json;
     } catch (error) {
-      console.error(`Catalyst SDK: Error obteniendo offerwall ${mixId}:`, error);
+      console.error(`Catalyst SDK: Error getting offerwall ${mixId}:`, error);
       this.dispatch('offerwall:error', { mixId, error });
       throw error;
     }
@@ -969,10 +969,6 @@ class CatalystCore {
     const url = this.getEndpoint('METRICS.PERFORMANCE');
     if (!url) return;
 
-    if (this.config.debug) {
-      console.log('Catalyst SDK: Reporting performance metric', { url, ...data });
-    }
-
     let headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
@@ -985,17 +981,11 @@ class CatalystCore {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
-    })
-      .then((res) => {
-        if (this.config.debug) {
-          console.log(`Catalyst SDK: Performance metric reported (${res.status})`, { load_time_ms: loadTimeMs });
-        }
-      })
-      .catch((err) => {
-        if (this.config.debug) {
-          console.warn('Catalyst SDK: Failed to report performance metric', err);
-        }
-      });
+    }).catch((err) => {
+      if (this.config.debug) {
+        console.warn('Catalyst SDK: Failed to report performance metric', err);
+      }
+    });
   }
 
   // --- Helpers Privados ---
@@ -1033,6 +1023,73 @@ class CatalystCore {
       if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
     }
     return null;
+  }
+
+  public mapOffers(offersData: any[]): any[] {
+    if (!Array.isArray(offersData)) return [];
+
+    return offersData.map((offer, index) => ({
+      id: index + 1,
+      token: offer.offer_token,
+      integration_id: offer.integration_id,
+      company: offer.display_name,
+      title: offer.title,
+      description: offer.description,
+      logo_url: offer.logo_url,
+      click_url: offer.click_url,
+      impression_url: offer.impression_url,
+      cpc: offer.cpc ? parseFloat(offer.cpc) : 0,
+      rating: 4.5 + Math.random() * 0.5,
+      features: this.extractFeaturesFromDescription(offer.description),
+    }));
+  }
+
+
+  private extractFeaturesFromDescription(description: string | string[] | null): string[] {
+    const defaultFeatures = ['Comprehensive Coverage', 'Fast Claims Processing', '24/7 Support'];
+
+    if (!description) return defaultFeatures;
+
+    // Caso 1: Es un Array
+    if (Array.isArray(description)) {
+      return description.length > 0 ? description.slice(0, 3) : defaultFeatures;
+    }
+
+    // Caso 2: Es un String
+    if (typeof description === 'string') {
+      const trimmedDesc = description.trim();
+      if (!trimmedDesc) return defaultFeatures;
+
+      // Sub-caso 2a: Contiene HTML (buscamos tags básicos)
+      if (/<[a-z][\s\S]*>/i.test(trimmedDesc)) {
+        try {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = trimmedDesc;
+
+          // Intentar buscar <li>
+          const listItems = tempDiv.querySelectorAll('li');
+          if (listItems.length > 0) {
+            return Array.from(listItems)
+              .map((li) => li.textContent.trim())
+              .filter((text) => text.length > 0) // Filtrar vacíos
+              .slice(0, 3);
+          }
+
+          // Si no hay <li>, intentar obtener texto plano limpio del HTML
+          const textContent = tempDiv.textContent || tempDiv.innerText || '';
+          return textContent.trim() ? [textContent.trim()] : defaultFeatures;
+        } catch (e) {
+          console.warn('Error parsing HTML description:', e);
+          return defaultFeatures;
+        }
+      }
+
+      // Sub-caso 2b: String plano (sin HTML obvio)
+      return [trimmedDesc];
+    }
+
+    // Caso fallback
+    return defaultFeatures;
   }
 }
 
@@ -1101,9 +1158,6 @@ async function init(): Promise<void> {
   let visitorData: VisitorData | null = null;
   try {
     visitorData = await catalystInstance.initVisitor();
-    if (catalystInstance.config.debug) {
-      console.log('Catalyst SDK: Visitante inicializado con éxito:', visitorData);
-    }
   } catch (error) {
     console.error('Catalyst SDK: Error crítico inicializando visitante.', error);
   } finally {
@@ -1120,9 +1174,6 @@ async function init(): Promise<void> {
     const startTime = (placeholder as any)._startTime;
     if (catalystInstance.config.debug && !startTime) {
       console.error('Catalyst SDK: The upload timestamp was not found.');
-    }
-    if (catalystInstance.config.debug && startTime) {
-      console.log('Catalyst SDK: Load time start:', startTime);
     }
     if (startTime && visitorData) {
       const loadTimeMs = Math.round(performance.now() - startTime);
