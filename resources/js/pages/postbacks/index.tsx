@@ -36,6 +36,7 @@ interface PostbackTypeOption {
 interface Props {
   rows: Postback[];
   postback_types: PostbackTypeOption[];
+  postback_sources: PostbackTypeOption[];
   active_type: string;
 }
 
@@ -45,7 +46,7 @@ const typeFilters = [
   { value: 'internal', label: 'Internal' },
 ];
 
-const Index = ({ rows, active_type }: Props) => {
+const Index = ({ rows, postback_sources, active_type }: Props) => {
   const handleTypeFilter = (type: string) => {
     router.visit(route('postbacks.index', type === 'all' ? {} : { type }), {
       preserveState: true,
@@ -54,7 +55,7 @@ const Index = ({ rows, active_type }: Props) => {
   };
 
   return (
-    <PostbacksProvider>
+    <PostbacksProvider sources={postback_sources}>
       <Head title="Postbacks" />
       <div className="slide-in-up relative flex-1 space-y-6 p-6 md:p-8">
         <PageHeader title="Postbacks" description="Manage postback URLs for your platforms.">

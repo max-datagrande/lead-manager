@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\FireMode;
+use App\Enums\PostbackSource;
 use App\Enums\PostbackType;
 use App\Http\Requests\StorePostbackRequest;
 use App\Http\Requests\UpdatePostbackRequest;
@@ -29,6 +30,7 @@ class PostbackController extends Controller
     return Inertia::render('postbacks/index', [
       'rows' => $query->get(),
       'postback_types' => PostbackType::toArray(),
+      'postback_sources' => PostbackSource::toArray(),
       'active_type' => $request->input('type', 'all'),
     ]);
   }
