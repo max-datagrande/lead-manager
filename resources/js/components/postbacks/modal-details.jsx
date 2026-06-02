@@ -3,19 +3,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentModalId, useModal } from '@/hooks/use-modal';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Copy } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-export default function ModalDetails({ postback }) {
+export default function ModalDetails({ postback, sources = [] }) {
   const modal = useModal();
   const modalId = useCurrentModalId();
   const [isCopied, setIsCopied] = useState(false);
   const { addMessage } = useToast();
 
+  const isInternal = postback.type === 'internal';
+  const hasSources = isInternal && sources.length > 0;
+  const [selectedSource, setSelectedSource] = useState(() => (sources.some((s) => s.value === 'manual') ? 'manual' : (sources[0]?.value ?? '')));
+
+  const displayUrl = useMemo(() => {
+    if (!postback.generated_url) return '';
+    if (!hasSources || !selectedSource) return postback.generated_url;
+    return postback.generated_url.replace('{source}', selectedSource);
+  }, [postback.generated_url, hasSources, selectedSource]);
+
   const copyUrl = () => {
-    navigator.clipboard.writeText(postback.generated_url);
+    navigator.clipboard.writeText(displayUrl);
     setIsCopied(true);
     addMessage('URL copied to clipboard', 'success');
     setTimeout(() => setIsCopied(false), 2000);
@@ -51,6 +62,28 @@ export default function ModalDetails({ postback }) {
           </div>
         )}
 
+        {hasSources && (
+          <div className="space-y-2">
+            <Label className="block">Source</Label>
+            <Select value={selectedSource} onValueChange={setSelectedSource}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a source" />
+              </SelectTrigger>
+              <SelectContent>
+                {sources.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              The source identifies where the fire is triggered from. It replaces the <span className="font-mono">{'{source}'}</span> segment in the
+              URL below.
+            </p>
+          </div>
+        )}
+
         {postback.generated_url && (
           <Card className="mt-10 bg-muted">
             <CardHeader className="py-4 text-muted-foreground">
@@ -58,14 +91,14 @@ export default function ModalDetails({ postback }) {
             </CardHeader>
             <CardContent>
               <div className="mb-2 flex gap-2">
-                <Input readOnly value={postback.generated_url} className="font-mono" onClick={(e) => e.target.select()} />
+                <Input readOnly value={displayUrl} className="font-mono" onClick={(e) => e.target.select()} />
                 <Button type="button" size="icon" onClick={copyUrl} disabled={isCopied}>
                   {isCopied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
               <p className="text-center text-sm text-muted-foreground">
-                {postback.type === 'internal'
-                  ? 'Append field names as query params to update their values for the lead identified by the fingerprint.'
+                {isInternal
+                  ? 'Replace {fingerprint} with the lead fingerprint and append field names as query params to update their values for that lead.'
                   : 'Share this URL with your platform to receive postback notifications.'}
               </p>
             </CardContent>

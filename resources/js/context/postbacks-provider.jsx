@@ -6,7 +6,7 @@ import { createContext, useState } from 'react';
 
 export const PostbacksContext = createContext(null);
 
-export function PostbacksProvider({ children }) {
+export function PostbacksProvider({ children, sources = [] }) {
   const modal = useModal();
   const { addMessage } = useToast();
   const [sorting, setSorting] = useState([]);
@@ -16,7 +16,7 @@ export function PostbacksProvider({ children }) {
   const { delete: destroy } = useForm();
 
   const showModalDetails = (entry) => {
-    modal.open(<ModalDetails postback={entry} />, { maxWidth: 'sm:max-w-2xl' });
+    modal.open(<ModalDetails postback={entry} sources={sources} />, { maxWidth: 'sm:max-w-2xl' });
   };
 
   const copyUrl = (entry) => {
