@@ -23,6 +23,10 @@ Route::middleware(['auth.host'])->group(function () {
   Route::prefix('visitor')->group(function () {
     // Receives raw visitor meta data and stores a traffic log entry.
     Route::post('/register', [TrafficLogController::class, 'store'])->name('visitor.register');
+    // Patches mutable tracking columns (e.g. s10/click_id) on an already-registered
+    // visit, matched by fingerprint. Used when ClickFlare's click_id only arrives
+    // asynchronously (cookie) after the initial visit was logged.
+    Route::post('/update', [TrafficLogController::class, 'update'])->name('visitor.update');
   });
   Route::prefix('leads')->group(function () {
     // Registers a new lead coming from publishers.

@@ -27,6 +27,16 @@ class TrafficLogCreationException extends \Exception {}
 
 class TrafficLogService
 {
+  /**
+   * Columnas de tracking que `updateVisit` puede patchear post-registro.
+   * Allowlist de seguridad: aunque el contrato cliente sea "plano y libre",
+   * solo estas columnas se escriben (y solo estas se hacen eco). Extender
+   * agregando la columna aca + la regla correspondiente en UpdateTrafficLogRequest.
+   *
+   * @var array<int, string>
+   */
+  public const UPDATABLE_COLUMNS = ['s1', 's2', 's3', 's4', 's10'];
+
   private ?TrafficLog $currentVisitor = null;
 
   public function __construct(
@@ -164,6 +174,48 @@ class TrafficLogService
       ]);
       throw new TrafficLogCreationException('Failed to create traffic log', 0, $e);
     }
+  }
+
+  /**
+   * Actualiza columnas de tracking de una visita ya registrada, matcheada por
+   * fingerprint. Toma el traffic_log mas reciente del fingerprint (puede haber
+   * mas de uno por incrementos historicos) y aplica solo las columnas de la
+   * allowlist `UPDATABLE_COLUMNS`.
+   *
+   * Idempotente: si los valores no cambian no se persiste nada. Retorna null
+   * cuando no existe ninguna visita para el fingerprint (caso NO_ACTIVE_VISIT).
+   *
+   * @param string $fingerprint Fingerprint de la visita a patchear
+   * @param array<string, mixed> $attributes Atributos crudos (se filtran por allowlist)
+   * @return TrafficLog|null
+   */
+  public function updateVisit(string $fingerprint, array $attributes): ?TrafficLog
+  {
+    $trafficLog = TrafficLog::where('fingerprint', $fingerprint)->orderByDesc('created_at')->first();
+
+    if (!$trafficLog) {
+      TailLogger::saveLog('updateVisit: no active visit for fingerprint', 'traffic-log/update', 'warning', ['fingerprint' => $fingerprint]);
+      return null;
+    }
+
+    // Filtrar a las columnas permitidas y descartar valores vacios.
+    $payload = array_filter(array_intersect_key($attributes, array_flip(self::UPDATABLE_COLUMNS)), fn($value) => $value !== null && $value !== '');
+
+    foreach ($payload as $column => $value) {
+      $trafficLog->{$column} = $value;
+    }
+
+    if ($trafficLog->isDirty()) {
+      $trafficLog->save();
+      TailLogger::saveLog('updateVisit: visit patched', 'traffic-log/update', 'info', [
+        'fingerprint' => $fingerprint,
+        'id' => $trafficLog->id,
+        'columns' => array_keys($payload),
+      ]);
+    }
+
+    $this->currentVisitor = $trafficLog;
+    return $trafficLog;
   }
 
   private function getOrigin(): string
