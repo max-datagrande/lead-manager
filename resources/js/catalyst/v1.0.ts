@@ -18,6 +18,9 @@ import {
   RequestChallengeResponse,
   ShareLeadOptions,
   ShareLeadResponse,
+  UpdateVisitData,
+  UpdateVisitErrorCode,
+  UpdateVisitResult,
   ValidatePhoneOptions,
   ValidatePhoneResponse,
   VerifyChallengeOptions,
@@ -285,6 +288,107 @@ class CatalystCore {
         error: error instanceof Error ? error.message : error,
       } as LeadStatusEvent);
     }
+  }
+
+  // ===================================================================================
+  // VISITA (Update post-registro)
+  // ===================================================================================
+
+  /**
+   * Actualiza columnas de tracking de la visita YA registrada en este pageview,
+   * matcheada por el `fingerprint` interno (la landing NO pasa visit id).
+   *
+   * Caso de uso: trafico de Google Ads / YouTube que cae directo a la landing
+   * sin redirect de ClickFlare. La visita inicial nace sin `s10`; el click_id
+   * recien aparece async en la cookie `cf_click_id`. La landing lo escribe y
+   * llama a este metodo para persistirlo, igual que si hubiera llegado por URL.
+   *
+   * A diferencia del resto del SDK, NUNCA rejecta: siempre resuelve con un
+   * `UpdateVisitResult` (la landing usa `success` para destrabar el CTA).
+   * Idempotente. Ademas de la promesa, emite el evento `visit:updated`
+   * (pub/sub interno) y un `CustomEvent('catalyst:visit:updated')` en window.
+   */
+  async updateVisit(data: UpdateVisitData): Promise<UpdateVisitResult> {
+    const fingerprint = this.getFingerprint();
+
+    if (!fingerprint) {
+      return this.emitVisitUpdated({
+        success: false,
+        fingerprint: null,
+        s10: null,
+        error: { code: 'NO_ACTIVE_VISIT', message: 'No visitor fingerprint available. The visit has not been registered yet.' },
+      });
+    }
+
+    if (!data?.s10) {
+      return this.emitVisitUpdated({
+        success: false,
+        fingerprint,
+        s10: null,
+        error: { code: 'UNKNOWN', message: 's10 is required.' },
+      });
+    }
+
+    const payload: Record<string, any> = {
+      ...this.sanitizeFields(data),
+      fingerprint,
+    };
+
+    try {
+      const res = await fetch(this.getEndpoint('VISITOR.UPDATE'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const code: UpdateVisitErrorCode = json?.errors?.code ?? (res.status === 404 ? 'NO_ACTIVE_VISIT' : 'NETWORK_ERROR');
+        return this.emitVisitUpdated({
+          success: false,
+          fingerprint,
+          s10: null,
+          error: { code, message: json?.message ?? `HTTP ${res.status}` },
+        });
+      }
+
+      if (this.config.debug) console.log('Catalyst SDK: Visit updated successfully.', json);
+
+      return this.emitVisitUpdated({
+        success: true,
+        fingerprint,
+        s10: json?.data?.s10 ?? data.s10,
+        updated_at: json?.data?.updated_at ?? null,
+      });
+    } catch (error) {
+      console.error('Catalyst SDK: Error updating visit:', error);
+      return this.emitVisitUpdated({
+        success: false,
+        fingerprint,
+        s10: null,
+        error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : String(error) },
+      });
+    }
+  }
+
+  /**
+   * Emite el resultado de `updateVisit` por ambos canales (pub/sub interno +
+   * CustomEvent en window) y lo retorna, para encadenar el `return` directo.
+   */
+  private emitVisitUpdated(result: UpdateVisitResult): UpdateVisitResult {
+    this.dispatch('visit:updated', result);
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      try {
+        window.dispatchEvent(new CustomEvent('catalyst:visit:updated', { detail: result }));
+      } catch (e) {
+        if (this.config.debug) console.warn('Catalyst SDK: Could not dispatch catalyst:visit:updated event.', e);
+      }
+    }
+    return result;
   }
 
   // ===================================================================================
@@ -1044,7 +1148,6 @@ class CatalystCore {
     }));
   }
 
-
   private extractFeaturesFromDescription(description: string | string[] | null): string[] {
     const defaultFeatures = ['Comprehensive Coverage', 'Fast Claims Processing', '24/7 Support'];
 
@@ -1128,6 +1231,7 @@ async function init(): Promise<void> {
         [
           'registerLead',
           'updateLead',
+          'updateVisit',
           'getOfferwall',
           'convertOfferwall',
           'shareLead',

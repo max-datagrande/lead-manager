@@ -1,6 +1,7 @@
 export const API_ROUTES = {
   VISITOR: {
     REGISTER: '/v1/visitor/register',
+    UPDATE: '/v1/visitor/update',
   },
   LEADS: {
     REGISTER: '/v1/leads/register',
