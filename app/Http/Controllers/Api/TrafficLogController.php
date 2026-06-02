@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreTrafficLogRequest;
+use App\Http\Requests\Api\UpdateTrafficLogRequest;
 use App\Services\TrafficLog\TrafficLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -69,6 +70,58 @@ class TrafficLogController extends Controller
       return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
     }
   }
+  /**
+   * Actualiza columnas de tracking de una visita ya registrada, matcheada por
+   * fingerprint. Idempotente. Respuesta apta para el SDK `Catalyst.updateVisit`:
+   * `data` lleva `fingerprint`, `updated_at` y el ECO de cada columna
+   * actualizable que vino en el request (s10, s1, etc.) con su valor persistido.
+   *
+   * @param UpdateTrafficLogRequest $request
+   * @return JsonResponse
+   */
+  public function update(UpdateTrafficLogRequest $request): JsonResponse
+  {
+    $data = $request->validated();
+    $fingerprint = $data['fingerprint'];
+
+    try {
+      $trafficLog = $this->trafficLogService->updateVisit($fingerprint, $data);
+
+      if (!$trafficLog) {
+        return $this->errorResponse(
+          message: 'No active visit found for the provided fingerprint',
+          errors: ['code' => 'NO_ACTIVE_VISIT'],
+          status: 404,
+        );
+      }
+
+      // Eco generico: por cada columna actualizable presente en el request,
+      // devolvemos su valor persistido. No hardcodear `s10`: el contrato cliente
+      // es plano y libre, asi que reflejamos lo recibido (s10, s1, ...).
+      $echo = [];
+      foreach (TrafficLogService::UPDATABLE_COLUMNS as $column) {
+        if (array_key_exists($column, $data)) {
+          $echo[$column] = $trafficLog->{$column};
+        }
+      }
+
+      return $this->successResponse(
+        data: [
+          'fingerprint' => $trafficLog->fingerprint,
+          'updated_at' => optional($trafficLog->updated_at)->toIso8601String(),
+          ...$echo,
+        ],
+        message: 'Visit updated successfully',
+      );
+    } catch (\Exception $e) {
+      $message = $e->getMessage();
+      $isDev = app()->environment('local');
+      $errors = ['code' => 'UNKNOWN', 'details' => get_error_stack($e, $isDev)];
+      TailLogger::saveLog($message, 'traffic-log/update', 'error', $this->errorContext($e, $data));
+      return $this->errorResponse(message: $message, errors: $errors, status: 500);
+    }
+  }
+
   private function notifySlack(string $message, array $data): void
   {
     $slack = new SlackMessageBundler();

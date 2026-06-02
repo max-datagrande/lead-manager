@@ -86,6 +86,42 @@ interface VisitorData {
 }
 
 /**
+ * Input para `updateVisit()`. Objeto plano: la landing manda `s10` (el click_id
+ * que llega async via cookie `cf_click_id` cuando el trafico viene de Google
+ * Ads / YouTube sin redirect de ClickFlare). El SDK agrega el `fingerprint`
+ * internamente — la landing NO pasa ningun visit id. Plano y libre: parametros
+ * futuros se agregan al mismo nivel (sin anidar).
+ */
+interface UpdateVisitData {
+  s10: string;
+  [key: string]: string | number | null | undefined;
+}
+
+/**
+ * Codigos de error de `updateVisit()`:
+ *  - `NO_ACTIVE_VISIT` → el SDK aun no tenia visita registrada al recibir la llamada.
+ *  - `NETWORK_ERROR`   → fallo la persistencia contra el backend.
+ *  - `UNKNOWN`         → cualquier otro fallo (input invalido, 5xx inesperado).
+ */
+type UpdateVisitErrorCode = 'NO_ACTIVE_VISIT' | 'NETWORK_ERROR' | 'UNKNOWN';
+
+/**
+ * Resultado de `updateVisit()`. El metodo NO es fire-and-forget: siempre
+ * resuelve (nunca rejecta) con este objeto, para que la landing use `success`
+ * y destrabe el CTA. `error` solo esta presente cuando `success === false`.
+ */
+interface UpdateVisitResult {
+  success: boolean;
+  fingerprint: string | null;
+  s10: string | null;
+  updated_at?: string | null;
+  error?: {
+    code: UpdateVisitErrorCode;
+    message: string;
+  };
+}
+
+/**
  * Estructura unificada para eventos de estado de leads.
  */
 interface LeadStatusEvent {
@@ -443,6 +479,9 @@ export {
   type RequestChallengeResponse,
   type ShareLeadOptions,
   type ShareLeadResponse,
+  type UpdateVisitData,
+  type UpdateVisitErrorCode,
+  type UpdateVisitResult,
   type ValidatePhoneClassification,
   type ValidatePhoneOptions,
   type ValidatePhoneResponse,
