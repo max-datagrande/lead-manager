@@ -15,9 +15,21 @@ export interface LandingPageVersionRef {
 
 export interface LeadRow {
   id: number;
+  fingerprint: string;
   created_at: string | null;
   version: LandingPageVersionRef | null;
   values: Record<string, string | null>;
+}
+
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterOptionsCatalog {
+  device_type: FilterOption[];
+  state: FilterOption[];
+  os: FilterOption[];
 }
 
 export interface LeadsViewerData {
@@ -26,4 +38,5 @@ export interface LeadsViewerData {
   versions: LandingPageVersionRef[];
   selected_versions: number[];
   using_defaults: boolean;
+  filter_options: FilterOptionsCatalog;
 }
