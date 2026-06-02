@@ -1024,6 +1024,73 @@ class CatalystCore {
     }
     return null;
   }
+
+  public mapOffers(offersData: any[]): any[] {
+    if (!Array.isArray(offersData)) return [];
+
+    return offersData.map((offer, index) => ({
+      id: index + 1,
+      token: offer.offer_token,
+      integration_id: offer.integration_id,
+      company: offer.display_name,
+      title: offer.title,
+      description: offer.description,
+      logo_url: offer.logo_url,
+      click_url: offer.click_url,
+      impression_url: offer.impression_url,
+      cpc: offer.cpc ? parseFloat(offer.cpc) : 0,
+      rating: 4.5 + Math.random() * 0.5,
+      features: this.extractFeaturesFromDescription(offer.description),
+    }));
+  }
+
+
+  private extractFeaturesFromDescription(description: string | string[] | null): string[] {
+    const defaultFeatures = ['Comprehensive Coverage', 'Fast Claims Processing', '24/7 Support'];
+
+    if (!description) return defaultFeatures;
+
+    // Caso 1: Es un Array
+    if (Array.isArray(description)) {
+      return description.length > 0 ? description.slice(0, 3) : defaultFeatures;
+    }
+
+    // Caso 2: Es un String
+    if (typeof description === 'string') {
+      const trimmedDesc = description.trim();
+      if (!trimmedDesc) return defaultFeatures;
+
+      // Sub-caso 2a: Contiene HTML (buscamos tags básicos)
+      if (/<[a-z][\s\S]*>/i.test(trimmedDesc)) {
+        try {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = trimmedDesc;
+
+          // Intentar buscar <li>
+          const listItems = tempDiv.querySelectorAll('li');
+          if (listItems.length > 0) {
+            return Array.from(listItems)
+              .map((li) => li.textContent.trim())
+              .filter((text) => text.length > 0) // Filtrar vacíos
+              .slice(0, 3);
+          }
+
+          // Si no hay <li>, intentar obtener texto plano limpio del HTML
+          const textContent = tempDiv.textContent || tempDiv.innerText || '';
+          return textContent.trim() ? [textContent.trim()] : defaultFeatures;
+        } catch (e) {
+          console.warn('Error parsing HTML description:', e);
+          return defaultFeatures;
+        }
+      }
+
+      // Sub-caso 2b: String plano (sin HTML obvio)
+      return [trimmedDesc];
+    }
+
+    // Caso fallback
+    return defaultFeatures;
+  }
 }
 
 // ===================================================================================
