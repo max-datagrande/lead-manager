@@ -94,12 +94,17 @@ it('devuelve 404 con code NO_ACTIVE_VISIT cuando el fingerprint no existe', func
     ->assertJsonPath('errors.code', 'NO_ACTIVE_VISIT');
 });
 
-it('rechaza con 422 cuando falta s10', function () {
+it('permite actualizar columnas de tracking sin s10 (todas opcionales salvo fingerprint)', function () {
   $fingerprint = registerVisitFingerprint();
 
-  postJson('/v1/visitor/update', ['fingerprint' => $fingerprint], updateVisitHeaders())
-    ->assertStatus(422)
-    ->assertJsonValidationErrors(['s10']);
+  postJson('/v1/visitor/update', ['fingerprint' => $fingerprint, 's1' => 'sub-one', 'utm_source' => 'youtube'], updateVisitHeaders())
+    ->assertStatus(200)
+    ->assertJsonPath('data.s1', 'sub-one')
+    ->assertJsonPath('data.utm_source', 'youtube');
+
+  $log = TrafficLog::where('fingerprint', $fingerprint)->first();
+  expect($log->s1)->toBe('sub-one');
+  expect($log->utm_source)->toBe('youtube');
 });
 
 it('rechaza con 422 cuando falta fingerprint', function () {

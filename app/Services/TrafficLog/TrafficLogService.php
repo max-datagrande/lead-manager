@@ -28,14 +28,35 @@ class TrafficLogCreationException extends \Exception {}
 class TrafficLogService
 {
   /**
-   * Columnas de tracking que `updateVisit` puede patchear post-registro.
-   * Allowlist de seguridad: aunque el contrato cliente sea "plano y libre",
-   * solo estas columnas se escriben (y solo estas se hacen eco). Extender
-   * agregando la columna aca + la regla correspondiente en UpdateTrafficLogRequest.
+   * Columnas de `traffic_logs` que `updateVisit` puede patchear post-registro.
+   * Allowlist de seguridad y unica fuente de verdad: el contrato cliente es
+   * "plano y libre", pero solo estas columnas se escriben y se hacen eco.
+   * `UpdateTrafficLogRequest` deriva sus reglas de esta lista.
+   *
+   * Cubre la familia de atribucion/tracking (lo que tipicamente llega tarde
+   * desde ad platforms / ClickFlare). Se excluyen identidad (id, fingerprint),
+   * contadores (visit_*), datos server-side (ip, device, geo, is_bot) y
+   * vinculos estructurales (landing_*, host, referrer, path_visited).
    *
    * @var array<int, string>
    */
-  public const UPDATABLE_COLUMNS = ['s1', 's2', 's3', 's4', 's10'];
+  public const UPDATABLE_COLUMNS = [
+    's1',
+    's2',
+    's3',
+    's4',
+    's10',
+    'utm_source',
+    'utm_medium',
+    'utm_campaign_id',
+    'utm_campaign_name',
+    'utm_term',
+    'utm_content',
+    'campaign_code',
+    'click_id',
+    'platform',
+    'channel',
+  ];
 
   private ?TrafficLog $currentVisitor = null;
 
