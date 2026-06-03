@@ -110,3 +110,35 @@ it('responde 500 generico y corre el debug del alert (unwrap de causa raiz) cuan
 
   expect(TrafficLog::count())->toBe(0);
 });
+
+it('sanitiza el Root Message del alert removiendo el SQL/bindings de una QueryException', function () {
+  $controller = app(\App\Http\Controllers\Api\TrafficLogController::class);
+  $method = new ReflectionMethod($controller, 'sanitizeErrorMessage');
+  $method->setAccessible(true);
+
+  // Mensaje estilo QueryException de Laravel: SQLSTATE + SQL con bindings interpolados (PII).
+  $raw =
+    'SQLSTATE[22001]: String data, right truncated: 7 ERROR:  value too long for type character varying(255) ' .
+    '(Connection: pgsql, SQL: insert into "traffic_logs" ("id", "ip_address") values (uuid, 69.24.120.10))';
+
+  $clean = $method->invoke($controller, $raw);
+
+  expect($clean)->toBe('SQLSTATE[22001]: String data, right truncated: 7 ERROR:  value too long for type character varying(255)');
+  expect($clean)->not->toContain('insert into');
+  expect($clean)->not->toContain('69.24.120.10');
+});
+
+it('persiste un click_id de mas de 255 chars sin truncar (ttclid de TikTok)', function () {
+  // CAVEAT: los tests corren en SQLite, que IGNORA la longitud de varchar. Este test
+  // NO reproduce el SQLSTATE[22001] de Postgres (pasaria aun con varchar(255)). Documenta
+  // la intencion (el flujo acepta y persiste el valor completo). La prueba real del fix de
+  // schema es correr `php artisan migrate` contra Postgres y reintentar el payload largo.
+  $longClickId = 'E_C_P_' . str_repeat('Ab1cD2eF3gH4', 25); // 306 chars, simula un ttclid
+
+  postJson('/v1/visitor/register', visitorPayload(['query_params' => ['ttclid' => $longClickId]]), visitorHeaders())->assertStatus(201);
+
+  $log = TrafficLog::first();
+  expect($log->click_id)->toBe($longClickId);
+  expect(strlen($log->click_id))->toBeGreaterThan(255);
+  expect($log->platform)->toBe('TikTok Ads');
+});

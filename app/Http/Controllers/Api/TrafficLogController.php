@@ -147,6 +147,30 @@ class TrafficLogController extends Controller
   }
 
   /**
+   * Sanitiza un mensaje de excepcion para Slack quitando el payload sensible.
+   * Las `QueryException` de Laravel concatenan el SQL completo con los bindings
+   * interpolados (IP, user-agent, query_params, etc.) tras el patron
+   * `(Connection: ...)` / `SQL: ...`. Para no filtrar PII al canal nos quedamos
+   * solo con la parte diagnostica del driver (SQLSTATE + descripcion). El
+   * mensaje completo sigue persistiendose en el log de disco via errorContext.
+   *
+   * @param string $message Mensaje crudo de la excepcion
+   * @return string Mensaje recortado antes del SQL/bindings
+   */
+  private function sanitizeErrorMessage(string $message): string
+  {
+    // Cortar antes del primer marcador de SQL de Laravel ("(Connection:" o "(SQL:").
+    foreach (['(Connection:', '(SQL:'] as $marker) {
+      $pos = stripos($message, $marker);
+      if ($pos !== false) {
+        $message = rtrim(substr($message, 0, $pos));
+        break;
+      }
+    }
+    return Str::limit($message, 800);
+  }
+
+  /**
    * Construye y dispara la alerta de Slack de falla critica de traffic log.
    * Enriquecida con la causa raiz desenvuelta (clase, mensaje, file:line) y un
    * subset seguro del request (sin payload completo para no filtrar PII).
@@ -169,7 +193,7 @@ class TrafficLogController extends Controller
       ->addSection('The traffic log processing failed due to an unexpected error.')
       ->addKeyValue('Environment', app()->environment(), true)
       ->addKeyValue('Exception', get_class($root), true)
-      ->addKeyValue('Root Message', '```' . Str::limit($root->getMessage(), 800) . '```', false, '📄')
+      ->addKeyValue('Root Message', '```' . $this->sanitizeErrorMessage($root->getMessage()) . '```', false, '📄')
       ->addKeyValue('Origin', basename($root->getFile()) . ':' . $root->getLine(), true)
       ->addDivider()
       ->addKeyValue('Ip', $this->request->ip(), true)
