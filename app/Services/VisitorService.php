@@ -64,7 +64,13 @@ class VisitorService
       ->addSelect([
         'field_data_count' => LeadFieldResponse::query()
           ->selectRaw('count(*)')
-          ->whereColumn('lead_field_responses.fingerprint', 'traffic_logs.fingerprint')
+          // IMPORTANT: cast traffic_logs.fingerprint to text. The two columns have
+          // mismatched types (traffic_logs.fingerprint is char(64)/bpchar,
+          // lead_field_responses.fingerprint is varchar). A plain whereColumn makes
+          // Postgres cast the INDEXED side to bpchar, which kills the index and
+          // forces a seq scan over millions of rows (~700ms PER row -> 7s page load).
+          // Casting the outer (non-indexed) side keeps lead_field_responses_fingerprint_index usable.
+          ->whereRaw('lead_field_responses.fingerprint = CAST(traffic_logs.fingerprint AS TEXT)')
           ->whereNotNull('value')
           ->where('value', '<>', ''),
       ]);
