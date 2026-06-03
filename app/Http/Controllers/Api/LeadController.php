@@ -23,29 +23,57 @@ class LeadController extends Controller
     $this->leadService = $leadService;
   }
 
-  public function getLeadDetails($fingerprint)
+  /**
+   * Returns the combined visitor + lead detail bundle consumed by the visitors
+   * page modal: the captured query params (from traffic_logs) and the lead form
+   * fields (if a lead exists for the fingerprint).
+   *
+   * Query params live on traffic_logs, which always exist for a visitor even
+   * when no lead was ever registered, so this endpoint no longer 404s when only
+   * the lead is missing.
+   *
+   * @param  \Illuminate\Http\Request  $request
+   * @param  string  $fingerprint
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function getLeadDetails(Request $request, $fingerprint)
   {
     $lead = \App\Models\Lead::where('fingerprint', $fingerprint)->first();
 
-    if (!$lead) {
-      return response()->json(['message' => 'Lead not found'], 404);
+    // Resolve the specific visit when the caller passes the traffic log id of
+    // the clicked row; otherwise fall back to the most recent visit.
+    $trafficLogId = $request->query('traffic_log_id');
+    $trafficLog = \App\Models\TrafficLog::where('fingerprint', $fingerprint)
+      ->when($trafficLogId, fn($query) => $query->where('id', $trafficLogId))
+      ->orderByDesc('created_at')
+      ->first();
+
+    if (!$lead && !$trafficLog) {
+      return response()->json(['message' => 'Visitor not found'], 404);
     }
 
-    $lead->load(['leadFieldResponses.field']);
+    $fields = collect();
+    if ($lead) {
+      $lead->load(['leadFieldResponses.field']);
+      $fields = $lead->leadFieldResponses->map(function ($response) {
+        return [
+          'id' => $response->field->id ?? null,
+          'name' => $response->field->name ?? 'Unknown',
+          'label' => $response->field->label ?? ($response->field->name ?? 'Unknown'),
+          'value' => $response->value,
+        ];
+      });
+    }
 
-    // Format the response
-    $fields = $lead->leadFieldResponses->map(function ($response) {
-      return [
-        'id' => $response->field->id ?? null,
-        'name' => $response->field->name ?? 'Unknown',
-        'label' => $response->field->label ?? ($response->field->name ?? 'Unknown'),
-        'value' => $response->value,
-      ];
-    });
+    $visitor = $trafficLog
+      ? ['fingerprint' => $trafficLog->fingerprint, 'created_at' => $trafficLog->created_at]
+      : ['fingerprint' => $lead->fingerprint, 'created_at' => $lead->created_at];
 
     return response()->json([
+      'visitor' => $visitor,
       'lead' => $lead,
       'fields' => $fields,
+      'query_params' => $trafficLog?->query_params ?? [],
     ]);
   }
   /**

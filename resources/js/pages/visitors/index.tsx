@@ -64,7 +64,7 @@ const Index = ({ rows, meta, state, data }: IndexProps) => {
   const { hosts = [], states = [] } = data ?? {};
 
   const showLeadDataModal = (row: Visitor) => {
-    modal.open(<LeadDetailsModal fingerprint={row.fingerprint} />, {
+    modal.open(<LeadDetailsModal fingerprint={row.fingerprint} trafficLogId={row.id} />, {
       className: 'sm:max-w-[1000px] flex flex-col w-full',
     });
   };
