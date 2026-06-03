@@ -45,9 +45,7 @@ test('admin can force-run a dispatch in pending_validation', function () {
 
   Queue::assertPushed(DispatchLeadJob::class);
 
-  $log = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)
-    ->where('event', DispatchTimelineService::VALIDATION_FORCED)
-    ->first();
+  $log = DispatchTimelineLog::where('lead_dispatch_id', $dispatch->id)->where('event', DispatchTimelineService::VALIDATION_FORCED)->first();
 
   expect($log)->not->toBeNull();
   expect($log->message)->toContain($admin->name);

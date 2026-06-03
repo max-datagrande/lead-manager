@@ -51,7 +51,7 @@ class LeadQualityProviderResolver
   {
     $impl = $this->make($provider->type);
 
-    if (!$impl instanceof PhoneValidationProviderInterface) {
+    if (!($impl instanceof PhoneValidationProviderInterface)) {
       throw new RuntimeException("Provider type '{$provider->type->value}' does not support phone validation.");
     }
 

@@ -1,7 +1,6 @@
 <?php
 
 return [
-
   /*
   |--------------------------------------------------------------------------
   | Postback Retry Interval
@@ -14,5 +13,4 @@ return [
   */
 
   'retry_interval' => (int) env('POSTBACK_RETRY_INTERVAL', 30),
-
 ];

@@ -34,11 +34,7 @@ describe('fireInternal', function () {
     $postback = Postback::factory()->internal()->realtime()->create();
     $service = app(PostbackFireService::class);
 
-    $service->fireInternal(
-      uuid: $postback->uuid,
-      params: ['click_id' => 'CLK-001'],
-      source: PostbackSource::MANUAL,
-    );
+    $service->fireInternal(uuid: $postback->uuid, params: ['click_id' => 'CLK-001'], source: PostbackSource::MANUAL);
 
     Queue::assertPushed(DispatchPostbackJob::class);
   });
@@ -47,11 +43,7 @@ describe('fireInternal', function () {
     $postback = Postback::factory()->internal()->create();
     $service = app(PostbackFireService::class);
 
-    $service->fireInternal(
-      uuid: $postback->uuid,
-      params: ['click_id' => 'CLK-001'],
-      source: PostbackSource::SYSTEM,
-    );
+    $service->fireInternal(uuid: $postback->uuid, params: ['click_id' => 'CLK-001'], source: PostbackSource::SYSTEM);
 
     $postback->refresh();
     expect($postback->total_executions)->toBe(1);
@@ -102,10 +94,7 @@ describe('handleInbound stores external_api source', function () {
     $postback = Postback::factory()->realtime()->create();
     $service = app(PostbackFireService::class);
 
-    $execution = $service->handleInbound(
-      uuid: $postback->uuid,
-      inboundParams: ['click_id' => 'CLK-EXT'],
-    );
+    $execution = $service->handleInbound(uuid: $postback->uuid, inboundParams: ['click_id' => 'CLK-EXT']);
 
     expect($execution->source)->toBe(PostbackSource::EXTERNAL_API);
   });

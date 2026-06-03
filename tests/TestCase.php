@@ -15,10 +15,12 @@ abstract class TestCase extends BaseTestCase
     $driver = $this->app['db']->connection()->getDriverName();
 
     if ($driver !== 'sqlite') {
-      fwrite(STDERR, "\n\n" .
-        "!! FAILED TESTS: connection detected to '{$driver}' !!\n" .
-        "!! The tests MUST run in SQLite.              !!\n" .
-        "!! Run: php artisan config:clear                   !!\n\n"
+      fwrite(
+        STDERR,
+        "\n\n" .
+          "!! FAILED TESTS: connection detected to '{$driver}' !!\n" .
+          "!! The tests MUST run in SQLite.              !!\n" .
+          "!! Run: php artisan config:clear                   !!\n\n",
       );
       exit(1);
     }

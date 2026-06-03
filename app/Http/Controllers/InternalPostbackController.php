@@ -14,10 +14,7 @@ use Inertia\Response;
 
 class InternalPostbackController extends Controller
 {
-  public function __construct(
-    protected PostbackFireService $fireService,
-    protected InternalTokenResolverService $tokenResolver,
-  ) {}
+  public function __construct(protected PostbackFireService $fireService, protected InternalTokenResolverService $tokenResolver) {}
 
   public function fireForm(Postback $postback): Response
   {
@@ -40,16 +37,9 @@ class InternalPostbackController extends Controller
     $params = $request->except('_token');
 
     try {
-      $execution = $this->fireService->fireInternal(
-        uuid: $postback->uuid,
-        params: $params,
-        source: PostbackSource::MANUAL,
-      );
+      $execution = $this->fireService->fireInternal(uuid: $postback->uuid, params: $params, source: PostbackSource::MANUAL);
 
-      add_flash_message(
-        type: 'success',
-        message: "Postback fired. Execution: {$execution->execution_uuid} (status: {$execution->status->value})",
-      );
+      add_flash_message(type: 'success', message: "Postback fired. Execution: {$execution->execution_uuid} (status: {$execution->status->value})");
     } catch (\Throwable $e) {
       add_flash_message(type: 'error', message: "Fire failed: {$e->getMessage()}");
     }

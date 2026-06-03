@@ -18,7 +18,7 @@ it('renders the fire form for an internal postback', function () {
   actingAs($this->user)
     ->get(route('postbacks.internal.fire-form', $postback))
     ->assertOk()
-    ->assertInertia(fn ($page) => $page->component('postbacks/internal-fire'));
+    ->assertInertia(fn($page) => $page->component('postbacks/internal-fire'));
 });
 
 it('fires an internal postback via manual trigger', function () {
@@ -43,6 +43,5 @@ it('fires an internal postback via manual trigger', function () {
 it('requires authentication to access fire form', function () {
   $postback = Postback::factory()->internal()->create();
 
-  $this->get(route('postbacks.internal.fire-form', $postback))
-    ->assertRedirect(route('login'));
+  $this->get(route('postbacks.internal.fire-form', $postback))->assertRedirect(route('login'));
 });
