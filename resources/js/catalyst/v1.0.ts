@@ -850,14 +850,18 @@ class CatalystCore {
   /**
    * Registra una conversión de Offerwall.
    *
-   * Opcionalmente, si `data.postback` viene seteado, dispara un postback
-   * interno ANTES (fire-and-forget, sin await) de registrar la conversión
-   * ordinaria. La landing decide el UUID, el source y los fields a enviar.
+   * Opcionalmente, si `data.postback` viene seteado, dispara uno o varios
+   * postbacks internos ANTES (fire-and-forget, sin await) de registrar la
+   * conversión ordinaria. Acepta un solo objeto o un array (ej. una landing
+   * de auto insurance que dispara un postback paralelo si el usuario elige
+   * más de un vehículo). La landing decide UUID, source y fields de cada uno.
    *
-   * @param data Datos de la conversión (+ config opcional de postback)
+   * @param data Datos de la conversión (+ config opcional de postback(s))
    */
   async convertOfferwall(
-    data: Omit<OfferwallConversionRequest, 'fingerprint'> & { postback?: ConvertOfferwallPostback },
+    data: Omit<OfferwallConversionRequest, 'fingerprint'> & {
+      postback?: ConvertOfferwallPostback | ConvertOfferwallPostback[];
+    },
   ): Promise<OfferwallConversionResponse> {
     if (!this.visitorData?.fingerprint) {
       throw new Error('Catalyst SDK: No hay fingerprint de visitante.');
@@ -871,11 +875,14 @@ class CatalystCore {
       throw new Error('Catalyst SDK: amount is required.');
     }
 
-    // Optionally fire an internal postback alongside the conversion.
+    // Optionally fire one or more internal postbacks alongside the conversion.
     // Fire-and-forget (no await) and BEFORE the conversion request, so a
     // misconfigured or failing postback never blocks or breaks the conversion.
     if (data.postback) {
-      this.fireOfferwallPostback(data.postback);
+      const postbacks = Array.isArray(data.postback) ? data.postback : [data.postback];
+      for (const pb of postbacks) {
+        this.fireOfferwallPostback(pb);
+      }
     }
 
     const payload: OfferwallConversionRequest = {
