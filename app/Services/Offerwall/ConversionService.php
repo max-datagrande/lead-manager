@@ -92,7 +92,14 @@ class ConversionService
       // If we got here, we have a valid integration
       $integrationId = $integration->id;
 
-      // Extract tracked fields from the log's context arrays
+      // Extract tracked fields from the log's context arrays.
+      // NOTE (intentional mapping — do not "fix"): the original/mapped asymmetry is
+      // deliberate. `placement_id` is read from the MAPPED value of `cptype` on
+      // purpose (placement is derived from cptype's value_mapping), while `cptype`
+      // itself keeps its ORIGINAL (pre-mapping) value. Likewise `state` is original
+      // and `zip_code` is mapped. These arrays are populated upstream by
+      // MixService::logIntegrationCall via PayloadProcessorService::buildFieldValueMaps,
+      // keyed by field name. If they ever come back null, check that wiring first.
       $trackedFields = [
         'cptype' => $callLog->original_field_values['cptype'] ?? null,
         'placement_id' => $callLog->mapped_field_values['cptype'] ?? null,

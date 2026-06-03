@@ -71,6 +71,7 @@ class MixService
           }
           $processor = new \App\Services\PayloadProcessorService();
           $replacements = $processor->buildReplacements($integration, $prodEnv, $leadData);
+          $fieldValueMaps = $processor->buildFieldValueMaps($integration, $prodEnv, $leadData);
 
           $payloadString = $processor->applyReplacements($prodEnv->request_body ?? '{}', $replacements);
           $payload = json_decode($payloadString, true) ?? [];
@@ -94,6 +95,8 @@ class MixService
             'payload' => $payload,
             'method' => $method,
             'headers' => $headers,
+            'originalValues' => $fieldValueMaps['originalValues'],
+            'mappedValues' => $fieldValueMaps['mappedValues'],
           ];
         }
 
@@ -118,7 +121,16 @@ class MixService
           $response = $responses[$integration->id];
           $requestData = $requestsData[$integration->id];
 
-          $this->logIntegrationCall($mixLog, $integration, $response, $requestData['method'], $requestData['headers'], $requestData['payload']);
+          $this->logIntegrationCall(
+            $mixLog,
+            $integration,
+            $response,
+            $requestData['method'],
+            $requestData['headers'],
+            $requestData['payload'],
+            $requestData['originalValues'],
+            $requestData['mappedValues'],
+          );
 
           if ($response instanceof Response && $response->successful()) {
             $successfulCount++;
@@ -230,8 +242,16 @@ class MixService
     return $lead->leadFieldResponses->pluck('value', 'field.name')->toArray();
   }
 
-  private function logIntegrationCall(OfferwallMixLog $mixLog, $integration, $response, string $method, array $headers, array $payload): void
-  {
+  private function logIntegrationCall(
+    OfferwallMixLog $mixLog,
+    $integration,
+    $response,
+    string $method,
+    array $headers,
+    array $payload,
+    ?array $originalValues = null,
+    ?array $mappedValues = null,
+  ): void {
     $isResponse = $response instanceof Response;
     $duration = $isResponse && $response->transferStats ? $response->transferStats->getTransferTime() * 1000 : 0;
 
@@ -265,8 +285,8 @@ class MixService
       'request_payload' => $payload,
       'response_headers' => $isResponse ? $response->headers() : [],
       'response_body' => $responseBody,
-      'original_field_values' => null,
-      'mapped_field_values' => null,
+      'original_field_values' => $originalValues,
+      'mapped_field_values' => $mappedValues,
     ]);
   }
 
