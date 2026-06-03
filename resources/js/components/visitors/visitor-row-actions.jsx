@@ -1,0 +1,118 @@
+import CopyToClipboard from '@/components/copy-to-clipboard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Braces, Eye, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+// Ghost icon buttons only carry the base `disabled:opacity-50`, which is barely
+// visible on a thin icon. Pin the enabled color to foreground and override the
+// disabled state to a clearly muted grey so "no data" reads at a glance.
+const ICON_BTN = 'relative h-6 w-6 text-foreground disabled:opacity-100 disabled:text-muted-foreground/40';
+
+/**
+ * Small notification-style count badge pinned to a button corner.
+ */
+function CountBadge({ count }) {
+  return (
+    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-none font-semibold text-primary-foreground">
+      {count}
+    </span>
+  );
+}
+
+/**
+ * Per-row actions for the visitors listing.
+ *
+ * Two independent buttons, each disabled (the disabled state IS the "no data"
+ * indicator) and badged with its count:
+ * - Query Params: opens a popover rendered straight from the row payload (the
+ *   JSON is already present at list time, so no fetch).
+ * - Field Data: opens the existing lead-details modal (which fetches on demand).
+ */
+export default function VisitorRowActions({ row, onOpenFields }) {
+  const [search, setSearch] = useState('');
+
+  const queryParams = useMemo(() => {
+    const raw = row?.query_params;
+    if (!raw || typeof raw !== 'object') return [];
+    return Object.entries(raw).map(([key, value]) => ({
+      key,
+      value: value === null || value === undefined ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value),
+    }));
+  }, [row?.query_params]);
+
+  const filteredParams = useMemo(() => {
+    const term = search.toLowerCase();
+    return queryParams
+      .filter((param) => param.key.toLowerCase().includes(term) || param.value.toLowerCase().includes(term))
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [queryParams, search]);
+
+  const queryParamsCount = queryParams.length;
+  const fieldDataCount = row?.field_data_count ?? 0;
+
+  return (
+    <div className="flex items-center gap-1">
+      {/* Query Params -> popover (data already on the row) */}
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {/* span wrapper keeps the tooltip working even when the button is disabled */}
+            <span className={`inline-flex ${queryParamsCount === 0 ? 'cursor-not-allowed' : ''}`}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className={ICON_BTN} disabled={queryParamsCount === 0}>
+                  <Braces className="h-4 w-4" />
+                  {queryParamsCount > 0 && <CountBadge count={queryParamsCount} />}
+                </Button>
+              </PopoverTrigger>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{queryParamsCount > 0 ? 'View query params' : 'No query params'}</TooltipContent>
+        </Tooltip>
+
+        <PopoverContent align="start" className="w-80 p-0">
+          <div className="space-y-3 p-3">
+            <h4 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Query Params ({queryParamsCount})</h4>
+            {queryParamsCount > 4 && (
+              <div className="relative">
+                <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search params..." className="h-8 pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+            )}
+            <div className="max-h-64 divide-y overflow-y-auto rounded-md border">
+              {filteredParams.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">No matching params.</div>
+              ) : (
+                filteredParams.map((param) => (
+                  <div key={param.key} className="flex items-start justify-between gap-3 p-2 transition-colors hover:bg-muted/30">
+                    <CopyToClipboard textToCopy={param.key}>
+                      <span className="shrink-0 truncate font-mono text-xs font-medium text-muted-foreground" title={param.key}>
+                        {param.key}
+                      </span>
+                    </CopyToClipboard>
+                    <span className="text-right text-xs font-medium wrap-break-word">{param.value || '—'}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Field Data -> existing lead-details modal */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex ${fieldDataCount === 0 ? 'cursor-not-allowed' : ''}`}>
+            <Button variant="ghost" size="icon" className={ICON_BTN} disabled={fieldDataCount === 0} onClick={() => onOpenFields?.(row)}>
+              <Eye className="h-4 w-4" />
+              {fieldDataCount > 0 && <CountBadge count={fieldDataCount} />}
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{fieldDataCount > 0 ? 'View field data' : 'No field data'}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}

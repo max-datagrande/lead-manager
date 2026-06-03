@@ -59,6 +59,8 @@ class TrafficLog extends Model
     'query_params' => 'array',
     'visit_date' => 'date',
     'is_bot' => 'boolean',
+    // Only present on the visitors listing query (correlated count subquery).
+    'field_data_count' => 'integer',
     'landing_id' => 'integer',
     'landing_page_version_id' => 'integer',
     'created_at' => 'datetime',
