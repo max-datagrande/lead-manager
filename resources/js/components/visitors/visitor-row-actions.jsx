@@ -1,9 +1,8 @@
-import CopyToClipboard from '@/components/copy-to-clipboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Braces, Eye, Search } from 'lucide-react';
+import { Braces, Check, Copy, Eye, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 // Ghost icon buttons only carry the base `disabled:opacity-50`, which is barely
@@ -33,6 +32,19 @@ function CountBadge({ count }) {
  */
 export default function VisitorRowActions({ row, onOpenFields }) {
   const [search, setSearch] = useState('');
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  // Copy every captured query param as a pretty JSON blob so it can be pasted
+  // anywhere as-is. Lives at header level (top-right) instead of per-row.
+  const handleCopyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(row?.query_params ?? {}, null, 2));
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch (error) {
+      console.error('Error copying query params:', error);
+    }
+  };
 
   const queryParams = useMemo(() => {
     const raw = row?.query_params;
@@ -74,7 +86,18 @@ export default function VisitorRowActions({ row, onOpenFields }) {
 
         <PopoverContent align="start" className="w-80 p-0">
           <div className="space-y-3 p-3">
-            <h4 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Query Params ({queryParamsCount})</h4>
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Query Params ({queryParamsCount})</h4>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={handleCopyAll}
+                title={copiedAll ? 'Copied!' : 'Copy all as JSON'}
+              >
+                {copiedAll ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              </Button>
+            </div>
             {queryParamsCount > 4 && (
               <div className="relative">
                 <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
@@ -86,13 +109,15 @@ export default function VisitorRowActions({ row, onOpenFields }) {
                 <div className="p-4 text-center text-xs text-muted-foreground">No matching params.</div>
               ) : (
                 filteredParams.map((param) => (
-                  <div key={param.key} className="flex items-start justify-between gap-3 p-2 transition-colors hover:bg-muted/30">
-                    <CopyToClipboard textToCopy={param.key}>
-                      <span className="shrink-0 truncate font-mono text-xs font-medium text-muted-foreground" title={param.key}>
-                        {param.key}
-                      </span>
-                    </CopyToClipboard>
-                    <span className="text-right text-xs font-medium wrap-break-word">{param.value || '—'}</span>
+                  <div key={param.key} className="flex items-center gap-3 p-2 transition-colors hover:bg-muted/30">
+                    {/* CSS-truncated (not JS): the full text stays in the DOM, so a
+                        double-click selects and copies the whole value. */}
+                    <span className="w-28 shrink-0 truncate font-mono text-xs font-medium text-muted-foreground" title={param.key}>
+                      {param.key}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium" title={param.value}>
+                      {param.value || '—'}
+                    </span>
                   </div>
                 ))
               )}
