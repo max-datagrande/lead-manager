@@ -358,7 +358,7 @@ describe('Async postback pricing', function () {
     $dispatch = app(DispatchOrchestrator::class)->dispatch($workflow, $lead, $lead->fingerprint);
 
     // Post was actually sent to the buyer (HTTP request recorded)
-    Http::assertSent(fn ($request) => str_contains($request->url(), 'buyer.example.com/post'));
+    Http::assertSent(fn($request) => str_contains($request->url(), 'buyer.example.com/post'));
 
     // PostResult is pending_postback (buyer accepted but price comes later)
     $this->assertDatabaseHas('post_results', [

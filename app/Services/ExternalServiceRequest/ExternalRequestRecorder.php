@@ -133,7 +133,7 @@ class ExternalRequestRecorder
   private function loggablePair(array $meta): array
   {
     $loggable = $meta['loggable'] ?? null;
-    if (!$loggable instanceof Model) {
+    if (!($loggable instanceof Model)) {
       return [null, null];
     }
 

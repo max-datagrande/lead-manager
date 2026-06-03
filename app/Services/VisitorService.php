@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LeadFieldResponse;
 use App\Models\TrafficLog;
 use Illuminate\Support\Facades\Cache;
 
@@ -51,9 +52,22 @@ class VisitorService
       'city',
       'postal_code',
       'is_bot',
+      // Shipped raw so the row's query-params popover renders with no extra
+      // fetch: the JSON is already on this row at list time.
+      'query_params',
       'created_at',
       'updated_at',
-    ]);
+    ])
+      // Count of this fingerprint's non-empty lead field responses, used for the
+      // Field Data button's badge + disabled state (0 => no field data). Correlated
+      // subquery over the indexed fingerprint, evaluated only for the paginated rows.
+      ->addSelect([
+        'field_data_count' => LeadFieldResponse::query()
+          ->selectRaw('count(*)')
+          ->whereColumn('lead_field_responses.fingerprint', 'traffic_logs.fingerprint')
+          ->whereNotNull('value')
+          ->where('value', '<>', ''),
+      ]);
 
     // Columnas disponibles para búsqueda global
     $searchableColumns = [

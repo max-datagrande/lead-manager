@@ -31,24 +31,22 @@ describe('integration_environments env_type column', function () {
     // MixService uses: $integration->environments->where('environment', 'production')->first()
     // Verify this query returns the correct record.
     $integration = Integration::factory()->create(['type' => 'offerwall']);
-    $integration
-      ->environments()
-      ->createMany([
-        [
-          'env_type' => 'offerwall',
-          'environment' => 'development',
-          'url' => 'https://dev.example.com',
-          'method' => 'POST',
-          'request_headers' => '{}',
-        ],
-        [
-          'env_type' => 'offerwall',
-          'environment' => 'production',
-          'url' => 'https://prod.example.com',
-          'method' => 'POST',
-          'request_headers' => '{}',
-        ],
-      ]);
+    $integration->environments()->createMany([
+      [
+        'env_type' => 'offerwall',
+        'environment' => 'development',
+        'url' => 'https://dev.example.com',
+        'method' => 'POST',
+        'request_headers' => '{}',
+      ],
+      [
+        'env_type' => 'offerwall',
+        'environment' => 'production',
+        'url' => 'https://prod.example.com',
+        'method' => 'POST',
+        'request_headers' => '{}',
+      ],
+    ]);
 
     $integration->load('environments');
 
@@ -89,24 +87,22 @@ describe('integration_environments env_type column', function () {
 
   it('offerwall environments are not polluted by ping-post environments on other integrations', function () {
     $offerwall = Integration::factory()->create(['type' => 'offerwall']);
-    $offerwall
-      ->environments()
-      ->createMany([
-        [
-          'env_type' => 'offerwall',
-          'environment' => 'development',
-          'url' => 'https://ow-dev.example.com',
-          'method' => 'POST',
-          'request_headers' => '{}',
-        ],
-        [
-          'env_type' => 'offerwall',
-          'environment' => 'production',
-          'url' => 'https://ow-prod.example.com',
-          'method' => 'POST',
-          'request_headers' => '{}',
-        ],
-      ]);
+    $offerwall->environments()->createMany([
+      [
+        'env_type' => 'offerwall',
+        'environment' => 'development',
+        'url' => 'https://ow-dev.example.com',
+        'method' => 'POST',
+        'request_headers' => '{}',
+      ],
+      [
+        'env_type' => 'offerwall',
+        'environment' => 'production',
+        'url' => 'https://ow-prod.example.com',
+        'method' => 'POST',
+        'request_headers' => '{}',
+      ],
+    ]);
 
     $pingPost = Integration::factory()->create(['type' => 'ping-post']);
     foreach (['ping', 'post'] as $et) {

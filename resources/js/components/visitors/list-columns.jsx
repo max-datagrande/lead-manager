@@ -1,13 +1,12 @@
 import { DataTableColumnHeader } from '@/components/data-table/column-header';
 import { FormattedDateTime } from '@/components/formatted-date-time';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
 import ReactCountryFlag from 'react-country-flag';
 import BotBadge from './bot-badge';
 import DeviceBadge from './device-badge';
 import FingerprintCell from './fingerprint-cell';
 import TrafficSourceBadge from './traffic-source-badge';
+import VisitorRowActions from './visitor-row-actions';
 
 // --- Columnas TanStack ---
 export const visitorColumns = [
@@ -18,11 +17,7 @@ export const visitorColumns = [
       const { showLeadDataModal } = table.options.meta || {};
       return (
         <div className="flex items-center gap-2">
-          {showLeadDataModal && (
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => showLeadDataModal(row.original)} title="View Details">
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
+          <VisitorRowActions row={row.original} onOpenFields={showLeadDataModal} />
           <FingerprintCell fingerprint={row.original.fingerprint} />
         </div>
       );

@@ -160,12 +160,14 @@ class LeadQualityDemoSeeder extends Seeder
         ]);
     }
 
-    $this->command?->info(sprintf(
-      'Lead Quality demo data ready → provider #%d, rules: %d, logs: %d, external requests: %d',
-      $provider->id,
-      LeadQualityValidationRule::count(),
-      LeadQualityValidationLog::count(),
-      ExternalServiceRequest::count(),
-    ));
+    $this->command?->info(
+      sprintf(
+        'Lead Quality demo data ready → provider #%d, rules: %d, logs: %d, external requests: %d',
+        $provider->id,
+        LeadQualityValidationRule::count(),
+        LeadQualityValidationLog::count(),
+        ExternalServiceRequest::count(),
+      ),
+    );
   }
 }

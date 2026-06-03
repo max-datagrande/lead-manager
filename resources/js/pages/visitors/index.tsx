@@ -39,6 +39,8 @@ type Visitor = {
   path_visited: string;
   referrer: string;
   is_bot: boolean;
+  field_data_count: number;
+  query_params: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };

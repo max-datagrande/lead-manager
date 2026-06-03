@@ -35,11 +35,7 @@ class InternalPostbackFireController extends Controller
   public function fire(Request $request, string $uuid, string $fingerprint, string $source): JsonResponse
   {
     try {
-      $postback = Postback::query()
-        ->where('uuid', $uuid)
-        ->where('type', PostbackType::INTERNAL)
-        ->active()
-        ->firstOrFail();
+      $postback = Postback::query()->where('uuid', $uuid)->where('type', PostbackType::INTERNAL)->active()->firstOrFail();
 
       $lead = Lead::query()->where('fingerprint', $fingerprint)->first();
 
@@ -58,10 +54,7 @@ class InternalPostbackFireController extends Controller
         $field = Field::query()->where('name', $fieldName)->first();
 
         if ($field) {
-          LeadFieldResponse::updateOrCreate(
-            ['lead_id' => $lead->id, 'field_id' => $field->id, 'fingerprint' => $fingerprint],
-            ['value' => $value],
-          );
+          LeadFieldResponse::updateOrCreate(['lead_id' => $lead->id, 'field_id' => $field->id, 'fingerprint' => $fingerprint], ['value' => $value]);
         }
       }
 

@@ -81,8 +81,7 @@ it('triggers LeadSold event on resolution', function () {
 
   ['postback' => $postback] = makePricingSetup();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=50.00")
-    ->assertOk();
+  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=50.00")->assertOk();
 
   Event::assertDispatched(LeadSold::class);
 });
@@ -90,8 +89,7 @@ it('triggers LeadSold event on resolution', function () {
 it('creates PostbackExecution for audit trail', function () {
   ['postback' => $postback, 'postResult' => $postResult] = makePricingSetup();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=25.00")
-    ->assertOk();
+  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=25.00")->assertOk();
 
   $this->assertDatabaseHas('postback_executions', [
     'postback_id' => $postback->id,
@@ -103,15 +101,13 @@ it('creates PostbackExecution for audit trail', function () {
 it('returns 422 when identifier token is missing from params', function () {
   ['postback' => $postback] = makePricingSetup();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?payout=85.00")
-    ->assertStatus(422);
+  getJson("/v1/postback/fire/{$postback->uuid}?payout=85.00")->assertStatus(422);
 });
 
 it('returns 422 when no pending postback matches the fingerprint', function () {
   ['postback' => $postback] = makePricingSetup();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?click_id=unknown-fingerprint&payout=85.00")
-    ->assertStatus(422);
+  getJson("/v1/postback/fire/{$postback->uuid}?click_id=unknown-fingerprint&payout=85.00")->assertStatus(422);
 });
 
 it('handles idempotent duplicate fires', function () {
@@ -128,8 +124,7 @@ it('handles idempotent duplicate fires', function () {
 it('does not dispatch to external destination for pricing postbacks', function () {
   ['postback' => $postback] = makePricingSetup();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=85.00")
-    ->assertOk();
+  getJson("/v1/postback/fire/{$postback->uuid}?click_id=fp-pricing-test&payout=85.00")->assertOk();
 
   $execution = $postback->executions()->first();
   expect($execution->outbound_url)->toBeNull();
@@ -139,8 +134,7 @@ it('does not dispatch to external destination for pricing postbacks', function (
 it('still fires normally for postbacks without buyer config links', function () {
   $postback = Postback::factory()->create();
 
-  getJson("/v1/postback/fire/{$postback->uuid}?click_id=abc&payout=10")
-    ->assertOk();
+  getJson("/v1/postback/fire/{$postback->uuid}?click_id=abc&payout=10")->assertOk();
 
   $execution = $postback->executions()->first();
   expect($execution->outbound_url)->not->toBeNull();
