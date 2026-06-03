@@ -133,6 +133,43 @@ class PayloadProcessorService
   }
 
   /**
+   * Build the original/mapped value maps for all tokens, keyed by FIELD NAME.
+   *
+   * Sibling of buildReplacements() but without watermarking/hashing: returns the
+   * raw lead value (or default) and the value after value_mapping, so callers can
+   * persist tracking context (e.g. IntegrationCallLog.original_field_values /
+   * mapped_field_values). Keyed by field name (not token) to match the lookups
+   * done downstream in ConversionService.
+   *
+   * @param  Integration             $integration  With tokenMappings.field eager-loaded
+   * @param  IntegrationEnvironment  $environment  (unused here; kept for signature parity with buildReplacements)
+   * @param  array<string, mixed>    $leadData     Lead fields keyed by field name
+   * @return array{originalValues: array<string, mixed>, mappedValues: array<string, mixed>}
+   */
+  public function buildFieldValueMaps(Integration $integration, IntegrationEnvironment $environment, array $leadData): array
+  {
+    $originalValues = [];
+    $mappedValues = [];
+
+    foreach ($integration->tokenMappings as $mapping) {
+      if (!$mapping->field) {
+        continue;
+      }
+
+      $name = $mapping->field->name;
+      $raw = $leadData[$name] ?? ($mapping->default_value ?? null);
+
+      $originalValues[$name] = $raw;
+      $mappedValues[$name] = $mapping->value_mapping[$raw] ?? $raw;
+    }
+
+    return [
+      'originalValues' => $originalValues,
+      'mappedValues' => $mappedValues,
+    ];
+  }
+
+  /**
    * Apply a precomputed replacement map to a template and release type watermarks.
    *
    * @param  string                $template     Body, headers JSON, or URL string
