@@ -989,8 +989,14 @@ class CatalystCore {
       throw new Error(`Catalyst SDK: ${error}`);
     }
 
+    // Defensive: strip accidental wrapping quotes/whitespace from the uuid.
+    // A landing may pass a JSON-encoded value (e.g. `"<uuid>"`), which would
+    // otherwise reach the URL as `%22<uuid>` and fail the backend route
+    // constraint `[0-9a-f-]{36}` with a 404 "route could not be found".
+    const cleanUuid = uuid.trim().replace(/^["']+|["']+$/g, '');
+
     const base = this.getEndpoint('POSTBACK.FIRE_INTERNAL');
-    let url = `${base}${uuid}/${encodeURIComponent(resolvedFingerprint)}/${encodeURIComponent(source)}`;
+    let url = `${base}${encodeURIComponent(cleanUuid)}/${encodeURIComponent(resolvedFingerprint)}/${encodeURIComponent(source)}`;
 
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(fields)) {
