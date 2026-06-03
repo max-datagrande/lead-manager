@@ -8,6 +8,7 @@ use App\Http\Requests\Api\UpdateTrafficLogRequest;
 use App\Services\TrafficLog\TrafficLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Maxidev\Logger\TailLogger;
 use App\Http\Traits\ApiResponseTrait;
 use App\Support\SlackMessageBundler;
@@ -61,13 +62,15 @@ class TrafficLogController extends Controller
         meta: compact('fingerprint', 'geolocation'),
       );
     } catch (\Exception $e) {
-      $message = $e->getMessage();
       $isDev = app()->environment('local');
+      $root = $this->unwrapException($e);
       $errors = get_error_stack($e, $isDev);
-      $statusCode = str_contains($message, 'Duplicate') ? 409 : 500;
-      $this->notifySlack($message, $data);
-      TailLogger::saveLog($message, 'traffic-log/store', 'error', $this->errorContext($e, $data));
-      return $this->errorResponse(message: $message, status: $statusCode, errors: $errors);
+      $this->notifySlack($e, $data);
+      // Headline = mensaje de la causa raiz (no el wrapper generico), para que la
+      // linea del log ya sea diagnostica por si sola.
+      TailLogger::saveLog($root->getMessage(), 'traffic-log/store', 'error', $this->errorContext($e, $data));
+      // Respuesta al cliente: mensaje generico del wrapper (no filtramos detalle SQL).
+      return $this->errorResponse(message: $e->getMessage(), status: 500, errors: $errors);
     }
   }
   /**
@@ -122,18 +125,59 @@ class TrafficLogController extends Controller
     }
   }
 
-  private function notifySlack(string $message, array $data): void
+  /**
+   * Desenvuelve una excepcion hasta su causa raiz siguiendo la cadena de
+   * `getPrevious()`. El flujo de traffic log envuelve toda falla en
+   * `TrafficLogCreationException('Failed to create traffic log', 0, $e)`, asi que
+   * sin desenvolver el mensaje/file/line serian siempre los del wrapper y no
+   * dirian nada accionable. Guard de profundidad por si hubiera ciclos.
+   *
+   * @param \Throwable $e
+   * @return \Throwable Causa raiz (la excepcion mas profunda de la cadena)
+   */
+  private function unwrapException(\Throwable $e): \Throwable
   {
+    $root = $e;
+    $depth = 0;
+    while ($root->getPrevious() !== null && $depth < 10) {
+      $root = $root->getPrevious();
+      $depth++;
+    }
+    return $root;
+  }
+
+  /**
+   * Construye y dispara la alerta de Slack de falla critica de traffic log.
+   * Enriquecida con la causa raiz desenvuelta (clase, mensaje, file:line) y un
+   * subset seguro del request (sin payload completo para no filtrar PII).
+   *
+   * @param \Throwable $e Excepcion capturada (se desenvuelve a su causa raiz)
+   * @param array<string, mixed> $data Datos validados del request
+   * @return void
+   */
+  private function notifySlack(\Throwable $e, array $data): void
+  {
+    $root = $this->unwrapException($e);
+
+    // Subset seguro del request para debug (sin query_params crudos ni PII).
+    $safeKeys = ['current_page', 'user_agent', 'landing_id', 's1', 's2', 's3', 's4', 's10'];
+    $requestSubset = array_intersect_key($data, array_flip($safeKeys));
+
     $slack = new SlackMessageBundler();
     $slack
       ->addTitle('Critical Traffic Log Failure', '🚨')
       ->addSection('The traffic log processing failed due to an unexpected error.')
+      ->addKeyValue('Environment', app()->environment(), true)
+      ->addKeyValue('Exception', get_class($root), true)
+      ->addKeyValue('Root Message', '```' . Str::limit($root->getMessage(), 800) . '```', false, '📄')
+      ->addKeyValue('Origin', basename($root->getFile()) . ':' . $root->getLine(), true)
+      ->addDivider()
       ->addKeyValue('Ip', $this->request->ip(), true)
-      ->addKeyValue('Path', $data['current_page'])
-      ->addKeyValue('Landing', $this->request->header('origin'))
-      ->addDivider();
+      ->addKeyValue('Path', $data['current_page'] ?? 'n/a')
+      ->addKeyValue('Landing', $this->request->header('origin') ?? 'n/a')
+      ->addKeyValue('User Agent', Str::limit($data['user_agent'] ?? ($this->request->userAgent() ?? 'n/a'), 300))
+      ->addKeyValue('Request Data', '```' . Str::limit(json_encode($requestSubset, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), 1500) . '```');
 
-    $slack->addKeyValue('Error Message', $message, true, '📄');
     // Registrar en logs en modo debug, no enviar a Slack
     app()->environment('local') ? $slack->sendDebugLog('error') : $slack->sendDirect('error');
   }
@@ -149,18 +193,31 @@ class TrafficLogController extends Controller
   }
 
   /**
-   * Obtiene el objeto contexto de errores
+   * Obtiene el objeto contexto de errores para logging.
+   * Incluye tanto la excepcion externa (wrapper) como la causa raiz
+   * desenvuelta, que es la que realmente apunta al punto de falla.
+   *
+   * @param \Throwable $e Excepcion capturada
+   * @param array<string, mixed> $data Datos del request
+   * @return array<string, mixed>
    */
-  public function errorContext($e, $data): array
+  public function errorContext(\Throwable $e, array $data): array
   {
+    $root = $this->unwrapException($e);
     return [
       'message' => $e->getMessage(),
       'file' => $e->getFile(),
       'line' => $e->getLine(),
       'code' => $e->getCode(),
       'type' => get_class($e),
+      'root_cause' => [
+        'message' => $root->getMessage(),
+        'class' => get_class($root),
+        'file' => $root->getFile(),
+        'line' => $root->getLine(),
+      ],
       'request_data' => $data,
-      'trace' => $e->getTrace(),
+      'trace' => $root->getTrace(),
     ];
   }
 }

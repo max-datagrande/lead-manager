@@ -4,6 +4,8 @@ use App\Models\LandingPage;
 use App\Models\LandingPageVersion;
 use App\Models\TrafficLog;
 use App\Models\User;
+use App\Services\TrafficLog\TrafficLogCreationException;
+use App\Services\TrafficLog\TrafficLogService;
 use Illuminate\Support\Facades\Cache;
 
 use function Pest\Laravel\postJson;
@@ -86,6 +88,25 @@ it('rechaza con 422 cuando el landing_id no existe', function () {
   postJson('/v1/visitor/register', visitorPayload(['landing_id' => 999999]), visitorHeaders())
     ->assertStatus(422)
     ->assertJsonValidationErrors(['landing_id']);
+
+  expect(TrafficLog::count())->toBe(0);
+});
+
+it('responde 500 generico y corre el debug del alert (unwrap de causa raiz) cuando la creacion falla', function () {
+  // Sin webhook configurado, sendDirect short-circuita antes de cualquier curl real.
+  config(['slack-alerts.webhook_urls' => []]);
+
+  // Simula la causa raiz real observada en prod: truncacion de varchar(255).
+  $rootCause = new \RuntimeException('SQLSTATE[22001]: String data, right truncated: value too long for type character varying(255)');
+
+  // El service envuelve toda falla en TrafficLogCreationException con la causa como previous.
+  $this->mock(TrafficLogService::class, function ($mock) use ($rootCause) {
+    $mock->shouldReceive('createTrafficLog')->once()->andThrow(new TrafficLogCreationException('Failed to create traffic log', 0, $rootCause));
+  });
+
+  // Si el path de debug (unwrapException/notifySlack/errorContext) explotara, este request
+  // no devolveria un 500 limpio. El mensaje al cliente queda generico (no filtra el SQL).
+  postJson('/v1/visitor/register', visitorPayload(), visitorHeaders())->assertStatus(500)->assertJsonPath('message', 'Failed to create traffic log');
 
   expect(TrafficLog::count())->toBe(0);
 });
