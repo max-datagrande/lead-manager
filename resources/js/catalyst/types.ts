@@ -82,6 +82,15 @@ interface VisitorData {
   id?: string | number;
   lead_registered?: boolean; // Flag para saber si ya es un lead
   lead_data?: any; // Copia opcional de los datos del lead
+  /**
+   * UTC day (`YYYY-MM-DD`) and host the fingerprint was minted under. The backend
+   * folds day + host into the fingerprint hash (`now('Y-m-d')`, app TZ = UTC), so
+   * a cached session is invalidated on a new UTC day / different host to avoid
+   * resurrecting a previous day's or other landing's lead. Stamped once at mint,
+   * preserved across register/update saves.
+   */
+  _fp_day?: string;
+  _fp_host?: string;
   [key: string]: any;
 }
 
