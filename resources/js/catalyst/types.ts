@@ -82,6 +82,16 @@ interface VisitorData {
   id?: string | number;
   lead_registered?: boolean; // Flag para saber si ya es un lead
   lead_data?: any; // Copia opcional de los datos del lead
+  /**
+   * Host the fingerprint was minted under, plus a sliding "last seen" timestamp
+   * (epoch ms) refreshed on every register/update save. A cached session is
+   * considered stale — and re-minted via a full page reload — when the host
+   * changes or the inactivity gap exceeds the session TTL. No calendar boundary:
+   * a single continuous fill stays alive even across UTC midnight, while a
+   * genuinely idle/returning tab gets a fresh visitor + a reset form.
+   */
+  _fp_host?: string;
+  _fp_seen_at?: number;
   [key: string]: any;
 }
 
