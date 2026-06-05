@@ -216,6 +216,21 @@ interface ConvertOfferwallPostback {
 }
 
 /**
+ * URL-driven workflow override attached to a `shareLead()` dispatch.
+ *
+ * Built by the SDK when the landing was loaded with a numeric `?workflow_id=<n>`
+ * that differs from the workflow the landing passed to `shareLead`. `id_intended`
+ * is the workflow the landing asked for; `id_effective` is the workflow the
+ * dispatch is redirected to. Both are stringified numeric ids. Sent in the
+ * dispatch body so the backend can notify the override (Slack notify channel);
+ * omitted entirely when there is no real override.
+ */
+interface WorkflowOverride {
+  id_intended: string;
+  id_effective: string;
+}
+
+/**
  * Options for the shareLead method.
  */
 interface ShareLeadOptions {
@@ -498,5 +513,6 @@ export {
   type VerifyChallengeOptions,
   type VerifyChallengeResponse,
   type VisitorData,
+  type WorkflowOverride,
   type visitorRegisterResponse,
 };
