@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\PingPost;
 
+use App\Events\LeadWorkflowOverridden;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PingPost\DispatchLeadRequest;
 use App\Http\Traits\ApiResponseTrait;
@@ -39,6 +40,21 @@ class DispatchController extends Controller
       }
     } else {
       $lead = $leadId ? Lead::findOrFail($leadId) : Lead::where('fingerprint', $fingerprint)->firstOrFail();
+    }
+
+    // URL-driven workflow override: the SDK already targeted the effective workflow
+    // via the route; this metadata only drives the Slack notify-channel alert about
+    // the redirect (intended -> effective). The dispatch itself proceeds unchanged.
+    $override = $request->input('workflow_override');
+    if (is_array($override) && isset($override['id_intended'], $override['id_effective'])) {
+      event(
+        new LeadWorkflowOverridden(
+          idIntended: (string) $override['id_intended'],
+          idEffective: (string) $override['id_effective'],
+          fingerprint: $lead->fingerprint ?? $fingerprint,
+          leadId: $lead->id,
+        ),
+      );
     }
 
     if ($workflow->execution_mode === 'async') {
