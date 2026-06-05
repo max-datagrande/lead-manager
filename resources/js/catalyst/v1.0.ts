@@ -27,6 +27,7 @@ import {
   VerifyChallengeResponse,
   VisitorData,
   visitorRegisterResponse,
+  WorkflowOverride,
 } from './types';
 /**
  * Extiende la interfaz global `Window` para que TypeScript conozca `window.Catalyst`.
@@ -636,9 +637,21 @@ class CatalystCore {
       throw new Error('Catalyst SDK: Session expired; page is reloading.');
     }
 
+    // URL-driven workflow override: when the landing was loaded with a numeric
+    // `?workflow_id=<n>` that differs from the workflow the landing passed in, the
+    // dispatch is redirected to that workflow and `workflow_override` is attached so
+    // the backend can notify the change (Slack notify channel). Null when there is
+    // no real override (param absent, blank, non-numeric, or equal to intended).
+    const override = this.resolveWorkflowOverride(workflowId);
+    const effectiveWorkflowId = override ? override.id_effective : workflowId;
+
     const payload: Record<string, any> = {
       fingerprint: this.visitorData!.fingerprint,
     };
+
+    if (override) {
+      payload.workflow_override = override;
+    }
 
     if (fields && Object.keys(fields).length > 0) {
       payload.fields = this.sanitizeFields(fields);
@@ -647,7 +660,7 @@ class CatalystCore {
 
     try {
       const baseUrl = this.getEndpoint('SHARE_LEADS.DISPATCH');
-      const url = `${baseUrl}${workflowId}`;
+      const url = `${baseUrl}${effectiveWorkflowId}`;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -670,19 +683,55 @@ class CatalystCore {
       this.dispatch('share:status', {
         success: true,
         workflowId,
+        effectiveWorkflowId,
+        ...(override ? { workflowOverride: override } : {}),
         data: json.data,
       });
 
       return json;
     } catch (error) {
-      console.error(`Catalyst SDK: Error dispatching lead to workflow ${workflowId}:`, error);
+      console.error(`Catalyst SDK: Error dispatching lead to workflow ${effectiveWorkflowId}:`, error);
       this.dispatch('share:status', {
         success: false,
         workflowId,
+        effectiveWorkflowId,
+        ...(override ? { workflowOverride: override } : {}),
         error: error instanceof Error ? error.message : error,
       });
       throw error;
     }
+  }
+
+  /**
+   * Resolves an optional workflow override from the landing's URL query string.
+   *
+   * When the page was loaded with a numeric `?workflow_id=<n>` that differs from
+   * the workflow the landing passed to `shareLead`, the dispatch is redirected to
+   * that workflow and a `WorkflowOverride` is returned so the backend can notify
+   * the change. Returns `null` when the param is absent, blank, non-numeric, or
+   * equal to the intended workflow (no real override).
+   *
+   * @param intendedWorkflowId The workflow the landing intended to dispatch to.
+   */
+  private resolveWorkflowOverride(intendedWorkflowId: number | string): WorkflowOverride | null {
+    const raw = new URLSearchParams(window.location.search).get('workflow_id');
+    if (raw === null) {
+      return null;
+    }
+    const trimmed = raw.trim();
+    if (trimmed === '' || !/^\d+$/.test(trimmed)) {
+      if (this.config.debug && trimmed !== '') {
+        console.warn(`Catalyst SDK: Ignoring non-numeric workflow_id override "${raw}".`);
+      }
+      return null;
+    }
+    if (trimmed === String(intendedWorkflowId)) {
+      return null;
+    }
+    return {
+      id_intended: String(intendedWorkflowId),
+      id_effective: trimmed,
+    };
   }
 
   // ===================================================================================

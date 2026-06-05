@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Events\LeadSold;
+use App\Events\LeadWorkflowOverridden;
 use App\Listeners\FireInternalPostbacksListener;
+use App\Listeners\NotifyWorkflowOverride;
 use App\Listeners\StoreOutgoingEmailHtml;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Mail\Events\MessageSent;
@@ -18,6 +20,7 @@ class EventServiceProvider extends ServiceProvider
   protected $listen = [
     MessageSent::class => [StoreOutgoingEmailHtml::class],
     LeadSold::class => [FireInternalPostbacksListener::class],
+    LeadWorkflowOverridden::class => [NotifyWorkflowOverride::class],
   ];
 
   /**
