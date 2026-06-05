@@ -731,11 +731,64 @@ class DispatchOrchestrator
         continue;
       }
 
+      $pingResult = null;
       $isPostOnlyResponseBid = $integration->type === 'post-only' && $config->price_source === PriceSource::RESPONSE_BID;
       $offeredPrice = $isPostOnlyResponseBid ? 0 : $this->priceResolver->resolvePrice($config, 0);
 
       if ($config->price_source === PriceSource::CONDITIONAL) {
         $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
+      }
+
+      // Ping-post fallback buyers must ping first: PostService derives the buyer's
+      // external lead_id from the ping response (leadData['ping_lead_id'] via
+      // lead_id_path). Posting without a PingResult makes the buyer reject with
+      // "Lead_ID missing". Mirrors the ping-post branch in runWaterfall.
+      if ($integration->type === 'ping-post') {
+        $pingResult = $this->pinger->ping($integration, $config, $dispatch, $leadData);
+
+        $this->timeline->log(
+          DispatchTimelineService::PING_RESULT,
+          "Fallback ping to {$integration->name}: {$pingResult->status->value}" . ($pingResult->bid_price ? " at \${$pingResult->bid_price}" : ''),
+          [
+            'ping_result_id' => $pingResult->id,
+            'integration_id' => $integration->id,
+            'status' => $pingResult->status->value,
+            'bid_price' => $pingResult->bid_price,
+          ],
+        );
+
+        if ($pingResult->status === PingResultStatus::ACCEPTED) {
+          $offeredPrice = $this->priceResolver->resolvePrice($config, (float) $pingResult->bid_price);
+
+          if ($config->price_source === PriceSource::CONDITIONAL) {
+            $offeredPrice = $this->priceResolver->resolveConditionalPrice($config, $leadData);
+          }
+        } elseif ($pingResult->status === PingResultStatus::REJECTED && $workflow->advance_on_rejection) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past fallback {$integration->name} (ping rejected)", [
+            'integration_id' => $integration->id,
+          ]);
+          continue;
+        } elseif ($pingResult->status === PingResultStatus::TIMEOUT && $workflow->advance_on_timeout) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past fallback {$integration->name} (ping timeout)", [
+            'integration_id' => $integration->id,
+          ]);
+          continue;
+        } elseif ($pingResult->status === PingResultStatus::ERROR && $workflow->advance_on_error) {
+          $this->timeline->log(DispatchTimelineService::CASCADE_ADVANCE, "Advancing past fallback {$integration->name} (ping error)", [
+            'integration_id' => $integration->id,
+          ]);
+          continue;
+        } else {
+          $this->timeline->log(
+            DispatchTimelineService::CASCADE_BREAK,
+            "Stopping fallback at {$integration->name} (ping {$pingResult->status->value})",
+            [
+              'integration_id' => $integration->id,
+              'status' => $pingResult->status->value,
+            ],
+          );
+          break;
+        }
       }
 
       if (
@@ -751,7 +804,7 @@ class DispatchOrchestrator
       }
 
       $offeredPrice = $offeredPrice ?? 0;
-      $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, null, $offeredPrice);
+      $postResult = $this->poster->post($integration, $config, $dispatch, $leadData, $pingResult, $offeredPrice);
 
       $this->timeline->log(DispatchTimelineService::POST_RESULT, "Fallback post to {$integration->name}: {$postResult->status->value}", [
         'post_result_id' => $postResult->id,
@@ -767,6 +820,15 @@ class DispatchOrchestrator
           'price' => $soldPrice,
         ]);
         $dispatch->markAsSold($integration, $soldPrice);
+        $sold = true;
+        break;
+      }
+
+      if ($postResult->status === \App\Enums\PostResultStatus::PENDING_POSTBACK) {
+        $this->timeline->log(DispatchTimelineService::OUTCOME_PENDING_POSTBACK, "Pending postback from fallback {$integration->name}", [
+          'integration_id' => $integration->id,
+          'post_result_id' => $postResult->id,
+        ]);
         $sold = true;
         break;
       }
