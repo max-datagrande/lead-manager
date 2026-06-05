@@ -52,7 +52,11 @@ class CatalystCore {
   // Constantes para Storage y Cookies
   private readonly STORAGE_KEY = 'catalyst_visitor_session';
   private readonly THROTTLE_COOKIE = 'catalyst_throttle';
-  private readonly THROTTLE_MINUTES = 15;
+  // Ventana de inactividad (minutos): una sesion/fingerprint cacheado se reusa
+  // mientras la ultima actividad este dentro de esta ventana. Pasada la ventana
+  // se considera stale y se re-acuña (via reload). Sin limite de dia calendario:
+  // una carga continua que cruza medianoche UTC sigue viva.
+  private readonly SESSION_TTL_MINUTES = 60;
 
   constructor(config: CatalystConfig) {
     this.config = config;
@@ -66,6 +70,11 @@ class CatalystCore {
     // Registrar escuchas de eventos internos para acciones de leads
     this.on('lead:register', (data) => this.registerLead(data));
     this.on('lead:update', (data) => this.updateLead(data));
+
+    // Vigilar el regreso a una tab idle: si la sesion quedo stale (inactividad
+    // > TTL), recargar para re-acuñar visitante y resetear el form de forma
+    // consistente (identidad + UI juntas), en vez de despachar un lead parcial.
+    this.setupSessionFreshnessWatch();
   }
 
   // ===================================================================================
@@ -82,29 +91,28 @@ class CatalystCore {
     const storedData = localStorage.getItem(this.STORAGE_KEY);
 
     if (hasThrottle && storedData) {
-      // CASO 1: Reingreso a corto plazo (dentro de los 15 mins). Usamos datos locales.
+      // Reingreso: reusamos la sesion local SOLO si sigue fresca (mismo host y
+      // dentro de la ventana de inactividad). Si quedo stale, la descartamos y
+      // re-registramos para que el server acuñe una huella nueva.
       try {
         const parsed: VisitorData = JSON.parse(storedData);
-        // El fingerprint del backend incluye dia-UTC + host en el hash. Si la
-        // sesion cacheada se acuño otro dia u en otro host, reusarla resucitaria
-        // el lead de ayer / de otra landing. La descartamos y forzamos un
-        // re-registro para que el server acuñe una huella nueva para hoy + host.
         if (this.isSessionStale(parsed)) {
           if (this.config.debug) {
-            console.log('Catalyst SDK: Sesion cacheada vencida (cambio de dia-UTC u host). Re-registrando visitante.');
+            console.log('Catalyst SDK: Sesion cacheada vencida (inactividad > TTL u otro host). Re-registrando visitante.');
           }
           this.clearVisitorSession();
         } else {
-          this.visitorData = parsed;
-          if (this.config.debug) console.log('Catalyst SDK: Visitante recuperado de caché (Throttle activo).');
-          return this.visitorData;
+          // Reuso valido: deslizamos la ventana de inactividad (este pageview es actividad).
+          this.saveVisitorSession(parsed);
+          if (this.config.debug) console.log('Catalyst SDK: Visitante recuperado de caché (sesion fresca).');
+          return parsed;
         }
       } catch (e) {
         console.error('Catalyst SDK: Error leyendo datos locales, reiniciando visitante.', e);
         this.clearVisitorSession();
       }
     }
-    // CASO 2: No hay throttle, no hay datos, o la sesion era stale. Registramos nueva visita.
+    // No hay throttle, no hay datos, o la sesion era stale. Registramos nueva visita.
     return await this.registerNewVisitor();
   }
 
@@ -147,18 +155,15 @@ class CatalystCore {
       }
 
       // Mapeamos la respuesta de la API a nuestra estructura interna VisitorData.
-      // Estampamos el dia-UTC + host de acuñacion para poder invalidar el cache
-      // en un dia/host distinto (ver initVisitor / isSessionStale / shareLead).
-      const scope = this.fingerprintScope();
+      // Estampamos el host de acuñacion; `_fp_seen_at` lo sella saveVisitorSession.
       const visitorData: VisitorData = {
         fingerprint: json.fingerprint,
         ...json.data, // Incluimos device_type, is_bot, etc.
         geolocation: json.geolocation, // Incluimos geolocalización si existe
-        _fp_day: scope.day,
-        _fp_host: scope.host,
+        _fp_host: window.location.hostname,
       };
 
-      // Guardamos en memoria y persistencia
+      // Guardamos en memoria y persistencia (sella `_fp_seen_at` = ahora)
       this.saveVisitorSession(visitorData);
       return visitorData;
     } catch (error) {
@@ -171,34 +176,26 @@ class CatalystCore {
    * Guarda la sesión del visitante y establece la cookie de throttle.
    */
   private saveVisitorSession(data: VisitorData) {
+    // Marca de actividad deslizante: cada save (register/update) refresca el
+    // "last seen". La frescura de la sesion se mide contra esto (no contra una
+    // fecha calendario), asi una carga continua nunca se invalida sola.
+    data._fp_seen_at = Date.now();
     this.visitorData = data;
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-    this.setCookie(this.THROTTLE_COOKIE, '1', this.THROTTLE_MINUTES);
+    this.setCookie(this.THROTTLE_COOKIE, '1', this.SESSION_TTL_MINUTES);
   }
 
   /**
-   * Scope (dia-UTC + host) bajo el cual el backend acuña el fingerprint: el hash
-   * SHA-256 incluye `now('Y-m-d')` (app TZ = UTC) + host. Usamos UTC para mantener
-   * PARIDAD con el server; con dia local los limites de dia se desincronizarian y
-   * se podria reusar una huella de un dia-UTC anterior. Se estampa en la sesion al
-   * acuñar y se compara al recuperarla / antes de despachar.
-   */
-  private fingerprintScope(): { day: string; host: string } {
-    const day = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-    return { day, host: window.location.hostname };
-  }
-
-  /**
-   * Una sesion cacheada es "stale" cuando se acuño en otro dia-UTC o en otro host
-   * que el pageview actual — o cuando no tiene el stamp (sesiones previas a este
-   * fix, que se tratan como stale para re-acuñarlas con scope). Reusar una sesion
-   * stale resucitaria un lead viejo (el caso del lead 2579883: fingerprint del
-   * 05-30 reusado el 06-01).
+   * Una sesion cacheada es "stale" cuando cambio el host, o cuando el hueco de
+   * inactividad supera el TTL (o no tiene marca de actividad — sesiones previas
+   * a este modelo). NO usa fecha calendario: una carga continua que cruza
+   * medianoche UTC sigue fresca; un regreso tras un hueco largo se re-acuña.
    */
   private isSessionStale(data: VisitorData | null): boolean {
     if (!data || !data.fingerprint) return true;
-    const { day, host } = this.fingerprintScope();
-    return data._fp_day !== day || data._fp_host !== host;
+    if (data._fp_host !== window.location.hostname) return true;
+    const seenAt = typeof data._fp_seen_at === 'number' ? data._fp_seen_at : 0;
+    return Date.now() - seenAt > this.SESSION_TTL_MINUTES * 60 * 1000;
   }
 
   /**
@@ -213,6 +210,29 @@ class CatalystCore {
     }
     this.setCookie(this.THROTTLE_COOKIE, '', -1);
     this.visitorData = null;
+  }
+
+  /**
+   * Al volver a una tab que estuvo idle, si la sesion quedo stale (inactividad
+   * > TTL u otro host) recargamos la pagina. El reload re-corre initVisitor
+   * (re-acuña una huella fresca) y resetea el formulario, manteniendo identidad
+   * y UI consistentes — evita el "lead parcial" que produciria re-acuñar en
+   * silencio dejando el form con datos viejos. No hace loop: tras el reload la
+   * sesion nace fresca.
+   */
+  private setupSessionFreshnessWatch(): void {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    const checkOnResume = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (this.visitorData && this.isSessionStale(this.visitorData)) {
+        if (this.config.debug) {
+          console.log('Catalyst SDK: Tab idle vencida al regresar (inactividad > TTL). Recargando para re-acuñar visitante y resetear el form.');
+        }
+        window.location.reload();
+      }
+    };
+    document.addEventListener('visibilitychange', checkOnResume);
+    window.addEventListener('focus', checkOnResume);
   }
 
   // ===================================================================================
@@ -603,23 +623,17 @@ class CatalystCore {
       throw new Error(`Catalyst SDK: ${error}`);
     }
 
-    // Guard: una pestaña de larga vida (abierta cruzando un limite de dia-UTC, o
-    // navegada a otro host) sigue teniendo en memoria la sesion acuñada bajo el
-    // scope viejo — initVisitor solo corre al cargar el script, no la re-evalua.
-    // Despachar esa huella resucitaria un lead stale. La re-acuñamos primero para
-    // que el backend keyee el dispatch a una huella fresca para hoy-UTC + host.
+    // Fallback de seguridad: normalmente el watcher de visibilidad ya recargo la
+    // tab si la sesion quedo stale. Si aun asi llegamos al dispatch con una
+    // sesion vencida (inactividad > TTL u otro host), recargamos en vez de
+    // despachar un lead parcial/viejo. El reload re-acuña y resetea el form.
     if (this.isSessionStale(this.visitorData)) {
       if (this.config.debug) {
-        console.log('Catalyst SDK: Sesion en memoria stale al despachar (cambio de dia-UTC u host). Re-registrando antes de shareLead.');
+        console.log('Catalyst SDK: Sesion stale al despachar (fallback). Recargando en vez de despachar un lead parcial.');
       }
-      this.clearVisitorSession();
-      try {
-        await this.registerNewVisitor();
-      } catch (e) {
-        const error = 'Could not refresh a stale visitor session before dispatch.';
-        this.dispatch('share:status', { success: false, workflowId, error });
-        throw new Error(`Catalyst SDK: ${error}`);
-      }
+      this.dispatch('share:status', { success: false, workflowId, error: 'Session expired; reloading to start a fresh visit.' });
+      window.location.reload();
+      throw new Error('Catalyst SDK: Session expired; page is reloading.');
     }
 
     const payload: Record<string, any> = {

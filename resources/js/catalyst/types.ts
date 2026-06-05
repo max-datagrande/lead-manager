@@ -83,14 +83,15 @@ interface VisitorData {
   lead_registered?: boolean; // Flag para saber si ya es un lead
   lead_data?: any; // Copia opcional de los datos del lead
   /**
-   * UTC day (`YYYY-MM-DD`) and host the fingerprint was minted under. The backend
-   * folds day + host into the fingerprint hash (`now('Y-m-d')`, app TZ = UTC), so
-   * a cached session is invalidated on a new UTC day / different host to avoid
-   * resurrecting a previous day's or other landing's lead. Stamped once at mint,
-   * preserved across register/update saves.
+   * Host the fingerprint was minted under, plus a sliding "last seen" timestamp
+   * (epoch ms) refreshed on every register/update save. A cached session is
+   * considered stale — and re-minted via a full page reload — when the host
+   * changes or the inactivity gap exceeds the session TTL. No calendar boundary:
+   * a single continuous fill stays alive even across UTC midnight, while a
+   * genuinely idle/returning tab gets a fresh visitor + a reset form.
    */
-  _fp_day?: string;
   _fp_host?: string;
+  _fp_seen_at?: number;
   [key: string]: any;
 }
 
